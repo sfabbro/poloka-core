@@ -57,7 +57,6 @@ AC_ARG_ENABLE(cmt,
 [ # else put here the additionnal software to check
 CHECK_CFITSIO(2.470)
 CHECK_SEX
-CHECK_LAPACK
 ])
 
 # Check cernlib 
@@ -110,6 +109,7 @@ AC_CONFIG_FILES([Makefile
 		 cmt/version.cmt
                  bindings/Makefile
                  cern_stuff/Makefile
+                 lapack_stuff/Makefile
                  dao/Makefile
                  datacards/Makefile
                  doc/Makefile

@@ -5,8 +5,7 @@ EXTRA_DIST =   datacards/default.conv  datacards/default.nnw      datacards/defa
                repack-config.in        repack-config \
                repack.spec.in          repack.spec
 
-
-SUBDIRS = objio cern_stuff telinst src dao lc utils cern_utils datacards
+SUBDIRS = objio cern_stuff lapack_stuff telinst src dao lc utils datacards
 
 #bindings doc  
 
