@@ -1,8 +1,8 @@
 /* 
  * $Source: /cvs/snovae/toads/poloka/src/Attic/fitsimagearray.cc,v $
- * $Revision: 1.1 $
- * $Author: nrl $
- * $Date: 2004/02/20 10:48:37 $
+ * $Revision: 1.2 $
+ * $Author: guy $
+ * $Date: 2004/04/29 18:27:01 $
  * $Name:  $
  */
 
@@ -16,7 +16,7 @@
 //#define DEBUG 
 
 // get cvs version of the code
-#define CVSVERSION "$Revision: 1.1 $"
+#define CVSVERSION "$Revision: 1.2 $"
 
 // ============ STUFF copied in fitsimage =======================
 static string  local_time()
@@ -195,8 +195,16 @@ FitsImageArray::Status FitsImageArray::SplitAndWrite(const string &directory,int
 #endif
   string dir,base,ext;
   SplitName(dir, base, ext);
-  ext = "fia.fits";
-  FitsHeader mainHeader(*((FitsHeader*)this), base+"_mh."+ext);
+  if(directory.size()>0)
+    dir = directory;
+  dir = dir+"/"+base;
+  
+  if(!IsDirectory(dir))
+    MKDir(dir.c_str());
+  
+  base = "ccd_";
+  ext = "fits";
+  FitsHeader mainHeader(*((FitsHeader*)this), dir+"/mainheader.fits");
   
   char schip[256];
   char outFileName[512];
@@ -206,6 +214,7 @@ FitsImageArray::Status FitsImageArray::SplitAndWrite(const string &directory,int
   if(HDUMax==0)
     HDUMax=nhdu;
   
+  cout << "FitsImageArray::SplitAndWrite nhdu = " << nhdu << endl;
   
   for (int hdu= 2; (hdu<= nhdu && hdu<= HDUMax); ++hdu) {
     if (At(hdu) != OK) {
@@ -218,7 +227,7 @@ FitsImageArray::Status FitsImageArray::SplitAndWrite(const string &directory,int
     
     cout << " considering image from chip " << chip << endl;
     sprintf(schip,"%d",chip);
-    sprintf(outFileName,file_name_format,directory.c_str(),base.c_str(),chip, ext.c_str());
+    sprintf(outFileName,file_name_format,dir.c_str(),base.c_str(),chip, ext.c_str());
     cout << outFileName << endl;
     FitsHeader outFile(*((FitsHeader*)this), outFileName);
     outFile.Append_LowPriority(mainHeader);
