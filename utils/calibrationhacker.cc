@@ -63,7 +63,7 @@ int main(int argc, char **argv)
   double MaxDist = 1./3600.; // 1 arc sec
   int nok = 0;
   int ntot = 0;
-  for(DicStarIterator entry=inputdicstarlist.begin();entry!=inputdicstarlist.end();++entry) {
+  for(DicStarIterator entry=inputdicstarlist.begin();entry!=inputdicstarlist.end();) {
     ntot++;
     point.x =  (*entry)->getval("ra");
     point.y =  (*entry)->getval("dec");
@@ -85,6 +85,7 @@ int main(int argc, char **argv)
     (*entry)->setval("ie",calibratedstar->getval("emi"));
     (*entry)->setval("z",calibratedstar->getval("mz"));
     (*entry)->setval("ze",calibratedstar->getval("emz"));
+    entry++;
   }
   
   cout << nok << " matches of " << ntot << " initial stars" << endl;
