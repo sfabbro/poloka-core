@@ -1,11 +1,3 @@
-/* 
- * $Source: /cvs/snovae/toads/poloka/src/Attic/fringeutils.h,v $
- * $Revision: 1.2 $
- * $Author: guy $
- * $Date: 2004/05/03 14:19:07 $
- * $Name:  $
- */
-
 #ifndef FRINGEUTILS__H
 #define FRINGEUTILS__H
 

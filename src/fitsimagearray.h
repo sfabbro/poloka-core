@@ -1,11 +1,3 @@
-/* 
- * $Source: /cvs/snovae/toads/poloka/src/Attic/fitsimagearray.h,v $
- * $Revision: 1.1 $
- * $Author: nrl $
- * $Date: 2004/02/20 10:48:37 $
- * $Name:  $
- */
-
 #ifndef FITSIMAGEARRAY__H
 #define FITSIMAGEARRAY__H
 
