@@ -3,7 +3,7 @@ EXTRA_DIST = snls.xsd
 
 lib_LTLIBRARIES = libtoadio.la
 libtoadio_la_SOURCES = xmlstream.cc dict.cc swig_dict_reader.cc xmlschema_dict_writer.cc
-libtoadio_la_CPPFLAGS = -I../toadbase @XML_CFLAGS@
+AM_CPPFLAGS = -I../toadbase @XML_CFLAGS@
 libtoadio_la_LDFLAGS = @XML_LIBS@
 
 
