@@ -13,8 +13,9 @@ bin_PROGRAMS = \
  skylev sum_images trim valid_fits wiynpad
 
 
-AM_CPPFLAGS = -I../src @SEX_CPPFLAGS@  @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@
-AM_LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@ -lg2c
+AM_CPPFLAGS = -I$(top_srcdir)/src @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@
+AM_LDFLAGS = -L$(top_builddir)/src -ltoads -L$(top_builddir)/cern_stuff -lcernstuff @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@ -lg2c
+
 
 
 header_SOURCES = header.cc
