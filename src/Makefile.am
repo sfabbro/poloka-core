@@ -1,11 +1,9 @@
 EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
-
-#AM_CPPFLAGS = -I/home/nrl/Work/frogs/sex/v222/src
-AM_CPPFLAGS = @SEX_CPPFLAGS@
+AM_CPPFLAGS = @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@
 AM_YFLAGS = -l -d
+#AM_LDFLAGS = @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@
 
-#  simultaneousfit.cc          simultaneousfit.h
 
 
 lib_LTLIBRARIES = libtoads.la
@@ -77,7 +75,7 @@ libtoads_la_SOURCES = \
   fitsslice.cc                fitsslice.h        \
   fitsimagearray.cc           fitsimagearray.h   \
   imageback.cc                imageback.h        \
-  imagelist.cc                imagelist.h        \
+  imagelist.h        \
   imagematch.cc               imagematch.h       \
   imagesubtraction.cc         imagesubtraction.h \
   sub.cc                      sub.h              \
