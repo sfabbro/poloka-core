@@ -28,7 +28,7 @@ class CalibratedStar : public BaseStar {
   CalibratedStar() {};
   CalibratedStar(BaseStar& toto) : BaseStar(toto) {};
   double ra,dec;
-  double u,g,r,i,z;
+  double u,g,r,i,z,x,y;
   int id;
 };
 
@@ -153,7 +153,9 @@ int main(int argc, char **argv)
     cstar.z=entry->Value("z");
     cstar.flux=star.flux;
     cstar.id=count_total;
-
+    cstar.x=star.x;
+    cstar.y=star.y;
+    
     //keep a link between the two of them
     assocs[(RefStar*)rstar] = cstar;
     //if(count_ok>0)
@@ -179,15 +181,17 @@ int main(int argc, char **argv)
   stream << "#error :" << endl;
   stream << "#sky :" << endl;
   stream << "#skyerror :" << endl;
-  stream << "#ra :" << endl;
-  stream << "#dec :" << endl;
-  stream << "#u :" << endl;
-  stream << "#g :" << endl;
-  stream << "#r :" << endl;
-  stream << "#i :" << endl;
-  stream << "#z :" << endl;
-  stream << "#img :" << endl;
-  stream << "#star :" << endl;
+  stream << "#ra : initial " << endl;
+  stream << "#dec : initial " << endl;
+  stream << "#ix : initial x" << endl;
+  stream << "#iy : initial y" << endl;
+  stream << "#u : from catalog" << endl;
+  stream << "#g : from catalog" << endl;
+  stream << "#r : from catalog" << endl;
+  stream << "#i : from catalog" << endl;
+  stream << "#z : from catalog" << endl;
+  stream << "#img : image number" << endl;
+  stream << "#star : start number in the catalog" << endl;
   stream << "#end" <<endl;
   stream << setprecision(12);
   // first let's try to compute the ZP
@@ -214,12 +218,14 @@ int main(int argc, char **argv)
       else
 	stream << 0 << " ";
       stream << fs->sky << " ";
-      if(fs->varsky>0)
+      if(fs->varsky>0 && fs->varsky<10000000.)
 	stream << sqrt(fs->varsky) << " ";
       else
 	stream << 0 << " ";
       stream << cstar.ra << " ";
       stream << cstar.dec << " ";
+      stream << cstar.x << " ";
+      stream << cstar.y << " ";
       stream << cstar.u << " ";
       stream << cstar.g << " ";
       stream << cstar.r << " ";

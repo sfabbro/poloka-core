@@ -14,7 +14,7 @@ bin_PROGRAMS = \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
- compute enlargeimage calibrate coordfromimage enlargedead mask2dead safesex
+ compute enlargeimage calibrate coordfromimage enlargedead mask2dead safesex seeing
 
 
 ### CPPFLAGS for all programs
@@ -117,7 +117,7 @@ valid_fits_SOURCES = valid_fits.cc
 safesex_SOURCES = safesex.cc
 enlargedead_SOURCES = enlargedead.cc
 mask2dead_SOURCES = mask2dead.cc
-
+seeing_SOURCES = seeing.cc
 
 
 
