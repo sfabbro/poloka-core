@@ -25,8 +25,8 @@ class NewStack : public StringList {
 public :
   string name;
   string Name() const { return name;}
-  ReducedImageRef newStack;
-  ImageSubtractionRef sub;
+  ReducedImageRef newStack; // will points in fact on an ImageSum.
+  ImageSubtractionRef sub; // inherits from the PSFMatch
   StackType stackType;
 
   NewStack(const string &Name = "")
@@ -63,7 +63,7 @@ private :
   bool detectOnAllSub;
   ReducedImageRef RefStack;
   ImageSubtractionRef GlobalSub;
-  ReducedImageRef GlobalNew;
+  ReducedImageRef GlobalNew; // en fait une ImageSum en pratique.
   SENearStarList *FakeList;
 
   //string DatacardsName;
