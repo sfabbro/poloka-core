@@ -48,21 +48,32 @@ return string(toto);
 }
 
 
-string CutExtension(const string &Name)
+/* 
+   return the dot position where extension starts : for toto.fits.gz,
+   returns 4. in dbimage.cc, we assume that extension of toto.fits.gz
+   is fits.gz rather than gz. So, do NOT change here!
+*/
+static int dotposition(const string &FileName)
 {
-char result[512];
-strcpy(result,Name.c_str());
-char *dot = strrchr(result, '.');
-if (dot) *dot = '\0';
-return string(result);
+  const char *slash =  strrchr(FileName.c_str(),'/');
+  if (!slash) slash = FileName.c_str();
+  const char *dot = strchr(slash,'.');
+  if (!dot) return FileName.size();
+  return dot-FileName.c_str();
 }
+
+
+
+string CutExtension(const string &FileName)
+{
+  return FileName.substr(0,dotposition(FileName));
+}
+
 
 
 std::string FileExtension(const std::string &FileName)
 {
-  unsigned int dotpos = FileName.rfind('.');
-  if (dotpos > FileName.size()) return "";
-  return FileName.substr(dotpos+1,FileName.size());
+  return FileName.substr(dotposition(FileName)+1, FileName.size());
 }
 
 
@@ -582,7 +593,7 @@ void DecomposeString(vector<string> &SubStrings, const string &Source, const cha
 std::string SubstituteExtension(const std::string &Original, 
 				const std::string &NewExtension)
 {
-  unsigned int dotpos = Original.rfind('.');
+  unsigned int dotpos = dotposition(Original);
   if (dotpos > Original.size()) return Original;
   return Original.substr(0,dotpos)+NewExtension;
 }
