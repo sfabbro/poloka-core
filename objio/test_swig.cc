@@ -16,8 +16,6 @@
 #include "test_swig.h"
 #include "test_swig_dict.h"
 
-//#include "B__persister.h"
-//#include "BB__persister.h"
 
 
 struct Toto {
@@ -30,9 +28,6 @@ struct Toto {
 
 int main()
 {
-  cout << typemgr::size() << endl;
-  
-  
   int i,j,k;
   AA a;
   Point p;
@@ -42,8 +37,9 @@ int main()
   std::vector<std::string> string_vector;
   map<std::string,short> string_short_map;
   std::list< std::vector< std::map<string,unsigned int> > > stupidly_complex_example;
-  //  B<int> b;
-  //  BB<string,double> bb;
+
+  B<int> b;
+  BB<string,string> bb;
   
   p.x()=2;
   p.y()=5.243;
@@ -76,10 +72,11 @@ int main()
   string_short_map["tutu"]=3435;
   string_short_map["tata"]=5;  
   
-  //  bb.lt_.push_back("glop");
-  //  bb.mtu_["tutu"]=3.14;
+  bb.lt_.push_back("glop");
+  bb.mtu_["tutu"]="toto";
   
-  obj_output<xmlostream> oo("ttt.xml");
+  
+  obj_output<xmlstream> oo("ttt.xml");
   oo << a;
   oo << p;
   oo << s;
@@ -87,52 +84,57 @@ int main()
   oo << string_vector;
   oo << double_vector;
   oo << string_short_map;
-  //  oo << b;
-  //  oo << bb;
+  oo << b;
+  oo << bb;
+  
+  Point* ppp = &s;
+  oo.write(ppp);
+  ppp = &p;
+  oo.write(ppp);
+  
   oo.close();
 
   exit(0);
   
-  AA a2;
-  Point p2;
-  Star s2;
-  std::list<Star> ls2;
-  std::vector<std::string> string_vector2;
-  std::vector<double> double_vector2;
-  map<std::string,short> string_short_map2;
+  //  AA a2;
+  //  Point p2;
+  //  Star s2;
+  //  std::list<Star> ls2;
+  //  std::vector<std::string> string_vector2;
+  //  std::vector<double> double_vector2;
+  //  map<std::string,short> string_short_map2;
   
+  //  std::cout << "about to read object..." << std::endl;
+  //  obj_input<xmlistream> oi("ttt.xml");
   
-  std::cout << "about to read object..." << std::endl;
-  obj_input<xmlistream> oi("ttt.xml");
+  //  oi >> a2;
+  //  oi >> p2;
+  //  p2.print();
+  //  oi >> s2;
+  //  s2.print();
+  //  oi >> ls2;
+  //  std::cout << " read ls2: size=" << ls2.size() << std::endl;
+  //  std::list<Star>::iterator it;
+  //  for(it=ls2.begin();it!=ls2.end();it++)
+  //    it->print();
   
-  oi >> a2;
-  oi >> p2;
-  p2.print();
-  oi >> s2;
-  s2.print();
-  oi >> ls2;
-  std::cout << " read ls2: size=" << ls2.size() << std::endl;
-  std::list<Star>::iterator it;
-  for(it=ls2.begin();it!=ls2.end();it++)
-    it->print();
-  
-  oi >> string_vector2;
-  std::cout << " string_vector.size()=" << string_vector2.size() << std::endl;
-  std::vector<std::string>::iterator it2;
-  for(it2=string_vector2.begin();it2!=string_vector2.end();it2++)
-    std::cout << *it2 << std::endl;
-  
-  oi >> double_vector2;
-  std::cout << " double_vector.size()=" << double_vector2.size() << std::endl;
-  std::vector<double>::iterator dit2;
-  for(dit2=double_vector2.begin();dit2!=double_vector2.end();dit2++)
-    std::cout << *dit2 << std::endl;
-  
-  oi >> string_short_map2;
-  std::cout << "string_short_map2.size()=" << string_short_map2.size() << std::endl;
-  std::map<std::string,short>::iterator ssm2it;
-  for(ssm2it=string_short_map2.begin();ssm2it!=string_short_map2.end();ssm2it++)
-    std::cout << ssm2it->first << " " << ssm2it->second << std::endl;
+  //  oi >> string_vector2;
+  //  std::cout << " string_vector.size()=" << string_vector2.size() << std::endl;
+  //  std::vector<std::string>::iterator it2;
+  //  for(it2=string_vector2.begin();it2!=string_vector2.end();it2++)
+  //    std::cout << *it2 << std::endl;
+  //  
+  //  oi >> double_vector2;
+  //  std::cout << " double_vector.size()=" << double_vector2.size() << std::endl;
+  //  std::vector<double>::iterator dit2;
+  //  for(dit2=double_vector2.begin();dit2!=double_vector2.end();dit2++)
+  //    std::cout << *dit2 << std::endl;
+  //  
+  //  oi >> string_short_map2;
+  //  std::cout << "string_short_map2.size()=" << string_short_map2.size() << std::endl;
+  //  std::map<std::string,short>::iterator ssm2it;
+  //  for(ssm2it=string_short_map2.begin();ssm2it!=string_short_map2.end();ssm2it++)
+  //    std::cout << ssm2it->first << " " << ssm2it->second << std::endl;
 }
 
 
@@ -143,6 +145,6 @@ int main()
 //  for(i=0;i<10;i++)
 //    oo << toto;
 //  
-//  dict_output<xmlostream> dop("ddd.xml");
+//  dict_output<xmlstream> dop("ddd.xml");
 //  persister<Star> ps(s);
 //  dop.write(ps);

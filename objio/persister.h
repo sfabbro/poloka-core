@@ -1,51 +1,41 @@
 // -*- C++ -*-
+// $Id: persister.h,v 1.4 2004/03/01 22:01:43 nrl Exp $
 // 
-// file persister.h
-// 
+// \file persister.h
 // A persister is a handle on an object, which knows
 // how to read this object from an input stream, or
 // how to write it to an output stream. The stream 
 // is generic and can be implemented many ways.
 // 
+// Last modified: $Date: 2004/03/01 22:01:43 $
+// by:            $Author: nrl $
+// 
 #ifndef PERSISTER_H
 #define PERSISTER_H
 
-
 #include "objio.h"
+
 
 class obj_intput_base;
 class obj_output_base;
 
-//#define CLASS_VERSION(className,id) \
-//static const unsigned short __version__=id;\
-//friend class persister<className>;
 
-
+template<class IOS>
 class persister_base {
 public:
+  
   virtual unsigned int     version() const=0;
   virtual std::string      name() const=0;
   virtual persister_base*  clone() const=0;
-
-protected:
-  template<class IOS>
-  void   write_members(obj_output<IOS>& oo) const {}
+  virtual void const*      get_object_addr() const=0;
   
-  template<class IOS>
-  void   read_members(obj_input<IOS> const& oi) {}
-
+protected:
+  virtual void             write_members(obj_output<IOS>& oo) const {}
+  virtual void             read_members(obj_input<IOS> const& oi) {}
+  
   template<class U> friend class obj_input;
   template<class U> friend class obj_output;
 };
-
-
-
-//class persister_base {
-//public:
-//  virtual unsigned int version() const=0;
-//  virtual void         read(obj_input_base const&)=0;
-//  virtual void         write(obj_output_base&) const=0;
-//};
 
 
 
@@ -56,8 +46,13 @@ public:
   handle(T* t) : obj_(t), own_obj_(false) { }
   handle(handle<T> const& h) : obj_(0) { copy(h); }
   ~handle() { if(obj_&&own_obj_) delete obj_; };
-
-  inline handle<T>&  operator=(T* t) { 
+  
+  void               set_object(T const* t) {  // we really need const_handles ...
+    clear_(); 
+    obj_=const_cast<T*>(t); own_obj_=false; 
+  }
+  
+  inline handle<T>&  operator=(T* t) {
     clear_(); 
     obj_=t; own_obj_=false; 
     return *this; 
@@ -91,52 +86,41 @@ protected:
 
 
 // Default persister (empty)
-template<class T>
+template<class T, class IOS>
 class persister : public handle<T> {
 public:
   persister() : handle<T>() {}
-  persister<T>(T& obj) : handle<T>(&obj) {}
-  persister<T>(T const & obj) : handle<T>(const_cast<T*>(&obj)) {}// I know, that's UGLY.
-  persister(persister<T> const& p) : handle<T>(p.obj_) {}
+  persister(T& obj) : handle<T>(&obj) {}
+  persister(T const & obj) : handle<T>(const_cast<T*>(&obj)) {}// I know, that's UGLY.
+  persister(persister<T,IOS> const& p) : handle<T>(p.obj_) {}
   ~persister() {}
   
   unsigned int         version() const { return 0; }
-  std::string          name() const { return (std::string)"unsupported"; }
+  std::string          name() const { return (std::string)"non persistent member"; }
   unsigned int         size() const { return 0; }
   std::string          name(unsigned int i) const { return (std::string)""; }
   std::string          type(unsigned int i) const { return (std::string)""; }
+  virtual void const*  get_object_addr() const { return (void*)obj_; }
   
 protected:
-  template<class IOS>
-  void   write_members(obj_output<IOS>& oo) const {}
-  
-  template<class IOS>
-  void   read_members(obj_input<IOS> const& oi) {}
+  virtual void         write_members(obj_output<IOS>& oo) const {}
+  virtual void         read_members(obj_input<IOS> const& oi) {}
 
   template<class U> friend class obj_input;
   template<class U> friend class obj_output;
 };
 
 
+#endif
 
 
 
-// default IO operators
-//template<class IOS, class T>
-//obj_output<IOS>& operator<<(obj_output<IOS>& oo, T const& p)
-//{
-//  persister<T> pp(p);
-//  oo.write(pp);
-//  return oo;
-//}
 
-//template<class IOS, class T>
-//obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, T& p)
-//{
-//  persister<T> pp(p);
-//  oi.read(pp);
-//  return oi;
-//};
+
+
+//#define CLASS_VERSION(className,id) \
+//static const unsigned short __version__=id;\
+//friend class persister<className>;
 
 
 
@@ -175,5 +159,20 @@ protected:
 */
 
 
-#endif
 
+// default IO operators
+//template<class IOS, class T>
+//obj_output<IOS>& operator<<(obj_output<IOS>& oo, T const& p)
+//{
+//  persister<T> pp(p);
+//  oo.write(pp);
+//  return oo;
+//}
+
+//template<class IOS, class T>
+//obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, T& p)
+//{
+//  persister<T> pp(p);
+//  oi.read(pp);
+//  return oi;
+//};

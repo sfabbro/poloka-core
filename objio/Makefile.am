@@ -16,7 +16,7 @@ include_HEADERS = \
 noinst_HEADERS = \
  codegen.h
 
-bin_PROGRAMS = dictgen2 test_swig test_dict_rw
+bin_PROGRAMS = dictgen2 test_swig test_dict_rw test
 
 dictgen2_SOURCES = dictgen2.cc codegen.cc codegen.h
 dictgen2_CPPFLAGS = @XML_CFLAGS@
@@ -29,6 +29,10 @@ test_swig_LDFLAGS = -ltoadio -lxml2 @XML_LIBS@
 test_dict_rw_SOURCES = test_dict_rw.cc 
 test_dict_rw_CPPFLAGS = @XML_CFLAGS@
 test_dict_rw_LDFLAGS = -ltoadio -lxml2 @XML_LIBS@
+
+test_SOURCES = test.cc codegen.cc
+test_CPPFLAGS = @XML_CFLAGS@
+test_LDFLAGS = -ltoadio -lxml2 @XML_LIBS@
 
 
 CLEANFILES = *_dict.h *_dict.cc *__persister.h *__persister.cc

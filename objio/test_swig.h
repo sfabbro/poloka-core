@@ -14,9 +14,12 @@
 #include "persister.h"
 
 
+
 #define CLASS_VERSION(className,id) \
 static const unsigned short __version__=id;\
-friend class persister<className>;
+template<class U,class V>friend class persister;
+
+
 
 struct A {};
 struct C {};
@@ -29,7 +32,7 @@ struct AA : public A, public C {
 class Point {
 public:
   Point() : x_(0), y_(0) {}
-  ~Point() {}
+  virtual ~Point() {}
   
   double  x() const { return x_; }
   double  y() const { return y_; }
@@ -49,7 +52,7 @@ protected:
 class Star : public Point {
 public:
   Star() : Point(), id_(0), flux_(0) {}
-  ~Star() {}
+  virtual ~Star() {}
 
   unsigned int  id() const { return id_; }
   unsigned int& id()       { return id_; }
@@ -64,34 +67,37 @@ private:
 };
 
 
-//template<class T>
-//class B : public A {
-//public:
-//  B() {}
-//  ~B() {}
-//  
-//private:
-//  T t_;
-//  template<class U> friend class persister;
-//};
+
+template<class T>
+class B : public A {
+public:
+  B() {}
+  virtual ~B() {}
+  
+private:
+  T t_;
+  
+  static const unsigned short __version__=1;
+  template<class U,class V> friend class persister;
+};
 
 
-//template<class T, class U>
-//class BB : public A {
-//public:
-//  BB() {}
-//  ~BB() {}
-//  
-//  std::list<T>  lt_;
-//  std::map<T,U> mtu_;
-//  
-//private:  
-//  T t_;
-//  U u_;
-//  
-//  template<class Z> friend class persister;
-//};
-
+template<class T, class U>
+class BB : public A {
+public:
+  BB() {}
+  virtual ~BB() {}
+  
+  std::list<T>  lt_;
+  std::map<  T, U> mtu_;
+  
+private:  
+  T t_;
+  U u_;
+  
+  static const unsigned short __version__=1;
+  template<class Z,class ZZ> friend class persister;
+};
 
 #endif
 

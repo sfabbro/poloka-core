@@ -125,7 +125,7 @@ main(int argc, char** argv)
   codegen cg(headerName);
   if(generate_persisters) {
     outputFileName = outputFileName.substr(0,outputFileName.find_last_of("."));
-    cg.openSourceFiles(outputFileName);
+    cg.openOutputFiles(outputFileName);
   }
   
   dict d;
@@ -149,7 +149,7 @@ main(int argc, char** argv)
     rename(tmp_name.c_str(), swigOutputFileName.c_str());
   
   if(generate_persisters)
-    cg.closeSourceFiles();
+    cg.closeOutputFiles();
   
   exit(0);  
 

@@ -292,6 +292,10 @@ dict::member_t process_swig_type(std::string const& type)
   for(i=0;i<sz;i++)
     swig2cpp(vv[i],ret);
   
+  // and we remove the trailing blanks
+  std::string::size_type pos = ret.type.find_last_not_of(" \t");
+  if(pos!=std::string::npos) ret.type = ret.type.substr(0,pos+1);
+  
   return ret;
 }
 

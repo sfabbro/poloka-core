@@ -1,128 +1,134 @@
 // -*- C++ -*-
-// 
-// $Id: objio.h,v 1.4 2004/02/27 16:34:36 nrl Exp $
+// $Id: objio.h,v 1.5 2004/03/01 22:01:43 nrl Exp $
 // 
 // \file objio.h
 // 
+// Last modified: $Date: 2004/03/01 22:01:43 $
+// by:            $Author: nrl $
 // 
 #ifndef OBJIO_H
 #define OBJIO_H
 
+#include <typeinfo>
 #include <string>
 #include <vector>
 #include <list>
 #include <map>
 
 #include "toadtypes.h"
+#include "objio_defs.h"
 
 
-class persister_base;
-template<class T> class persister;
+
+
+template<class IOS> class typemgr;
+template<class IOS> class persister_base;
+template<class T, class IOS> class persister;
 
 
 template<class IOS>
 class obj_output { //: public obj_output_base {
- public:
-  obj_output(const std::string& name) : stream_(name) {}
+public:
+  obj_output(const std::string& name) : stream_(name,OBJIO_WRITE,0) {}
   ~obj_output() { }
 
-  void         open(std::string const& filename, int compression) const {
-    stream_.open(filename,compression);
+  void         open(std::string const& filename, int compression=0) const {
+    stream_.open(filename,OBJIO_WRITE,compression);
   }
 
   void         close() { stream_.close(); }
 
   template<class T>
-  void   write(persister<T> const& p, const char* name=0) {
-    stream_.start_object(p.name(), p.version());
+  void   write(persister<T,IOS> const& p, const char* name=0) {
+    //    check_address_(p.obj_);
+    stream_.write_start_object_tag(p.name(), p.version(), p.get_object_addr());
     p.write_members(*this);
-    stream_.end_object();
+    stream_.write_end_object_tag();
   }
   
-  void   write(persister_base const* p, const char* name=0) {
-    stream_.start_object(p->name(), p->version());
+  void   write(persister_base<IOS> const* p, const char* name=0) {
+    //    check_address_(p->get_object_addr());
+    stream_.write_start_object_tag(p->name(), p->version(), p->get_object_addr());
     p->write_members(*this);
-    stream_.end_object();
+    stream_.write_end_object_tag();
   }
   
-  virtual void   write(int1 v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint1 v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(int2 v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint2 v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(int4 v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint4 v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(int8 v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint8 v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(float4 v, const char* name=0) { stream_.write(v, name); }
-  virtual void   write(float8 v, const char* name=0) { stream_.write(v, name); }
-  virtual void   write(const std::string& v, const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int1 const& v,   const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(uint1 const& v,  const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(int2 const& v,   const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(uint2 const& v,  const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(int4 const& v,   const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(uint4 const& v,  const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(int8 const& v,   const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(uint8 const& v,  const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(float4 const& v, const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(float8 const& v, const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(const std::string& v, const char* name=0) { stream_.write(v, name, &v); }
   
   
   // tabs     //    stream_.write(t,sz,*this);
-  /*
-    template<class T>
-    void           write(T const* t, unsigned long sz, const char* name=0) {
-    stream_.start_collection(name,sz,t);
-    int i;
-    for(i=0;i<sz;i++) write(t+i)
-    stream_.end_collection();
-    }
-  */
+  //  template<class T>
+  //  void           write(T const* t, unsigned long sz, const char* name=0) {
+  //    stream_.start_collection(name,sz,t);
+  //    int i;
+  //    for(i=0;i<sz;i++)
+  //      write(t+i);
+  //    stream_.end_collection();
+  //  }
   
-  /*
   // raw pointers 
   template<class T>
-  void           write(T const* t) {
-    bool w = true; //check_pointer_((void*)t); // did we write this object already ?
-    persister_base* b = objmgr::getPersister(typeinfo(t).name());
-    stream_.start_pointer(name);
+  void           write(T const* t, const char* name=0) {
+    bool w = check_address_((void const*)t); // did we write this object already ?
+    persister<T,IOS>* b = (persister<T,IOS>*)typemgr<IOS>::getPersister(typeid(*t).name());
+    b->set_object(t);
+    stream_.write_start_raw_pointer_tag(name);
     if(!w) {
-      *b = t;
-      //      *this << *b;
+      write((persister_base<IOS>*)b);
     }
-    else 
-      stream_.write(t);
-    stream_.end_pointer();
+    //    else 
+    //      stream_.write(t);
+    stream_.write_end_raw_pointer_tag();
   }
-  */
+  
   
   template<class T>
   void           write(std::list<T> const& l, const char* name=0) {
-    stream_.start_collection(l.size(), name);
+    stream_.write_start_collection_tag(l.size(), name,&l);
     typename std::list<T>::const_iterator it;
     for(it=l.begin();it!=l.end();it++)
       *this << *it;
-    stream_.end_collection();
+    stream_.write_end_collection_tag();
   }
 
   template<class T>
   void           write(std::vector<T> const& v, const char* name=0) {
-    stream_.start_collection(v.size(), name);
+    stream_.write_start_collection_tag(v.size(), name,&v);
     typename std::vector<T>::const_iterator it;
     for(it=v.begin();it!=v.end();it++) {
       *this << *it;
     }
-    stream_.end_collection();
+    stream_.write_end_collection_tag();
   }
 
   template<class T, class U>
   void           write(std::map<T,U> const& m, const char* name=0) {
-    stream_.start_collection(m.size(), name);
+    stream_.write_start_collection_tag(m.size(), name,&m);
     typename std::map<T,U>::const_iterator it;
     for(it=m.begin();it!=m.end();it++)
       // this time, we must use write().
       // Because we know what we are writing out...
       write(*it);
-    stream_.end_collection();
+    stream_.write_end_collection_tag();
   }
   
   
   template<class T, class U>
   void           write(std::pair<T,U> const& p, const char* name=0) {
-    stream_.start_collection(2, name);
+    stream_.write_start_collection_tag(2, name,&p);
     *this << p.first;
     *this << p.second;
-    stream_.end_collection();
+    stream_.write_end_collection_tag();
   }
   
   //  template<class T>
@@ -144,17 +150,28 @@ class obj_output { //: public obj_output_base {
 
 private:
   IOS stream_;
-  //  dict_output<IOS>& d_output_;
+  mutable std::map<void const*,bool> addr_;
   
-  bool check_pointer(void*);
+  bool check_address_(void const* t) const {
+    if(!t) return false;
+    std::map<void const*,bool>::const_iterator it;
+    it = addr_.find(t);
+    if(it==addr_.end()) {
+      addr_[t]=true;
+      return false;
+    }
+    return true;
+  }
   
-  template<class T> friend class persister;
+  template<class T, class U> friend class persister;
 };
+
+//  dict_output<IOS>& d_output_;
 
 
 #define define_output_operator(type)                       \
 template<class IOS>                                        \
-obj_output<IOS>& operator<<(obj_output<IOS>& oo, type v)   \
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, type const& v)   \
 {                                                          \
   oo.write(v); return oo;                                  \
 }                                                          \
@@ -193,27 +210,27 @@ obj_output<IOS>& operator<<(obj_output<IOS>& oo, std::map<T,U> const& m)
 template<class IOS>
 class obj_input { //: public obj_input_base {
 public:
-  obj_input(const std::string& name) : stream_(name) {}
+  obj_input(const std::string& name) : stream_(name,OBJIO_READ,0) {}
   ~obj_input() {}
   
   void         open(std::string const& filename) {
-    stream_.open(filename);
+    stream_.open(filename,OBJIO_READ,0);
   }
   
   void         close() { stream_.close(); }
   
   //  template<class T>
-  //  virtual persister_base*  read() const;
+  //  virtual persister_base<IOS>*  read() const;
 
-  //  virtual persister_base* read() const { return 0; }
+  //  virtual persister_base<IOS>* read() const { return 0; }
 
   template<class T>
-  void         read(persister<T>& p) const {
+  void         read(persister<T,IOS>& p) const {
     unsigned int version;
     std::string name;
-    stream_.start_object(name, version); // may throw an exc. here
+    stream_.read_start_object_tag(name, version); // may throw an exc. here
     p.read_members(*this);
-    stream_.end_object();
+    stream_.read_end_object_tag();
   }
 
   virtual void read(int1& v)   const { stream_.read(v); }
@@ -239,49 +256,49 @@ public:
   void         read(std::list<T>& l) const {
     unsigned int i, sz;
     T val;
-    stream_.start_collection(sz);
+    stream_.read_start_collection_tag(sz);
     for(i=0;i<sz;i++) {
       //      read(val);
       *this >> val;
       l.push_back(val);
     }
-    stream_.end_collection();
+    stream_.read_end_collection_tag();
   }
 
   template<class T>
   void         read(std::vector<T>& v) const {
     unsigned int i, sz;
     T val;
-    stream_.start_collection(sz);
+    stream_.read_start_collection_tag(sz);
     for(i=0;i<sz;i++) {
       //      read(val);
       *this >> val;
       v.push_back(val);
     }
-    stream_.end_collection();
+    stream_.read_end_collection_tag();
   }
   
   template<class T, class U>
   void         read(std::map<T,U>& m) const {
     unsigned int i, sz;
     std::pair<T,U> val;
-    stream_.start_collection(sz);
+    stream_.read_start_collection_tag(sz);
     for(i=0;i<sz;i++) {
       read(val);
       m[val.first]=val.second;
     }
-    stream_.end_collection();
+    stream_.read_end_collection_tag();
   }
   
   template<class T, class U>
   void         read(std::pair<T,U>& p) const {
     unsigned int sz;
     T v1; U v2;
-    stream_.start_collection(sz);
+    stream_.read_start_collection_tag(sz);
     *this >> v1; p.first=v1;
     *this >> v2;
     p.second=v2;
-    stream_.end_collection();
+    stream_.read_end_collection_tag();
   }
   
   //  template<class T>

@@ -8,6 +8,7 @@
 
 #include "toadexceptions.h"
 
+#include "objio_defs.h"
 #include "toadtypes.h"
 #include "dict.h"
 #include "persister.h"
@@ -15,6 +16,7 @@
 
 #include "xmlexceptions.h"
 #include "xmlstream.h"
+
 
 #endif
 

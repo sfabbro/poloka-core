@@ -39,6 +39,7 @@ void dict_reader_base::read(dict& d) const
 {
   read_header_(d.name_, d.version_, d.kind_, 
 	       d.isTemplate_, d.isPersistent_);
+  d.realName_=d.symName_=d.name_;
   read_baselist_(d.baseList_);
   read_memberList_(d.memberList_);
   next_();

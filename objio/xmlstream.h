@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.3 2004/02/27 16:34:36 nrl Exp $
+// $Id: xmlstream.h,v 1.4 2004/03/01 22:01:44 nrl Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -21,28 +21,23 @@
 
 
 
-
-class xmlistream {
+class xmlstream {
 public:
-  xmlistream() : reader_(0) {}
-  xmlistream(std::string const& filename) 
-    : reader_(0) { open(filename); }
-  ~xmlistream() { close(); }
+  xmlstream();
+  xmlstream(std::string const& filename, int mode, int compression);
+  ~xmlstream();
   
-  void            open(std::string const&);
+  void            open(std::string const&, int mode, int compression);
   void            close();
   
-  inline void     start_object(std::string& name, unsigned int& version) const;
-  inline void     end_object() const;
+  inline void     read_start_object_tag(std::string& name, unsigned int& version) const;
+  inline void     read_end_object_tag() const;
   
-  inline void     start_raw_pointer() const;
-  inline void     end_raw_pointer() const;
-
-  inline void     start_reference() const;
-  inline void     end_reference() const;
+  inline void     read_start_raw_pointer_tag() const;
+  inline void     read_end_raw_pointer_tag() const;
   
-  inline void     start_collection(unsigned int&) const;
-  inline void     end_collection() const;
+  inline void     read_start_collection_tag(unsigned int&) const;
+  inline void     read_end_collection_tag() const;
   
   inline void     read(int1& v) const;
   inline void     read(uint1& v) const;
@@ -56,110 +51,48 @@ public:
   inline void     read(float8& v) const;
   inline void     read(std::string&) const;
   
-  inline void     skip() const {
-    nextOpeningTag_();
-    nextClosingTag_();
-  }
+  inline void     skip() const;
   
-  void            start_dict(std::string& name, std::string& kind, 
-			     unsigned int& size, unsigned int& version,
-			     std::list<std::string>& baselist) const;
   
-  void            end_dict() const;
+  inline void     write_start_object_tag(std::string const& name, unsigned int version, void const* addr=0);
+  inline void     write_end_object_tag();
   
-  int             read_element(std::string& name, std::string& type) const;
+  inline void     write_start_raw_pointer_tag(const char* name=0, void const* addr=0);
+  inline void     write_end_raw_pointer_tag();
+  
+  inline void     write_start_collection_tag(unsigned int size, const char* name=0, void const* addr=0);
+  inline void     write_end_collection_tag();
+  
+  inline void     write(int1 v, const char* name=0,   void const* addr=0);
+  inline void     write(uint1 v, const char* name=0,  void const* addr=0);
+  inline void     write(int2 v, const char* name=0,   void const* addr=0);
+  inline void     write(uint2 v, const char* name=0,  void const* addr=0);
+  inline void     write(int4 v, const char* name=0,   void const* addr=0);
+  inline void     write(uint4 v, const char* name=0,  void const* addr=0);
+  inline void     write(int8 v, const char* name=0,   void const* addr=0);
+  inline void     write(uint8 v, const char* name=0,  void const* addr=0);
+  inline void     write(float4 v, const char* name=0, void const* addr=0);
+  inline void     write(float8 v, const char* name=0, void const* addr=0);
+  inline void     write(const std::string& v, const char* name=0, void const* addr=0);
+
   
 private:
-  xmlTextReaderPtr reader_;
+  xmlTextReaderPtr reader_;  
+  xmlTextWriterPtr writer_;
   
   inline int nextOpeningTag_(xmlChar const* tagname=0) const throw(XMLException);
   inline int nextClosingTag_(xmlChar const* tagname=0) const throw(XMLException);
-  inline int nextTextElement_() const throw(XMLException);
-  inline int nextElement_(xmlChar const* tagname=0) const throw(XMLException);
-  
-  void readElementName_(std::string& name) const {
-    xmlChar const* nm = xmlTextReaderConstName(reader_);
-    name = (char*)nm;
-  }
-  
-  void readElementVersion_(unsigned int& version) const {
-    version=0;
-    xmlChar* ver_str = xmlTextReaderGetAttribute(reader_, (xmlChar*)"version");
-    if(ver_str==0) return; // should throw an exc. here
-    version = (unsigned int)atoi((char*)ver_str);
-  }
 };
 
 
 
-
-
-class xmlostream {
-public:
-  xmlostream() : writer_(0) {}
-  xmlostream(std::string const& filename, int compression=0) 
-    : writer_(0) { open(filename, compression); }
-  ~xmlostream() { close(); }
-  
-  void            open(std::string const& filename, int compression=0);
-  void            close();
-  
-  inline void     start_object(std::string const& name, unsigned int version);
-  inline void     end_object();
-  
-  inline void     start_raw_pointer(const char* name=0);
-  inline void     end_raw_pointer();
-  
-  inline void     start_reference(const char* name=0);
-  inline void     end_reference();
-  
-  inline void     start_collection(unsigned int size, const char* name=0);
-  inline void     end_collection();
-  
-  inline void     write(int1 v, const char* name=0);
-  inline void     write(uint1 v, const char* name=0);
-  inline void     write(int2 v, const char* name=0);
-  inline void     write(uint2 v, const char* name=0);
-  inline void     write(int4 v, const char* name=0);
-  inline void     write(uint4 v, const char* name=0);
-  inline void     write(int8 v, const char* name=0);
-  inline void     write(uint8 v, const char* name=0);
-  inline void     write(float4 v, const char* name=0);
-  inline void     write(float8 v, const char* name=0);
-  inline void     write(const std::string& v, const char* name=0);
-  
-  // meta data
-  void            start_dict(std::string const& name, /* std::string const& kind,*/
-			     /* unsigned int size, */ unsigned int version
-			     /*, std::list<std::string> const& baselist */);
-  void            end_dict();
-  
-  void            write_member(std::string const& name,
-			       std::string const& type);
-  
-private:
-  xmlTextWriterPtr writer_;
-  
-  void   writeNameAttribute_(const char* name) {
-    if(!name) return;
-    xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"name", "%s", name);
-  }
-  
-  void   writeSizeAttribute_(unsigned int sz) {
-    xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"size", "%u", sz);
-  }
-};
-
-
-
-
-
-
-
-///////////////////////// INLINED CODE /////////////////////////
+///////////////////////// INLINE CODE /////////////////////////
 #define assert_reader_ok if(!reader_) throw XMLException( BuildExcMsg("no file opened") )
+#define assert_writer_ok if(!writer_) throw XMLException( BuildExcMsg("no file opened") )
 
-int xmlistream::nextOpeningTag_(xmlChar const* tagname) const throw(XMLException)
+
+
+int xmlstream::nextOpeningTag_(xmlChar const* tagname) const throw(XMLException)
 {
   assert_reader_ok;
   
@@ -184,7 +117,7 @@ int xmlistream::nextOpeningTag_(xmlChar const* tagname) const throw(XMLException
 }
 
 
-int xmlistream::nextClosingTag_(xmlChar const* tagname) const throw(XMLException)
+int xmlstream::nextClosingTag_(xmlChar const* tagname) const throw(XMLException)
 {
   assert_reader_ok;
   
@@ -209,104 +142,43 @@ int xmlistream::nextClosingTag_(xmlChar const* tagname) const throw(XMLException
 }
 
 
-int xmlistream::nextTextElement_() const throw(XMLException)
+
+void xmlstream::read_start_object_tag(std::string& name, unsigned int& version) const
 {
   assert_reader_ok;
   
-  int ret, type;
-  while(1) {
-    ret = xmlTextReaderRead(reader_);
-    if(ret==0)
-      return ret;
-    if(ret<0) 
-      throw XMLException( BuildExcMsg("unable to find next text element") );
-    type = xmlTextReaderNodeType(reader_);
-    if(type==XML_READER_TYPE_TEXT) 
-      return 1; // should also add CDATA, maybe ?
-  }
-  throw XMLException( BuildExcMsg("unable to find next text element") );
+  nextOpeningTag_();
+  xmlChar const* nm = xmlTextReaderConstName(reader_);
+  name = (char*)nm;
+  version=0;
+  xmlChar* ver_str = xmlTextReaderGetAttribute(reader_, (xmlChar*)"version");
+  if(ver_str==0) return; // should throw an exc. here
+  version = (unsigned int)atoi((char*)ver_str);
 }
 
 
-int xmlistream::nextElement_(xmlChar const* tagname) const throw(XMLException)
-{
-  assert_reader_ok;
-  
-  int ret, return_value, type;
-  while(1) {
-    ret = xmlTextReaderRead(reader_);
-    if(ret==0) 
-      return ret;
-    if(ret<0)
-      throw XMLException("error while reading the next element");
-    
-    type = xmlTextReaderNodeType(reader_);
-    if(type==XML_READER_TYPE_ELEMENT) {
-      return_value=1;
-      break;
-    }
-    if(type==XML_READER_TYPE_END_ELEMENT) {
-      return_value=2;
-      break;
-    }
-  }
-  if(!tagname)
-    return return_value;
-  
-  xmlChar const* cur_tagname=xmlTextReaderConstName(reader_);
-  if( xmlStrcmp(tagname,cur_tagname)==0 )
-    return return_value;
-  throw XMLException("error while reading the next element");
-}
-
-
-void xmlistream::start_object(std::string& name, unsigned int& version) const
-{
-  assert_reader_ok;
-  
-  int ret;
-  ret = nextOpeningTag_();
-  readElementName_(name);
-  readElementVersion_(version);
-}
-
-
-void xmlistream::end_object() const
+void xmlstream::read_end_object_tag() const
 {
   assert_reader_ok;
   nextClosingTag_();
 }
 
 
-void xmlistream::start_raw_pointer() const
+void xmlstream::read_start_raw_pointer_tag() const
 {
   assert_reader_ok;
   nextOpeningTag_((xmlChar*)"pointer");
 }
 
 
-void xmlistream::end_raw_pointer() const
+void xmlstream::read_end_raw_pointer_tag() const
 {
   assert_reader_ok;
   nextClosingTag_((xmlChar*)"pointer");
 }
 
 
-void xmlistream::start_reference() const
-{
-  assert_reader_ok;
-  nextOpeningTag_((xmlChar*)"ref");
-}
-
-
-void xmlistream::end_reference() const
-{
-  assert_reader_ok;
-  nextClosingTag_((xmlChar*)"ref");
-}
-
-
-void xmlistream::start_collection(unsigned int& size) const
+void xmlstream::read_start_collection_tag(unsigned int& size) const
 {
   assert_reader_ok;
   
@@ -317,21 +189,19 @@ void xmlistream::start_collection(unsigned int& size) const
 }
 
 
-void xmlistream::end_collection() const
+void xmlstream::read_end_collection_tag() const
 {
   assert_reader_ok;
   nextClosingTag_((xmlChar*)"collection");
 }
 
 
-
-
 #define simple_type_read_def(type_, typname_, cvfunc_)  \
-void xmlistream::read(type_& v) const                   \
+void xmlstream::read(type_& v) const                    \
 {                                                       \
   assert_reader_ok;                                     \
   nextOpeningTag_();                                    \
-  xmlChar* typ = xmlTextReaderGetAttribute(reader_, (xmlChar*)"t"); \
+  xmlChar* typ = xmlTextReaderGetAttribute(reader_, (xmlChar*)"xsi:type"); \
   if(typ==0) {                                          \
     std::string message = "empty value";                \
     return;                                             \
@@ -362,27 +232,31 @@ simple_type_read_def(float4, f4,  atof)
 simple_type_read_def(float8, f8,  atof)
 simple_type_read_def(std::string, string,)
 
-#undef simple_type_read_def
-#undef assert_reader_ok
+void xmlstream::skip() const
+{
+  assert_reader_ok;
+  nextOpeningTag_();
+  nextClosingTag_();
+}
 
 
-////////////////////////////////////////////////////////////////////////////
-#define assert_writer_ok if(!writer_) throw XMLException( BuildExcMsg("no file opened") )
 
-void xmlostream::start_object(const std::string& name, unsigned int version)
+void xmlstream::write_start_object_tag(const std::string& name, unsigned int version, void const* addr)
 {
   assert_writer_ok;
-  //  xmlTextWriterWriteFormatString(writer_, "\n");
+  
   xmlTextWriterStartElement(writer_, (xmlChar*)"object");
   xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"xsi:type",
 				    "%s", (xmlChar*)name.c_str());
   xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"version",
 				    "%d", version);
+  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+					     "%lu", addr);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
 
-void xmlostream::end_object()
+void xmlstream::write_end_object_tag()
 {
   assert_writer_ok;
   xmlTextWriterEndElement(writer_);
@@ -390,16 +264,18 @@ void xmlostream::end_object()
 }
 
 
-void xmlostream::start_raw_pointer(const char* name)
+void xmlstream::write_start_raw_pointer_tag(const char* name, void const* addr)
 {
   assert_writer_ok;
-  //  xmlTextWriterWriteFormatString(writer_, "\n");
   xmlTextWriterStartElement(writer_, (xmlChar*)"pointer");
-  if(name) writeNameAttribute_(name);
+  if(name) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"name", "%s", name);
+  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+					     "%lu", addr);
+  
 }
 
 
-void xmlostream::end_raw_pointer()
+void xmlstream::write_end_raw_pointer_tag()
 {
   assert_writer_ok;
   xmlTextWriterEndElement(writer_);
@@ -407,59 +283,28 @@ void xmlostream::end_raw_pointer()
 }
 
 
-void xmlostream::start_reference(const char* name)
+void xmlstream::write_start_collection_tag(unsigned int sz, const char* name, void const* addr)
 {
   assert_writer_ok;
-  //  xmlTextWriterWriteFormatString(writer_, "\n");
-  xmlTextWriterStartElement(writer_, (xmlChar*)"ref");
-  if(name) writeNameAttribute_(name);
-}
-
-
-void xmlostream::end_reference()
-{
-  assert_writer_ok;
-  xmlTextWriterEndElement(writer_);
-  xmlTextWriterWriteFormatString(writer_, "\n");
-}
-
-
-void xmlostream::start_collection(unsigned int sz, const char* name)
-{
-  assert_writer_ok;
-  //  xmlTextWriterWriteFormatString(writer_, "\n");
   xmlTextWriterStartElement(writer_, (xmlChar*)"collection");
-  writeSizeAttribute_(sz);
-  if(name) writeNameAttribute_(name);
+  xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"size", "%u", sz);
+  if(name) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"name", "%s", name);
+  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+					     "%lu", addr);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
 
-void xmlostream::end_collection()
+void xmlstream::write_end_collection_tag()
 {
   assert_writer_ok;
   xmlTextWriterEndElement(writer_);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
-
-
-#define simple_type_write_def_OLD(type, tagname, format)       \
- void xmlostream::write(type v, const char* name)          \
- {                                                         \
-   if(!writer_) {                                          \
-     std::string message = "no file opened";               \
-     return;                                               \
-   }                                                       \
-   xmlTextWriterStartElement(writer_, (xmlChar*)#tagname); \
-   if(name)  writeNameAttribute_(name);                    \
-   xmlTextWriterWriteFormatString(writer_, #format, v);    \
-   xmlTextWriterEndElement(writer_);                       \
-   xmlTextWriterWriteFormatString(writer_, "\n");          \
- }\
 
 
 #define simple_type_write_def(type, typname, format)                         \
-void xmlostream::write(type v, const char* name)                             \
+void xmlstream::write(type v, const char* name, void const* addr)            \
 {                                                                            \
    assert_writer_ok;                                                         \
    if(name==0) {                                                             \
@@ -468,8 +313,10 @@ void xmlostream::write(type v, const char* name)                             \
    else {                                                                    \
      xmlTextWriterStartElement(writer_, (xmlChar*)name);                     \
    }                                                                         \
-   xmlTextWriterWriteAttribute(writer_, (xmlChar*)"t", (xmlChar*)#typname);  \
+   xmlTextWriterWriteAttribute(writer_, (xmlChar*)"xsi:type", (xmlChar*)#typname);  \
    xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"v",#format,v);      \
+   if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",     \
+                                              "%lu", addr);                  \
    xmlTextWriterEndElement(writer_);                                         \
    xmlTextWriterWriteFormatString(writer_, "\n");                            \
 }                                                                            \
@@ -485,7 +332,7 @@ simple_type_write_def(uint8,  u8, %lu)
 simple_type_write_def(float4, f4, %.6E)
 simple_type_write_def(float8, f8, %.12E)
 
-void xmlostream::write(std::string const& v, const char* name)
+void xmlstream::write(std::string const& v, const char* name, void const* addr)
 {
   assert_writer_ok;
   if(name==0) {
@@ -494,54 +341,20 @@ void xmlostream::write(std::string const& v, const char* name)
   else {
     xmlTextWriterStartElement(writer_, (xmlChar*)name);
   }
-  xmlTextWriterWriteAttribute(writer_, (xmlChar*)"t", (xmlChar*)"string");
+  xmlTextWriterWriteAttribute(writer_, (xmlChar*)"xsi:type", (xmlChar*)"string");
   xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"v","%s",v.c_str());
+  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+					     "%lu", addr);
   xmlTextWriterEndElement(writer_);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
 
+#undef simple_type_read_def
+#undef assert_reader_ok
 #undef simple_type_write_def
 #undef assert_writer_ok
 
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ifdef GARBAGE
-
-#define simple_type_read_def_OLD(type_, tagname_, cvfunc_) \
-  void xmlistream::read(type_& v) const \
-  { \
-    if(!reader_) {  \
-      std::string message = "no file opened"; \
-      return; \
-    } \
-    nextOpeningTag_((xmlChar*)#tagname_); \
-    nextTextElement_(); \
-    xmlChar const* value = xmlTextReaderConstValue(reader_); \
-    if(value==0) { \
-      std::string message = "empty value"; \
-      return; \
-    } \
-    v = (type_)cvfunc_((const char*)value); \
-    nextClosingTag_(); \
-  } \
 
 #endif
 
