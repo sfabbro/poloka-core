@@ -16,7 +16,7 @@
 #include "listmatch.h"
 #include "imagematch.h"
 
-#define N_MCLOOP 1
+//#define N_MCLOOP 3
 
 
 #include "toadscards.h"
@@ -32,6 +32,12 @@ static AddMethod ReadMethod()
   if (strstr(line.c_str(),"WITH_DAOPSF"))
     meth = WDaoPsf ;
   return(meth);
+}
+static int ReadNLOOP()
+{
+  DataCards Data(DefaultDatacards());
+  int n = Data.IParam("MC_N_LOOP");
+  return(n);
 }
   
   
@@ -217,9 +223,10 @@ MCSub::MCSub(Sub const & ASub, const int imc): Sub(ASub), original_globnewname(A
   GlobalMCResultName() = "";
   // les resultats obtenus lors de la boucle sur imc seront 
   // mis en append dans GlobalMCResultName.
-  if ( N_MCLOOP > 1)
+
+  if ( I_MC >=  0) // I_MC = -1 si on ne boucle pas
     {
-      GlobalMCResultName() = "global_mcresult.list";
+      GlobalMCResultName() = MCDir()+"/global_mcresult.list";
       // lors du 1er passage ds la boucle on l'enleve si il en existe deja un.
       if (I_MC == 0) 
 	if ( FileExists(GlobalMCResultName()))
@@ -413,6 +420,7 @@ void MCSub::DoIt()
 
 void MCProcess(Sub const & ASub)
 {
+  int N_MCLOOP =  ReadNLOOP();
   if ( N_MCLOOP <=  1 )
     {
       MCSub submc = MCSub(ASub);	  
@@ -423,6 +431,7 @@ void MCProcess(Sub const & ASub)
     } 
   else
     {
+      cerr << "Looping " <<  N_MCLOOP << " times for MC" << endl ;
       string globalname ;
       for (int i = 0; i < N_MCLOOP ; i++)
 	{
