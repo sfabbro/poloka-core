@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cmt.m4,v 1.3 2004/03/09 17:01:36 guy Exp $
+# $Id: cmt.m4,v 1.4 2004/03/10 16:33:50 guy Exp $
 # 
 # autoconf macro to check  cmt
 # 
@@ -48,15 +48,12 @@ if test -n "$CMT_PACKAGE_NOT_FOUND" ; then
 fi
 
 # get includes and use_linkopts from cmt
-CMT_INCLUDES=`cd cmt; cmt show macro_value includes`
-CMT_LDFLAGS=`cd cmt; cmt show macro_value use_linkopts | sed 's/-Wl,-rpath/-R/g'`
+CMT_CFLAGS=`cd cmt; cmt-config.csh --cflags`
+CMT_LDFLAGS=`cd cmt; cmt-config.csh --ldflags | sed 's/-Wl,-rpath/-R/g'`
 
 # save these values for usage in Makefile.am
-AC_SUBST(CMT_INCLUDES)
+AC_SUBST(CMT_CFLAGS)
 AC_SUBST(CMT_LDFLAGS)
-
-AC_SUBST(CMT_NEW_INCLUDES)
-AC_SUBST(CMT_NEW_LDFLAGS)
 
 AC_MSG_RESULT(ok)
 ]

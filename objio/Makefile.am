@@ -15,7 +15,7 @@ libtoadio_la_LDFLAGS = @XML_LIBS@
 include_HEADERS = \
  persister.h dict.h objio.h dictio.h reader.h \
  xmlstream.h toadtypes.h persistence.h typemgr.h \
- cpptype.h cppclassmember.h cppclass.h
+ cpptype.h cppclassmember.h cppclass.h toadexceptions.h xmlexceptions.h objio_defs.h
 
 noinst_HEADERS = \
  codegen.h

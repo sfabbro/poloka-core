@@ -15,7 +15,6 @@
 #include "standardstar.h"
 #include "starmatch.h"
 #include "frame.h"
-
 #include "image.h"
 #include "dimage.h"
 #include "fitsimage.h"
@@ -36,7 +35,6 @@
 #include "kernelfit.h"
 #include "psfmatch.h"
 #include "imagesubtraction.h"
-
 #include "datacards.h"
 #include "datdetec.h"
 #include "detection.h"
@@ -44,15 +42,12 @@
 #include "dynccd.h"
 #include "fastfinder.h"
 #include "fringeutils.h"
-
 #include "gtransfo.h"
 #include "gtransfocomposition.h"
 #include "histo1d.h"
 #include "histo2d.h"
 #include "histo4d.h"
-
 #include "reducedutils.h"
-#include "simulation.h"
 #include "stringlist.h"
 #include "sub.h"
 %}
@@ -106,6 +101,5 @@
 %include "histo4d.h"
 
 %include "reducedutils.h"
-%include "simulation.h"
 %include "stringlist.h"
 %include "sub.h"

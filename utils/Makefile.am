@@ -6,15 +6,15 @@ bin_PROGRAMS = \
  elixir_to_toads findsatellite flatfield fringefinder \
  image_align image_combine image_register image_select \
  image_stats image_sub image_sum lbl2toads maglimeval \
- make_calibration make_catalog make_cosmic \
+ make_catalog make_cosmic \
  make_dead makefringe \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
  newmake_sub preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@ @CMT_INCLUDES@
-AM_LDFLAGS = -L$(top_builddir)/src -ltoads  -L$(top_builddir)/objio -ltoadio  -L$(top_builddir)/cern_stuff -lcernstuff  -L@libdir@ @LIBS@ @CMT_LDFLAGS@ @CMT_NEW_LDFLAGS@ @CERNLIB_LDFLAGS@ @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ -lg2c
+AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@ @CMT_CFLAGS@
+AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio -L$(top_builddir)/cern_stuff -L@libdir@ -ltoads -ltoadio   -lcernstuff  @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@ @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ -lg2c
 
 
 
@@ -46,7 +46,6 @@ image_sum_SOURCES = image_sum.cc
 lbl2toads_SOURCES = lbl2toads.cc
 #lmatch_SOURCES = lmatch.cc
 maglimeval_SOURCES = maglimeval.cc 
-make_calibration_SOURCES = make_calibration.cc
 make_catalog_SOURCES = make_catalog.cc
 make_cosmic_SOURCES = make_cosmic.cc
 #make_daophot_SOURCES = make_daophot.cc
