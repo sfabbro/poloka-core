@@ -1,7 +1,7 @@
 EXTRA_DIST =
 
 bin_PROGRAMS = \
- header im2tup astrom changekey checker create_precise_std_file \
+ header astrom changekey checker create_precise_std_file \
  dbimstat dead_correction defringe defringe2 detectonedb \
  elixir_to_toads findsatellite flatfield fringefinder \
  image_align image_combine image_register image_select \
@@ -14,14 +14,9 @@ bin_PROGRAMS = \
 
 
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@ @CMT_CFLAGS@
-AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio -L$(top_builddir)/cern_stuff -L@libdir@ -ltoads -ltoadio   -lcernstuff  @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@ @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ -lg2c
-
-
-
+AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio -L$(top_builddir)/cern_stuff -L@libdir@ -ltoads -ltoadio   -lcernstuff  @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ -lg2c
 
 header_SOURCES = header.cc
-im2tup_SOURCES = im2tup.cc
-im2tup_LDADD = -L/coda/software/cern/pro/lib -lpacklib -lnsl -lcrypt -ldl -lg2c
 astrom_SOURCES = astrom.cc 
 changekey_SOURCES = changekey.cc
 checker_SOURCES = checker.cc
@@ -51,7 +46,6 @@ make_cosmic_SOURCES = make_cosmic.cc
 #make_daophot_SOURCES = make_daophot.cc
 make_dead_SOURCES = make_dead.cc
 makefringe_SOURCES = makefringe.cc
-#make_lightcurve_SOURCES = make_lightcurve.cc
 #make_mosaique_SOURCES = make_mosaique.cc
 #make_sub_SOURCES = make_sub.cc
 makesub_SOURCES = makesub.cc
@@ -60,14 +54,10 @@ matchNimages_SOURCES = matchNimages.cc
 matchradec_SOURCES = matchradec.cc
 matchstandard_SOURCES = matchstandard.cc
 matchusno_SOURCES = matchusno.cc
-#mkskyhist_SOURCES = mkskyhist.cc
-#mosaique_int_SOURCES = mosaique_int.cc
 newmake_sub_SOURCES = newmake_sub.cc
 preptoads_SOURCES = preptoads.cc
 removeback_SOURCES = removeback.cc
 selection_SOURCES = selection.cc
-#sex2dao_SOURCES = sex2dao.cc
-#sky_hist_SOURCES = sky_hist.cc
 skylev_SOURCES = skylev.cc
 sum_images_SOURCES = sum_images.cc
 trim_SOURCES = trim.cc
