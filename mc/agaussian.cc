@@ -1,9 +1,10 @@
 #include "agaussian.h"
 #include "image.h"
+#include "basestar.h"
 
 #include <cmath> 
 
- 
+
 AGaussian::AGaussian()
 {
   xc=0.; 
@@ -76,10 +77,8 @@ void AGaussian::AddToImage(Image &image,
 {
   // pour ne pas ecrire le message de saturation 36 fois
  int flagsaturated = 0 ;
-  //Determination des coordonnees de la vignette
-  // sur l'image de depart = image modele
  double w = window_size();
- cerr << " window_size " << w << endl ;
+ //cerr << " window_size " << w << endl ;
   int xstart = int(xc - w + 0.5);
   int ystart = int(yc - w + 0.5);
 
@@ -106,8 +105,8 @@ void AGaussian::AddToImage(Image &image,
 	      image(i,j) = saturation ;
 	      if (psat != NULL)
 		{
-		  if (flagsaturated == 0 )
-		    if ((*psat)(i,j) == 0 ) // not saturated before, saturated because of SNe
+		  if ((flagsaturated == 0 ) && ((*psat)(i,j) == 0 ))
+		    // not saturated before, saturated because of SNe
 		      {
 			cerr << "SN is saturated (i= " 
 			     << i << ", j= " 
@@ -116,7 +115,8 @@ void AGaussian::AddToImage(Image &image,
 			     << image(i,j) << ", new image val = " 
 			     << image(i,j)+ val  << endl ;
 			flagsaturated = 1;
-		      }	
+		      }
+	
 		    
 		  (*psat)(i,j) = 1 ;
 		}
@@ -135,3 +135,22 @@ void AGaussian::AddToImage(Image &image,
 }
 
 
+
+void AddListWGaussianToImage(double sigmax, double sigmay, double rho,
+			     BaseStarList *list,
+			     Image & dest,   
+			     Image * psat, 
+			     double satlevel) 
+{
+  AGaussian gauss;
+  gauss.sigma_x = sigmax ;
+  gauss.sigma_y = sigmay ;
+  gauss.rho = rho  ;
+  for (BaseStarCIterator i = list->begin(); i != list->end(); ++i)
+    {
+      gauss.xc = (*i)->x ;
+      gauss.yc =  (*i)->y ;
+      gauss.flux = (*i)->flux ;
+      gauss.AddToImage(dest, psat, satlevel);
+    }
+}

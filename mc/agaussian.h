@@ -8,7 +8,9 @@
 #include <math.h>  
 
 
+
 class Image;
+
 
 //====================== quick gaussian simulation for debug
 class  AGaussian {
@@ -28,11 +30,18 @@ public:
   double Value(double xin, double yin)const {return(Norma()*ExpValue(xin, yin)+fond);}
   double IntegValue(int i, int j)const {return(Norma()*ExpIntegValue(i, j)+fond);}
   void AddToImage(Image &image, Image * psat=NULL, double saturation=1) const;
-  private :
+  //private :
       double window_size() const ;  
 };
 
 
+#include "basestar.h"
+
+void AddListWGaussianToImage(double sigmax, double sigmay, double rho,
+			     BaseStarList *list, 
+			     Image & dest,  
+			     Image * psat=NULL, 
+			     double satlevel=-1) ;
 
 
 
