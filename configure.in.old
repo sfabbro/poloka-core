@@ -221,7 +221,6 @@ src/Makefile
 cern_stuff/Makefile
 dao_stuff/Makefile
 telinst/Makefile
-doc/Makefile
 datacards/Makefile
 utils/Makefile
 objio/Makefile
