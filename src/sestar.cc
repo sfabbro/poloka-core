@@ -567,14 +567,11 @@ void
 SetStarsBackground(SEStarList & stl, double const background)
 {
   SEStarIterator it ;
-  int nflag=0;
   for(it = stl.begin() ; it != stl.end() ; it++)
     {
       SEStar *star = *it;
       star->Fond() =  background ;
-      if (star->FlagBad()>0) nflag++;
     }
-  cout << nflag << " etoiles flagees. " << endl ;
 }
 
 /*************** Star Finder, Galaxy Finder  *********/
