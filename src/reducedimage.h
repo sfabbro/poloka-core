@@ -67,6 +67,8 @@ public :
   //!
   ReducedImage(const string &Name);
   
+  ReducedImage(const ReducedImage& other);
+
   bool SetFitsHeader(FitsHeader* header,FitsFileMode Mode); // set the  OpenedFitsHeader, this is needed in compression mode 
   bool CloseFitsHeader(); // close fitsheader;
   

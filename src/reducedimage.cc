@@ -53,9 +53,20 @@ ReducedImage::ReducedImage(const string &Name) : DbImage(Name)
   init();
 } 
 
+ReducedImage::ReducedImage(const ReducedImage &other) : 
+  DbImage(other)
+{
+  OpenedFitsHeader=0;
+  OpenedFitsHeader_is_mine=false;
+  OpenedFitsHeader_Mode=RO;
+  init(); 
+} 
 
 ReducedImage *ReducedImage::Clone() const
 {
+#ifdef DEBUG
+  cout << " > ReducedImage::Clone() Name = " << Name() << endl;
+#endif 
   string storedTypeName = TypeName();
   if (TypeName() != storedTypeName)
     {
@@ -67,7 +78,8 @@ ReducedImage *ReducedImage::Clone() const
     }
   
   ReducedImage *rim = new ReducedImage(*this);
-  rim->OpenedFitsHeader_is_mine=false;
+  //rim->OpenedFitsHeader_is_mine=false;
+  //rim->OpenedFitsHeader = 0;
   return rim;
 }
 
