@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cernlib.m4,v 1.4 2004/02/23 12:32:02 nrl Exp $
+# $Id: cernlib.m4,v 1.5 2004/02/23 16:32:48 guy Exp $
 # 
 # autoconf macro to check the cernlib installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -21,11 +21,11 @@ AC_DEFUN([CHECK_CERNLIB],[
  if test -n "$cernlib_prefix" ; then
   CERNLIB_LDFLAGS="-L$cernlib_prefix -lpacklib -lnsl -lcrypt -ldl"
  elif test -n "$CERN" ; then
-  CERN_LDFLAGS="-L$CERN/pro/lib -lpacklib -lnsl -lcrypt -ldl"
+  CERNLIB_LDFLAGS="-L$CERN/pro/lib -lpacklib -lnsl -lcrypt -ldl"
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
-  CERN_LDFLAGS="-L$prefix/lib -lpacklib -lnsl -lcrypt -ldl"
+  CERNLIB_LDFLAGS="-L$prefix/lib -lpacklib -lnsl -lcrypt -ldl"
  fi
- LDFLAGS="$LDFLAGS $CERN_LDFLAGS"
+ LDFLAGS="$LDFLAGS $CERNLIB_LDFLAGS"
 
 
 # FIXME: this code breaks the typechecks. Investigate.
