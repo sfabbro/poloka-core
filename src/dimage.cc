@@ -389,11 +389,10 @@ void Kernel::readFits(const string &FitsName)
 
 void Kernel::readFromImage(const string& FitsFileName, const Window &Rect)
 {
-  cout << "Kernel::readFromImage Window " 
-       << Rect.xstart << " "
-       << Rect.ystart << " "
-       << Rect.xend << " "
-       << Rect.yend << endl;
+
+#ifdef DEBUG
+  cout << " Kernel::readFromImage() :  Window " << Rect << endl;
+#endif
 
   FitsHeader head(FitsFileName);
   int nix,niy; head.ImageSizes(nix,niy);
