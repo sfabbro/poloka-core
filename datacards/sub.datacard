@@ -6,11 +6,33 @@
 # datacard for subtraction calculation 
 #
 #
+###########     Parameters for fake supernova generation
 #
-#######     Parameters for adding fakes
-@NUMBER_OF_FAKES 2
-@MIN_FAKE_MAG 18
-@MAX_FAKE_MAG 20
+#choices are: FAKES_RANDOM, FAKES_INHOST, 
+#             FAKES_ADAPTED, FAKES_ONGRID 
+@METHOD FAKES_RANDOM
+# number of fake SNe added on the images
+@NUMBER_OF_FAKES 500
+# magnitude range of SNe magnitude (g,r,i filters)
+@MIN_FAKE_MAG_I 22
+@MAX_FAKE_MAG_I 26
+@MIN_FAKE_MAG_R 23
+@MAX_FAKE_MAG_R 27
+@MIN_FAKE_MAG_G 23
+@MAX_FAKE_MAG_G 27
+# in case of a generation adapted to the host flux
+# SNe mag simulated in the range [host mag. + MIN_DELTA_MAG, host mag. + MAX_DELTA_MAG] AND [MIN_FAKE_MAG,MAX_FAKE_MAG] 
+@MIN_DELTA_MAG 0
+@MAX_DELTA_MAG 1
+# in case of a grid generation:
+@XSIZE_GRID 0
+@YSIZE_GRID 0
+@FAKE_DELTA_X 100
+@FAKE_DELTA_Y 100
+#
+#
+# end of DatSim
+##
 #
 #
 ###########     KernelFits params
