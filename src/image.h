@@ -218,7 +218,12 @@ class Image {
 #endif
 
   //! sum  pixels values
-  double SumPixels();
+  double SumPixels(); 
+  //! sum  pixels on a square centered on (x,y), side = 2*demi_size+1.
+  //! not optimized but bounds are checked.
+  //! used for debugging in simulation.cc
+  double SumPixels(double x, double y, double demi_size) const ;
+
 
   //! sum of the squared pixel values.
   double SumSquaredPixels() const;
