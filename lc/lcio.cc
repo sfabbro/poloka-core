@@ -1,5 +1,7 @@
 #include <string>
+
 using namespace std;
+
 #include <astroutils.h>   // JulianDay
 
 #include "lcio.h"
@@ -128,9 +130,11 @@ istream& lc_read(istream& Stream, RefStarList& Objects, ReducedImageList& Images
 		   << Objects.size() << " object(s) and " 
 		   << Images.size()  << " images\n";
 
-
-  cout << "   debug : loaded the following lightfile: \n";
+#ifdef DEBUG
+  cout << " lcread() : debug : loaded the following lightfile: \n";
   lc_write(cout, Objects, Images);
+#endif
+
 
   return Stream;
 }
