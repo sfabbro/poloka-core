@@ -6,17 +6,17 @@
 
 PhotStar::PhotStar()
   : BaseStar(0,0,0), sky(0.), varflux(0.), varx(0.), vary(0.), 
-    covxy(0.), varsky(0.)
+    covxy(0.), varsky(0.), photomratio(1.)
 {}
 
 PhotStar::PhotStar(const BaseStar &BStar)
   : BaseStar(BStar), sky(0.), varflux(0.), varx(0.), vary(0.), 
-    covxy(0.), varsky(0.)
+    covxy(0.), varsky(0.), photomratio(1.)
 {}
 
 PhotStar::PhotStar(const SEStar &SStar)
   : BaseStar(SStar), sky(SStar.Fond()), varflux(SStar.EFlux()*SStar.EFlux()),
-    varx(0.), vary(0.), covxy(0.), varsky(0.)
+    varx(0.), vary(0.), covxy(0.), varsky(0.), photomratio(1.)
 {}
 
 void PhotStar::writen(ostream &Stream) const

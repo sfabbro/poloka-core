@@ -185,17 +185,55 @@ ostream& operator << (ostream& Stream, const LightCurveList& Fiducials)
   return Stream;
 }
 
+#define USE_SKMAGATT
+
 double LightCurve::computeElixirZeroPoint() const {
   // > COMMENT   Formula for Photometry, based on keywords given in this header:
   // > COMMENT   m = -2.5*log(DN) + 2.5*log(EXPTIME)
   // > COMMENT   M = m + PHOT_C + PHOT_K*(AIRMASS - 1) + PHOT_X*(PHOT_C1 - PHOT_C2)
   
+  
+  string photometric_image_fitsname = Ref->Image()->FitsName(); // default
+  double photomratio = 1; // flux(photometric_image)/flux(reference_image=Ref->Image())
+  
+#ifdef USE_SKMAGATT
+
+  // we first try to find the image with the smallest attenuation
+  // as given by the elixir keyword SKMAGATT (this keyword is not in all images)
+
+  double min_attenuation = 12; 
+  double attenuation;
+  
+  for (LightCurve::const_iterator it = begin(); it != end(); ++it) {
+  //for (ReducedImageCIterator im=Images.begin(); im != Images.end(); ++im) {
+    const Fiducial<PhotStar> *fs = *it;
+#ifdef DEBUG
+    cout << fs->Image()->FitsName() << " photomratio = " << fs->photomratio << endl;
+#endif
+    FitsHeader head(fs->Image()->FitsName());
+    if(head.HasKey("SKMAGATT")) {
+      attenuation = head.KeyVal("SKMAGATT");
+      if(attenuation<min_attenuation) {
+	min_attenuation = attenuation;
+	photometric_image_fitsname = fs->Image()->FitsName();
+	photomratio = fs->photomratio;
+      }
+    }
+  }
+  if(min_attenuation>10) {
+    cout << "LightCurve::computeElixirZeroPoint WARNING no info on attenuation, using reference image zero point" << endl;
+  }
+  cout << "LightCurve::computeElixirZeroPoint min_attenuation= " << min_attenuation << endl;
+  cout << "LightCurve::computeElixirZeroPoint photometric_image= " << photometric_image_fitsname << endl; 
+  
+#endif
+  
   // we do not take into account color terms !!!
-  FitsHeader refhead(Ref->Image()->FitsName());
+  FitsHeader refhead(photometric_image_fitsname);
   double expo =  refhead.KeyVal("TOADEXPO");
   double PHOT_C =  refhead.KeyVal("PHOT_C");
   double PHOT_K =  refhead.KeyVal("PHOT_K");
   double AIRMASS =  refhead.KeyVal("AIRMASS");
   
-  return 2.5*log10(expo) + PHOT_C + PHOT_K*(AIRMASS-1.);
+  return 2.5*log10(expo) + PHOT_C + PHOT_K*(AIRMASS-1.) + 2.5*log10(photomratio); // if photomratio>1, flux in ref < flux photometric => mag in ref > mag  photometric
 }

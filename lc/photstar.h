@@ -17,7 +17,9 @@ public:
 
   PhotStar(const SEStar &SStar);
 
-  double sky, varflux, varx, vary, covxy, varsky;
+  double sky, varflux, varx, vary, covxy, varsky, photomratio;
+  
+  // photomratio needed to keep the information from simfitvignet -> lightcurve (we have to move this somewhere else)
 
   friend ostream& operator << (ostream &Stream, const PhotStar &PStar)
    { PStar.dumpn(Stream); return Stream; }

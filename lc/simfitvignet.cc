@@ -478,6 +478,7 @@ void SimFitVignet::BuildKernel()
   }
 
   psfmatch.KernelToWorst(Kern, Star->x, Star->y);
+  Star->photomratio = Kern.sum();
   kernel_updated = true;
 }
 
