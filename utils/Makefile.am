@@ -11,7 +11,7 @@ bin_PROGRAMS = \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
  preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve \
- split_fits2 rustine_for_fringe assign dbls split_fits 
+ split_fits2 rustine_for_fringe assign dbls split_fits test_matvect 
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
@@ -34,6 +34,7 @@ make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 make_daophot_LDFLAGS =  -ltoadsdao
 
 
+test_matvect_SOURCES = test_matvect.cc
 
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
