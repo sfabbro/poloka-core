@@ -17,7 +17,7 @@ class LightCurve : public list<CountedRef<Fiducial<PhotStar> > > {
 
 public:
 
-  //! empty constructor does stictly nothing
+  //! empty constructor does strictly nothing
   LightCurve() {};
 
   //! load the Ref with a RefStar, does not contain any measurements
