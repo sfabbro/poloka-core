@@ -53,28 +53,29 @@ bool Vignet::Load(const PhotStar *AStar)
 }
 
 
-void Vignet::Resize(const int Hx, const int Hy)
+void Vignet::Resize(const int Hx_new, const int Hy_new)
 {
 #ifdef FNAME
-  cout << " > Vignet::Resize(const int Hx, const int Hy) Hx,Hy = " << Hx << "," << Hy << endl;
+  cout << " > Vignet::Resize(const int Hx_new, const int Hy_new) Hx_new,Hy_new = " << Hx_new << "," << Hy_new << endl;
 #endif
 
-  if  (Hx < 0 || Hy < 0) 
+  if  (Hx_new < 0 || Hy_new < 0) 
     {
-      cerr << " Vignet::Resize(" << Hx << "," << Hy << ") : Error : impossible \n";
+      cerr << " Vignet::Resize(" << Hx_new << "," << Hy_new << ") : Error : impossible \n";
       return;
     } 
   if (!Star) {
     cerr << " Vignet::Resize : Error no star loaded " << endl;
   }
   
-  hx=Hx;
-  hy=Hy;
+  hx=Hx_new;
+  hy=Hy_new;
   
   Load(Star);
   
 #ifdef DEBUG
-  cout << " in Vignet::Resize (2) Data.HSizeX(),Data.HSizeY() = " << Data.HSizeX() << "," << Data.HSizeY()<< endl;
+  cout << "  in Vignet::Resize, Data.HSizeX(),Data.HSizeY() = " << Data.HSizeX() << "," << Data.HSizeY()<< endl;
+  cout << "  in Vignet::Resize, Hx(),Hy() = " << Hx() << "," << Hy()<< endl;
 #endif
   
 }

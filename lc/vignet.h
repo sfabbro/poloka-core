@@ -98,12 +98,6 @@ public:
   //! enable "cout << Vignet << endl"
   friend ostream& operator << (ostream & stream, const Vignet& Vig);
 
-  //! current half size of the vignet along x
-  int Hx() const {return hx;};
-  
-  //! current half size of the vignet along y
-  int Hy() const {return hy;};
-  
 };
 
 //! compute and write the model into a larger FITS image
