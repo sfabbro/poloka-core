@@ -1,0 +1,67 @@
+.TH "astroutils.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+astroutils.h \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <string>\fR
+.br
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "bool \fBIsLeapYear\fR (const int year)"
+.br
+.ti -1c
+.RI "long \fBJulianDay\fR (const int day, const int month, const int year)"
+.br
+.ti -1c
+.RI "double \fBJulianDay\fR (const int day, const int month, const int year, const int hour, const int min, const double sec)"
+.br
+.ti -1c
+.RI "double \fBJulianDay\fR (const \fBFitsHeader\fR &Header)"
+.br
+.RI "\fIcomputes the julian date given a header.\fR"
+.ti -1c
+.RI "double \fBRedJulianDay\fR (const \fBFitsHeader\fR &Header)"
+.br
+.RI "\fIcomputes the reduced julian date given a header.\fR"
+.ti -1c
+.RI "double \fBUtStringToDeci\fR (const string UtString)"
+.br
+.ti -1c
+.RI "double \fBRaStringToDeg\fR (const string RaString)"
+.br
+.RI "\fI-.\fR"
+.ti -1c
+.RI "double \fBDecStringToDeg\fR (const string DecString)"
+.br
+.RI "\fI-.\fR"
+.ti -1c
+.RI "string \fBUtDeciToString\fR (double UtDeci)"
+.br
+.RI "\fI-.\fR"
+.ti -1c
+.RI "string \fBRaDegToString\fR (double RaDeg)"
+.br
+.ti -1c
+.RI "string \fBDecDegToString\fR (double DecDeg)"
+.br
+.RI "\fI-.\fR"
+.ti -1c
+.RI "void \fBGetRaDecInDeg\fR (\fBFitsHeader\fR const &Header, double &RaInDeg, double &DecInDeg)"
+.br
+.RI "\fI-.\fR"
+.ti -1c
+.RI "void \fBRaDec2000\fR (\fBFitsHeader\fR const &Header, double &RaInDeg, double &DecInDeg)"
+.br
+.RI "\fIreturns alpha delta in 2000 whatever the equinox used in header.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

@@ -1,0 +1,176 @@
+#
+************* TOADS DATACARD  ***********
+#
+#
+#
+# datacard for subtraction calculation 
+#
+#
+#
+#######     Parameters for adding fakes
+@NUMBER_OF_FAKES 2
+@MIN_FAKE_MAG 18
+@MAX_FAKE_MAG 20
+#
+#
+###########     KernelFits params
+#
+# the basis used to fit is made from Pol(u,v)*Gaussian.
+#
+#  sigma of gaussians (in units of the guessed kernel sigma):
+#
+@KFIT_SIG_GAUSS 0.7 1.5 2. 
+#
+# corresponding degrees of polynomials:
+#
+@KFIT_DEG_GAUSS 6 4 2
+#
+# size of the kernel in number of (guessed) kernel sigma
+#
+@KFIT_NSIG 5.
+#
+# degree of kernel spatial variations
+#
+@KFIT_KERNVAR_DEG 2
+#
+# degree of polynomial used to fit differential image backgrounds
+@KFIT_BACKVAR_DEG 2
+#
+##################    end of KernelFit #################
+
+######### DatDet in detection.cc (detection on subtractions only)  #######
+# min distance to bad pixel (in sig seeing)
+@DATDET_NRADBAD 2.
+#
+# integration radius for weighted flux (in sig seeing)
+@DATDET_NRADWEIGHT 4.0
+#
+# integration radius for aper flux in sig seeing (mostly not used)
+@DATDET_NRADAPER 2.5
+#
+# min distance between 2 detections (in sig seeing)
+#
+@DATDET_NMINDISTDOUBLE 2.
+#
+# cut of detections on the convolved image (in S/N)
+@DATDET_NSIG_DET 2.0
+#
+# final flux cut of detections in S/N (usually larger than NSIG_DET)
+@DATDET_NSIG 2.5
+#
+# size of the inner radius removed from the square area used to estimate background (in sig seeing) (if < DATDET_NRADWEIGHT then = DATDET_NRADWEIGHT)
+@DATDET_BACKRINGMIN 5
+#
+# half side (in sig seeing) of the square area used to estimate background. If =0, a constant background == 0 is assumed.
+@DATDET_BACKRINGMAX 8
+# 
+# THIS KEY WORD IS OBSOLETE
+# size of the area (half side in pixels) used to estimate background.
+# 0 means no local background estimation (returned value = 0).
+# typical sensible values : 12 increases the noise by 5%, 16 by 2.5 %
+# DATDET_BACKSIDE 16
+#
+# compatibility factor between S/N on partial subs.
+# i.e.: sig2nois_partial>sig2nois_global/compFactor
+#
+@DATDET_COMPFACTOR 3
+#
+# end of DatDet 
+######################################
+#
+#
+#  DatStack (in imagesum.cc)
+#
+#   Choice of the Weighting Method
+# 1 : PointSourceOptimal
+# 2 : ExtendedSourceOptimal
+# 3 : NoGlobalWeighting
+# 4 : NoWeightsAtAll
+#
+@WEIGHTING_METHOD 2 
+#
+#   Choice of the Stacking Method
+# 1 : WeightedAverage
+# 2 : ClippedWeightedAverage
+# 3 : Median
+#
+@STACKING_METHOD 1 
+##
+#######   end of DatStack
+#
+#
+#
+#
+#
+#
+#**** OBSOLETE parameters for detection 
+#
+#
+@DETEC_PRLEVEL 0
+#************** Detector choice 
+#  (0:SE, 1:SimpleDetection, 2:CvDetection, 3:SEDetection+Cv Cut)
+#
+@DETEC_TYPE 2
+#************** Detection parameters for SExtractor
+# scale factor of image sigma (for SExtractor)
+@DETEC_SCALESIG 0.4
+# radius for local flux, noise etc. computation (in sigma_seeing)
+@DETEC_RAD_NSEEING 2.5
+#
+#************* Detection parameters for SimpleDetection and CvDetection:
+# radius in which bad pixels are excluded (in sigma_seeing)
+@DETEC_RBAD_NSEEING 2.
+# idem (absolute value)
+@DETEC_RBAD 0.
+#  radius  in which the pixel must be a local-maximum (in sigma_seeing)
+@DETEC_RMAXLOC_NSEEING 2.
+# idem (absolute value) 
+@DETEC_RMAXLOC 1. 
+# radius for local flux, noise etc. computation (in sigma_seeing)
+@DETEC_RAD_NSEEING 2.5
+# idem (absolute value) 
+@DETEC_RAD 0.
+# amplitude cut in sigma background
+@DETEC_SAMP_NSIG 2.
+# amplitude cut (absolute value) - only for SimpleDetection
+@DETEC_SAMP 0.
+# flux cut in sigma on convolved image 
+# (if SimpleDetection, the flux cut is computed according 
+# to DETEC_SAMP, DETEC_RBAD and seeing)
+@DETEC_SFLUX_NSIG 3.
+#idem  (absolute value) -  not used any more
+@DETEC_SFLUX 0.
+#
+#
+#************** Cut Parameters
+# min. distance between detection on new, new1 and new2 
+@DETEC_DMIN 2.
+# radius for local noise computation
+@DETEC_RAD 0.
+# min. signal to noise cut on sub-image 1 
+@DETEC_SN_1 4.
+# min. signal to noise cut on sub-image 2
+@DETEC_SN_2 4.
+#  min. signal to noise cut on sub
+@DETEC_SN 3.5
+#
+# not used any more
+@DETEC_DREF 3.
+#
+# not used any more
+@DETEC_N_RING 200.
+#
+#
+# cut anti-tache : cut sur flux ds un anneau de rayon
+# 3 et 4 seeing divise par le flux ds un rayon de 3 seeing
+# mettre a 0.5 voire 0.2 si il y a des taches
+@DETEC_N_RING_PRCT 200
+#
+# not used any more
+@DETEC_FRAC_FREF 0.
+# not used any more
+@DETEC_FRAC_AREF 0.
+# cut percentage increase
+@DETEC_FRAC_FAREF 0.03
+#
+########## end of obsolete section

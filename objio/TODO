@@ -1,0 +1,38 @@
+ (*) finish up dictgen2. Must at least be able to 
+     parse the files. Write the type conversion function.
+     Test it on the toads objects.
+ (*) finish up xmlschema_dict_reader. Test it with the dict.
+ (*) test the persister generation. Make sure that we can read
+     and write objects.
+ (*) test whether the xmlfiles generated are valid
+ (*) add pointer handling
+ (*) add the dictionaries
+ 
+ (*) plug in the schema evolution
+      - read dict
+      - generate reader
+ (*) test schema evolution with test classes
+
+
+ (-) stuff all the *dict_reader*'s and *dict_writer*'s
+     into the same file (dictgen_dict_io.h)
+ (-) add exceptions into the readers. Try to reduce
+     the code with check&exc macros
+ 
+
+dictgen2 lists
+
+struct A[0]
+
+class  Point[2] : public
+  +  float4         x_
+  +  float4         y_
+  +  float4         ex_
+  +  float4         ey_
+
+class  Star[1] : [Point]
+  +  unsigned long  glop__size__
+  +  float4*        glop
+  -  float4**       gloups 
+  -  int2           id
+

@@ -1,0 +1,96 @@
+.TH "ImageSubtraction" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+ImageSubtraction \- For subtracting images using the Alard kernel fit technique. A basic assumption: Ref and New are already geometrically aligned. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <imagesubtraction.h>\fR
+.PP
+Inherits \fBReducedImage\fR, and \fBPsfMatch\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBImageSubtraction\fR (const string &Name, const \fBReducedImage\fR &RefImage, const \fBReducedImage\fR &NewImage)"
+.br
+.RI "\fIthe constructor takes a copy of both \fBReducedImage\fR.\fR"
+.ti -1c
+.RI "\fBImageSubtraction\fR (const string &Name, const \fBReducedImage\fR &RefImage, const \fBReducedImage\fR &NewImage, const \fBPsfMatch\fR *AMatch)"
+.br
+.RI "\fIas above but uses kernel found by other means. used for fakes SN.\fR"
+.ti -1c
+.RI "\fBImageSubtraction\fR (const string &Name)"
+.br
+.ti -1c
+.RI "bool \fBMakeFits\fR ()"
+.br
+.RI "\fICarry out the kernel fit, convolve, and outputs the subtraction image.\fR"
+.ti -1c
+.RI "bool \fBMakeWeight\fR ()"
+.br
+.ti -1c
+.RI "bool \fBMakeCatalog\fR ()"
+.br
+.RI "\fIcarry out the detection. Default is matched filter plus apreture photometry.\fR"
+.ti -1c
+.RI "bool \fBMakeDead\fR ()"
+.br
+.RI "\fIproduce dead image.\fR"
+.ti -1c
+.RI "bool \fBMakeSatur\fR ()"
+.br
+.RI "\fISatur frame is the OR of Ref and New satur frames.\fR"
+.ti -1c
+.RI "bool \fBMaskSatur\fR ()"
+.br
+.RI "\fIMask the saturation on the subtraction.\fR"
+.ti -1c
+.RI "bool \fBRunDetection\fR (DetectionList &Detections, const BaseStarList *Positions=NULL)"
+.br
+.ti -1c
+.RI "string \fBCandName\fR () const"
+.br
+.RI "\fIName of the candidates list.\fR"
+.ti -1c
+.RI "string \fBAllCandName\fR () const"
+.br
+.ti -1c
+.RI "string \fBCandCutName\fR () const"
+.br
+.ti -1c
+.RI "string \fBCandScanName\fR () const"
+.br
+.ti -1c
+.RI "string \fBCandCutScanName\fR () const"
+.br
+.ti -1c
+.RI "string \fBDetectionsName\fR () const"
+.br
+.ti -1c
+.RI "string \fBMatchedCatName\fR () const"
+.br
+.ti -1c
+.RI "\fBReducedImage\fR* \fBClone\fR () const"
+.br
+.ti -1c
+.RI "string \fBAllCandidateCatalogName\fR () const"
+.br
+.ti -1c
+.RI "\fB~ImageSubtraction\fR ()"
+.br
+.ti -1c
+.RI "\fBClassDef\fR (ImageSubtraction, 1)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+For subtracting images using the Alard kernel fit technique. A basic assumption: Ref and New are already geometrically aligned.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

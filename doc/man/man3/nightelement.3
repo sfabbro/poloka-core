@@ -1,0 +1,63 @@
+.TH "NightElement" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+NightElement \- a template to use when an element belongs to a night. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <nightelement.h>\fR
+.PP
+Inherits \fBCountedRef\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBNightElement\fR ()"
+.br
+.RI "\fIempty constructor.\fR"
+.ti -1c
+.RI "\fBNightElement\fR (const Element &AnElement)"
+.br
+.ti -1c
+.RI "\fBNightElement\fR (const \fBNight\fR *ANight)"
+.br
+.ti -1c
+.RI "\fBNightElement\fR (const Element &AnElement, const \fBNight\fR *ANight)"
+.br
+.ti -1c
+.RI "\fB~NightElement\fR ()"
+.br
+.ti -1c
+.RI "NightElement* \fBClone\fR () const"
+.br
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "const \fBNight\fR* \fBnight\fR"
+.br
+.in -1c
+.SS Friends
+
+.in +1c
+.ti -1c
+.RI "class \fBByIncreasingSeeing\fR"
+.br
+.ti -1c
+.RI "class \fBByIncreasingTime\fR"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+
+.SS template<class Element>  class NightElement
+a template to use when an element belongs to a night.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

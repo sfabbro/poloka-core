@@ -1,0 +1,100 @@
+\subsection{Counted\-Ref  Class Template Reference}
+\label{class_countedref}\index{CountedRef@{Counted\-Ref}}
+an implementation of \char`\"{}smart pointers\char`\"{} that counts references to an object. The obejct it \char`\"{}points\char`\"{} to has to derive from Ref\-Count. 
+
+
+{\tt \#include $<$countedref.h$>$}
+
+Inheritance diagram for Counted\-Ref::\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2cm]{class_countedref}
+\end{center}
+\end{figure}
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}
+{\bf Counted\-Ref} ()\label{class_countedref_a0}
+
+\item 
+\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}
+{\bf Counted\-Ref} (T $\ast$pp)\label{class_countedref_a1}
+
+\item 
+\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}
+{\bf Counted\-Ref} (const T $\ast$pp)\label{class_countedref_a2}
+
+\item 
+\index{operator=@{operator=}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator=@{operator=}}
+void {\bf operator=} (const Counted\-Ref \&Right)\label{class_countedref_a3}
+
+\item 
+\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!CountedRef@{Counted\-Ref}}
+{\bf Counted\-Ref} (const Counted\-Ref \&Other)\label{class_countedref_a4}
+
+\item 
+\index{operator const T *@{operator const T $\ast$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator const T *@{operator const T $\ast$}}
+{\bf operator const T $\ast$} () const\label{class_countedref_a5}
+
+\item 
+\index{operator T *@{operator T $\ast$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator T *@{operator T $\ast$}}
+{\bf operator T $\ast$} ()\label{class_countedref_a6}
+
+\item 
+\index{operator->@{operator-$>$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator->@{operator $\rightarrow$ }}
+T$\ast$ {\bf operator $\rightarrow$ } ()\label{class_countedref_a7}
+
+\item 
+\index{operator->@{operator-$>$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator->@{operator $\rightarrow$ }}
+const T$\ast$ {\bf operator $\rightarrow$ } () const\label{class_countedref_a8}
+
+\item 
+\index{operator *@{operator $\ast$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator *@{operator $\ast$}}
+T\& {\bf operator $\ast$} ()\label{class_countedref_a9}
+
+\item 
+\index{operator *@{operator $\ast$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator *@{operator $\ast$}}
+const T\& {\bf operator $\ast$} () const\label{class_countedref_a10}
+
+\item 
+\index{operator==@{operator==}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator==@{operator==}}
+bool {\bf operator==} (const Counted\-Ref$<$ T $>$ \&Right) const\label{class_countedref_a11}
+
+\item 
+\index{operator==@{operator==}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator==@{operator==}}
+bool {\bf operator==} (const T $\ast$Right) const\label{class_countedref_a12}
+
+\item 
+\index{operator"!=@{operator"!=}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator!=@{operator!=}}
+bool {\bf operator!=} (const Counted\-Ref$<$ T $>$ \&Right) const\label{class_countedref_a13}
+
+\item 
+\index{operator"!=@{operator"!=}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator!=@{operator!=}}
+bool {\bf operator!=} (const T $\ast$Right) const\label{class_countedref_a14}
+
+\item 
+\index{operator A *@{operator A $\ast$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator A *@{operator A $\ast$}}
+template$<$class A$>$ {\bf operator A $\ast$} ()\label{class_countedref_a15}
+
+\item 
+\index{operator const A *@{operator const A $\ast$}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!operator const A *@{operator const A $\ast$}}
+template$<$class A$>$ {\bf operator const A $\ast$} () const\label{class_countedref_a16}
+
+\item 
+\index{~CountedRef@{$\sim$CountedRef}!CountedRef@{Counted\-Ref}}\index{CountedRef@{CountedRef}!~CountedRef@{$\sim$Counted\-Ref}}
+{\bf $\sim$Counted\-Ref} ()\label{class_countedref_a17}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+\subsubsection*{template$<$class T$>$  class Counted\-Ref}
+
+an implementation of \char`\"{}smart pointers\char`\"{} that counts references to an object. The obejct it \char`\"{}points\char`\"{} to has to derive from Ref\-Count.
+
+
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf countedref.h}\end{CompactItemize}

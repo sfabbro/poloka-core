@@ -1,0 +1,62 @@
+.TH "listmatch.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+listmatch.h \- Combinatorial searches for linear transformations to go from list1 to list2. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include "basestar.h"\fR
+.br
+\fC#include "starmatch.h"\fR
+.br
+\fC#include <string>\fR
+.br
+.SS Compounds
+
+.in +1c
+.ti -1c
+.RI "struct \fBMatchConditions\fR"
+.br
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "StarMatchList* \fBMatchSearchRotShift\fR (BaseStarList &L1, BaseStarList &L2, const MatchConditions &Conditions)"
+.br
+.RI "\fIsearches a geometrical transformation that goes from List1 to List2.\fR"
+.ti -1c
+.RI "StarMatchList* \fBMatchSearchRotShiftFlip\fR (BaseStarList &L1, BaseStarList &L2, const MatchConditions &Conditions)"
+.br
+.RI "\fIsame as above but searches also a flipped solution.\fR"
+.ti -1c
+.RI "StarMatchList* \fBListMatchCollect\fR (const BaseStarList &L1, const BaseStarList &L2, const \fBGtransfo\fR *Guess, const double MaxDist)"
+.br
+.RI "\fIassembles star matches.\fR"
+.ti -1c
+.RI "\fBGtransfoLin\fR* \fBListMatchupShift\fR (const BaseStarList &L1, const BaseStarList &L2, const \fBGtransfo\fR &Tin, double MaxShift, double BinSize=0)"
+.br
+.RI "\fIsearches for a 2 dimentionnal shift using a very crude histogram method.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+Combinatorial searches for linear transformations to go from list1 to list2.
+.PP
+ The following routines search a geometrical transformation that make two lists of stars to match geometrically as well as possible. They are used either to match two images of the same sky area, or an image with a catalogue. They assume that fluxes assigned to stars are actual fluxes, i.e. the brighter the star, the higher the flux. They however only rely on flux ordering,  not values.
+.PP
+.SH FUNCTION DOCUMENTATION
+.PP 
+.SS StarMatchList* ListMatchCollect (const BaseStarList & L1, const BaseStarList & L2, const \fBGtransfo\fR * Guess, const double MaxDist)
+.PP
+assembles star matches.
+.PP
+It picks stars in L1, transforms them through Guess, and collects closest star in L2, and builds a match if closer than MaxDist). It then Refines the transformation by discarding apparent outlier pairs (more than 3 standard deviations away). 
+.SS StarMatchList* MatchSearchRotShift (BaseStarList & L1, BaseStarList & L2, const MatchConditions & Conditions)
+.PP
+searches a geometrical transformation that goes from List1 to List2.
+.PP
+The found transformation is a field of the returned object, as well as the star pairs (the matches) that were constructed. (see StarMatchList class definition for more details). The various cuts are contained in Conditions (see \fBlistmatch.h\fR) for its contents. This routine searches a transformation that involves a shift and a rotation. 
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

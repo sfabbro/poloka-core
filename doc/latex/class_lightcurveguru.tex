@@ -1,0 +1,75 @@
+\subsection{Light\-Curve\-Guru  Class Reference}
+\label{class_lightcurveguru}\index{LightCurveGuru@{Light\-Curve\-Guru}}
+Main lightcurve builder for all bands. 
+
+
+{\tt \#include $<$lightcurveguru.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+\index{LightCurveGuru@{LightCurveGuru}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!LightCurveGuru@{Light\-Curve\-Guru}}
+{\bf Light\-Curve\-Guru} ()\label{class_lightcurveguru_a0}
+
+\item 
+\index{~LightCurveGuru@{$\sim$LightCurveGuru}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!~LightCurveGuru@{$\sim$Light\-Curve\-Guru}}
+{\bf $\sim$Light\-Curve\-Guru} ()\label{class_lightcurveguru_a1}
+
+\item 
+\index{read@{read}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!read@{read}}
+bool {\bf read} (const string \&File\-Name)\label{class_lightcurveguru_a2}
+
+\begin{CompactList}\small\item\em read initial lightcurve file.\item\end{CompactList}\item 
+\index{MakeNights@{MakeNights}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!MakeNights@{Make\-Nights}}
+bool {\bf Make\-Nights} ()\label{class_lightcurveguru_a3}
+
+\begin{CompactList}\small\item\em check, align and stack images night by night, instrument by instrument, band by band.\item\end{CompactList}\item 
+\index{SelectFidRef@{SelectFidRef}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!SelectFidRef@{Select\-Fid\-Ref}}
+bool {\bf Select\-Fid\-Ref} ()\label{class_lightcurveguru_a4}
+
+\begin{CompactList}\small\item\em select a fiducial reference lightcurve list.\item\end{CompactList}\item 
+\index{MatchFiducials@{MatchFiducials}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!MatchFiducials@{Match\-Fiducials}}
+bool {\bf Match\-Fiducials} ()\label{class_lightcurveguru_a5}
+
+\begin{CompactList}\small\item\em match fiducials objects among bands. A procedure that really needs some more thoughts.\item\end{CompactList}\item 
+\index{MonopolizeCPU@{MonopolizeCPU}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!MonopolizeCPU@{Monopolize\-CPU}}
+bool {\bf Monopolize\-CPU} ()\label{class_lightcurveguru_a6}
+
+\begin{CompactList}\small\item\em the main builder.\item\end{CompactList}\item 
+\index{UseStdCatalogue@{UseStdCatalogue}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!UseStdCatalogue@{Use\-Std\-Catalogue}}
+void {\bf Use\-Std\-Catalogue} (const string \&cata)\label{class_lightcurveguru_a7}
+
+\begin{CompactList}\small\item\em Use a catalogue of standard stars for photometric calibration.\item\end{CompactList}\item 
+\index{SelectGoodFiducials@{SelectGoodFiducials}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!SelectGoodFiducials@{Select\-Good\-Fiducials}}
+bool {\bf Select\-Good\-Fiducials} ()\label{class_lightcurveguru_a8}
+
+\begin{CompactList}\small\item\em Select a subsample of fiducials close to supernovae.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Public Attributes}
+\begin{CompactItemize}
+\item 
+\index{Supernovae@{Supernovae}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!Supernovae@{Supernovae}}
+vector$<${\bf Point}$>$ {\bf Supernovae}\label{class_lightcurveguru_m0}
+
+\item 
+\index{fidRef@{fidRef}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!fidRef@{fid\-Ref}}
+{\bf Light\-Curve\-Builder}$\ast$ {\bf fid\-Ref}\label{class_lightcurveguru_m1}
+
+\item 
+\index{lcParams@{lcParams}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!lcParams@{lc\-Params}}
+Light\-Curve\-Params {\bf lc\-Params}\label{class_lightcurveguru_m2}
+
+\item 
+\index{BandBuilders@{BandBuilders}!LightCurveGuru@{Light\-Curve\-Guru}}\index{LightCurveGuru@{LightCurveGuru}!BandBuilders@{Band\-Builders}}
+vector$<${\bf Light\-Curve\-Builder}$>$ {\bf Band\-Builders}\label{class_lightcurveguru_m3}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+Main lightcurve builder for all bands.
+
+
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf lightcurveguru.h}\end{CompactItemize}

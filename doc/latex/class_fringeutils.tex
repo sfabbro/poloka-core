@@ -1,0 +1,144 @@
+\subsection{Fringe\-Utils  Class Reference}
+\label{class_fringeutils}\index{FringeUtils@{Fringe\-Utils}}
+Utility class for fringe analysis. 
+
+
+{\tt \#include $<$fringeutils.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+\index{FringeUtils@{FringeUtils}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!FringeUtils@{Fringe\-Utils}}
+{\bf Fringe\-Utils} ()\label{class_fringeutils_a0}
+
+\begin{CompactList}\small\item\em Default Constructor.\item\end{CompactList}\item 
+\index{~FringeUtils@{$\sim$FringeUtils}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!~FringeUtils@{$\sim$Fringe\-Utils}}
+{\bf $\sim$Fringe\-Utils} ()\label{class_fringeutils_a1}
+
+\begin{CompactList}\small\item\em Default Destructor.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Static Public Methods}
+\begin{CompactItemize}
+\item 
+\index{IsSameSize@{IsSameSize}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!IsSameSize@{Is\-Same\-Size}}
+bool {\bf Is\-Same\-Size} ({\bf Image} \&Img1, {\bf Image} \&Img2)\label{class_fringeutils_d0}
+
+\begin{CompactList}\small\item\em Checks whether images have same size or not.\item\end{CompactList}\item 
+double {\bf Scalar\-Product} ({\bf Image} \&Img1, {\bf Image} \&Img2, float nsigma)
+\begin{CompactList}\small\item\em Computes Scalar Product.\item\end{CompactList}\item 
+void {\bf Smooth\-Filter} ({\bf Image} \&Img)
+\begin{CompactList}\small\item\em Smooth an image.\item\end{CompactList}\item 
+double$\ast$ {\bf Scalar\-Product\-Matrix} (vector$<$ string $>$ \&filelist)
+\begin{CompactList}\small\item\em Scalar\-Product\-Matrix is a symmetric matrix n$\ast$n computed with n images in a Fits\-File\-Set.\item\end{CompactList}\item 
+void {\bf Clear\-Image} ({\bf Image} \&Img, const double NSigma)
+\begin{CompactList}\small\item\em Clear an image.\item\end{CompactList}\item 
+void {\bf Normalize} ({\bf Image} \&img, const float nsigma\_\-cut=3)
+\begin{CompactList}\small\item\em Normalize an image -$>$ (mean=0, rms=1).\item\end{CompactList}\item 
+\index{GreatestCommonDivider@{GreatestCommonDivider}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!GreatestCommonDivider@{Greatest\-Common\-Divider}}
+int {\bf Greatest\-Common\-Divider} (int a, int b)\label{class_fringeutils_d6}
+
+\begin{CompactList}\small\item\em Greatest Common Divider.\item\end{CompactList}\item 
+\index{ClippedAverageRms@{ClippedAverageRms}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!ClippedAverageRms@{Clipped\-Average\-Rms}}
+void {\bf Clipped\-Average\-Rms} (double $\ast$pixel\-Values, const int count, double \&average, double \&rms)\label{class_fringeutils_d7}
+
+\begin{CompactList}\small\item\em Clipped average and rms.\item\end{CompactList}\item 
+\index{GetVersion@{GetVersion}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!GetVersion@{Get\-Version}}
+string {\bf Get\-Version} ()\label{class_fringeutils_d8}
+
+\begin{CompactList}\small\item\em Returns the CVS version of this piece of code.\item\end{CompactList}\item 
+int {\bf Remove\-Fringes} ({\bf Fits\-Image} \&image, const string \&fringefilename, int nvec=0, float nsig=3, bool substractbg=false, bool verbose=true)
+\begin{CompactList}\small\item\em Remove fringes in an image.\item\end{CompactList}\item 
+\index{IsDefringed@{IsDefringed}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!IsDefringed@{Is\-Defringed}}
+bool {\bf Is\-Defringed} (const {\bf Fits\-Image} \&image)\label{class_fringeutils_d10}
+
+\begin{CompactList}\small\item\em Checks whether this image is defringed or not.\item\end{CompactList}\item 
+\index{IsDefringedWithNewMethod@{IsDefringedWithNewMethod}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!IsDefringedWithNewMethod@{Is\-Defringed\-With\-New\-Method}}
+bool {\bf Is\-Defringed\-With\-New\-Method} (const {\bf Fits\-Image} \&image)\label{class_fringeutils_d11}
+
+\begin{CompactList}\small\item\em Checks whether this image is defringed or not with the new method.\item\end{CompactList}\item 
+\index{IsANewFringePattern@{IsANewFringePattern}!FringeUtils@{Fringe\-Utils}}\index{FringeUtils@{FringeUtils}!IsANewFringePattern@{Is\-ANew\-Fringe\-Pattern}}
+bool {\bf Is\-ANew\-Fringe\-Pattern} (const string \&filename)\label{class_fringeutils_d12}
+
+\begin{CompactList}\small\item\em Checks whether this image is a fringe pattern.\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+Utility class for fringe analysis.
+
+Used by fringefinder and defringe2 
+
+
+
+\subsubsection{Member Function Documentation}
+\index{FringeUtils@{Fringe\-Utils}!ClearImage@{ClearImage}}
+\index{ClearImage@{ClearImage}!FringeUtils@{Fringe\-Utils}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}void Fringe\-Utils::Clear\-Image ({\bf Image} \& {\em Img}, const double {\em NSigma})\hspace{0.3cm}{\tt  [static]}}\hfill\label{class_fringeutils_d4}
+
+
+Clear an image.
+
+Set pixels values to 0 if fabs(value-mean)$>$NSigma$\ast$rms \index{FringeUtils@{Fringe\-Utils}!Normalize@{Normalize}}
+\index{Normalize@{Normalize}!FringeUtils@{Fringe\-Utils}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}void Fringe\-Utils::Normalize ({\bf Image} \& {\em img}, const float {\em nsigma\_\-cut} = 3)\hspace{0.3cm}{\tt  [static]}}\hfill\label{class_fringeutils_d5}
+
+
+Normalize an image -$>$ (mean=0, rms=1).
+
+Only considers pixels for fabs(value-mean)$>$nsigma\_\-cut$\ast$rms (default nsigma\_\-cut=3) \index{FringeUtils@{Fringe\-Utils}!RemoveFringes@{RemoveFringes}}
+\index{RemoveFringes@{RemoveFringes}!FringeUtils@{Fringe\-Utils}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}int Fringe\-Utils::Remove\-Fringes ({\bf Fits\-Image} \& {\em image}, const string \& {\em fringefilename}, int {\em nvec} = 0, float {\em nsig} = 3, bool {\em substractbg} = false, bool {\em verbose} = true)\hspace{0.3cm}{\tt  [static]}}\hfill\label{class_fringeutils_d9}
+
+
+Remove fringes in an image.
+
+\begin{Desc}
+\item[{\bf Returns: }]\par
+0 is everything is ok \end{Desc}
+\begin{Desc}
+\item[{\bf Parameters: }]\par
+\begin{description}
+\item[
+{\em image}]must be in RW mode \item[
+{\em fringemapname}]name of the FITS file containing fringe patterns (one or several) \item[
+{\em nvec}]max number of vectors to use (default=0 means all of them) \item[
+{\em nsig}]cut on the image for the Scalar\-Product (default=3), this cut is set to 5 for the fringes \item[
+{\em substractbg}]if true, substract background using imageback before removing fringes  (and put it back afterwards) (default is false) \item[
+{\em verbose}]if true prints a lot of stuff (default is true) \end{description}
+\end{Desc}
+\index{FringeUtils@{Fringe\-Utils}!ScalarProduct@{ScalarProduct}}
+\index{ScalarProduct@{ScalarProduct}!FringeUtils@{Fringe\-Utils}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}double Fringe\-Utils::Scalar\-Product ({\bf Image} \& {\em Img1}, {\bf Image} \& {\em Img2}, float {\em nsigma})\hspace{0.3cm}{\tt  [static]}}\hfill\label{class_fringeutils_d1}
+
+
+Computes Scalar Product.
+
+\begin{Desc}
+\item[{\bf Returns: }]\par
+1/p$\ast$sum(Img1(i)$\ast$Img2(i)) for( Img1(i)$>$nsigma$\ast$sigma1i \&\& Img2(i)$>$nsigma$\ast$sigma2i ) if nsigma$<$0 (default), no cut is applied \end{Desc}
+\index{FringeUtils@{Fringe\-Utils}!ScalarProductMatrix@{ScalarProductMatrix}}
+\index{ScalarProductMatrix@{ScalarProductMatrix}!FringeUtils@{Fringe\-Utils}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}double$\ast$ Fringe\-Utils::Scalar\-Product\-Matrix (vector$<$ string $>$ \& {\em filelist})\hspace{0.3cm}{\tt  [static]}}\hfill\label{class_fringeutils_d3}
+
+
+Scalar\-Product\-Matrix is a symmetric matrix n$\ast$n computed with n images in a Fits\-File\-Set.
+
+Each element is the Scalar\-Product(Image\_\-i,Image\_\-j)  \begin{Desc}
+\item[{\bf Parameters: }]\par
+\begin{description}
+\item[
+{\em Fits\-File\-Set}]set of images \end{description}
+\end{Desc}
+\begin{Desc}
+\item[{\bf Returns: }]\par
+double array[n$\ast$n] containing the matrix \end{Desc}
+\index{FringeUtils@{Fringe\-Utils}!SmoothFilter@{SmoothFilter}}
+\index{SmoothFilter@{SmoothFilter}!FringeUtils@{Fringe\-Utils}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}void Fringe\-Utils::Smooth\-Filter ({\bf Image} \& {\em Img})\hspace{0.3cm}{\tt  [static]}}\hfill\label{class_fringeutils_d2}
+
+
+Smooth an image.
+
+Convolution of {\bf Image} {\rm (p.\,\pageref{class_image})} Img with a smoothing filter 3x3 0.025, 0.100, 0.025 0.100, 0.500, 0.100 0.025, 0.100, 0.025 
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf fringeutils.h}\end{CompactItemize}

@@ -1,0 +1,150 @@
+<?xml version="1.0" ?>  <!-- -*- XML -*- -->
+
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+
+<xsd:include schemaLocation="titi_AA.xsd"/>
+<xsd:include schemaLocation="titi_Point.xsd"/>
+<xsd:include schemaLocation="titi_Star.xsd"/>
+
+
+
+<xsd:element name="objects">
+ <xsd:complexType>
+  <xsd:sequence>
+   <xsd:any minOccurs="0" maxOccurs="unbounded"/>
+  </xsd:sequence>
+ </xsd:complexType>
+</xsd:element>
+
+
+<xsd:complexType name="abstractObjectType" abstract="true">
+ <xsd:complexContent>
+  <xsd:restriction base="xsd:anyType">
+   <xsd:attribute name="version" type="xsd:unsignedInt"/>
+  </xsd:restriction>
+ </xsd:complexContent>
+</xsd:complexType>
+
+
+<xsd:complexType name="i1">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:byte"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="i1" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="u1">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:unsignedByte"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="u1" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="i2">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:short"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="i2" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="u2">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:unsignedShort"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="u2" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="i4">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:int"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="i4" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="u4">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:unsignedInt"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="u4" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="i8">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:long"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="i8" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="u8">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:unsignedLong"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="u8" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="f4">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:float"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="f4" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="f8">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:double"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="f8" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+<xsd:complexType name="string">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:attribute name="v" type="xsd:string"/>
+   <xsd:attribute name="t" type="xsd:string" fixed="string" use="required"/>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+
+<xsd:complexType name="collection">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:sequence>
+   <xsd:element name="object" type="abstractObjectType"
+                minOccurs="0" maxOccurs="unbounded"/>
+   </xsd:sequence>
+   <xsd:attribute name="size" type="xsd:unsignedInt"/>
+   <xsd:attribute name="type" type="xsd:string"/> <!-- should be required when we understand how to enforce unicity -->
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+
+<xsd:element name="object" type="abstractObjectType"/>
+<xsd:element name="collection" type="collection"/>
+
+</xsd:schema>
+
+

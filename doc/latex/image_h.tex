@@ -1,0 +1,52 @@
+\subsection{image.h File Reference}
+\label{image_h}\index{image.h@{image.h}}
+basic utilities for image algebra. 
+
+
+{\tt \#include $<$iostream$>$}\par
+{\tt \#include $<$algorithm$>$}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Image}
+\begin{CompactList}\small\item\em Class for the basic manipulation of images.\item\end{CompactList}\item 
+class {\bf Image\-Window}
+\item 
+class {\bf Pixel\-Iterator}
+\end{CompactItemize}
+\subsubsection*{Defines}
+\begin{CompactItemize}
+\item 
+\index{BADPIX@{BADPIX}!image.h@{image.h}}\index{image.h@{image.h}!BADPIX@{BADPIX}}
+\#define {\bf BADPIX}\ -999\label{image_h_a0}
+
+\item 
+\index{BIGVALUE@{BIGVALUE}!image.h@{image.h}}\index{image.h@{image.h}!BIGVALUE@{BIGVALUE}}
+\#define {\bf BIGVALUE}\ 1e+30\label{image_h_a1}
+
+\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{Pixel@{Pixel}!image.h@{image.h}}\index{image.h@{image.h}!Pixel@{Pixel}}
+typedef float {\bf Pixel}\label{image_h_a2}
+
+\end{CompactItemize}
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+\index{EmpiricCov@{EmpiricCov}!image.h@{image.h}}\index{image.h@{image.h}!EmpiricCov@{Empiric\-Cov}}
+double {\bf Empiric\-Cov} (const {\bf Image} \&Im1, const {\bf Image} \&Im2)\label{image_h_a3}
+
+\begin{CompactList}\small\item\em Returns the empirical covariance of 2 images.\item\end{CompactList}\item 
+\index{ImageAndWeightError@{ImageAndWeightError}!image.h@{image.h}}\index{image.h@{image.h}!ImageAndWeightError@{Image\-And\-Weight\-Error}}
+double {\bf Image\-And\-Weight\-Error} (const {\bf Image} \&I, const {\bf Image} \&W, const double Min\-Weight=0, double $\ast$Average\-Shift=NULL)\label{image_h_a4}
+
+\begin{CompactList}\small\item\em return a clipped average of I$\ast$sqrt(W).\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+basic utilities for image algebra.
+
+
+

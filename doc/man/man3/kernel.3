@@ -1,0 +1,112 @@
+.TH "Kernel" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Kernel \- An odd size \fBDImage\fR addressed with (0,0) at center allows quick computation of convolution like operations. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <dimage.h>\fR
+.PP
+Inherits \fBDImage\fR.
+.PP
+Inherited by \fBVignet\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBKernel\fR (const int HSize)"
+.br
+.RI "\fIconstrutor for a square kernel of half size Hsize.\fR"
+.ti -1c
+.RI "\fBKernel\fR (const int HSizeX, const int HSizeY)"
+.br
+.RI "\fIconstrutor for a rectangle kernel of half sizes HsizeX and HsizeY.\fR"
+.ti -1c
+.RI "\fBKernel\fR (const \fBDImage\fR &Dim)"
+.br
+.ti -1c
+.RI "\fBKernel\fR (const string &FitsName)"
+.br
+.ti -1c
+.RI "\fBKernel\fR (const Kernel &K, int BandX, int BandY)"
+.br
+.RI "\fIbuilds a bigger kernel than a given one, and sets extra pixels in the surrounding band to zero.\fR"
+.ti -1c
+.RI "\fBKernel\fR (const Kernel &Other)"
+.br
+.ti -1c
+.RI "\fBKernel\fR ()"
+.br
+.ti -1c
+.RI "Kernel& \fBoperator=\fR (const Kernel &Right)"
+.br
+.ti -1c
+.RI "void \fBreadFits\fR (const string &FitsName)"
+.br
+.RI "\fIwrite and read the \fBDImage\fR as a FITS array.\fR"
+.ti -1c
+.RI "bool \fBIsDirac\fR () const"
+.br
+.ti -1c
+.RI "int \fBHSizeX\fR () const"
+.br
+.RI "\fIhalf the size in x direction.\fR"
+.ti -1c
+.RI "int \fBHSizeY\fR () const"
+.br
+.RI "\fIhalf the size in y direction.\fR"
+.ti -1c
+.RI "void \fBKeepCircleOnly\fR (const double &radius)"
+.br
+.RI "\fIzero out outside a given radius.\fR"
+.ti -1c
+.RI "void \fBFillWithGaussian\fR (const double &xc, const double &yc, const double &sigmax, const double &sigmay, const double &rho=0)"
+.br
+.RI "\fIfills the kernel array with a 2d normalized gaussian (xc and yc are in kernel coordinates).\fR"
+.ti -1c
+.RI "void \fBdump\fR () const"
+.br
+.RI "\fIprints all kernel values.\fR"
+.ti -1c
+.RI "void \fBbias\fR (double &x, double &y) const"
+.br
+.RI "\fIcomputes mean of the kernel on (x,y).\fR"
+.ti -1c
+.RI "void \fBdump_info\fR (ostream &stream=cout) const"
+.br
+.RI "\fIprints bias and moments of the kernel.\fR"
+.ti -1c
+.RI "void \fBmoments\fR (double &vx, double &vy, double &vxy) const"
+.br
+.RI "\fIcomputes x and y first order moments of the kernel (\\sigma_x, \\sigma_y, \\rho_{xy}).\fR"
+.ti -1c
+.RI "bool \fBIsEmpty\fR () const"
+.br
+.ti -1c
+.RI "void \fBMaxPixel\fR (double &xmax, double &ymax)"
+.br
+.ti -1c
+.RI "void \fBMinPixel\fR (double &xmin, double &ymin)"
+.br
+.in -1c
+.SS Protected Attributes
+
+.in +1c
+.ti -1c
+.RI "int \fBhSizeX\fR"
+.br
+.ti -1c
+.RI "int \fBhSizeY\fR"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+An odd size \fBDImage\fR addressed with (0,0) at center allows quick computation of convolution like operations.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

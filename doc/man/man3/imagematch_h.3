@@ -1,0 +1,41 @@
+.TH "imagematch.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+imagematch.h \- This file contains wrappers to call match guessing routines. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include "basestar.h"\fR
+.br
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "bool \fBMatchGuess\fR (const BaseStarList &List1, const BaseStarList &List2, const \fBFitsHeader\fR &Head1, const \fBFitsHeader\fR &Head2, \fBGtransfo\fR *&One2Two, \fBGtransfo\fR *&Two2One)"
+.br
+.RI "\fItries to guess the Linear geometric transformation to go from List1 to List2.\fR"
+.ti -1c
+.RI "int \fBRefineGuess\fR (const BaseStarList &List1, const BaseStarList &List2, \fBGtransfo\fR *&One2Two, \fBGtransfo\fR *&Two2One)"
+.br
+.RI "\fIFrom an initial first order guess, fit and refine it.\fR"
+.ti -1c
+.RI "bool \fBImageListMatch\fR (const \fBDbImage\fR &DbImage1, const \fBDbImage\fR &DbImage2, \fBGtransfo\fR *&One2Two, \fBGtransfo\fR *&Two2One)"
+.br
+.RI "\fIcalls MatchGuess, refines the guess with RefineGuess.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+This file contains wrappers to call match guessing routines.
+.PP
+.PP
+.SH FUNCTION DOCUMENTATION
+.PP 
+.SS bool MatchGuess (const BaseStarList & List1, const BaseStarList & List2, const \fBFitsHeader\fR & Head1, const \fBFitsHeader\fR & Head2, \fBGtransfo\fR *& One2Two, \fBGtransfo\fR *& Two2One)
+.PP
+tries to guess the Linear geometric transformation to go from List1 to List2.
+.PP
+It uses the image headers to check if there is any WCS info that may avoid the combinatorial search  (from listmatch.cc) for the guess. If images come from different telescope/instruments, and the combinatorial search  is to be run, a flip is allowed for. 
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

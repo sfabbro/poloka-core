@@ -1,0 +1,36 @@
+\subsection{Syntax of the \char`\"{}lightfile\char`\"{}}\label{lightfile}
+ A lightfile consists of SN coordinates and images. The DATEZERO is used to set the lightcurve baseline. It includes all images for all filters.
+
+\footnotesize\begin{verbatim}DATEZERO
+# Here you put the dates min and max within which you are sure
+# there is supernova light (DD MM YYYY  DD MM YYYY )
+20 12 2000 20 12 2001
+
+COORDREF
+# The name of the DbImage where SN coordinates are expressed
+MyCoordImage
+
+COORD
+# The relative coordinates of the supernova in the COORDREF mentioned above
+1061.45 1048.98
+
+IMAGES
+# The list of all DbImages in all filters
+# you want to build a lightcurve from
+Image1_R
+Image2_R
+Image1_I
+Image2_I\end{verbatim}\normalsize 
+
+
+The COORDREF can be any reduced image, which does not need to be processed for lightcurve building (typically a subtraction).
+
+All images in this file should:  \begin{CompactItemize}
+\item 
+ be flatfielded \item 
+ optionally background subtracted (but preferred) \item 
+ with a GAIN of 1 (TOADGAIN key) \item 
+ with proper saturation level (SATURLEV key) \item 
+ with a catalog produced typically by the make\_\-catalog application \item 
+ in the {\bf Db\-Image} {\rm (p.\,\pageref{class_dbimage})} system \item 
+ optionally with a WCS transfo (but preferred)\end{CompactItemize}

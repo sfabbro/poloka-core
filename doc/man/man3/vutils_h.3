@@ -1,0 +1,84 @@
+.TH "vutils.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+vutils.h \- utilities around vector and matrix algebra. 
+.SH SYNOPSIS
+.br
+.PP
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "int \fBDiagonalizeRealSymmetricMatrix\fR (int n, double *matrix, double *eigenvectors, double *eigenvalues)"
+.br
+.ti -1c
+.RI "double \fBDArrayMedian\fR (double *array, const int size)"
+.br
+.RI "\fIreturn the median of the array. The array is mixed up.\fR"
+.ti -1c
+.RI "double \fBDConstArrayMedian\fR (const double *array, const int size)"
+.br
+.RI "\fIsame as above but does not mix up the array. (calls previous one on a copy of its input ... ).\fR"
+.ti -1c
+.RI "float \fBFArrayMedian\fR (float *array, const int size)"
+.br
+.ti -1c
+.RI "int \fBMatSolve\fR (double *A, const int N, double *B)"
+.br
+.RI "\fIinverts and solve using various CERNLIB routines.\fR"
+.ti -1c
+.RI "int \fBSymMatInv\fR (double *A, const int N)"
+.br
+.RI "\fIinverts a symetric posdef matrix using DSINV CERNLIB's routine.\fR"
+.ti -1c
+.RI "double \fBScalProd\fR (const double A[], const double B[], const int N)"
+.br
+.ti -1c
+.RI "void \fBMatVec\fR (const double *M, const int N1, const int N2, const double *V, double *R)"
+.br
+.ti -1c
+.RI "double \fBVecMatVec\fR (const double *V1, const double *M, const int N1, const int N2, const double *V2)"
+.br
+.ti -1c
+.RI "void \fBDmean_median_sigma\fR (double *values, const int nval, double &mean, double &median, double &sigma)"
+.br
+.RI "\fIreturns mean, median and rms of an array.\fR"
+.ti -1c
+.RI "void \fBFmean_median_sigma\fR (float *values, const int nval, float &mean, float &median, float &sigma)"
+.br
+.RI "\fIreturns mean, median and rms of an array.\fR"
+.ti -1c
+.RI "float \fBFmedian_sigma\fR (float *values, const int nval, float &sigma)"
+.br
+.RI "\fIreturns median and rms of an array.\fR"
+.ti -1c
+.RI "void \fBDConst_mean_median_sigma\fR (const double *array, const int size, double &mean, double &median, double &sigma)"
+.br
+.ti -1c
+.RI "double \fBclipmean\fR (double *values, int &nval, double &sigma, const double &k=3.5, const int niter=4)"
+.br
+.RI "\fIcomputes the clipped-mean and sigma with cutting at k-sigma.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+utilities around vector and matrix algebra.
+.PP
+.PP
+.SH FUNCTION DOCUMENTATION
+.PP 
+.SS double DArrayMedian (double * array, const int size)
+.PP
+return the median of the array. The array is mixed up.
+.PP
+Use next function if you want to keep your array untouched 
+.SS int DiagonalizeRealSymmetricMatrix (int n, double * matrix, double * eigenvectors, double * eigenvalues)
+.PP
+Diagonalize Real Symmetric Matrix matrix(n*n)  memory for eigenvectors of size n*n must be allocated by the user memory for eigenvalues of size n must be allocated by the user 
+.PP
+\fBReturns: \fR
+.in +1c
+0 if ok 
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

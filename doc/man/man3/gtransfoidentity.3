@@ -1,0 +1,76 @@
+.TH "GtransfoIdentity" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+GtransfoIdentity \- A do-nothing transformation. It anyway has dummy routines to mimick a GTransfo. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <gtransfo.h>\fR
+.PP
+Inherits \fBGtransfo\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBGtransfoIdentity\fR ()"
+.br
+.RI "\fIconstructor.\fR"
+.ti -1c
+.RI "void \fBapply\fR (const double Xin, const double Yin, double &Xout, double &Yout) const"
+.br
+.RI "\fIXout = Xin; Yout = Yin !\fR"
+.ti -1c
+.RI "double \fBfit\fR (const StarMatchList &List, const \fBGtransfo\fR *PriorTransfo=NULL, const \fBGtransfo\fR *PosteriorTransfo=NULL)"
+.br
+.RI "\fIfits a transfo to a list of star pairs (p1,p2).\fR"
+.ti -1c
+.RI "\fBGtransfo\fR* \fBReduceCompo\fR (const \fBGtransfo\fR *Right) const"
+.br
+.RI "\fIallow composition of transformations regardless of their actual types.see \fBGtransfoCompose\fR() for a user callable entry.\fR"
+.ti -1c
+.RI "void \fBdump\fR (ostream &stream=cout) const"
+.br
+.RI "\fIdumps the transfo coefficients to stream.\fR"
+.ti -1c
+.RI "int \fBNpar\fR () const"
+.br
+.RI "\fIreturns the number of parameters (to compute chi2's).\fR"
+.ti -1c
+.RI "\fBGtransfo\fR* \fBClone\fR () const"
+.br
+.RI "\fIreturns a copy (allocated by new) of the transformation.\fR"
+.ti -1c
+.RI "void \fBDerivative\fR (const \fBPoint\fR &Where, \fBGtransfoLin\fR &Derivative, const double Step=0.01) const"
+.br
+.RI "\fIComputes the local Derivative of a transfo. Step is used for numerical derivation.\fR"
+.ti -1c
+.RI "virtual \fBGtransfoLin\fR \fBLinearApproximation\fR (const \fBPoint\fR &Where, const double Step=0.01) const"
+.br
+.RI "\fIlinear approximation.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+A do-nothing transformation. It anyway has dummy routines to mimick a GTransfo.
+.PP
+.SH MEMBER FUNCTION DOCUMENTATION
+.PP 
+.SS void GtransfoIdentity::Derivative (const \fBPoint\fR & Where, \fBGtransfoLin\fR & Derivative, const double Step = 0.01) const\fC [virtual]\fR
+.PP
+Computes the local Derivative of a transfo. Step is used for numerical derivation.
+.PP
+the Derivative is represented by a \fBGtransfoLin\fR, in which (hopefully), the offset terms are zero. Derivative should  transform a vector of offsets into a vector of offsets. 
+.PP
+Reimplemented from \fBGtransfo\fR.
+.SS double GtransfoIdentity::fit (const StarMatchList & List, const \fBGtransfo\fR * PriorTransfo = NULL, const \fBGtransfo\fR * PosteriorTransfo = NULL)\fC [inline, virtual]\fR
+.PP
+fits a transfo to a list of star pairs (p1,p2).
+.PP
+After the fit this(PriorTransfo(p1)) yields approximately PosteriorTransfo(p2). The returned value is the chi2. 
+.PP
+Reimplemented from \fBGtransfo\fR.
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

@@ -1,0 +1,41 @@
+\subsection{Syntax of the \char`\"{}subfile\char`\"{}}\label{subfile}
+a subfile is a very simple text file that describes what should be  subtracted from what. We define 3 set of images, labelled \char`\"{}ref\char`\"{}, \char`\"{}new1\char`\"{} and \char`\"{}new2\char`\"{}, where \char`\"{}new1 and \char`\"{}new2\char`\"{} refer to the same epoch. We can either run a
+
+\begin{CompactItemize}
+\item 
+\char`\"{}split subtraction\char`\"{} in which case, we compute new1-ref, new2-ref and new1+new2-ref; the detection will request to find an object in the 3 subtractions (with different significances). \item 
+or a single subtraction in which case new1 and new2 groups are merged, and we compute new-ref.\end{CompactItemize}
+Before subtracting each group of images is aligned and coadded (using Images\-Align\-And\-Sum). At the moment, seeings in a given stack are  NOT equalized, because the subtraction makes use of a kernel fitting (see {\bf Kernel\-Fit} {\rm (p.\,\pageref{class_kernelfit})}) that can handle \char`\"{}mixed PSF's\char`\"{}.
+
+A \char`\"{}subfile\char`\"{} details the contents of these subtraction components through {\bf Db\-Image} {\rm (p.\,\pageref{class_dbimage})} names. The choice between a single subtraction and \char`\"{}split\char`\"{} subtraction is specified by putting \char`\"{}ONE SUBTRACTION\char`\"{} in this file. \char`\"{}ADDFAKES\char`\"{} is a  statement that drives the code to add fake supernovae in the input (new) images (they are not altered anyway!) for detection efficiency studies. This option roughly doubles the processing time. Blank lines in the subfile are ignored. By default, newmake\_\-sub reads a file named subfile in the current directory.
+
+\char`\"{}FIXGEO\char`\"{} aims at fixing the geometric reference used to align all the images. Here is an example of a \char`\"{}subfile\char`\"{}:
+
+\footnotesize\begin{verbatim}# subtraction for fieldP1ccd9
+REF
+502809o09
+502810o09
+502811o09
+502813o09
+502814o09
+502815o09
+502816o09
+502817o09
+NEW1
+504604o09
+504605o09
+504606o09
+504607o09
+NEW2
+504613o09
+504614o09
+504615o09
+504616o09
+#ADDFAKES
+ONE SUBTRACTION
+#FIXGEO
+#502809o09\end{verbatim}\normalsize 
+
+
+In this specific example, the split of images between NEW1 and NEW2 is irrelevant since we run a \char`\"{}simple\char`\"{} subtraction (as specified by ONE SUBTRACTION). ADDFAKES is commented and no fakes will be added.
+

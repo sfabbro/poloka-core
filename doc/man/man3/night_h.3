@@ -1,0 +1,48 @@
+.TH "night.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+night.h \- a class to use as a \fBReducedImage\fR, to avoid reopening the \fBFitsImage\fR This is basically the same as a \fBReducedImage\fR. However, if you need to use often most of the parameters of the \fBReducedImage\fR, the \fBNight\fR class will be faster since it does not do any query on the FITS file. This one is used mostly to build lightcurves. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include "reducedimage.h"\fR
+.br
+\fC#include "imagelist.h"\fR
+.br
+.SS Compounds
+
+.in +1c
+.ti -1c
+.RI "class \fBNight\fR"
+.br
+.RI "\fIversion of the \fBReducedImage\fR, quicker, but with more memory.\fR"
+.ti -1c
+.RI "class \fBNightList\fR"
+.br
+.in -1c
+.SS Typedefs
+
+.in +1c
+.ti -1c
+.RI "typedef ImageList<\fBNight\fR>::iterator \fBNightIterator\fR"
+.br
+.ti -1c
+.RI "typedef ImageList<\fBNight\fR>::const_iterator \fBNightCIterator\fR"
+.br
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "bool \fBSameSeeing\fR (const \fBNight\fR &Reference, const \fBNight\fR &Current, const double &Tol=0.05)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+a class to use as a \fBReducedImage\fR, to avoid reopening the \fBFitsImage\fR This is basically the same as a \fBReducedImage\fR. However, if you need to use often most of the parameters of the \fBReducedImage\fR, the \fBNight\fR class will be faster since it does not do any query on the FITS file. This one is used mostly to build lightcurves.
+.PP
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

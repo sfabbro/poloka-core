@@ -1,0 +1,65 @@
+.TH "Stamp" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Stamp \- an odd size \fBDImage\fR extracted from an \fBImage\fR, centered on (xc,yc). 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <dimage.h>\fR
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "int \fBHSize\fR () const"
+.br
+.ti -1c
+.RI "\fBStamp\fR (const double Xc, const double Yc, const \fBImage\fR &image, int HStampSize, \fBBaseStar\fR *Star)"
+.br
+.ti -1c
+.RI "\fBStamp\fR ()"
+.br
+.ti -1c
+.RI "virtual \fB~Stamp\fR ()"
+.br
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "int \fBxc\fR"
+.br
+.RI "\fIcenter in the source \fBImage\fR.\fR"
+.ti -1c
+.RI "int \fByc\fR"
+.br
+.RI "\fIcenter in the source \fBImage\fR.\fR"
+.ti -1c
+.RI "int \fBxstart\fR"
+.br
+.ti -1c
+.RI "int \fBystart\fR"
+.br
+.ti -1c
+.RI "\fBDImage\fR \fBsource\fR"
+.br
+.RI "\fIpixels (in double precision until one changes DPixel definition ).\fR"
+.ti -1c
+.RI "double \fBchi2\fR"
+.br
+.RI "\fIwill be filled and used to discard outliers from the fit.\fR"
+.ti -1c
+.RI "BaseStarRef \fBstar\fR"
+.br
+.RI "\fIwe should not assume that there is a \fBBaseStar\fR corresponding to this stamp, but if any, put its pointer here.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+an odd size \fBDImage\fR extracted from an \fBImage\fR, centered on (xc,yc).
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

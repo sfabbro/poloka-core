@@ -1,0 +1,60 @@
+.TH "FitsSet" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+FitsSet \- container for fits files that have same sizes, filter, and come from the same chip within a mosaic. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <fitsset.h>\fR
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBFitsSet\fR (const string &FileName, const bool CheckFilter=true)"
+.br
+.RI "\fIconstructor from a file that contains file names (one per line).\fR"
+.ti -1c
+.RI "string \fBoperator[]\fR (const unsigned int i) const"
+.br
+.ti -1c
+.RI "int \fBsize\fR () const"
+.br
+.RI "\fINumber of file in the set.\fR"
+.ti -1c
+.RI "string \fBAllNames\fR () const"
+.br
+.RI "\fIreturns a string containing all file names.\fR"
+.ti -1c
+.RI "int \fBNx\fR () const"
+.br
+.RI "\fIx size of images (excluding overscan if any).\fR"
+.ti -1c
+.RI "int \fBNy\fR () const"
+.br
+.RI "\fIy size of images.\fR"
+.ti -1c
+.RI "int \fBNxTot\fR () const"
+.br
+.RI "\fItotal x size of images (including overscan).\fR"
+.ti -1c
+.RI "int \fBNyTot\fR () const"
+.br
+.RI "\fIsame for y.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+container for fits files that have same sizes, filter, and come from the same chip within a mosaic.
+.PP
+.SH CONSTRUCTOR & DESTRUCTOR DOCUMENTATION
+.PP 
+.SS FitsSet::FitsSet (const string & FileName, const bool CheckFilter = true)
+.PP
+constructor from a file that contains file names (one per line).
+.PP
+Those can be actual filenames or \fBDbImage\fR names. 
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

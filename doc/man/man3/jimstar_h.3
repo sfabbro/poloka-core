@@ -1,0 +1,53 @@
+.TH "jimstar.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+jimstar.h \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <iostream>\fR
+.br
+\fC#include <fstream>\fR
+.br
+\fC#include "basestar.h"\fR
+.br
+\fC#include "starlist.h"\fR
+.br
+\fC#include "fitsimage.h"\fR
+.br
+.SS Compounds
+
+.in +1c
+.ti -1c
+.RI "class \fBJimStar\fR"
+.br
+.RI "\fIJim Calibration Star.\fR"
+.in -1c
+.SS Typedefs
+
+.in +1c
+.ti -1c
+.RI "typedef \fBStarList\fR<\fBJimStar\fR> \fBJimStarList\fR"
+.br
+.RI "\fIdefinition of the list and iterators.\fR"
+.ti -1c
+.RI "typedef \fBStarList\fR<\fBJimStar\fR>::const_iterator \fBJimStarCIterator\fR"
+.br
+.ti -1c
+.RI "typedef \fBStarList\fR<\fBJimStar\fR>::iterator \fBJimStarIterator\fR"
+.br
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "\fBJimStarList\fR* \fBGetSelectedJimStarList\fR (const \fBFitsHeader\fR &header, const \fBFrame\fR &W, const string &standardfile)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

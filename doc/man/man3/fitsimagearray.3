@@ -1,0 +1,167 @@
+.TH "FitsImageArray" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+FitsImageArray \- Array of \fBImage\fR in a FITS file. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <fitsimagearray.h>\fR
+.PP
+Inherits \fBFitsImage\fR.
+.PP
+.SS Public Types
+
+.in +1c
+.ti -1c
+.RI "enum \fBStatus\fR { \fBOK\fR =  0, \fBOUTOFBOUNDS\fR =  1, \fBFAILURE\fR =  2, \fBERRORWRITE\fR =  3, \fBEMPTY\fR =  4 }"
+.br
+.RI "\fIStatus flag for all functions.\fR"
+.ti -1c
+.RI "enum \fBCriterion\fR { \fBCHIP\fR =  1, \fBFILTER\fR =  2, \fBSIZE\fR =  4, \fBEXTENDED\fR =  8 }"
+.br
+.RI "\fICriterion fo image selection.\fR"
+.in -1c
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBFitsImageArray\fR (const string &FileName, const FitsFileMode Mode=RO)"
+.br
+.RI "\fIConstructor for an existing fits image.\fR"
+.ti -1c
+.RI "\fBFitsImageArray\fR (const string &FileName, const \fBFitsHeader\fR &header, bool ImageInFirstHDU=true)"
+.br
+.RI "\fIConstructor for a new FitsImageArray with a minimal header from an existing \fBFitsHeader\fR.\fR"
+.ti -1c
+.RI "\fBFitsImageArray\fR (const string &FileName, const \fBImage\fR &image, bool ImageInFirstHDU=true)"
+.br
+.RI "\fIConstructor for a new FitsImageArray with a minimal header from an existing \fBImage\fR.\fR"
+.ti -1c
+.RI "\fB~FitsImageArray\fR ()"
+.br
+.RI "\fIStandard destructor.\fR"
+.ti -1c
+.RI "\fBStatus\fR \fBWrite\fR (bool force_bscale=false)"
+.br
+.RI "\fIWrite all images to the FITS file.\fR"
+.ti -1c
+.RI "\fBStatus\fR \fBSplitAndWrite\fR (const string &directory="",int HDUMax=0)"
+.br
+.RI "\fIWrite all images to separated FITS files (same as split_fits).\fR"
+.ti -1c
+.RI "\fBStatus\fR \fBAppend\fR (const string &filename)"
+.br
+.RI "\fIAdd a \fBFitsImage\fR after the latest HDU.\fR"
+.ti -1c
+.RI "\fBStatus\fR \fBAppend\fR (const \fBImage\fR &image)"
+.br
+.RI "\fIAdd an \fBImage\fR after the latest HDU.\fR"
+.ti -1c
+.RI "\fBStatus\fR \fBAt\fR (int HDU)"
+.br
+.RI "\fI\fBPoint\fR to the image at index HDU ( 1 <= HDU <= GetNImages()).\fR"
+.ti -1c
+.RI "\fBStatus\fR \fBNext\fR ()"
+.br
+.RI "\fI\fBPoint\fR to the next image.\fR"
+.ti -1c
+.RI "void \fBSetCriterion\fR (int value)"
+.br
+.RI "\fISet the criterion for merging of \fBFitsImage\fR.\fR"
+.ti -1c
+.RI "bool \fBIsValid\fR ()"
+.br
+.RI "\fICheck whether this FitsImageArray is valid.\fR"
+.ti -1c
+.RI "string \fBGetVersion\fR ()"
+.br
+.RI "\fIReturns the version of this piece of code.\fR"
+.ti -1c
+.RI "bool \fBCheckHeader\fR (\fBFitsHeader\fR &header)"
+.br
+.RI "\fICheck whether header is consistent with fMainHeader.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+Array of \fBImage\fR in a FITS file.
+.PP
+Inherites from \fBFitsImage\fR 
+.PP
+.SH CONSTRUCTOR & DESTRUCTOR DOCUMENTATION
+.PP 
+.SS FitsImageArray::FitsImageArray (const string & FileName, const FitsFileMode Mode = RO)
+.PP
+Constructor for an existing fits image.
+.PP
+.TP
+ Opens in (ReadOnly (RO) mode by default, use RW to modify or create) 
+.TP
+ In RW mode, use this creator for an image already containing several images, i.e. with EXTEND=true (if EXTEND=false, \fBIsValid\fR()=false) 
+.SS FitsImageArray::FitsImageArray (const string & FileName, const \fBFitsHeader\fR & header, bool ImageInFirstHDU = true)
+.PP
+Constructor for a new FitsImageArray with a minimal header from an existing \fBFitsHeader\fR.
+.PP
+This header is used as a reference for image size, filter, chip. A criterion for accepting images can be set with the function SetCriterion  using the values of the enum \fBFitsImageArray::Criterion\fR.  For instance SetCriterion(FitsImageArray::FILTER|FitsImageArray::CHIP) <=> ask for the same filter and chip.
+.PP
+\fBParameters: \fR
+.in +1c
+.TP
+\fB\fIImageInFirstHDU, if\fR\fR
+true (default) the first image that is added is saved in the first HDU, otherwise it is saved in the second one. 
+.SS FitsImageArray::FitsImageArray (const string & FileName, const \fBImage\fR & image, bool ImageInFirstHDU = true)
+.PP
+Constructor for a new FitsImageArray with a minimal header from an existing \fBImage\fR.
+.PP
+This \fBImage\fR is used as a reference for image size (see previous constructor). The user can define other keys for accepting other images.
+.PP
+\fBParameters: \fR
+.in +1c
+.TP
+\fB\fIImageInFirstHDU, if\fR\fR
+true (default) the first image that is added is saved in the first HDU, otherwise it is saved in the second one. 
+.SH MEMBER FUNCTION DOCUMENTATION
+.PP 
+.SS \fBStatus\fR FitsImageArray::Append (const \fBImage\fR & image)
+.PP
+Add an \fBImage\fR after the latest HDU.
+.PP
+\fBParameters: \fR
+.in +1c
+.TP
+\fB\fIImage\fR\fR
+that is appended. 
+.TP
+ A default \fBFitsHeader\fR is written, namely with NAXIS*,  BSCALE, BZERO, BITPIX=16, and WRITEDAT 
+.TP
+ The user may add information to the header after the call to this function 
+.SS \fBStatus\fR FitsImageArray::Append (const string & filename)
+.PP
+Add a \fBFitsImage\fR after the latest HDU.
+.PP
+\fBParameters: \fR
+.in +1c
+.TP
+\fB\fIfilename, name\fR\fR
+of the fits file to append Uses cfitsio fits_copy_hdu, i.e. toads is not used a lot except for checking the compatibility of \fBFitsHeader\fR 
+.SS bool FitsImageArray::CheckHeader (\fBFitsHeader\fR & header)
+.PP
+Check whether header is consistent with fMainHeader.
+.PP
+.TP
+ Used by \fBFitsImageArray::Append\fR 
+.TP
+ Uses fSelectedCriterion (see SetCriterion) 
+.SS void FitsImageArray::SetCriterion (int value)\fC [inline]\fR
+.PP
+Set the criterion for merging of \fBFitsImage\fR.
+.PP
+\fBParameters: \fR
+.in +1c
+.TP
+\fB\fIvalue\fR\fR
+: example FitsImageArray::CHIP|FitsImageArray::FILTER 
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

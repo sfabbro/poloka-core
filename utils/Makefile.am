@@ -1,0 +1,73 @@
+EXTRA_DIST =
+
+bin_PROGRAMS = \
+ header im2tup astrom changekey checker create_precise_std_file \
+ dbimstat dead_correction defringe defringe2 detectonedb \
+ elixir_to_toads findsatellite flatfield fringefinder \
+ image_align image_combine image_register image_select \
+ image_stats image_sub image_sum lbl2toads maglimeval \
+ make_calibration make_catalog make_cosmic \
+ make_dead makefringe \
+ makesub make_weight matchNimages matchradec matchstandard matchusno \
+ mosaique_int newmake_sub preptoads removeback selection \
+ skylev sum_images trim valid_fits wiynpad
+
+AM_CPPFLAGS = -I../src -I/home/nrl/Work/frogs/sex/v222/src
+LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff -L/home/nrl/Work/frogs/sex/v222/Linux-i686 -lsex -lwcs -lg2c
+
+header_SOURCES = header.cc
+im2tup_SOURCES = im2tup.cc
+im2tup_LDADD = -L/coda/software/cern/pro/lib -lpacklib -lnsl -lcrypt -ldl -lg2c
+astrom_SOURCES = astrom.cc 
+changekey_SOURCES = changekey.cc
+checker_SOURCES = checker.cc
+create_precise_std_file_SOURCES = create_precise_std_file.cc
+dbimstat_SOURCES = dbimstat.cc
+dead_correction_SOURCES = dead_correction.cc
+defringe_SOURCES = defringe.cc
+defringe2_SOURCES = defringe2.cc
+detectonedb_SOURCES = detectonedb.cc
+elixir_to_toads_SOURCES = elixir_to_toads.cc
+findsatellite_SOURCES = findsatellite.cc
+flatfield_SOURCES = flatfield.cc
+fringefinder_SOURCES = fringefinder.cc
+image_align_SOURCES = image_align.cc
+image_combine_SOURCES = image_combine.cc
+# image_match_SOURCES = image_match.cc
+image_register_SOURCES = image_register.cc
+image_select_SOURCES = image_select.cc
+image_stats_SOURCES = image_stats.cc
+image_sub_SOURCES = image_sub.cc
+image_sum_SOURCES = image_sum.cc
+lbl2toads_SOURCES = lbl2toads.cc
+#lmatch_SOURCES = lmatch.cc
+maglimeval_SOURCES = maglimeval.cc 
+make_calibration_SOURCES = make_calibration.cc
+make_catalog_SOURCES = make_catalog.cc
+make_cosmic_SOURCES = make_cosmic.cc
+#make_daophot_SOURCES = make_daophot.cc
+make_dead_SOURCES = make_dead.cc
+makefringe_SOURCES = makefringe.cc
+#make_lightcurve_SOURCES = make_lightcurve.cc
+#make_mosaique_SOURCES = make_mosaique.cc
+#make_sub_SOURCES = make_sub.cc
+makesub_SOURCES = makesub.cc
+make_weight_SOURCES = make_weight.cc
+matchNimages_SOURCES = matchNimages.cc
+matchradec_SOURCES = matchradec.cc
+matchstandard_SOURCES = matchstandard.cc
+matchusno_SOURCES = matchusno.cc
+#mkskyhist_SOURCES = mkskyhist.cc
+mosaique_int_SOURCES = mosaique_int.cc
+newmake_sub_SOURCES = newmake_sub.cc
+preptoads_SOURCES = preptoads.cc
+removeback_SOURCES = removeback.cc
+selection_SOURCES = selection.cc
+#sex2dao_SOURCES = sex2dao.cc
+#sky_hist_SOURCES = sky_hist.cc
+skylev_SOURCES = skylev.cc
+sum_images_SOURCES = sum_images.cc
+trim_SOURCES = trim.cc
+valid_fits_SOURCES = valid_fits.cc
+wiynpad_SOURCES = wiynpad.cc
+#write_star_SOURCES = write_star.cc

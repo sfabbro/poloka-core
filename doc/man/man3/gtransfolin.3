@@ -1,0 +1,182 @@
+.TH "GtransfoLin" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+GtransfoLin \- implements the linear transformations (6 real coefficients). 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <gtransfo.h>\fR
+.PP
+Inherits \fBGtransfo\fR.
+.PP
+Inherited by \fBGtransfoLinRot\fR, \fBGtransfoLinScale\fR, \fBGtransfoLinShift\fR, and \fBGtransfoQuad\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBGtransfoLin\fR ()"
+.br
+.RI "\fIthe default constructor constructs the do-nothing transformation.\fR"
+.ti -1c
+.RI "GtransfoLin \fBoperator *\fR (const GtransfoLin &T2) const"
+.br
+.RI "\fIenables to combine linear tranformations: T1=T2*T3 is legal.\fR"
+.ti -1c
+.RI "GtransfoLin \fBinvert\fR () const"
+.br
+.RI "\fIreturns the inverse: T1 = T2.invert();.\fR"
+.ti -1c
+.RI "void \fBapply\fR (const double Xin, const double Yin, double &Xout, double &Yout) const"
+.br
+.ti -1c
+.RI "double \fBDeterminant\fR () const"
+.br
+.ti -1c
+.RI "void \fBDerivative\fR (const \fBPoint\fR &Where, GtransfoLin &Derivative, const double Step=0.01) const"
+.br
+.RI "\fIComputes the local Derivative of a transfo. Step is used for numerical derivation.\fR"
+.ti -1c
+.RI "GtransfoLin \fBLinearApproximation\fR (const \fBPoint\fR &Where, const double step=0.01) const"
+.br
+.RI "\fIlinear (local) approximation.\fR"
+.ti -1c
+.RI "\fBPoint\fR \fBapply\fR (const \fBPoint\fR &Pin) const"
+.br
+.ti -1c
+.RI "void \fBdump\fR (ostream &stream=cout) const"
+.br
+.RI "\fIdumps the transfo coefficients to stream.\fR"
+.ti -1c
+.RI "double \fBfit\fR (const StarMatchList &List, const \fBGtransfo\fR *PriorTransfo=NULL, const \fBGtransfo\fR *PosteriorTransfo=NULL)"
+.br
+.RI "\fIfits a transfo to a list of star pairs (p1,p2).\fR"
+.ti -1c
+.RI "\fBGtransfoLin\fR (double ox, double oy, double aa11, double aa12, double aa21, double aa22)"
+.br
+.RI "\fIthe constructor that enables to set all parameters independently. Not very useful.\fR"
+.ti -1c
+.RI "\fBGtransfoLin\fR (const \fBGtransfoIdentity\fR &T)"
+.br
+.RI "\fIHandy converter:.\fR"
+.ti -1c
+.RI "\fBGtransfo\fR* \fBClone\fR () const"
+.br
+.RI "\fIreturns a copy (allocated by new) of the transformation.\fR"
+.ti -1c
+.RI "\fBGtransfo\fR* \fBReduceCompo\fR (const \fBGtransfo\fR *Right) const"
+.br
+.RI "\fIallow composition of transformations regardless of their actual types.see \fBGtransfoCompose\fR() for a user callable entry.\fR"
+.ti -1c
+.RI "\fBGtransfo\fR* \fBInverseTransfo\fR (const double Precision, const \fBFrame\fR &Region) const"
+.br
+.RI "\fIreturns an inverse transfo.\fR"
+.ti -1c
+.RI "double \fBA11\fR () const"
+.br
+.ti -1c
+.RI "double \fBA12\fR () const"
+.br
+.ti -1c
+.RI "double \fBA21\fR () const"
+.br
+.ti -1c
+.RI "double \fBA22\fR () const"
+.br
+.ti -1c
+.RI "double \fBdX\fR () const"
+.br
+.ti -1c
+.RI "double \fBdY\fR () const"
+.br
+.ti -1c
+.RI "virtual int \fBNpar\fR () const"
+.br
+.RI "\fIreturns the number of parameters (to compute chi2's).\fR"
+.ti -1c
+.RI "virtual int \fBDegree\fR () const"
+.br
+.in -1c
+.SS Protected Methods
+
+.in +1c
+.ti -1c
+.RI "void \fBidentity\fR ()"
+.br
+.in -1c
+.SS Protected Attributes
+
+.in +1c
+.ti -1c
+.RI "double \fBdx\fR"
+.br
+.ti -1c
+.RI "double \fBdy\fR"
+.br
+.ti -1c
+.RI "double \fBa11\fR"
+.br
+.ti -1c
+.RI "double \fBa12\fR"
+.br
+.ti -1c
+.RI "double \fBa21\fR"
+.br
+.ti -1c
+.RI "double \fBa22\fR"
+.br
+.in -1c
+.SS Friends
+
+.in +1c
+.ti -1c
+.RI "class \fBGtransfo\fR"
+.br
+.ti -1c
+.RI "class \fBGtransfoIdentity\fR"
+.br
+.ti -1c
+.RI "class \fBoperator *\fR"
+.br
+.ti -1c
+.RI "class \fBoperator *\fR"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+implements the linear transformations (6 real coefficients).
+.PP
+.SH MEMBER FUNCTION DOCUMENTATION
+.PP 
+.SS void GtransfoLin::Derivative (const \fBPoint\fR & Where, GtransfoLin & Derivative, const double Step = 0.01) const\fC [virtual]\fR
+.PP
+Computes the local Derivative of a transfo. Step is used for numerical derivation.
+.PP
+the Derivative is represented by a GtransfoLin, in which (hopefully), the offset terms are zero. Derivative should  transform a vector of offsets into a vector of offsets. 
+.PP
+Reimplemented from \fBGtransfo\fR.
+.PP
+Reimplemented in \fBGtransfoQuad\fR.
+.SS \fBGtransfo\fR* GtransfoLin::InverseTransfo (const double Precision, const \fBFrame\fR & Region) const\fC [virtual]\fR
+.PP
+returns an inverse transfo.
+.PP
+Precision and Region refer to the "input" side of this,  and hence to the output side of the returned \fBGtransfo\fR. 
+.PP
+Reimplemented from \fBGtransfo\fR.
+.PP
+Reimplemented in \fBGtransfoQuad\fR.
+.SS double GtransfoLin::fit (const StarMatchList & List, const \fBGtransfo\fR * PriorTransfo = NULL, const \fBGtransfo\fR * PosteriorTransfo = NULL)\fC [virtual]\fR
+.PP
+fits a transfo to a list of star pairs (p1,p2).
+.PP
+After the fit this(PriorTransfo(p1)) yields approximately PosteriorTransfo(p2). The returned value is the chi2. 
+.PP
+Reimplemented from \fBGtransfo\fR.
+.PP
+Reimplemented in \fBGtransfoLinShift\fR, \fBGtransfoLinRot\fR, \fBGtransfoQuad\fR, and \fBGtransfoCub\fR.
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

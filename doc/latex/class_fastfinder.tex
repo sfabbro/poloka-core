@@ -1,0 +1,89 @@
+\subsection{Fast\-Finder  Class Reference}
+\label{class_fastfinder}\index{FastFinder@{Fast\-Finder}}
+Fast locator in starlists. 
+
+
+{\tt \#include $<$fastfinder.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+\index{FastFinder@{FastFinder}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!FastFinder@{Fast\-Finder}}
+{\bf Fast\-Finder} (const Base\-Star\-List \&List)\label{class_fastfinder_a0}
+
+\begin{CompactList}\small\item\em -.\item\end{CompactList}\item 
+\index{~FastFinder@{$\sim$FastFinder}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!~FastFinder@{$\sim$Fast\-Finder}}
+{\bf $\sim$Fast\-Finder} ()\label{class_fastfinder_a1}
+
+\item 
+\index{FindClosest@{FindClosest}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!FindClosest@{Find\-Closest}}
+const {\bf Base\-Star}$\ast$ {\bf Find\-Closest} (const {\bf Point} \&Where, const double Max\-Dist, bool($\ast$Skip\-It)(const {\bf Base\-Star} $\ast$)=NULL) const\label{class_fastfinder_a2}
+
+\begin{CompactList}\small\item\em -.\item\end{CompactList}\item 
+\index{dump@{dump}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!dump@{dump}}
+void {\bf dump} () const\label{class_fastfinder_a3}
+
+\item 
+\index{begin_scan@{begin\_\-scan}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!begin_scan@{begin\_\-scan}}
+Iterator {\bf begin\_\-scan} (const {\bf Point} \&Where, const double \&Max\-Dist) const\label{class_fastfinder_a4}
+
+\item 
+\index{yslice@{yslice}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!yslice@{yslice}}
+void {\bf yslice} (const int i\-Slice, const double YStart, const double YEnd, const {\bf Base\-Star} $\ast$$\ast$\&Start, const {\bf Base\-Star} $\ast$$\ast$\&End) const\label{class_fastfinder_a5}
+
+\item 
+\index{locate_y_start@{locate\_\-y\_\-start}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!locate_y_start@{locate\_\-y\_\-start}}
+const {\bf Base\-Star}$\ast$$\ast$ {\bf locate\_\-y\_\-start} (const {\bf Base\-Star} $\ast$$\ast$Begin, const {\bf Base\-Star} $\ast$$\ast$End, const double \&YVal) const\label{class_fastfinder_a6}
+
+\item 
+\index{locate_y_end@{locate\_\-y\_\-end}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!locate_y_end@{locate\_\-y\_\-end}}
+const {\bf Base\-Star}$\ast$$\ast$ {\bf locate\_\-y\_\-end} (const {\bf Base\-Star} $\ast$$\ast$Begin, const {\bf Base\-Star} $\ast$$\ast$End, const double \&YVal) const\label{class_fastfinder_a7}
+
+\end{CompactItemize}
+\subsubsection*{Public Attributes}
+\begin{CompactItemize}
+\item 
+\index{stars@{stars}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!stars@{stars}}
+const {\bf Base\-Star}$\ast$$\ast$ {\bf stars}\label{class_fastfinder_m0}
+
+\item 
+\index{xmin@{xmin}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!xmin@{xmin}}
+double {\bf xmin}\label{class_fastfinder_m1}
+
+\item 
+\index{xmax@{xmax}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!xmax@{xmax}}
+double {\bf xmax}\label{class_fastfinder_m2}
+
+\item 
+\index{xstep@{xstep}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!xstep@{xstep}}
+double {\bf xstep}\label{class_fastfinder_m3}
+
+\item 
+\index{nslice@{nslice}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!nslice@{nslice}}
+int {\bf nslice}\label{class_fastfinder_m4}
+
+\item 
+\index{index@{index}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!index@{index}}
+int$\ast$ {\bf index}\label{class_fastfinder_m5}
+
+\item 
+\index{count@{count}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!count@{count}}
+int {\bf count}\label{class_fastfinder_m6}
+
+\item 
+\index{baselist@{baselist}!FastFinder@{Fast\-Finder}}\index{FastFinder@{FastFinder}!baselist@{baselist}}
+const Base\-Star\-List$\ast$ {\bf baselist}\label{class_fastfinder_m7}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+Fast locator in starlists.
+
+This is an auxillary class for matching objects from starlists. It allows to locate rapidly the closest objects from a given position. The very simple strategy is to sort objects according to 1 coordinate x, and to build an index that allows to select the objects with the x coordinate inside an interval. Then every slice in x is sorted according to y, which enables  a fast scan inside a x slice. List\-Match\-Collect takes about 10ms (PC 450 MHz, optimized \char`\"{}-O4\char`\"{})  for a match between lists of about 2000 objects each, which is fast enough for our needs. The same \char`\"{}locator\char`\"{} is used in List\-Matchup\-Shift, to avoid scanning the whole input lists. Timing on List\-Match\-Collect and List\-Matchup\-Shift indicates a gain in speed by more than one order after implementation of this Fast\-Finder. One should not delete objects in the list passed to the  Fast\-Finder constructor during the whole life of the Fast\-Finder object. 
+
+
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf fastfinder.h}\end{CompactItemize}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <xsd:complexType name="B">
+    <xsd:annotation>
+      <xsd:documentation>
+    XML Schema definition for class B version 0
+    Written by toads version 0.1.0
+      </xsd:documentation>
+      <xsd:appinfo>
+        <xsd:version>0</xsd:version>
+        <xsd:kind>class</xsd:kind>
+        <xsd:baselist>
+          <xsd:base>A</xsd:base>
+        </xsd:baselist>
+      </xsd:appinfo>
+    </xsd:annotation>
+    <xsd:complexContent>
+      <xsd:extension base="abstractObjectType">
+        <xsd:sequence>
+          <xsd:element name="t_">
+            <xsd:complexType>
+              <xsd:complexContent>
+                <xsd:extension base="t_">
+                  <xsd:attribute name="name" type="xsd:string" fixed="t_"/>
+                </xsd:extension>
+              </xsd:complexContent>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+</xsd:schema>

@@ -1,0 +1,39 @@
+\subsection{night.h File Reference}
+\label{night_h}\index{night.h@{night.h}}
+a class to use as a {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}, to avoid reopening the {\bf Fits\-Image} {\rm (p.\,\pageref{class_fitsimage})} This is basically the same as a {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}. However, if you need to use often most of the parameters of the {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}, the {\bf Night} {\rm (p.\,\pageref{class_night})} class will be faster since it does not do any query on the FITS file. This one is used mostly to build lightcurves. 
+
+
+{\tt \#include \char`\"{}reducedimage.h\char`\"{}}\par
+{\tt \#include \char`\"{}imagelist.h\char`\"{}}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Night}
+\begin{CompactList}\small\item\em version of the {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}, quicker, but with more memory.\item\end{CompactList}\item 
+class {\bf Night\-List}
+\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{NightIterator@{NightIterator}!night.h@{night.h}}\index{night.h@{night.h}!NightIterator@{Night\-Iterator}}
+typedef Image\-List$<${\bf Night}$>$::iterator {\bf Night\-Iterator}\label{night_h_a0}
+
+\item 
+\index{NightCIterator@{NightCIterator}!night.h@{night.h}}\index{night.h@{night.h}!NightCIterator@{Night\-CIterator}}
+typedef Image\-List$<${\bf Night}$>$::const\_\-iterator {\bf Night\-CIterator}\label{night_h_a1}
+
+\end{CompactItemize}
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+\index{SameSeeing@{SameSeeing}!night.h@{night.h}}\index{night.h@{night.h}!SameSeeing@{Same\-Seeing}}
+bool {\bf Same\-Seeing} (const {\bf Night} \&Reference, const {\bf Night} \&Current, const double \&Tol=0.05)\label{night_h_a2}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+a class to use as a {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}, to avoid reopening the {\bf Fits\-Image} {\rm (p.\,\pageref{class_fitsimage})} This is basically the same as a {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}. However, if you need to use often most of the parameters of the {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}, the {\bf Night} {\rm (p.\,\pageref{class_night})} class will be faster since it does not do any query on the FITS file. This one is used mostly to build lightcurves.
+
+
+

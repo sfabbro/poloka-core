@@ -1,0 +1,98 @@
+.TH "LightCurveBuilder" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+LightCurveBuilder \- Lightcurve builder for one band. Execute different types of photometry. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <lightcurvebuilder.h>\fR
+.PP
+Inherits vector.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBLightCurveBuilder\fR (const ReducedImageList &Images)"
+.br
+.RI "\fImain constructor.\fR"
+.ti -1c
+.RI "\fBLightCurveBuilder\fR ()"
+.br
+.ti -1c
+.RI "\fBLightCurveBuilder\fR (const LightCurveBuilder &Other)"
+.br
+.RI "\fIcopy constructor.\fR"
+.ti -1c
+.RI "LightCurveBuilder& \fBoperator=\fR (const LightCurveBuilder &Right)"
+.br
+.ti -1c
+.RI "\fB~LightCurveBuilder\fR ()"
+.br
+.ti -1c
+.RI "void \fBCalibrate\fR (const double &Nfwhm) const"
+.br
+.RI "\fIshould calibrate properly the lightcurve, but does not.\fR"
+.ti -1c
+.RI "bool \fBInit\fR (const vector< \fBPoint\fR > &SNe)"
+.br
+.RI "\fIinit the lightcurve.\fR"
+.ti -1c
+.RI "bool \fBInit\fR (const vector< \fBPoint\fR > &SNe, const string &catalogue)"
+.br
+.RI "\fIinit the lightcurve with a catalogue of standard stars.\fR"
+.ti -1c
+.RI "void \fBInitFiducials\fR (const BaseStarList &FidList)"
+.br
+.RI "\fIinit all common objects.\fR"
+.ti -1c
+.RI "void \fBStarListPhotometry\fR ()"
+.br
+.RI "\fIperforms a quick photometry from the starlists.\fR"
+.ti -1c
+.RI "void \fBSubAperPhotometry\fR (const double &Nfwhm)"
+.br
+.RI "\fIperforms aperture photometry on the subtractions.\fR"
+.ti -1c
+.RI "void \fBBuildKernelsAndSubs\fR ()"
+.br
+.RI "\fIbuild the kernels among the reference and the other images.\fR"
+.ti -1c
+.RI "void \fBSimFitPhotometry\fR ()"
+.br
+.RI "\fIperforms simultaneous photometry for each lightcurve star.\fR"
+.ti -1c
+.RI "void \fBwrite\fR (const string &MiddleName) const"
+.br
+.RI "\fIwrite something.\fR"
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "\fBNight\fR* \fBReference\fR"
+.br
+.RI "\fIa pointer to the reference night.\fR"
+.ti -1c
+.RI "NightList \fBNights\fR"
+.br
+.RI "\fIthe list of images where each lightcurve point is refered.\fR"
+.ti -1c
+.RI "string \fBBandName\fR"
+.br
+.RI "\fIa band name associated with this list.\fR"
+.ti -1c
+.RI "unsigned \fBnsn\fR"
+.br
+.RI "\fIthe number of supernovae.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+Lightcurve builder for one band. Execute different types of photometry.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

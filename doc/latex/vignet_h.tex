@@ -1,0 +1,35 @@
+\subsection{vignet.h File Reference}
+\label{vignet_h}\index{vignet.h@{vignet.h}}
+A resizeable sub-image, with centered coordinates. 
+
+
+{\tt \#include \char`\"{}dimage.h\char`\"{}}\par
+{\tt \#include \char`\"{}countedref.h\char`\"{}}\par
+{\tt \#include \char`\"{}imagelist.h\char`\"{}}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Vignet}
+\begin{CompactList}\small\item\em Similar to {\bf Kernel} {\rm (p.\,\pageref{class_kernel})}, but resizeable and contains some kind of {\bf Point} {\rm (p.\,\pageref{class_point})}.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{VignetList@{VignetList}!vignet.h@{vignet.h}}\index{vignet.h@{vignet.h}!VignetList@{Vignet\-List}}
+typedef Image\-List$<${\bf Vignet}$>$ {\bf Vignet\-List}\label{vignet_h_a0}
+
+\item 
+\index{VignetIterator@{VignetIterator}!vignet.h@{vignet.h}}\index{vignet.h@{vignet.h}!VignetIterator@{Vignet\-Iterator}}
+typedef Vignet\-List::iterator {\bf Vignet\-Iterator}\label{vignet_h_a1}
+
+\item 
+\index{VignetCIterator@{VignetCIterator}!vignet.h@{vignet.h}}\index{vignet.h@{vignet.h}!VignetCIterator@{Vignet\-CIterator}}
+typedef Vignet\-List::const\_\-iterator {\bf Vignet\-CIterator}\label{vignet_h_a2}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+A resizeable sub-image, with centered coordinates.
+
+
+

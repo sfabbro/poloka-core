@@ -1,0 +1,117 @@
+.TH "JimStar" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+JimStar \- Jim Calibration Star. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <jimstar.h>\fR
+.PP
+Inherits \fBBaseStar\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBJimStar\fR ()"
+.br
+.ti -1c
+.RI "\fBJimStar\fR (double xx, double yy, double ff)"
+.br
+.ti -1c
+.RI "string \fBName\fR () const"
+.br
+.ti -1c
+.RI "double \fBRa\fR () const"
+.br
+.ti -1c
+.RI "double \fBDec\fR () const"
+.br
+.ti -1c
+.RI "double \fBImag\fR () const"
+.br
+.ti -1c
+.RI "double \fBRmag\fR () const"
+.br
+.ti -1c
+.RI "double \fBGmag\fR () const"
+.br
+.ti -1c
+.RI "double \fBZmag\fR () const"
+.br
+.ti -1c
+.RI "double \fBCgal\fR () const"
+.br
+.ti -1c
+.RI "virtual void \fBRead\fR (istream &r, const char *Format)"
+.br
+.RI "\fIto read once the object is created.\fR"
+.ti -1c
+.RI "string \fBWriteHeader_\fR (ostream &pr=cout, const char *i=NULL) const"
+.br
+.RI "\fIto write the \fBStarList\fR header with the string appended to every ntuple variable (with no end).\fR"
+.ti -1c
+.RI "virtual void \fBdumpn\fR (ostream &s=cout) const"
+.br
+.RI "\fIfor dump with NO end-of-line.\fR"
+.ti -1c
+.RI "virtual void \fBdump\fR (ostream &s=cout) const"
+.br
+.RI "\fIfor dump.\fR"
+.ti -1c
+.RI "virtual void \fBwriten\fR (ostream &s=cout) const"
+.br
+.RI "\fIfor write with NO end-of-line.\fR"
+.ti -1c
+.RI "virtual void \fBwrite\fR (ostream &s=cout) const"
+.br
+.RI "\fIfor write.\fR"
+.in -1c
+.SS Static Public Methods
+
+.in +1c
+.ti -1c
+.RI "JimStar* \fBread\fR (istream &r, const char *Format)"
+.br
+.RI "\fIto read and create the object.\fR"
+.in -1c
+.SS Protected Attributes
+
+.in +1c
+.ti -1c
+.RI "string \fBname\fR"
+.br
+.ti -1c
+.RI "double \fBra\fR"
+.br
+.ti -1c
+.RI "double \fBdec\fR"
+.br
+.ti -1c
+.RI "double \fBimag\fR"
+.br
+.ti -1c
+.RI "double \fBrmag\fR"
+.br
+.ti -1c
+.RI "double \fBgmag\fR"
+.br
+.ti -1c
+.RI "double \fBzmag\fR"
+.br
+.ti -1c
+.RI "double \fBcgal\fR"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+Jim Calibration Star.
+.PP
+To match an image with the catalogue of Jim  format: ra dec i r g z cgal (cgal=0 ==> etoile) 
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

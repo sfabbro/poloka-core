@@ -1,0 +1,98 @@
+\subsection{sestar.h File Reference}
+\label{sestar_h}\index{sestar.h@{sestar.h}}
+{\tt \#include $<$iostream$>$}\par
+{\tt \#include \char`\"{}basestar.h\char`\"{}}\par
+{\tt \#include \char`\"{}image.h\char`\"{}}\par
+{\tt \#include $<$list$>$}\par
+{\tt \#include \char`\"{}starlist.h\char`\"{}}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf SEStar}
+\begin{CompactList}\small\item\em SExtractor star.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Defines}
+\begin{CompactItemize}
+\item 
+\index{DECALAGE_CAT_SE@{DECALAGE\_\-CAT\_\-SE}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!DECALAGE_CAT_SE@{DECALAGE\_\-CAT\_\-SE}}
+\#define {\bf DECALAGE\_\-CAT\_\-SE}\ -1.0\label{sestar_h_a0}
+
+\item 
+\index{DECALAGE_SE_IJ@{DECALAGE\_\-SE\_\-IJ}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!DECALAGE_SE_IJ@{DECALAGE\_\-SE\_\-IJ}}
+\#define {\bf DECALAGE\_\-SE\_\-IJ}\ 0.\label{sestar_h_a1}
+
+\item 
+\index{DECALAGE_IJ_SE@{DECALAGE\_\-IJ\_\-SE}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!DECALAGE_IJ_SE@{DECALAGE\_\-IJ\_\-SE}}
+\#define {\bf DECALAGE\_\-IJ\_\-SE}\ 0.\label{sestar_h_a2}
+
+\item 
+\index{DECALAGE_SE_XY@{DECALAGE\_\-SE\_\-XY}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!DECALAGE_SE_XY@{DECALAGE\_\-SE\_\-XY}}
+\#define {\bf DECALAGE\_\-SE\_\-XY}\ (DECALAGE\_\-SE\_\-IJ + DECALAGE\_\-IJ\_\-XY )\label{sestar_h_a3}
+
+\item 
+\index{DECALAGE_XY_SE@{DECALAGE\_\-XY\_\-SE}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!DECALAGE_XY_SE@{DECALAGE\_\-XY\_\-SE}}
+\#define {\bf DECALAGE\_\-XY\_\-SE}\ (DECALAGE\_\-XY\_\-IJ + DECALAGE\_\-IJ\_\-SE )\label{sestar_h_a4}
+
+\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{SEStarList@{SEStarList}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!SEStarList@{SEStar\-List}}
+typedef {\bf Star\-List}$<${\bf SEStar}$>$ {\bf SEStar\-List}\label{sestar_h_a5}
+
+\begin{CompactList}\small\item\em definition of the list and iterators.\item\end{CompactList}\item 
+\index{SEStarCIterator@{SEStarCIterator}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!SEStarCIterator@{SEStar\-CIterator}}
+typedef SEStar\-List::const\_\-iterator {\bf SEStar\-CIterator}\label{sestar_h_a6}
+
+\begin{CompactList}\small\item\em definition of the list and iterators.\item\end{CompactList}\item 
+\index{SEStarIterator@{SEStarIterator}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!SEStarIterator@{SEStar\-Iterator}}
+typedef SEStar\-List::iterator {\bf SEStar\-Iterator}\label{sestar_h_a7}
+
+\begin{CompactList}\small\item\em definition of the list and iterators.\item\end{CompactList}\item 
+\index{SEStarRef@{SEStarRef}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!SEStarRef@{SEStar\-Ref}}
+typedef {\bf Counted\-Ref}$<${\bf SEStar}$>$ {\bf SEStar\-Ref}\label{sestar_h_a8}
+
+\begin{CompactList}\small\item\em definition of the list and iterators.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+\index{DecFluxMax@{DecFluxMax}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!DecFluxMax@{Dec\-Flux\-Max}}
+bool {\bf Dec\-Flux\-Max} (const {\bf SEStar} $\ast$S1, const {\bf SEStar} $\ast$S2)\label{sestar_h_a9}
+
+\begin{CompactList}\small\item\em sort in decreasing peak value above background.\item\end{CompactList}\item 
+\index{SE2Base@{SE2Base}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!SE2Base@{SE2Base}}
+Base\-Star\-List$\ast$ {\bf SE2Base} ({\bf SEStar\-List} $\ast$This)\label{sestar_h_a10}
+
+\begin{CompactList}\small\item\em type casting.\item\end{CompactList}\item 
+\index{SE2Base@{SE2Base}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!SE2Base@{SE2Base}}
+const Base\-Star\-List$\ast$ {\bf SE2Base} (const {\bf SEStar\-List} $\ast$This)\label{sestar_h_a11}
+
+\item 
+\index{FlagCosmicFromImage@{FlagCosmicFromImage}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!FlagCosmicFromImage@{Flag\-Cosmic\-From\-Image}}
+int {\bf Flag\-Cosmic\-From\-Image} ({\bf SEStar\-List} \&stl, {\bf Image} const \&image, const double dist)\label{sestar_h_a12}
+
+\begin{CompactList}\small\item\em Flag objects near pixels $>$ 0 OK for images with very few pixels $>$ 0.\item\end{CompactList}\item 
+\index{FlagSaturatedStars@{FlagSaturatedStars}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!FlagSaturatedStars@{Flag\-Saturated\-Stars}}
+int {\bf Flag\-Saturated\-Stars} ({\bf SEStar\-List} \&stl, const double saturation)\label{sestar_h_a13}
+
+\item 
+\index{FlagSatFromImage@{FlagSatFromImage}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!FlagSatFromImage@{Flag\-Sat\-From\-Image}}
+int {\bf Flag\-Sat\-From\-Image} ({\bf SEStar\-List} \&stl, {\bf Image} const \&image)\label{sestar_h_a14}
+
+\item 
+\index{KeepIt@{KeepIt}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!KeepIt@{Keep\-It}}
+int {\bf Keep\-It} (double saturation,{\bf SEStar\-List} const \&stli, {\bf SEStar\-List} \&temp)\label{sestar_h_a15}
+
+\begin{CompactList}\small\item\em Select stars with the Is\-OK(saturation) routine.\item\end{CompactList}\item 
+\index{SetStarsBackground@{SetStarsBackground}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!SetStarsBackground@{Set\-Stars\-Background}}
+void {\bf Set\-Stars\-Background} ({\bf SEStar\-List} \&stl, double const background)\label{sestar_h_a16}
+
+\begin{CompactList}\small\item\em Do as indicated in name ........\item\end{CompactList}\item 
+\index{StarFinder@{StarFinder}!sestar.h@{sestar.h}}\index{sestar.h@{sestar.h}!StarFinder@{Star\-Finder}}
+int {\bf Star\-Finder} ({\bf SEStar\-List} \&stlse, {\bf SEStar\-List} \&Pretty\-Stars, double saturation=1.e+30)\label{sestar_h_a17}
+
+\begin{CompactList}\small\item\em Select Stars in SEStar\-List.\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+
+

@@ -1,0 +1,416 @@
+.TH "SEStar" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+SEStar \- SExtractor star. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <sestar.h>\fR
+.PP
+Inherits \fBBaseStar\fR.
+.PP
+Inherited by CandidateStar, PSFStar, and SENearStar.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBSEStar\fR ()"
+.br
+.ti -1c
+.RI "\fBSEStar\fR (double xx, double yy, double ff)"
+.br
+.ti -1c
+.RI "bool \fBHasNeighbours\fR () const"
+.br
+.RI "\fIThe object has neighbours, bright and close enough to bias aperture photometry.\fR"
+.ti -1c
+.RI "bool \fBIsBlended\fR () const"
+.br
+.RI "\fIThe object is blended with another one.\fR"
+.ti -1c
+.RI "bool \fBIsBad\fR () const"
+.br
+.ti -1c
+.RI "bool \fBIsCosmic\fR () const"
+.br
+.ti -1c
+.RI "bool \fBIsSaturated\fR (const double saturation) const"
+.br
+.RI "\fIat least one pixel is saturated.\fR"
+.ti -1c
+.RI "bool \fBIsSaturated\fR () const"
+.br
+.ti -1c
+.RI "bool \fBIsTruncated\fR () const"
+.br
+.RI "\fIthe object is truncated.\fR"
+.ti -1c
+.RI "void \fBFlagAsSaturated\fR ()"
+.br
+.RI "\fITo flag a star as saturated.\fR"
+.ti -1c
+.RI "void \fBFlagAsCosmic\fR ()"
+.br
+.RI "\fITo flag a star as cosmic.\fR"
+.ti -1c
+.RI "void \fBFlagAsNotSaturated\fR ()"
+.br
+.RI "\fITo un-flag a star because it is not saturated.\fR"
+.ti -1c
+.RI "double \fBX_Peak\fR () const"
+.br
+.RI "\fIx-coordinate of the brightest pixel.\fR"
+.ti -1c
+.RI "double \fBY_Peak\fR () const"
+.br
+.RI "\fIy-coordinate of the brightest pixel.\fR"
+.ti -1c
+.RI "double \fBEFlux\fR () const"
+.br
+.RI "\fIRMS error for BEST flux.\fR"
+.ti -1c
+.RI "double \fBFluxmax\fR () const"
+.br
+.RI "\fIPeak flux **above background**.\fR"
+.ti -1c
+.RI "double \fBFond\fR () const"
+.br
+.RI "\fIbackground.\fR"
+.ti -1c
+.RI "double \fBFlux_aper\fR () const"
+.br
+.RI "\fISExtractor FLUX_AUTO: Flux within a Kron-like elliptical aperture.\fR"
+.ti -1c
+.RI "double \fBEflux_aper\fR () const"
+.br
+.RI "\fISExtractor FLUXERR_AUTO : RMS error for Flux_aper.\fR"
+.ti -1c
+.RI "double \fBFlux_fixaper\fR () const"
+.br
+.ti -1c
+.RI "double \fBEflux_fixaper\fR () const"
+.br
+.ti -1c
+.RI "double \fBFlux_iso\fR () const"
+.br
+.RI "\fISExtractor FLUX_ISO: isophotal flux.\fR"
+.ti -1c
+.RI "double \fBEflux_iso\fR () const"
+.br
+.RI "\fISExtractor FLUXERR_ISO: error on isophotal flux.\fR"
+.ti -1c
+.RI "double \fBFlux_isocor\fR () const"
+.br
+.RI "\fISExtractor FLUX_ISOCOR: isophotal corrected flux.\fR"
+.ti -1c
+.RI "double \fBEflux_isocor\fR () const"
+.br
+.RI "\fISExtractor FLUXERR_ISOCOR error on isophotal corrected flux.\fR"
+.ti -1c
+.RI "double \fBFwhm\fR () const"
+.br
+.RI "\fIfwhm in pixels.\fR"
+.ti -1c
+.RI "double \fBKronradius\fR () const"
+.br
+.RI "\fIextension of the aperture , in units of A or B.\fR"
+.ti -1c
+.RI "double \fBIsoarea\fR () const"
+.br
+.RI "\fIarea of lowest isophote en pixels.\fR"
+.ti -1c
+.RI "double \fBMxx\fR () const"
+.br
+.RI "\fI<$x^2$ - <x>${}^2$>.\fR"
+.ti -1c
+.RI "double \fBMyy\fR () const"
+.br
+.RI "\fI<$y^2$ - <y>${}^2$>.\fR"
+.ti -1c
+.RI "double \fBMxy\fR () const"
+.br
+.RI "\fI<xy - <x><y>>.\fR"
+.ti -1c
+.RI "double \fBA\fR () const"
+.br
+.RI "\fIProfile RMS along major axis.\fR"
+.ti -1c
+.RI "double \fBB\fR () const"
+.br
+.RI "\fIProfile RMS along minor axis.\fR"
+.ti -1c
+.RI "double \fBGyr_Angle\fR () const"
+.br
+.RI "\fIgyration angle of the major axis 0.0 = axis en degres Position angle.\fR"
+.ti -1c
+.RI "int \fBFlag\fR () const"
+.br
+.RI "\fIExtraction flags.\fR"
+.ti -1c
+.RI "int \fBFlagBad\fR () const"
+.br
+.RI "\fInumber of bad pixels in iso area.\fR"
+.ti -1c
+.RI "double \fBCstar\fR () const"
+.br
+.RI "\fIstar/galaxy classification: [0=gal ... 1=star].\fR"
+.ti -1c
+.RI "double \fBXtrunc\fR () const"
+.br
+.RI "\fIlocal barycenter (see Pierre).\fR"
+.ti -1c
+.RI "double \fBYtrunc\fR () const"
+.br
+.RI "\fIlocal barycenter.\fR"
+.ti -1c
+.RI "int \fBN\fR () const"
+.br
+.ti -1c
+.RI "int \fBIter\fR () const"
+.br
+.RI "\fINumber of iteration in the PSF fitting (ALLSTAR) procedure.\fR"
+.ti -1c
+.RI "double \fBChi\fR () const"
+.br
+.RI "\fIchi from fit (to be plot vs. magnitude).\fR"
+.ti -1c
+.RI "double \fBSharp\fR () const"
+.br
+.RI "\fIsharp diagnostic (to be plot vs. magnitude).\fR"
+.ti -1c
+.RI "double& \fBX_Peak\fR ()"
+.br
+.ti -1c
+.RI "double& \fBY_Peak\fR ()"
+.br
+.ti -1c
+.RI "double& \fBEFlux\fR ()"
+.br
+.ti -1c
+.RI "double& \fBFluxmax\fR ()"
+.br
+.ti -1c
+.RI "double& \fBFond\fR ()"
+.br
+.ti -1c
+.RI "double& \fBFlux_aper\fR ()"
+.br
+.ti -1c
+.RI "double& \fBEflux_aper\fR ()"
+.br
+.ti -1c
+.RI "double& \fBFlux_fixaper\fR ()"
+.br
+.ti -1c
+.RI "double& \fBEflux_fixaper\fR ()"
+.br
+.ti -1c
+.RI "double& \fBFlux_iso\fR ()"
+.br
+.ti -1c
+.RI "double& \fBEflux_iso\fR ()"
+.br
+.ti -1c
+.RI "double& \fBFlux_isocor\fR ()"
+.br
+.ti -1c
+.RI "double& \fBEflux_isocor\fR ()"
+.br
+.ti -1c
+.RI "double& \fBFwhm\fR ()"
+.br
+.ti -1c
+.RI "double& \fBKronradius\fR ()"
+.br
+.ti -1c
+.RI "double& \fBIsoarea\fR ()"
+.br
+.ti -1c
+.RI "double& \fBMxx\fR ()"
+.br
+.ti -1c
+.RI "double& \fBMyy\fR ()"
+.br
+.ti -1c
+.RI "double& \fBMxy\fR ()"
+.br
+.ti -1c
+.RI "double& \fBA\fR ()"
+.br
+.ti -1c
+.RI "double& \fBB\fR ()"
+.br
+.ti -1c
+.RI "double& \fBGyr_Angle\fR ()"
+.br
+.ti -1c
+.RI "int& \fBFlag\fR ()"
+.br
+.ti -1c
+.RI "int& \fBFlagBad\fR ()"
+.br
+.ti -1c
+.RI "double& \fBCstar\fR ()"
+.br
+.ti -1c
+.RI "double& \fBXtrunc\fR ()"
+.br
+.ti -1c
+.RI "double& \fBYtrunc\fR ()"
+.br
+.ti -1c
+.RI "int& \fBN\fR ()"
+.br
+.ti -1c
+.RI "int& \fBIter\fR ()"
+.br
+.ti -1c
+.RI "double& \fBChi\fR ()"
+.br
+.ti -1c
+.RI "double& \fBSharp\fR ()"
+.br
+.ti -1c
+.RI "virtual void \fBdumpn\fR (ostream &s=cout) const"
+.br
+.RI "\fIfor dump with NO end-of-line.\fR"
+.ti -1c
+.RI "virtual void \fBdump\fR (ostream &s=cout) const"
+.br
+.RI "\fIfor dump.\fR"
+.ti -1c
+.RI "virtual void \fBwriten\fR (ostream &s=cout) const"
+.br
+.RI "\fIfor write with NO end-of-line.\fR"
+.ti -1c
+.RI "virtual void \fBread_it\fR (istream &r, const char *Format)"
+.br
+.RI "\fIto read once the object is created.\fR"
+.ti -1c
+.RI "std::string \fBWriteHeader_\fR (ostream &pr=cout, const char *i=NULL) const"
+.br
+.ti -1c
+.RI "bool \fBIsOK\fR (const double &saturation) const"
+.br
+.in -1c
+.SS Static Public Methods
+
+.in +1c
+.ti -1c
+.RI "SEStar* \fBread\fR (istream &r, const char *Format)"
+.br
+.RI "\fIto read and create the object.\fR"
+.ti -1c
+.RI "const char* \fBTypeName\fR ()"
+.br
+.in -1c
+.SS Protected Attributes
+
+.in +1c
+.ti -1c
+.RI "int \fBnum\fR"
+.br
+.ti -1c
+.RI "double \fBxpeak\fR"
+.br
+.ti -1c
+.RI "double \fBypeak\fR"
+.br
+.ti -1c
+.RI "double \fBfluxmax\fR"
+.br
+.ti -1c
+.RI "double \fBe_flux\fR"
+.br
+.ti -1c
+.RI "double \fBfond\fR"
+.br
+.ti -1c
+.RI "double \fBflux_aper\fR"
+.br
+.ti -1c
+.RI "double \fBe_flux_aper\fR"
+.br
+.ti -1c
+.RI "double \fBflux_fixaper\fR"
+.br
+.ti -1c
+.RI "double \fBe_flux_fixaper\fR"
+.br
+.ti -1c
+.RI "double \fBflux_iso\fR"
+.br
+.ti -1c
+.RI "double \fBe_flux_iso\fR"
+.br
+.ti -1c
+.RI "double \fBflux_isocor\fR"
+.br
+.ti -1c
+.RI "double \fBe_flux_isocor\fR"
+.br
+.ti -1c
+.RI "double \fBkronradius\fR"
+.br
+.ti -1c
+.RI "double \fBisoarea\fR"
+.br
+.ti -1c
+.RI "double \fBfwhm\fR"
+.br
+.ti -1c
+.RI "double \fBmxx\fR"
+.br
+.ti -1c
+.RI "double \fBmyy\fR"
+.br
+.ti -1c
+.RI "double \fBmxy\fR"
+.br
+.ti -1c
+.RI "double \fBa\fR"
+.br
+.ti -1c
+.RI "double \fBb\fR"
+.br
+.ti -1c
+.RI "double \fBgyr_angle\fR"
+.br
+.ti -1c
+.RI "int \fBflag\fR"
+.br
+.ti -1c
+.RI "int \fBflagbad\fR"
+.br
+.ti -1c
+.RI "double \fBcstar\fR"
+.br
+.ti -1c
+.RI "double \fBxtrunc\fR"
+.br
+.ti -1c
+.RI "double \fBytrunc\fR"
+.br
+.ti -1c
+.RI "int \fBiter\fR"
+.br
+.ti -1c
+.RI "double \fBchi\fR"
+.br
+.ti -1c
+.RI "double \fBsharp\fR"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+SExtractor star.
+.PP
+The flux of \fBBaseStar\fR is FLUX_BEST from SExtractor, i.e. FLUX_ISOCOR if not crowded, FLUX_AUTO otherwise. 
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

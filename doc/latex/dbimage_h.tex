@@ -1,0 +1,104 @@
+\subsection{dbimage.h File Reference}
+\label{dbimage_h}\index{dbimage.h@{dbimage.h}}
+documentation for the {\bf Db\-Image} {\rm (p.\,\pageref{class_dbimage})} class and the {\bf The data base configuration file.} {\rm (p.\,\pageref{dbconfig})} file, and more generally, the {\bf Data\-Base} {\rm (p.\,\pageref{database_page})}. 
+
+
+{\tt \#include $<$string$>$}\par
+{\tt \#include $<$iostream$>$}\par
+{\tt \#include \char`\"{}rootstuff.h\char`\"{}}\par
+{\tt \#include $<$list$>$}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Db\-Image}
+\item 
+class {\bf Db\-Image\-List}
+\begin{CompactList}\small\item\em Db\-Images can be globally located and stored into image lists.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{DbImageIterator@{DbImageIterator}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!DbImageIterator@{Db\-Image\-Iterator}}
+typedef list$<${\bf Db\-Image}$>$::iterator {\bf Db\-Image\-Iterator}\label{dbimage_h_a0}
+
+\item 
+\index{DbImageCIterator@{DbImageCIterator}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!DbImageCIterator@{Db\-Image\-CIterator}}
+typedef list$<${\bf Db\-Image}$>$::const\_\-iterator {\bf Db\-Image\-CIterator}\label{dbimage_h_a1}
+
+\end{CompactItemize}
+\subsubsection*{Enumerations}
+\begin{CompactItemize}
+\item 
+enum {\bf Db\-Image\-Kind} \{ {\bf Raw} =  1, 
+{\bf Calibrated}, 
+{\bf Elixir}
+ \}
+\item 
+enum {\bf Db\-Image\-Catalog\-Kind} \{ {\bf SExtractor} =  1, 
+{\bf Fitted\_\-for\_\-seeing}, 
+{\bf Daophot\-Als}, 
+{\bf Daophot\-Ap}, 
+{\bf Daophot\-Nei}, 
+{\bf Daophot\-Lst}, 
+{\bf Daophot\-Pk}, 
+{\bf Daophot\-Nst}
+ \}
+\item 
+enum {\bf Db\-Image\-Psf\-Kind} \{ {\bf Daophot\-Psf} =  1
+ \}
+\end{CompactItemize}
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+void {\bf Db\-Init} ()
+\begin{CompactList}\small\item\em reads the config file. Called automatically if not user called.\item\end{CompactList}\item 
+void {\bf Db\-Config\-Dump} (ostream \&stream=cout)
+\begin{CompactList}\small\item\em dumps to cout the (interpreted) contents of the configuration file.\item\end{CompactList}\item 
+\index{InstallImage@{InstallImage}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!InstallImage@{Install\-Image}}
+int {\bf Install\-Image} (const char $\ast$a\_\-path, const char $\ast$a\_\-file, Db\-Image\-Kind kind)\label{dbimage_h_a16}
+
+\item 
+\index{AssignInfo@{AssignInfo}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!AssignInfo@{Assign\-Info}}
+int {\bf Assign\-Info} (const {\bf Db\-Image} \&{\bf Image}, const string \&Flat\-Fits\-File\-Name, const char $\ast$Which\-Info)\label{dbimage_h_a17}
+
+\item 
+\index{DbConfigSetDumpLevel@{DbConfigSetDumpLevel}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!DbConfigSetDumpLevel@{Db\-Config\-Set\-Dump\-Level}}
+int {\bf Db\-Config\-Set\-Dump\-Level} (const int level)\label{dbimage_h_a18}
+
+\item 
+\index{DbConfigFileName@{DbConfigFileName}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!DbConfigFileName@{Db\-Config\-File\-Name}}
+string {\bf Db\-Config\-File\-Name} ()\label{dbimage_h_a19}
+
+\item 
+\index{DbConfigAddImagePath@{DbConfigAddImagePath}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!DbConfigAddImagePath@{Db\-Config\-Add\-Image\-Path}}
+void {\bf Db\-Config\-Add\-Image\-Path} (const char $\ast$a\_\-path, const char $\ast$a\_\-path\_\-name)\label{dbimage_h_a20}
+
+\item 
+\index{DbConfigFileParse@{DbConfigFileParse}!dbimage.h@{dbimage.h}}\index{dbimage.h@{dbimage.h}!DbConfigFileParse@{Db\-Config\-File\-Parse}}
+int {\bf Db\-Config\-File\-Parse} (const char $\ast$Config\-File\-Name)\label{dbimage_h_a21}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+documentation for the {\bf Db\-Image} {\rm (p.\,\pageref{class_dbimage})} class and the {\bf The data base configuration file.} {\rm (p.\,\pageref{dbconfig})} file, and more generally, the {\bf Data\-Base} {\rm (p.\,\pageref{database_page})}.
+
+
+
+
+
+\subsubsection{Function Documentation}
+\index{dbimage.h@{dbimage.h}!DbConfigDump@{DbConfigDump}}
+\index{DbConfigDump@{DbConfigDump}!dbimage.h@{dbimage.h}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}void Db\-Config\-Dump (ostream \& {\em stream} = cout)}\hfill\label{dbimage_h_a15}
+
+
+dumps to cout the (interpreted) contents of the configuration file.
+
+It triggers Db\-Init if not already done. \index{dbimage.h@{dbimage.h}!DbInit@{DbInit}}
+\index{DbInit@{DbInit}!dbimage.h@{dbimage.h}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}void Db\-Init ()}\hfill\label{dbimage_h_a14}
+
+
+reads the config file. Called automatically if not user called.
+
+If you programm does a lot of things before actually calling any {\bf Db\-Image} {\rm (p.\,\pageref{class_dbimage})} constructor,  it may be a good idea to call it early in your main to check if the configuration file is correct. 

@@ -1,0 +1,144 @@
+.TH "Night" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Night \- version of the \fBReducedImage\fR, quicker, but with more memory. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <night.h>\fR
+.PP
+Inherits \fBReducedImage\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "void \fBinit\fR ()"
+.br
+.RI "\fIInitialization of a night from its \fBReducedImage\fR.\fR"
+.ti -1c
+.RI "\fBNight\fR (const string &Name)"
+.br
+.ti -1c
+.RI "\fBNight\fR ()"
+.br
+.ti -1c
+.RI "\fB~Night\fR ()"
+.br
+.ti -1c
+.RI "bool \fBIsOK\fR () const"
+.br
+.RI "\fIreturns true if the night verifies a bunch of criteria.\fR"
+.ti -1c
+.RI "\fBReducedImage\fR* \fBClone\fR () const"
+.br
+.RI "\fIcopy constructor.\fR"
+.ti -1c
+.RI "bool \fBoperator<\fR (const Night &Right) const"
+.br
+.RI "\fIallows myNight1 < myNight2 to sort in time.\fR"
+.ti -1c
+.RI "void \fBdump\fR (ostream &Stream) const"
+.br
+.RI "\fIdumps basic info.\fR"
+.ti -1c
+.RI "void \fBdump_header\fR (ostream &Stream) const"
+.br
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "double \fBsaturation\fR"
+.br
+.RI "\fIThe saturation level.\fR"
+.ti -1c
+.RI "double \fBphotomRatio\fR"
+.br
+.RI "\fIA photometric ratio with a given reference image.\fR"
+.ti -1c
+.RI "double \fBkernelChi2\fR"
+.br
+.RI "\fIA Chi2/Dof deriving from a kernel fitting procedure.\fR"
+.ti -1c
+.RI "double \fBjulianDate\fR"
+.br
+.RI "\fIthe julian date associated with the night.\fR"
+.ti -1c
+.RI "double \fBexposure\fR"
+.br
+.RI "\fItotal exposure time for this night.\fR"
+.ti -1c
+.RI "double \fBzeroPoint\fR"
+.br
+.RI "\fIthe zero point of the night.\fR"
+.ti -1c
+.RI "double \fBseeing\fR"
+.br
+.RI "\fIseeing (in pixel units) of the night.\fR"
+.ti -1c
+.RI "double \fBsigmaX\fR"
+.br
+.RI "\fIsigma (in pixel units) of the night PSF in x-direction.\fR"
+.ti -1c
+.RI "double \fBsigmaY\fR"
+.br
+.RI "\fIsigma (in pixel units) of the night PSF in y-direction.\fR"
+.ti -1c
+.RI "double \fBthetaXY\fR"
+.br
+.RI "\fIcorrelation angle of the night PSF.\fR"
+.ti -1c
+.RI "double \fBskyLevel\fR"
+.br
+.RI "\fIoriginal sky background level of the night.\fR"
+.ti -1c
+.RI "double \fBbackLevel\fR"
+.br
+.RI "\fIcurrent background level of the image associated with the night.\fR"
+.ti -1c
+.RI "double \fBsigmaSky\fR"
+.br
+.RI "\fIsky RMS of the night sky background.\fR"
+.ti -1c
+.RI "double \fBgain\fR"
+.br
+.RI "\fIgain of the image (in e-/ADU).\fR"
+.ti -1c
+.RI "double \fBflatError\fR"
+.br
+.RI "\fIan estimate of the error in flatfielding (in % of pixel intensity).\fR"
+.ti -1c
+.RI "double \fBreadoutNoise\fR"
+.br
+.RI "\fIthe readout noise in e-.\fR"
+.ti -1c
+.RI "double \fBprofileError\fR"
+.br
+.RI "\fIthe systematic error of the chosen PSF profile.\fR"
+.ti -1c
+.RI "bool \fBIsZeroRef\fR"
+.br
+.RI "\fIreturns true if the night contribute as a zero point baseline for the lightcurve.\fR"
+.ti -1c
+.RI "bool \fBIsPhotometric\fR"
+.br
+.RI "\fIreturns true if the night is photometric.\fR"
+.in -1c
+.SS Friends
+
+.in +1c
+.ti -1c
+.RI "class \fBoperator<<\fR"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+version of the \fBReducedImage\fR, quicker, but with more memory.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

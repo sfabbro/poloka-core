@@ -1,0 +1,194 @@
+// -*- C++ -*-
+//
+//
+//
+//
+char* (persister<Star>::* getter_)();
+
+template<class T, class OIS>
+void streamer::read(obj_input<OIS> const& oi)
+{
+  unsigned int i;
+  persister<T>::setter_ s;
+  for(i=0;i<sz_;i++) {
+    s = set_[i];
+    oi.read(p.(*s)(),type[i]);
+  }
+}
+
+// The characters:
+
+// The Object we want to write and read.
+class Star;
+
+// The Persister -- external object, since we want
+// the toolkit to be as little invasive as possible.
+// NOTE however that persister<Star> must be a friend of Star
+class persister<Star>;
+
+// The object input and object output interfaces
+// Two simple template interfaces. They define
+// how an object can export and recover its persistent
+// data members. They're just interfaces and do not
+// actually know how to read and write data.
+// Their template method just call methods of another
+// class which does the actual work.
+class object_input;
+class object_output;
+
+
+// the reader holds a description of the serialized data
+// can read and write it. The reader is needed to recover
+// data written by older version of a same class.
+class reader;
+
+// Now, we can play with our objects:
+
+// writing and reading a Star
+template<class IOS>
+void persister<Star>::write(obj_output&) const;
+// or better
+template<class IOS>
+void const_persister<Star>::write(obj_output&) const;
+
+
+// for example
+Star st;q
+obj_output<XMLStream> oo;
+const_persister<Star> p(&st);
+oo.write(p);
+
+obj_intput<XMLStream> oi;
+persister<Star> pp(&st);
+oi.read(pp);
+
+
+// The functions
+template<class T, class OIS>
+void obj_output<OIS>::write(persister<T> const&);
+// and
+template<class T, class OIS>
+void obj_input<OIS>::read(persister<T>&) const;
+// just know how to tag the beginning of an object
+// and how to call the persister function which
+// goes though the object and exports its data values.
+
+// Here is the code:
+template<class T, class OIS>
+void obj_output<OIS>::write(persister<T> const& p)
+{
+  stream_.start_writing_object(p);
+  p.write_obj_members(*this);
+  stream_.end_writing_object(p);
+}
+
+
+// the code for the reader is a bit more complicated
+// since we have to deal with the version changes
+template<class T, class OIS>
+void obj_input<OIS>::read(persister<T>& p) const
+{
+  unsigned int version;
+  stream_.start_reading_object(p, version);
+  if( version == p.version() )
+    p.read_obj_members(*this);
+  else {
+    // retrieve the reader
+    reader_base* reader = get_reader(p,version);
+    reader->read_obj_members(*this,p);
+  }
+  stream_.end_reading_object(p);
+}
+
+
+
+template<class O, class OIS>
+class base_reader {
+public:
+  virtual void read(obj_input<OIS> const&, O&)=0;
+};
+
+
+template<class O, class OIS, class T, class D>
+class simple_type_reader {
+public:
+  simple_type_reader(T O::*) {}
+  ~simple_type_reader() {}
+  virtual void reader(obj_input<OIS> const&, O&);
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+// More about readers
+// a reader is a class able to read an object description
+// and to link it with the symbols exported by a persister
+// it is also able to read the object's
+// There are several reader types. The most generic one is:
+class generic_reader : public base_reader;
+
+template<class T, class OIS>
+void generic_reader::read_obj_members(obj_input<T> const& oi, persister<T>& p) c
+onst
+{
+   list<base_reader*>::const_iterator it;
+   for(it=l.begin();it!=l.end();it++)
+     it->read(oi, (p.*(it->setter)()));
+}
+
+
+
+// a reader is a class which knows how to read
+class base_reader;
+class generic_reader : public base_reader;
+template<class T, class D> class simple_type_reader : public base_reader;
+
+// a generic reader manages a tree of readers.
+// here's the code
+class base_reader {};
+
+
+template<class T, class D>
+class simple_type_reader : public base_reader {
+public:
+
+  template<class OIS>
+  inline void   read(obj_input<OIS> const& oi, D& v) {
+    T myvar;
+    oi.read(myvar);
+    v = (D)myvar;
+  }
+
+};
+
+
+
+// specialization for the pointer types
+
+// specialization for the STL types
+

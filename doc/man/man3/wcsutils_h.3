@@ -1,0 +1,125 @@
+.TH "wcsutils.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+wcsutils.h \- World Coordinate Transfo read and write. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <string>\fR
+.br
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "bool \fBWCSFromHeader\fR (const \fBFitsHeader\fR &Head, \fBGtransfo\fR *&Pix2RaDec)"
+.br
+.RI "\fIreturns a transformation that combines availbale information in the header.\fR"
+.ti -1c
+.RI "bool \fBWCSFromHeader\fR (const string &FitsName, \fBGtransfo\fR *&Pix2RaDec)"
+.br
+.RI "\fIsame as above.\fR"
+.ti -1c
+.RI "int \fBWCSTransfo2Header\fR (const string &FitsImageName, const \fBGtransfoLin\fR &Pix2RaDec)"
+.br
+.RI "\fIFills the fits file header with provided WCS transfo.\fR"
+.ti -1c
+.RI "int \fBWCSTransfo2Header\fR (\fBFitsHeader\fR &header, const \fBGtransfoLin\fR &Pix2RaDec)"
+.br
+.ti -1c
+.RI "bool \fBWCSLinTransfoFromHeader\fR (const string &FitsImageName, \fBGtransfoLin\fR &Pix2RaDec)"
+.br
+.RI "\fIretrieves the (lin) WCS transfo from a header.\fR"
+.ti -1c
+.RI "bool \fBWCSLinTransfoFromHeader\fR (const \fBFitsHeader\fR &Header, \fBGtransfoLin\fR &Pix2RaDec)"
+.br
+.ti -1c
+.RI "bool \fBTanLinWCSFromHeader\fR (const \fBFitsHeader\fR &Head, \fBTanPix2RaDec\fR &TanWcs, const bool Warn=false)"
+.br
+.RI "\fIreturn the tangent point WCS transfo.\fR"
+.ti -1c
+.RI "bool \fBTanWCSFromHeader\fR (const \fBFitsHeader\fR &Head, \fBTanPix2RaDec\fR &TanWcs, const bool Warn=false)"
+.br
+.RI "\fIread it.\fR"
+.ti -1c
+.RI "int \fBTanWCS2Header\fR (const string &FitsImageName, const \fBTanPix2RaDec\fR &TanWcs)"
+.br
+.RI "\fIwrite it.\fR"
+.ti -1c
+.RI "void \fBTanWCS2Header\fR (\fBFitsHeader\fR &Head, const \fBTanPix2RaDec\fR &TanWcs)"
+.br
+.RI "\fIwrite it.\fR"
+.ti -1c
+.RI "bool \fBWCSTransfoBetweenHeader\fR (const \fBFitsHeader\fR &Header1, const \fBFitsHeader\fR &Header1, \fBGtransfoLin\fR &Transfo1to2)"
+.br
+.RI "\fIretrieves the (lin) transfo from header1 to header2, using WCS.\fR"
+.ti -1c
+.RI "bool \fBHasLinWCS\fR (const \fBFitsHeader\fR &Header)"
+.br
+.RI "\fIcheck the presence of World Coordinate System data.\fR"
+.ti -1c
+.RI "void \fBRemoveWCS\fR (\fBFitsHeader\fR &Header)"
+.br
+.RI "\fIremove entirely a WCS transfo from a header.\fR"
+.ti -1c
+.RI "bool \fBCopyWCS\fR (const \fBFitsHeader\fR &FromHeader, \fBFitsHeader\fR &ToHeader)"
+.br
+.RI "\fIcopy entirely a WCS transfo from a header to another header.\fR"
+.ti -1c
+.RI "void \fBGetPixelSize\fR (const \fBFitsHeader\fR &Head, double &SizeX, double &SizeY)"
+.br
+.RI "\fIfetch pixel sizes in arcsecond from a header using WCS info.\fR"
+.ti -1c
+.RI "void \fBRaDecFromWCS\fR (const \fBFitsHeader\fR &Header, double &Ra, double &Dec)"
+.br
+.RI "\fIGet Ra and DEC from WCS on center of image.\fR"
+.ti -1c
+.RI "double \fBPixelSize\fR (const \fBFitsHeader\fR &Head)"
+.br
+.RI "\fIso far returns average pixel size in arcsecond.\fR"
+.ti -1c
+.RI "double \fBArcmin2Area\fR (const \fBFrame\fR &aFrame, const \fBFitsHeader\fR &Header)"
+.br
+.RI "\fIreturns the area in arcmin^2 of a frame in a \fBFitsHeader\fR using WCS info.\fR"
+.ti -1c
+.RI "double \fBArcmin2Area\fR (const \fBFitsHeader\fR &Header)"
+.br
+.RI "\fIreturns the area in arcmin^2 of the default \fBFrame\fR in a header using WCS info.\fR"
+.ti -1c
+.RI "double \fBArcmin2Overlap\fR (const \fBFitsHeader\fR &Head1, const \fBFitsHeader\fR &Head2)"
+.br
+.RI "\fIreturns roughly the overlap area between two \fBFitsHeader\fR in arcmin^2 using WCS info.\fR"
+.ti -1c
+.RI "int \fBWCS3Transfo2Header\fR (\fBFitsHeader\fR &header, const \fBGtransfoCub\fR &CubicCorr)"
+.br
+.RI "\fIcubic refinement:.\fR"
+.ti -1c
+.RI "int \fBWCS3Transfo2Header\fR (const string &FitsImageName, const \fBGtransfoCub\fR &CubicCorr)"
+.br
+.ti -1c
+.RI "bool \fBWCS3TransfoFromHeader\fR (const \fBFitsHeader\fR &Header, \fBGtransfoCub\fR &CubicCorr, const bool Warn=true)"
+.br
+.ti -1c
+.RI "bool \fBWCS3TransfoFromHeader\fR (const string &FitsImageName, \fBGtransfoCub\fR &CubicCorr, const bool Warn=true)"
+.br
+.ti -1c
+.RI "bool \fBUpdateRaDec\fR (\fBFitsHeader\fR &Header)"
+.br
+.RI "\fIupdate RA, DEC and EPOCH based on WCS transfo and \fBFrame\fR in header.\fR"
+.ti -1c
+.RI "bool \fBWCSTransfoFromHeader\fR (const string &FitsImageName, \fBGtransfoLin\fR &Pix2RaDec)"
+.br
+.RI "\fINRL 04/2004 : adding this, so that standardstar compiles retrieves the (lin) WCS transfo from a header.\fR"
+.ti -1c
+.RI "bool \fBWCSTransfoFromHeader\fR (const \fBFitsHeader\fR &Header, \fBGtransfoLin\fR &Pix2RaDec)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+World Coordinate Transfo read and write.
+.PP
+ Only supports linear (RA--TAN) WCS now (until somebody understands any WCS documentation).
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

@@ -1,0 +1,64 @@
+.TH "fitsimage.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+fitsimage.h \- I/O of images/headers in fits format. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <string>\fR
+.br
+\fC#include <cstdio>\fR
+.br
+\fC#include <cstring>\fR
+.br
+\fC#include "image.h"\fR
+.br
+\fC#include "point.h"\fR
+.br
+\fC#include <fitsio.h>\fR
+.br
+\fC#include <vector>\fR
+.br
+.SS Compounds
+
+.in +1c
+.ti -1c
+.RI "class \fBFitsHeader\fR"
+.br
+.RI "\fIFits files and header keys.\fR"
+.ti -1c
+.RI "class \fBFitsImage\fR"
+.br
+.RI "\fIThis class enables basic manipulation of images stored in fits files.\fR"
+.ti -1c
+.RI "class \fBFitsKey\fR"
+.br
+.RI "\fIAuxilary class for accessing fits header keys.\fR"
+.ti -1c
+.RI "class \fBFitsKeyArray\fR"
+.br
+.in -1c
+.SS Defines
+
+.in +1c
+.ti -1c
+.RI "#define \fBNOVAL\fR  string("NOVAL")"
+.br
+.in -1c
+.SS Enumerations
+
+.in +1c
+.ti -1c
+.RI "enum \fBFitsFileMode\fR { \fBRO\fR =  0, \fBRW\fR =  1 }"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+I/O of images/headers in fits format.
+.PP
+The IO of images in the fits format are carried out using the cfitsio library. This library is written in C, and the most useful functionnalities have been wrapped here in C++ classes.
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

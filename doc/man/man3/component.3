@@ -1,0 +1,70 @@
+.TH "Component" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Component \- store the necessary components for weighting and computing the stacking. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <imagesum.h>\fR
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBComponent\fR (\fBReducedImage\fR *RI, const double &PhotomRatio, const WeightingMethod weightingMethod)"
+.br
+.RI "\fInot to be stored.\fR"
+.ti -1c
+.RI "void \fBdump\fR (ostream &s=cout) const"
+.br
+.ti -1c
+.RI "\fB~Component\fR ()"
+.br
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "double \fBbackVar\fR"
+.br
+.ti -1c
+.RI "double \fBseeing\fR"
+.br
+.ti -1c
+.RI "double \fBphotomRatio\fR"
+.br
+.ti -1c
+.RI "double \fBglobalWeight\fR"
+.br
+.ti -1c
+.RI "double \fBaverageWeight\fR"
+.br
+.ti -1c
+.RI "bool \fBhasWeight\fR"
+.br
+.ti -1c
+.RI "bool \fBhasDead\fR"
+.br
+.ti -1c
+.RI "bool \fBhasSatur\fR"
+.br
+.ti -1c
+.RI "bool \fBhasCosmic\fR"
+.br
+.ti -1c
+.RI "string \fBreducedImageName\fR"
+.br
+.ti -1c
+.RI "ReducedImageRef \fBRi\fR"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+store the necessary components for weighting and computing the stacking.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

@@ -1,0 +1,836 @@
+# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
+
+# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+
+SHELL = @SHELL@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+DESTDIR =
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = ..
+
+ACLOCAL = @ACLOCAL@
+AUTOCONF = @AUTOCONF@
+AUTOMAKE = @AUTOMAKE@
+AUTOHEADER = @AUTOHEADER@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(AM_INSTALL_PROGRAM_FLAGS)
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
+host_alias = @host_alias@
+host_triplet = @host@
+AS = @AS@
+AWK = @AWK@
+CC = @CC@
+CERN_LDFLAGS = @CERN_LDFLAGS@
+CPP = @CPP@
+CXX = @CXX@
+DLLTOOL = @DLLTOOL@
+DOXYGEN = @DOXYGEN@
+ECHO = @ECHO@
+EXEEXT = @EXEEXT@
+F77 = @F77@
+LEX = @LEX@
+LIBCFITSIO_CPPFLAGS = @LIBCFITSIO_CPPFLAGS@
+LIBCFITSIO_LDFLAGS = @LIBCFITSIO_LDFLAGS@
+LIBTOOL = @LIBTOOL@
+LIBXML2_CPPFLAGS = @LIBXML2_CPPFLAGS@
+LIBXML2_LDFLAGS = @LIBXML2_LDFLAGS@
+LN_S = @LN_S@
+MAKEINFO = @MAKEINFO@
+OBJDUMP = @OBJDUMP@
+OBJEXT = @OBJEXT@
+PACKAGE = @PACKAGE@
+RANLIB = @RANLIB@
+STRIP = @STRIP@
+VERSION = @VERSION@
+YACC = @YACC@
+
+EXTRA_DIST = 
+
+bin_PROGRAMS = \
+ header im2tup astrom changekey checker create_precise_std_file \
+ dbimstat dead_correction defringe defringe2 detectonedb \
+ elixir_to_toads findsatellite flatfield fringefinder \
+ image_align image_combine image_register image_select \
+ image_stats image_sub image_sum lbl2toads maglimeval \
+ make_calibration make_catalog make_cosmic \
+ make_dead makefringe \
+ makesub make_weight matchNimages matchradec matchstandard matchusno \
+ mosaique_int newmake_sub preptoads removeback selection \
+ skylev sum_images trim valid_fits wiynpad
+
+
+AM_CPPFLAGS = -I../src -I/home/nrl/Work/frogs/sex/v222/src
+LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff -L/home/nrl/Work/frogs/sex/v222/Linux-i686 -lsex -lwcs -lg2c
+
+header_SOURCES = header.cc
+im2tup_SOURCES = im2tup.cc
+im2tup_LDADD = -L/coda/software/cern/pro/lib -lpacklib -lnsl -lcrypt -ldl -lg2c
+astrom_SOURCES = astrom.cc 
+changekey_SOURCES = changekey.cc
+checker_SOURCES = checker.cc
+create_precise_std_file_SOURCES = create_precise_std_file.cc
+dbimstat_SOURCES = dbimstat.cc
+dead_correction_SOURCES = dead_correction.cc
+defringe_SOURCES = defringe.cc
+defringe2_SOURCES = defringe2.cc
+detectonedb_SOURCES = detectonedb.cc
+elixir_to_toads_SOURCES = elixir_to_toads.cc
+findsatellite_SOURCES = findsatellite.cc
+flatfield_SOURCES = flatfield.cc
+fringefinder_SOURCES = fringefinder.cc
+image_align_SOURCES = image_align.cc
+image_combine_SOURCES = image_combine.cc
+# image_match_SOURCES = image_match.cc
+image_register_SOURCES = image_register.cc
+image_select_SOURCES = image_select.cc
+image_stats_SOURCES = image_stats.cc
+image_sub_SOURCES = image_sub.cc
+image_sum_SOURCES = image_sum.cc
+lbl2toads_SOURCES = lbl2toads.cc
+#lmatch_SOURCES = lmatch.cc
+maglimeval_SOURCES = maglimeval.cc 
+make_calibration_SOURCES = make_calibration.cc
+make_catalog_SOURCES = make_catalog.cc
+make_cosmic_SOURCES = make_cosmic.cc
+#make_daophot_SOURCES = make_daophot.cc
+make_dead_SOURCES = make_dead.cc
+makefringe_SOURCES = makefringe.cc
+#make_lightcurve_SOURCES = make_lightcurve.cc
+#make_mosaique_SOURCES = make_mosaique.cc
+#make_sub_SOURCES = make_sub.cc
+makesub_SOURCES = makesub.cc
+make_weight_SOURCES = make_weight.cc
+matchNimages_SOURCES = matchNimages.cc
+matchradec_SOURCES = matchradec.cc
+matchstandard_SOURCES = matchstandard.cc
+matchusno_SOURCES = matchusno.cc
+#mkskyhist_SOURCES = mkskyhist.cc
+mosaique_int_SOURCES = mosaique_int.cc
+newmake_sub_SOURCES = newmake_sub.cc
+preptoads_SOURCES = preptoads.cc
+removeback_SOURCES = removeback.cc
+selection_SOURCES = selection.cc
+#sex2dao_SOURCES = sex2dao.cc
+#sky_hist_SOURCES = sky_hist.cc
+skylev_SOURCES = skylev.cc
+sum_images_SOURCES = sum_images.cc
+trim_SOURCES = trim.cc
+valid_fits_SOURCES = valid_fits.cc
+wiynpad_SOURCES = wiynpad.cc
+mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+CONFIG_HEADER = ../config.h
+CONFIG_CLEAN_FILES = 
+bin_PROGRAMS =  header$(EXEEXT) im2tup$(EXEEXT) astrom$(EXEEXT) \
+changekey$(EXEEXT) checker$(EXEEXT) create_precise_std_file$(EXEEXT) \
+dbimstat$(EXEEXT) dead_correction$(EXEEXT) defringe$(EXEEXT) \
+defringe2$(EXEEXT) detectonedb$(EXEEXT) elixir_to_toads$(EXEEXT) \
+findsatellite$(EXEEXT) flatfield$(EXEEXT) fringefinder$(EXEEXT) \
+image_align$(EXEEXT) image_combine$(EXEEXT) image_register$(EXEEXT) \
+image_select$(EXEEXT) image_stats$(EXEEXT) image_sub$(EXEEXT) \
+image_sum$(EXEEXT) lbl2toads$(EXEEXT) maglimeval$(EXEEXT) \
+make_calibration$(EXEEXT) make_catalog$(EXEEXT) make_cosmic$(EXEEXT) \
+make_dead$(EXEEXT) makefringe$(EXEEXT) makesub$(EXEEXT) \
+make_weight$(EXEEXT) matchNimages$(EXEEXT) matchradec$(EXEEXT) \
+matchstandard$(EXEEXT) matchusno$(EXEEXT) mosaique_int$(EXEEXT) \
+newmake_sub$(EXEEXT) preptoads$(EXEEXT) removeback$(EXEEXT) \
+selection$(EXEEXT) skylev$(EXEEXT) sum_images$(EXEEXT) trim$(EXEEXT) \
+valid_fits$(EXEEXT) wiynpad$(EXEEXT)
+PROGRAMS =  $(bin_PROGRAMS)
+
+
+DEFS = @DEFS@ -I. -I$(srcdir) -I..
+CPPFLAGS = @CPPFLAGS@
+LIBS = @LIBS@
+header_OBJECTS =  header.$(OBJEXT)
+header_LDADD = $(LDADD)
+header_DEPENDENCIES = 
+header_LDFLAGS = 
+im2tup_OBJECTS =  im2tup.$(OBJEXT)
+im2tup_DEPENDENCIES = 
+im2tup_LDFLAGS = 
+astrom_OBJECTS =  astrom.$(OBJEXT)
+astrom_LDADD = $(LDADD)
+astrom_DEPENDENCIES = 
+astrom_LDFLAGS = 
+changekey_OBJECTS =  changekey.$(OBJEXT)
+changekey_LDADD = $(LDADD)
+changekey_DEPENDENCIES = 
+changekey_LDFLAGS = 
+checker_OBJECTS =  checker.$(OBJEXT)
+checker_LDADD = $(LDADD)
+checker_DEPENDENCIES = 
+checker_LDFLAGS = 
+create_precise_std_file_OBJECTS =  create_precise_std_file.$(OBJEXT)
+create_precise_std_file_LDADD = $(LDADD)
+create_precise_std_file_DEPENDENCIES = 
+create_precise_std_file_LDFLAGS = 
+dbimstat_OBJECTS =  dbimstat.$(OBJEXT)
+dbimstat_LDADD = $(LDADD)
+dbimstat_DEPENDENCIES = 
+dbimstat_LDFLAGS = 
+dead_correction_OBJECTS =  dead_correction.$(OBJEXT)
+dead_correction_LDADD = $(LDADD)
+dead_correction_DEPENDENCIES = 
+dead_correction_LDFLAGS = 
+defringe_OBJECTS =  defringe.$(OBJEXT)
+defringe_LDADD = $(LDADD)
+defringe_DEPENDENCIES = 
+defringe_LDFLAGS = 
+defringe2_OBJECTS =  defringe2.$(OBJEXT)
+defringe2_LDADD = $(LDADD)
+defringe2_DEPENDENCIES = 
+defringe2_LDFLAGS = 
+detectonedb_OBJECTS =  detectonedb.$(OBJEXT)
+detectonedb_LDADD = $(LDADD)
+detectonedb_DEPENDENCIES = 
+detectonedb_LDFLAGS = 
+elixir_to_toads_OBJECTS =  elixir_to_toads.$(OBJEXT)
+elixir_to_toads_LDADD = $(LDADD)
+elixir_to_toads_DEPENDENCIES = 
+elixir_to_toads_LDFLAGS = 
+findsatellite_OBJECTS =  findsatellite.$(OBJEXT)
+findsatellite_LDADD = $(LDADD)
+findsatellite_DEPENDENCIES = 
+findsatellite_LDFLAGS = 
+flatfield_OBJECTS =  flatfield.$(OBJEXT)
+flatfield_LDADD = $(LDADD)
+flatfield_DEPENDENCIES = 
+flatfield_LDFLAGS = 
+fringefinder_OBJECTS =  fringefinder.$(OBJEXT)
+fringefinder_LDADD = $(LDADD)
+fringefinder_DEPENDENCIES = 
+fringefinder_LDFLAGS = 
+image_align_OBJECTS =  image_align.$(OBJEXT)
+image_align_LDADD = $(LDADD)
+image_align_DEPENDENCIES = 
+image_align_LDFLAGS = 
+image_combine_OBJECTS =  image_combine.$(OBJEXT)
+image_combine_LDADD = $(LDADD)
+image_combine_DEPENDENCIES = 
+image_combine_LDFLAGS = 
+image_register_OBJECTS =  image_register.$(OBJEXT)
+image_register_LDADD = $(LDADD)
+image_register_DEPENDENCIES = 
+image_register_LDFLAGS = 
+image_select_OBJECTS =  image_select.$(OBJEXT)
+image_select_LDADD = $(LDADD)
+image_select_DEPENDENCIES = 
+image_select_LDFLAGS = 
+image_stats_OBJECTS =  image_stats.$(OBJEXT)
+image_stats_LDADD = $(LDADD)
+image_stats_DEPENDENCIES = 
+image_stats_LDFLAGS = 
+image_sub_OBJECTS =  image_sub.$(OBJEXT)
+image_sub_LDADD = $(LDADD)
+image_sub_DEPENDENCIES = 
+image_sub_LDFLAGS = 
+image_sum_OBJECTS =  image_sum.$(OBJEXT)
+image_sum_LDADD = $(LDADD)
+image_sum_DEPENDENCIES = 
+image_sum_LDFLAGS = 
+lbl2toads_OBJECTS =  lbl2toads.$(OBJEXT)
+lbl2toads_LDADD = $(LDADD)
+lbl2toads_DEPENDENCIES = 
+lbl2toads_LDFLAGS = 
+maglimeval_OBJECTS =  maglimeval.$(OBJEXT)
+maglimeval_LDADD = $(LDADD)
+maglimeval_DEPENDENCIES = 
+maglimeval_LDFLAGS = 
+make_calibration_OBJECTS =  make_calibration.$(OBJEXT)
+make_calibration_LDADD = $(LDADD)
+make_calibration_DEPENDENCIES = 
+make_calibration_LDFLAGS = 
+make_catalog_OBJECTS =  make_catalog.$(OBJEXT)
+make_catalog_LDADD = $(LDADD)
+make_catalog_DEPENDENCIES = 
+make_catalog_LDFLAGS = 
+make_cosmic_OBJECTS =  make_cosmic.$(OBJEXT)
+make_cosmic_LDADD = $(LDADD)
+make_cosmic_DEPENDENCIES = 
+make_cosmic_LDFLAGS = 
+make_dead_OBJECTS =  make_dead.$(OBJEXT)
+make_dead_LDADD = $(LDADD)
+make_dead_DEPENDENCIES = 
+make_dead_LDFLAGS = 
+makefringe_OBJECTS =  makefringe.$(OBJEXT)
+makefringe_LDADD = $(LDADD)
+makefringe_DEPENDENCIES = 
+makefringe_LDFLAGS = 
+makesub_OBJECTS =  makesub.$(OBJEXT)
+makesub_LDADD = $(LDADD)
+makesub_DEPENDENCIES = 
+makesub_LDFLAGS = 
+make_weight_OBJECTS =  make_weight.$(OBJEXT)
+make_weight_LDADD = $(LDADD)
+make_weight_DEPENDENCIES = 
+make_weight_LDFLAGS = 
+matchNimages_OBJECTS =  matchNimages.$(OBJEXT)
+matchNimages_LDADD = $(LDADD)
+matchNimages_DEPENDENCIES = 
+matchNimages_LDFLAGS = 
+matchradec_OBJECTS =  matchradec.$(OBJEXT)
+matchradec_LDADD = $(LDADD)
+matchradec_DEPENDENCIES = 
+matchradec_LDFLAGS = 
+matchstandard_OBJECTS =  matchstandard.$(OBJEXT)
+matchstandard_LDADD = $(LDADD)
+matchstandard_DEPENDENCIES = 
+matchstandard_LDFLAGS = 
+matchusno_OBJECTS =  matchusno.$(OBJEXT)
+matchusno_LDADD = $(LDADD)
+matchusno_DEPENDENCIES = 
+matchusno_LDFLAGS = 
+mosaique_int_OBJECTS =  mosaique_int.$(OBJEXT)
+mosaique_int_LDADD = $(LDADD)
+mosaique_int_DEPENDENCIES = 
+mosaique_int_LDFLAGS = 
+newmake_sub_OBJECTS =  newmake_sub.$(OBJEXT)
+newmake_sub_LDADD = $(LDADD)
+newmake_sub_DEPENDENCIES = 
+newmake_sub_LDFLAGS = 
+preptoads_OBJECTS =  preptoads.$(OBJEXT)
+preptoads_LDADD = $(LDADD)
+preptoads_DEPENDENCIES = 
+preptoads_LDFLAGS = 
+removeback_OBJECTS =  removeback.$(OBJEXT)
+removeback_LDADD = $(LDADD)
+removeback_DEPENDENCIES = 
+removeback_LDFLAGS = 
+selection_OBJECTS =  selection.$(OBJEXT)
+selection_LDADD = $(LDADD)
+selection_DEPENDENCIES = 
+selection_LDFLAGS = 
+skylev_OBJECTS =  skylev.$(OBJEXT)
+skylev_LDADD = $(LDADD)
+skylev_DEPENDENCIES = 
+skylev_LDFLAGS = 
+sum_images_OBJECTS =  sum_images.$(OBJEXT)
+sum_images_LDADD = $(LDADD)
+sum_images_DEPENDENCIES = 
+sum_images_LDFLAGS = 
+trim_OBJECTS =  trim.$(OBJEXT)
+trim_LDADD = $(LDADD)
+trim_DEPENDENCIES = 
+trim_LDFLAGS = 
+valid_fits_OBJECTS =  valid_fits.$(OBJEXT)
+valid_fits_LDADD = $(LDADD)
+valid_fits_DEPENDENCIES = 
+valid_fits_LDFLAGS = 
+wiynpad_OBJECTS =  wiynpad.$(OBJEXT)
+wiynpad_LDADD = $(LDADD)
+wiynpad_DEPENDENCIES = 
+wiynpad_LDFLAGS = 
+CXXFLAGS = @CXXFLAGS@
+CXXCOMPILE = $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@
+DIST_COMMON =  Makefile.am Makefile.in
+
+
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+
+TAR = gtar
+GZIP_ENV = --best
+DEP_FILES =  .deps/astrom.P .deps/changekey.P .deps/checker.P \
+.deps/create_precise_std_file.P .deps/dbimstat.P \
+.deps/dead_correction.P .deps/defringe.P .deps/defringe2.P \
+.deps/detectonedb.P .deps/elixir_to_toads.P .deps/findsatellite.P \
+.deps/flatfield.P .deps/fringefinder.P .deps/header.P .deps/im2tup.P \
+.deps/image_align.P .deps/image_combine.P .deps/image_register.P \
+.deps/image_select.P .deps/image_stats.P .deps/image_sub.P \
+.deps/image_sum.P .deps/lbl2toads.P .deps/maglimeval.P \
+.deps/make_calibration.P .deps/make_catalog.P .deps/make_cosmic.P \
+.deps/make_dead.P .deps/make_weight.P .deps/makefringe.P \
+.deps/makesub.P .deps/matchNimages.P .deps/matchradec.P \
+.deps/matchstandard.P .deps/matchusno.P .deps/mosaique_int.P \
+.deps/newmake_sub.P .deps/preptoads.P .deps/removeback.P \
+.deps/selection.P .deps/skylev.P .deps/sum_images.P .deps/trim.P \
+.deps/valid_fits.P .deps/wiynpad.P
+SOURCES = $(header_SOURCES) $(im2tup_SOURCES) $(astrom_SOURCES) $(changekey_SOURCES) $(checker_SOURCES) $(create_precise_std_file_SOURCES) $(dbimstat_SOURCES) $(dead_correction_SOURCES) $(defringe_SOURCES) $(defringe2_SOURCES) $(detectonedb_SOURCES) $(elixir_to_toads_SOURCES) $(findsatellite_SOURCES) $(flatfield_SOURCES) $(fringefinder_SOURCES) $(image_align_SOURCES) $(image_combine_SOURCES) $(image_register_SOURCES) $(image_select_SOURCES) $(image_stats_SOURCES) $(image_sub_SOURCES) $(image_sum_SOURCES) $(lbl2toads_SOURCES) $(maglimeval_SOURCES) $(make_calibration_SOURCES) $(make_catalog_SOURCES) $(make_cosmic_SOURCES) $(make_dead_SOURCES) $(makefringe_SOURCES) $(makesub_SOURCES) $(make_weight_SOURCES) $(matchNimages_SOURCES) $(matchradec_SOURCES) $(matchstandard_SOURCES) $(matchusno_SOURCES) $(mosaique_int_SOURCES) $(newmake_sub_SOURCES) $(preptoads_SOURCES) $(removeback_SOURCES) $(selection_SOURCES) $(skylev_SOURCES) $(sum_images_SOURCES) $(trim_SOURCES) $(valid_fits_SOURCES) $(wiynpad_SOURCES)
+OBJECTS = $(header_OBJECTS) $(im2tup_OBJECTS) $(astrom_OBJECTS) $(changekey_OBJECTS) $(checker_OBJECTS) $(create_precise_std_file_OBJECTS) $(dbimstat_OBJECTS) $(dead_correction_OBJECTS) $(defringe_OBJECTS) $(defringe2_OBJECTS) $(detectonedb_OBJECTS) $(elixir_to_toads_OBJECTS) $(findsatellite_OBJECTS) $(flatfield_OBJECTS) $(fringefinder_OBJECTS) $(image_align_OBJECTS) $(image_combine_OBJECTS) $(image_register_OBJECTS) $(image_select_OBJECTS) $(image_stats_OBJECTS) $(image_sub_OBJECTS) $(image_sum_OBJECTS) $(lbl2toads_OBJECTS) $(maglimeval_OBJECTS) $(make_calibration_OBJECTS) $(make_catalog_OBJECTS) $(make_cosmic_OBJECTS) $(make_dead_OBJECTS) $(makefringe_OBJECTS) $(makesub_OBJECTS) $(make_weight_OBJECTS) $(matchNimages_OBJECTS) $(matchradec_OBJECTS) $(matchstandard_OBJECTS) $(matchusno_OBJECTS) $(mosaique_int_OBJECTS) $(newmake_sub_OBJECTS) $(preptoads_OBJECTS) $(removeback_OBJECTS) $(selection_OBJECTS) $(skylev_OBJECTS) $(sum_images_OBJECTS) $(trim_OBJECTS) $(valid_fits_OBJECTS) $(wiynpad_OBJECTS)
+
+all: all-redirect
+.SUFFIXES:
+.SUFFIXES: .S .c .cc .lo .o .obj .s
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu utils/Makefile
+
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+
+mostlyclean-binPROGRAMS:
+
+clean-binPROGRAMS:
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+
+distclean-binPROGRAMS:
+
+maintainer-clean-binPROGRAMS:
+
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo " $(LIBTOOL)  --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
+	    $(LIBTOOL)  --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	  else :; fi; \
+	done
+
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	done
+
+# FIXME: We should only use cygpath when building on Windows,
+# and only if it is available.
+.c.obj:
+	$(COMPILE) -c `cygpath -w $<`
+
+.s.o:
+	$(COMPILE) -c $<
+
+.S.o:
+	$(COMPILE) -c $<
+
+mostlyclean-compile:
+	-rm -f *.o core *.core
+	-rm -f *.$(OBJEXT)
+
+clean-compile:
+
+distclean-compile:
+	-rm -f *.tab.c
+
+maintainer-clean-compile:
+
+.s.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+.S.lo:
+	$(LIBTOOL) --mode=compile $(COMPILE) -c $<
+
+mostlyclean-libtool:
+	-rm -f *.lo
+
+clean-libtool:
+	-rm -rf .libs _libs
+
+distclean-libtool:
+
+maintainer-clean-libtool:
+
+header$(EXEEXT): $(header_OBJECTS) $(header_DEPENDENCIES)
+	@rm -f header$(EXEEXT)
+	$(CXXLINK) $(header_LDFLAGS) $(header_OBJECTS) $(header_LDADD) $(LIBS)
+
+im2tup$(EXEEXT): $(im2tup_OBJECTS) $(im2tup_DEPENDENCIES)
+	@rm -f im2tup$(EXEEXT)
+	$(CXXLINK) $(im2tup_LDFLAGS) $(im2tup_OBJECTS) $(im2tup_LDADD) $(LIBS)
+
+astrom$(EXEEXT): $(astrom_OBJECTS) $(astrom_DEPENDENCIES)
+	@rm -f astrom$(EXEEXT)
+	$(CXXLINK) $(astrom_LDFLAGS) $(astrom_OBJECTS) $(astrom_LDADD) $(LIBS)
+
+changekey$(EXEEXT): $(changekey_OBJECTS) $(changekey_DEPENDENCIES)
+	@rm -f changekey$(EXEEXT)
+	$(CXXLINK) $(changekey_LDFLAGS) $(changekey_OBJECTS) $(changekey_LDADD) $(LIBS)
+
+checker$(EXEEXT): $(checker_OBJECTS) $(checker_DEPENDENCIES)
+	@rm -f checker$(EXEEXT)
+	$(CXXLINK) $(checker_LDFLAGS) $(checker_OBJECTS) $(checker_LDADD) $(LIBS)
+
+create_precise_std_file$(EXEEXT): $(create_precise_std_file_OBJECTS) $(create_precise_std_file_DEPENDENCIES)
+	@rm -f create_precise_std_file$(EXEEXT)
+	$(CXXLINK) $(create_precise_std_file_LDFLAGS) $(create_precise_std_file_OBJECTS) $(create_precise_std_file_LDADD) $(LIBS)
+
+dbimstat$(EXEEXT): $(dbimstat_OBJECTS) $(dbimstat_DEPENDENCIES)
+	@rm -f dbimstat$(EXEEXT)
+	$(CXXLINK) $(dbimstat_LDFLAGS) $(dbimstat_OBJECTS) $(dbimstat_LDADD) $(LIBS)
+
+dead_correction$(EXEEXT): $(dead_correction_OBJECTS) $(dead_correction_DEPENDENCIES)
+	@rm -f dead_correction$(EXEEXT)
+	$(CXXLINK) $(dead_correction_LDFLAGS) $(dead_correction_OBJECTS) $(dead_correction_LDADD) $(LIBS)
+
+defringe$(EXEEXT): $(defringe_OBJECTS) $(defringe_DEPENDENCIES)
+	@rm -f defringe$(EXEEXT)
+	$(CXXLINK) $(defringe_LDFLAGS) $(defringe_OBJECTS) $(defringe_LDADD) $(LIBS)
+
+defringe2$(EXEEXT): $(defringe2_OBJECTS) $(defringe2_DEPENDENCIES)
+	@rm -f defringe2$(EXEEXT)
+	$(CXXLINK) $(defringe2_LDFLAGS) $(defringe2_OBJECTS) $(defringe2_LDADD) $(LIBS)
+
+detectonedb$(EXEEXT): $(detectonedb_OBJECTS) $(detectonedb_DEPENDENCIES)
+	@rm -f detectonedb$(EXEEXT)
+	$(CXXLINK) $(detectonedb_LDFLAGS) $(detectonedb_OBJECTS) $(detectonedb_LDADD) $(LIBS)
+
+elixir_to_toads$(EXEEXT): $(elixir_to_toads_OBJECTS) $(elixir_to_toads_DEPENDENCIES)
+	@rm -f elixir_to_toads$(EXEEXT)
+	$(CXXLINK) $(elixir_to_toads_LDFLAGS) $(elixir_to_toads_OBJECTS) $(elixir_to_toads_LDADD) $(LIBS)
+
+findsatellite$(EXEEXT): $(findsatellite_OBJECTS) $(findsatellite_DEPENDENCIES)
+	@rm -f findsatellite$(EXEEXT)
+	$(CXXLINK) $(findsatellite_LDFLAGS) $(findsatellite_OBJECTS) $(findsatellite_LDADD) $(LIBS)
+
+flatfield$(EXEEXT): $(flatfield_OBJECTS) $(flatfield_DEPENDENCIES)
+	@rm -f flatfield$(EXEEXT)
+	$(CXXLINK) $(flatfield_LDFLAGS) $(flatfield_OBJECTS) $(flatfield_LDADD) $(LIBS)
+
+fringefinder$(EXEEXT): $(fringefinder_OBJECTS) $(fringefinder_DEPENDENCIES)
+	@rm -f fringefinder$(EXEEXT)
+	$(CXXLINK) $(fringefinder_LDFLAGS) $(fringefinder_OBJECTS) $(fringefinder_LDADD) $(LIBS)
+
+image_align$(EXEEXT): $(image_align_OBJECTS) $(image_align_DEPENDENCIES)
+	@rm -f image_align$(EXEEXT)
+	$(CXXLINK) $(image_align_LDFLAGS) $(image_align_OBJECTS) $(image_align_LDADD) $(LIBS)
+
+image_combine$(EXEEXT): $(image_combine_OBJECTS) $(image_combine_DEPENDENCIES)
+	@rm -f image_combine$(EXEEXT)
+	$(CXXLINK) $(image_combine_LDFLAGS) $(image_combine_OBJECTS) $(image_combine_LDADD) $(LIBS)
+
+image_register$(EXEEXT): $(image_register_OBJECTS) $(image_register_DEPENDENCIES)
+	@rm -f image_register$(EXEEXT)
+	$(CXXLINK) $(image_register_LDFLAGS) $(image_register_OBJECTS) $(image_register_LDADD) $(LIBS)
+
+image_select$(EXEEXT): $(image_select_OBJECTS) $(image_select_DEPENDENCIES)
+	@rm -f image_select$(EXEEXT)
+	$(CXXLINK) $(image_select_LDFLAGS) $(image_select_OBJECTS) $(image_select_LDADD) $(LIBS)
+
+image_stats$(EXEEXT): $(image_stats_OBJECTS) $(image_stats_DEPENDENCIES)
+	@rm -f image_stats$(EXEEXT)
+	$(CXXLINK) $(image_stats_LDFLAGS) $(image_stats_OBJECTS) $(image_stats_LDADD) $(LIBS)
+
+image_sub$(EXEEXT): $(image_sub_OBJECTS) $(image_sub_DEPENDENCIES)
+	@rm -f image_sub$(EXEEXT)
+	$(CXXLINK) $(image_sub_LDFLAGS) $(image_sub_OBJECTS) $(image_sub_LDADD) $(LIBS)
+
+image_sum$(EXEEXT): $(image_sum_OBJECTS) $(image_sum_DEPENDENCIES)
+	@rm -f image_sum$(EXEEXT)
+	$(CXXLINK) $(image_sum_LDFLAGS) $(image_sum_OBJECTS) $(image_sum_LDADD) $(LIBS)
+
+lbl2toads$(EXEEXT): $(lbl2toads_OBJECTS) $(lbl2toads_DEPENDENCIES)
+	@rm -f lbl2toads$(EXEEXT)
+	$(CXXLINK) $(lbl2toads_LDFLAGS) $(lbl2toads_OBJECTS) $(lbl2toads_LDADD) $(LIBS)
+
+maglimeval$(EXEEXT): $(maglimeval_OBJECTS) $(maglimeval_DEPENDENCIES)
+	@rm -f maglimeval$(EXEEXT)
+	$(CXXLINK) $(maglimeval_LDFLAGS) $(maglimeval_OBJECTS) $(maglimeval_LDADD) $(LIBS)
+
+make_calibration$(EXEEXT): $(make_calibration_OBJECTS) $(make_calibration_DEPENDENCIES)
+	@rm -f make_calibration$(EXEEXT)
+	$(CXXLINK) $(make_calibration_LDFLAGS) $(make_calibration_OBJECTS) $(make_calibration_LDADD) $(LIBS)
+
+make_catalog$(EXEEXT): $(make_catalog_OBJECTS) $(make_catalog_DEPENDENCIES)
+	@rm -f make_catalog$(EXEEXT)
+	$(CXXLINK) $(make_catalog_LDFLAGS) $(make_catalog_OBJECTS) $(make_catalog_LDADD) $(LIBS)
+
+make_cosmic$(EXEEXT): $(make_cosmic_OBJECTS) $(make_cosmic_DEPENDENCIES)
+	@rm -f make_cosmic$(EXEEXT)
+	$(CXXLINK) $(make_cosmic_LDFLAGS) $(make_cosmic_OBJECTS) $(make_cosmic_LDADD) $(LIBS)
+
+make_dead$(EXEEXT): $(make_dead_OBJECTS) $(make_dead_DEPENDENCIES)
+	@rm -f make_dead$(EXEEXT)
+	$(CXXLINK) $(make_dead_LDFLAGS) $(make_dead_OBJECTS) $(make_dead_LDADD) $(LIBS)
+
+makefringe$(EXEEXT): $(makefringe_OBJECTS) $(makefringe_DEPENDENCIES)
+	@rm -f makefringe$(EXEEXT)
+	$(CXXLINK) $(makefringe_LDFLAGS) $(makefringe_OBJECTS) $(makefringe_LDADD) $(LIBS)
+
+makesub$(EXEEXT): $(makesub_OBJECTS) $(makesub_DEPENDENCIES)
+	@rm -f makesub$(EXEEXT)
+	$(CXXLINK) $(makesub_LDFLAGS) $(makesub_OBJECTS) $(makesub_LDADD) $(LIBS)
+
+make_weight$(EXEEXT): $(make_weight_OBJECTS) $(make_weight_DEPENDENCIES)
+	@rm -f make_weight$(EXEEXT)
+	$(CXXLINK) $(make_weight_LDFLAGS) $(make_weight_OBJECTS) $(make_weight_LDADD) $(LIBS)
+
+matchNimages$(EXEEXT): $(matchNimages_OBJECTS) $(matchNimages_DEPENDENCIES)
+	@rm -f matchNimages$(EXEEXT)
+	$(CXXLINK) $(matchNimages_LDFLAGS) $(matchNimages_OBJECTS) $(matchNimages_LDADD) $(LIBS)
+
+matchradec$(EXEEXT): $(matchradec_OBJECTS) $(matchradec_DEPENDENCIES)
+	@rm -f matchradec$(EXEEXT)
+	$(CXXLINK) $(matchradec_LDFLAGS) $(matchradec_OBJECTS) $(matchradec_LDADD) $(LIBS)
+
+matchstandard$(EXEEXT): $(matchstandard_OBJECTS) $(matchstandard_DEPENDENCIES)
+	@rm -f matchstandard$(EXEEXT)
+	$(CXXLINK) $(matchstandard_LDFLAGS) $(matchstandard_OBJECTS) $(matchstandard_LDADD) $(LIBS)
+
+matchusno$(EXEEXT): $(matchusno_OBJECTS) $(matchusno_DEPENDENCIES)
+	@rm -f matchusno$(EXEEXT)
+	$(CXXLINK) $(matchusno_LDFLAGS) $(matchusno_OBJECTS) $(matchusno_LDADD) $(LIBS)
+
+mosaique_int$(EXEEXT): $(mosaique_int_OBJECTS) $(mosaique_int_DEPENDENCIES)
+	@rm -f mosaique_int$(EXEEXT)
+	$(CXXLINK) $(mosaique_int_LDFLAGS) $(mosaique_int_OBJECTS) $(mosaique_int_LDADD) $(LIBS)
+
+newmake_sub$(EXEEXT): $(newmake_sub_OBJECTS) $(newmake_sub_DEPENDENCIES)
+	@rm -f newmake_sub$(EXEEXT)
+	$(CXXLINK) $(newmake_sub_LDFLAGS) $(newmake_sub_OBJECTS) $(newmake_sub_LDADD) $(LIBS)
+
+preptoads$(EXEEXT): $(preptoads_OBJECTS) $(preptoads_DEPENDENCIES)
+	@rm -f preptoads$(EXEEXT)
+	$(CXXLINK) $(preptoads_LDFLAGS) $(preptoads_OBJECTS) $(preptoads_LDADD) $(LIBS)
+
+removeback$(EXEEXT): $(removeback_OBJECTS) $(removeback_DEPENDENCIES)
+	@rm -f removeback$(EXEEXT)
+	$(CXXLINK) $(removeback_LDFLAGS) $(removeback_OBJECTS) $(removeback_LDADD) $(LIBS)
+
+selection$(EXEEXT): $(selection_OBJECTS) $(selection_DEPENDENCIES)
+	@rm -f selection$(EXEEXT)
+	$(CXXLINK) $(selection_LDFLAGS) $(selection_OBJECTS) $(selection_LDADD) $(LIBS)
+
+skylev$(EXEEXT): $(skylev_OBJECTS) $(skylev_DEPENDENCIES)
+	@rm -f skylev$(EXEEXT)
+	$(CXXLINK) $(skylev_LDFLAGS) $(skylev_OBJECTS) $(skylev_LDADD) $(LIBS)
+
+sum_images$(EXEEXT): $(sum_images_OBJECTS) $(sum_images_DEPENDENCIES)
+	@rm -f sum_images$(EXEEXT)
+	$(CXXLINK) $(sum_images_LDFLAGS) $(sum_images_OBJECTS) $(sum_images_LDADD) $(LIBS)
+
+trim$(EXEEXT): $(trim_OBJECTS) $(trim_DEPENDENCIES)
+	@rm -f trim$(EXEEXT)
+	$(CXXLINK) $(trim_LDFLAGS) $(trim_OBJECTS) $(trim_LDADD) $(LIBS)
+
+valid_fits$(EXEEXT): $(valid_fits_OBJECTS) $(valid_fits_DEPENDENCIES)
+	@rm -f valid_fits$(EXEEXT)
+	$(CXXLINK) $(valid_fits_LDFLAGS) $(valid_fits_OBJECTS) $(valid_fits_LDADD) $(LIBS)
+
+wiynpad$(EXEEXT): $(wiynpad_OBJECTS) $(wiynpad_DEPENDENCIES)
+	@rm -f wiynpad$(EXEEXT)
+	$(CXXLINK) $(wiynpad_LDFLAGS) $(wiynpad_OBJECTS) $(wiynpad_LDADD) $(LIBS)
+.cc.o:
+	$(CXXCOMPILE) -c $<
+.cc.obj:
+	$(CXXCOMPILE) -c `cygpath -w $<`
+.cc.lo:
+	$(LTCXXCOMPILE) -c $<
+
+tags: TAGS
+
+ID: $(HEADERS) $(SOURCES) $(LISP)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	here=`pwd` && cd $(srcdir) \
+	  && mkid -f$$here/ID $$unique $(LISP)
+
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
+
+mostlyclean-tags:
+
+clean-tags:
+
+distclean-tags:
+	-rm -f TAGS ID
+
+maintainer-clean-tags:
+
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+
+subdir = utils
+
+distdir: $(DISTFILES)
+	here=`cd $(top_builddir) && pwd`; \
+	top_distdir=`cd $(top_distdir) && pwd`; \
+	distdir=`cd $(distdir) && pwd`; \
+	cd $(top_srcdir) \
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu utils/Makefile
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
+	  if test -d $$d/$$file; then \
+	    cp -pr $$d/$$file $(distdir)/$$file; \
+	  else \
+	    test -f $(distdir)/$$file \
+	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+	  fi; \
+	done
+
+DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
+
+-include $(DEP_FILES)
+
+mostlyclean-depend:
+
+clean-depend:
+
+distclean-depend:
+	-rm -rf .deps
+
+maintainer-clean-depend:
+
+%.o: %.c
+	@echo '$(COMPILE) -c $<'; \
+	$(COMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-cp .deps/$(*F).pp .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm .deps/$(*F).pp
+
+%.lo: %.c
+	@echo '$(LTCOMPILE) -c $<'; \
+	$(LTCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
+	  < .deps/$(*F).pp > .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm -f .deps/$(*F).pp
+
+%.o: %.cc
+	@echo '$(CXXCOMPILE) -c $<'; \
+	$(CXXCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-cp .deps/$(*F).pp .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm .deps/$(*F).pp
+
+%.lo: %.cc
+	@echo '$(LTCXXCOMPILE) -c $<'; \
+	$(LTCXXCOMPILE) -Wp,-MD,.deps/$(*F).pp -c $<
+	@-sed -e 's/^\([^:]*\)\.o[ 	]*:/\1.lo \1.o :/' \
+	  < .deps/$(*F).pp > .deps/$(*F).P; \
+	tr ' ' '\012' < .deps/$(*F).pp \
+	  | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+	    >> .deps/$(*F).P; \
+	rm -f .deps/$(*F).pp
+info-am:
+info: info-am
+dvi-am:
+dvi: dvi-am
+check-am: all-am
+check: check-am
+installcheck-am:
+installcheck: installcheck-am
+install-exec-am: install-binPROGRAMS
+install-exec: install-exec-am
+
+install-data-am:
+install-data: install-data-am
+
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+install: install-am
+uninstall-am: uninstall-binPROGRAMS
+uninstall: uninstall-am
+all-am: Makefile $(PROGRAMS)
+all-redirect: all-am
+install-strip:
+	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
+installdirs:
+	$(mkinstalldirs)  $(DESTDIR)$(bindir)
+
+
+mostlyclean-generic:
+
+clean-generic:
+
+distclean-generic:
+	-rm -f Makefile $(CONFIG_CLEAN_FILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+
+maintainer-clean-generic:
+mostlyclean-am:  mostlyclean-binPROGRAMS mostlyclean-compile \
+		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
+		mostlyclean-generic
+
+mostlyclean: mostlyclean-am
+
+clean-am:  clean-binPROGRAMS clean-compile clean-libtool clean-tags \
+		clean-depend clean-generic mostlyclean-am
+
+clean: clean-am
+
+distclean-am:  distclean-binPROGRAMS distclean-compile distclean-libtool \
+		distclean-tags distclean-depend distclean-generic \
+		clean-am
+	-rm -f libtool
+
+distclean: distclean-am
+
+maintainer-clean-am:  maintainer-clean-binPROGRAMS \
+		maintainer-clean-compile maintainer-clean-libtool \
+		maintainer-clean-tags maintainer-clean-depend \
+		maintainer-clean-generic distclean-am
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+
+maintainer-clean: maintainer-clean-am
+
+.PHONY: mostlyclean-binPROGRAMS distclean-binPROGRAMS clean-binPROGRAMS \
+maintainer-clean-binPROGRAMS uninstall-binPROGRAMS install-binPROGRAMS \
+mostlyclean-compile distclean-compile clean-compile \
+maintainer-clean-compile mostlyclean-libtool distclean-libtool \
+clean-libtool maintainer-clean-libtool tags mostlyclean-tags \
+distclean-tags clean-tags maintainer-clean-tags distdir \
+mostlyclean-depend distclean-depend clean-depend \
+maintainer-clean-depend info-am info dvi-am dvi check check-am \
+installcheck-am installcheck install-exec-am install-exec \
+install-data-am install-data install-am install uninstall-am uninstall \
+all-redirect all-am all installdirs mostlyclean-generic \
+distclean-generic clean-generic maintainer-clean-generic clean \
+mostlyclean distclean maintainer-clean
+
+#write_star_SOURCES = write_star.cc
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

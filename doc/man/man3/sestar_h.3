@@ -1,0 +1,108 @@
+.TH "sestar.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+sestar.h \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <iostream>\fR
+.br
+\fC#include "basestar.h"\fR
+.br
+\fC#include "image.h"\fR
+.br
+\fC#include <list>\fR
+.br
+\fC#include "starlist.h"\fR
+.br
+.SS Compounds
+
+.in +1c
+.ti -1c
+.RI "class \fBSEStar\fR"
+.br
+.RI "\fISExtractor star.\fR"
+.in -1c
+.SS Defines
+
+.in +1c
+.ti -1c
+.RI "#define \fBDECALAGE_CAT_SE\fR  -1.0"
+.br
+.ti -1c
+.RI "#define \fBDECALAGE_SE_IJ\fR  0."
+.br
+.ti -1c
+.RI "#define \fBDECALAGE_IJ_SE\fR  0."
+.br
+.ti -1c
+.RI "#define \fBDECALAGE_SE_XY\fR  (DECALAGE_SE_IJ + DECALAGE_IJ_XY )"
+.br
+.ti -1c
+.RI "#define \fBDECALAGE_XY_SE\fR  (DECALAGE_XY_IJ + DECALAGE_IJ_SE )"
+.br
+.in -1c
+.SS Typedefs
+
+.in +1c
+.ti -1c
+.RI "typedef \fBStarList\fR<\fBSEStar\fR> \fBSEStarList\fR"
+.br
+.RI "\fIdefinition of the list and iterators.\fR"
+.ti -1c
+.RI "typedef SEStarList::const_iterator \fBSEStarCIterator\fR"
+.br
+.RI "\fIdefinition of the list and iterators.\fR"
+.ti -1c
+.RI "typedef SEStarList::iterator \fBSEStarIterator\fR"
+.br
+.RI "\fIdefinition of the list and iterators.\fR"
+.ti -1c
+.RI "typedef \fBCountedRef\fR<\fBSEStar\fR> \fBSEStarRef\fR"
+.br
+.RI "\fIdefinition of the list and iterators.\fR"
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "bool \fBDecFluxMax\fR (const \fBSEStar\fR *S1, const \fBSEStar\fR *S2)"
+.br
+.RI "\fIsort in decreasing peak value above background.\fR"
+.ti -1c
+.RI "BaseStarList* \fBSE2Base\fR (\fBSEStarList\fR *This)"
+.br
+.RI "\fItype casting.\fR"
+.ti -1c
+.RI "const BaseStarList* \fBSE2Base\fR (const \fBSEStarList\fR *This)"
+.br
+.ti -1c
+.RI "int \fBFlagCosmicFromImage\fR (\fBSEStarList\fR &stl, \fBImage\fR const &image, const double dist)"
+.br
+.RI "\fIFlag objects near pixels > 0 OK for images with very few pixels > 0.\fR"
+.ti -1c
+.RI "int \fBFlagSaturatedStars\fR (\fBSEStarList\fR &stl, const double saturation)"
+.br
+.ti -1c
+.RI "int \fBFlagSatFromImage\fR (\fBSEStarList\fR &stl, \fBImage\fR const &image)"
+.br
+.ti -1c
+.RI "int \fBKeepIt\fR (double saturation,\fBSEStarList\fR const &stli, \fBSEStarList\fR &temp)"
+.br
+.RI "\fISelect stars with the IsOK(saturation) routine.\fR"
+.ti -1c
+.RI "void \fBSetStarsBackground\fR (\fBSEStarList\fR &stl, double const background)"
+.br
+.RI "\fIDo as indicated in name ........\fR"
+.ti -1c
+.RI "int \fBStarFinder\fR (\fBSEStarList\fR &stlse, \fBSEStarList\fR &PrettyStars, double saturation=1.e+30)"
+.br
+.RI "\fISelect Stars in SEStarList.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

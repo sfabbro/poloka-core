@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>  <!-- -*- XML -*- -->
+
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+
+<xsd:complexType name="Point">
+ <xsd:complexContent>
+  <xsd:extension base="abstractObjectType">
+   <xsd:sequence>
+
+    <xsd:element name="x_">
+     <xsd:complexType>
+      <xsd:complexContent>
+       <xsd:extension base="f8_t">
+        <xsd:attribute name="name" type="xsd:string" fixed="x_"/>
+       </xsd:extension>
+      </xsd:complexContent>
+     </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="y_">
+     <xsd:complexType>
+      <xsd:complexContent>
+       <xsd:extension base="f8_t">
+        <xsd:attribute name="name" type="xsd:string" fixed="x_"/>
+       </xsd:extension>
+      </xsd:complexContent>
+     </xsd:complexType>
+    </xsd:element>
+
+   </xsd:sequence>
+  </xsd:extension>
+ </xsd:complexContent>
+</xsd:complexType>
+
+</xsd:schema>
+

@@ -1,0 +1,33 @@
+\subsection{fitsslice.h File Reference}
+\label{fitsslice_h}\index{fitsslice.h@{fitsslice.h}}
+Load successively slices of fits images in memory. 
+
+
+{\tt \#include $<$string$>$}\par
+{\tt \#include \char`\"{}fitsimage.h\char`\"{}}\par
+{\tt \#include $<$vector$>$}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Fits\-Parallel\-Slices}
+\begin{CompactList}\small\item\em Several fits images of the same size to be processed in parallel.\item\end{CompactList}\item 
+class {\bf Fits\-Slice}
+\begin{CompactList}\small\item\em Memory saving traversal of a fits image.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{FitsSliceIterator@{FitsSliceIterator}!fitsslice.h@{fitsslice.h}}\index{fitsslice.h@{fitsslice.h}!FitsSliceIterator@{Fits\-Slice\-Iterator}}
+typedef vector$<${\bf Fits\-Slice}$\ast$$>$::iterator {\bf Fits\-Slice\-Iterator}\label{fitsslice_h_a0}
+
+\item 
+\index{FitsSliceCIterator@{FitsSliceCIterator}!fitsslice.h@{fitsslice.h}}\index{fitsslice.h@{fitsslice.h}!FitsSliceCIterator@{Fits\-Slice\-CIterator}}
+typedef vector$<${\bf Fits\-Slice}$\ast$$>$::const\_\-iterator {\bf Fits\-Slice\-CIterator}\label{fitsslice_h_a1}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+Load successively slices of fits images in memory.
+
+ When one needs image data for a single traversal, Fits\-Slices and {\bf Fits\-Parallel\-Slices} {\rm (p.\,\pageref{class_fitsparallelslices})} should be considered. At the moment both classes only provide input services. See {\bf Usage of Fits\-Parallel\-Slices} {\rm (p.\,\pageref{example_slices})} for an example.
+

@@ -1,0 +1,47 @@
+.TH "allreducedimage.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+allreducedimage.h \- utilities around all derived classes ot \fBReducedImage\fR. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <string>\fR
+.br
+.SS Namespaces
+
+.in +1c
+.ti -1c
+.RI "namespace \fBstd\fR"
+.br
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "\fBReducedImage\fR* \fBReducedImageNew\fR (const string &Name)"
+.br
+.RI "\fI'virtual' constructor. Not totally functionnal unfortunately.\fR"
+.ti -1c
+.RI "const \fBTransformedImage\fR* \fBIsTransformedImage\fR (const \fBReducedImage\fR *RImage)"
+.br
+.RI "\fIreturns NULL if the argument is not a \fBTransformedImage\fR.\fR"
+.ti -1c
+.RI "\fBTransformedImage\fR* \fBIsTransformedImage\fR (\fBReducedImage\fR *RImage)"
+.br
+.ti -1c
+.RI "const \fBImageSum\fR* \fBIsImageSum\fR (const \fBReducedImage\fR *RImage)"
+.br
+.RI "\fIreturns NULL if the argument is not an \fBImageSum\fR.\fR"
+.ti -1c
+.RI "\fBImageSum\fR* \fBIsImageSum\fR (\fBReducedImage\fR *RImage)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+utilities around all derived classes ot \fBReducedImage\fR.
+.PP
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

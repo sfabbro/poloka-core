@@ -1,0 +1,60 @@
+\subsection{Fits\-Set  Class Reference}
+\label{class_fitsset}\index{FitsSet@{Fits\-Set}}
+container for fits files that have same sizes, filter, and come from the same chip within a mosaic. 
+
+
+{\tt \#include $<$fitsset.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+{\bf Fits\-Set} (const string \&File\-Name, const bool Check\-Filter=true)
+\begin{CompactList}\small\item\em constructor from a file that contains file names (one per line).\item\end{CompactList}\item 
+\index{operator[]@{operator[]}!FitsSet@{Fits\-Set}}\index{FitsSet@{FitsSet}!operator[]@{operator[$\,$]}}
+string {\bf operator[$\,$]} (const unsigned int i) const\label{class_fitsset_a1}
+
+\item 
+\index{size@{size}!FitsSet@{Fits\-Set}}\index{FitsSet@{FitsSet}!size@{size}}
+int {\bf size} () const\label{class_fitsset_a2}
+
+\begin{CompactList}\small\item\em Number of file in the set.\item\end{CompactList}\item 
+\index{AllNames@{AllNames}!FitsSet@{Fits\-Set}}\index{FitsSet@{FitsSet}!AllNames@{All\-Names}}
+string {\bf All\-Names} () const\label{class_fitsset_a3}
+
+\begin{CompactList}\small\item\em returns a string containing all file names.\item\end{CompactList}\item 
+\index{Nx@{Nx}!FitsSet@{Fits\-Set}}\index{FitsSet@{FitsSet}!Nx@{Nx}}
+int {\bf Nx} () const\label{class_fitsset_a4}
+
+\begin{CompactList}\small\item\em x size of images (excluding overscan if any).\item\end{CompactList}\item 
+\index{Ny@{Ny}!FitsSet@{Fits\-Set}}\index{FitsSet@{FitsSet}!Ny@{Ny}}
+int {\bf Ny} () const\label{class_fitsset_a5}
+
+\begin{CompactList}\small\item\em y size of images.\item\end{CompactList}\item 
+\index{NxTot@{NxTot}!FitsSet@{Fits\-Set}}\index{FitsSet@{FitsSet}!NxTot@{Nx\-Tot}}
+int {\bf Nx\-Tot} () const\label{class_fitsset_a6}
+
+\begin{CompactList}\small\item\em total x size of images (including overscan).\item\end{CompactList}\item 
+\index{NyTot@{NyTot}!FitsSet@{Fits\-Set}}\index{FitsSet@{FitsSet}!NyTot@{Ny\-Tot}}
+int {\bf Ny\-Tot} () const\label{class_fitsset_a7}
+
+\begin{CompactList}\small\item\em same for y.\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+container for fits files that have same sizes, filter, and come from the same chip within a mosaic.
+
+
+
+\subsubsection{Constructor \& Destructor Documentation}
+\index{FitsSet@{Fits\-Set}!FitsSet@{FitsSet}}
+\index{FitsSet@{FitsSet}!FitsSet@{Fits\-Set}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}Fits\-Set::Fits\-Set (const string \& {\em File\-Name}, const bool {\em Check\-Filter} = true)}\hfill\label{class_fitsset_a0}
+
+
+constructor from a file that contains file names (one per line).
+
+Those can be actual filenames or {\bf Db\-Image} {\rm (p.\,\pageref{class_dbimage})} names. 
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf fitsset.h}\end{CompactItemize}

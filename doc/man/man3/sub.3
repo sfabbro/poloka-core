@@ -1,0 +1,57 @@
+.TH "Sub" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Sub \- Handling of an actual subtraction (shift-coadd-subtract-detect). See  for the way to drive it. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <sub.h>\fR
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBSub\fR (const string &SubFileName, const bool Overwrite=false, const bool OnlyDet=false)"
+.br
+.RI "\fIthe constructor. see  for the syntax of the "subfile".\fR"
+.ti -1c
+.RI "\fB~Sub\fR ()"
+.br
+.ti -1c
+.RI "\fBReducedImage\fR* \fBExtractSubimage\fR (const string &SubImageName)"
+.br
+.ti -1c
+.RI "void \fBRemoveImage\fR (const string &ToRemove)"
+.br
+.ti -1c
+.RI "void \fBSubstituteName\fR (const string &Original, const string &Substitution)"
+.br
+.ti -1c
+.RI "int \fBDoIt\fR ()"
+.br
+.ti -1c
+.RI "int \fBExpectedMagLim\fR ()"
+.br
+.ti -1c
+.RI "\fBReducedImage\fR* \fBDoOneStack\fR (StringList Components, const string &StackName, int ToDo)"
+.br
+.ti -1c
+.RI "void \fBFindGeometricReference\fR ()"
+.br
+.ti -1c
+.RI "int \fBCheckNewNames\fR ()"
+.br
+.ti -1c
+.RI "void \fBRunDetection\fR ()"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+Handling of an actual subtraction (shift-coadd-subtract-detect). See  for the way to drive it.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

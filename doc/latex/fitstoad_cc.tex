@@ -1,0 +1,148 @@
+\subsection{fitstoad.cc File Reference}
+\label{fitstoad_cc}\index{fitstoad.cc@{fitstoad.cc}}
+TOAD keys and fits header \char`\"{}standardization\char`\"{}. 
+
+
+{\tt \#include $<$iostream$>$}\par
+{\tt \#include $<$cmath$>$}\par
+{\tt \#include $<$algorithm$>$}\par
+{\tt \#include $<$map$>$}\par
+{\tt \#include \char`\"{}fileutils.h\char`\"{}}\par
+{\tt \#include \char`\"{}fitsimage.h\char`\"{}}\par
+{\tt \#include \char`\"{}gtransfo.h\char`\"{}}\par
+{\tt \#include \char`\"{}astroutils.h\char`\"{}}\par
+{\tt \#include \char`\"{}frame.h\char`\"{}}\par
+{\tt \#include \char`\"{}alltelinst.h\char`\"{}}\par
+{\tt \#include \char`\"{}alltelinst.cc\char`\"{}}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+struct {\bf Toads\-Key\-Rec}
+\item 
+class {\bf Unknown}
+\item 
+class {\bf Virtual\-Instrument}
+\end{CompactItemize}
+\subsubsection*{Defines}
+\begin{CompactItemize}
+\item 
+\index{M_PI@{M\_\-PI}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!M_PI@{M\_\-PI}}
+\#define {\bf M\_\-PI}\ 3.14159265358979323846\label{fitstoad_cc_a0}
+
+\item 
+\#define {\bf TRANSLATOR\_\-DEC}(Routine\-Name)
+\item 
+\#define {\bf SIMPLE\_\-TRANSLATOR}(Routine\-Name, Key\-Tag)
+\item 
+\#define {\bf RETURN\_\-A\_\-VALUE}(Routine\-Name, Value)
+\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{StringCharMap@{StringCharMap}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!StringCharMap@{String\-Char\-Map}}
+typedef map$<$string,char$>$ {\bf String\-Char\-Map}\label{fitstoad_cc_a4}
+
+\item 
+\index{AcceptorType@{AcceptorType}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!AcceptorType@{Acceptor\-Type}}
+typedef Virtual\-Instrument$\ast$ ($\ast$ {\bf Acceptor\-Type} )(const {\bf Fits\-Header} \&)\label{fitstoad_cc_a5}
+
+\end{CompactItemize}
+\subsubsection*{Enumerations}
+\begin{CompactItemize}
+\item 
+enum {\bf Axis\-Dir} \{ {\bf Up}, 
+{\bf Down}, 
+{\bf Right}, 
+{\bf Left}
+ \}
+\end{CompactItemize}
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+\index{VirtualInstrumentDestructor@{VirtualInstrumentDestructor}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!VirtualInstrumentDestructor@{Virtual\-Instrument\-Destructor}}
+void {\bf Virtual\-Instrument\-Destructor} (Virtual\-Instrument $\ast$p)\label{fitstoad_cc_a21}
+
+\item 
+\index{TelescopeName@{TelescopeName}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!TelescopeName@{Telescope\-Name}}
+string {\bf Telescope\-Name} (const {\bf Fits\-Header} \&Head)\label{fitstoad_cc_a22}
+
+\begin{CompactList}\small\item\em A name for the telescope.\item\end{CompactList}\item 
+\index{InstrumentName@{InstrumentName}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!InstrumentName@{Instrument\-Name}}
+string {\bf Instrument\-Name} (const {\bf Fits\-Header} \&Head)\label{fitstoad_cc_a23}
+
+\begin{CompactList}\small\item\em A Name for the Instrument.\item\end{CompactList}\item 
+\index{TelInstName@{TelInstName}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!TelInstName@{Tel\-Inst\-Name}}
+string {\bf Tel\-Inst\-Name} (const {\bf Fits\-Header} \&Head)\label{fitstoad_cc_a24}
+
+\begin{CompactList}\small\item\em A Name for the Tel/Instrument.\item\end{CompactList}\item 
+\index{IsOfKind@{IsOfKind}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!IsOfKind@{Is\-Of\-Kind}}
+bool {\bf Is\-Of\-Kind} (const {\bf Fits\-Header} \&Head)\label{fitstoad_cc_a25}
+
+\begin{CompactList}\small\item\em test if Head is of kind \char`\"{}Inst\char`\"{} (where Inst is one of the virtual instruments).\item\end{CompactList}\item 
+\index{OverscanRegion@{OverscanRegion}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!OverscanRegion@{Overscan\-Region}}
+{\bf Frame} {\bf Overscan\-Region} (const {\bf Fits\-Header} \&Head, const int i\-Amp)\label{fitstoad_cc_a26}
+
+\begin{CompactList}\small\item\em returns the overscan region associated with the given amplifier.\item\end{CompactList}\item 
+\index{IlluRegion@{IlluRegion}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!IlluRegion@{Illu\-Region}}
+{\bf Frame} {\bf Illu\-Region} (const {\bf Fits\-Header} \&Head, const int Iamp)\label{fitstoad_cc_a27}
+
+\begin{CompactList}\small\item\em returns the illuminated region associated with the given amplifier.\item\end{CompactList}\item 
+\index{TotalIlluRegion@{TotalIlluRegion}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!TotalIlluRegion@{Total\-Illu\-Region}}
+{\bf Frame} {\bf Total\-Illu\-Region} (const {\bf Fits\-Header} \&Head)\label{fitstoad_cc_a28}
+
+\begin{CompactList}\small\item\em returns the total illuminated region of image.\item\end{CompactList}\item 
+\index{AmpRegion@{AmpRegion}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!AmpRegion@{Amp\-Region}}
+{\bf Frame} {\bf Amp\-Region} (const {\bf Fits\-Header} \&Head, const int Iamp)\label{fitstoad_cc_a29}
+
+\begin{CompactList}\small\item\em returns the illuminated region associated with the given amplifier once the image is trimed.\item\end{CompactList}\item 
+\index{AmpGain@{AmpGain}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!AmpGain@{Amp\-Gain}}
+double {\bf Amp\-Gain} (const {\bf Fits\-Header} \&Head, const int i\-Amp)\label{fitstoad_cc_a30}
+
+\begin{CompactList}\small\item\em returns the gain corresponding to given amplifier.\item\end{CompactList}\item 
+\index{GuessLinWCS@{GuessLinWCS}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!GuessLinWCS@{Guess\-Lin\-WCS}}
+bool {\bf Guess\-Lin\-WCS} (const {\bf Fits\-Header} \&Header, {\bf Tan\-Pix2Ra\-Dec} \&Guess)\label{fitstoad_cc_a31}
+
+\begin{CompactList}\small\item\em The approximate WCS. maybe used indirectly (depending on Tel\-Inst) to match USNO.\item\end{CompactList}\item 
+\index{SkyRegion@{SkyRegion}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!SkyRegion@{Sky\-Region}}
+{\bf Frame} {\bf Sky\-Region} (const {\bf Fits\-Header} \&Header)\label{fitstoad_cc_a32}
+
+\begin{CompactList}\small\item\em The (approximate) sky patch the image contains. Used for USNO matching.\item\end{CompactList}\item 
+\index{SniffTelInst@{SniffTelInst}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!SniffTelInst@{Sniff\-Tel\-Inst}}
+Virtual\-Instrument$\ast$ {\bf Sniff\-Tel\-Inst} (const {\bf Fits\-Header} \&Head)\label{fitstoad_cc_a33}
+
+\begin{CompactList}\small\item\em the routine called by {\bf Fits\-Header} {\rm (p.\,\pageref{class_fitsheader})} to identify which Tel/Inst the header belongs to.\item\end{CompactList}\item 
+\index{ToadsKeyVal@{ToadsKeyVal}!fitstoad.cc@{fitstoad.cc}}\index{fitstoad.cc@{fitstoad.cc}!ToadsKeyVal@{Toads\-Key\-Val}}
+{\bf Fits\-Key} {\bf Toads\-Key\-Val} (const {\bf Fits\-Header} \&Head, const string \&Key\-Name, const bool Warn)\label{fitstoad_cc_a37}
+
+\begin{CompactList}\small\item\em The FITS key translator for TOADkeys.\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+TOAD keys and fits header \char`\"{}standardization\char`\"{}.
+
+
+
+
+
+\subsubsection{Define Documentation}
+\index{fitstoad.cc@{fitstoad.cc}!RETURN_A_VALUE@{RETURN\_\-A\_\-VALUE}}
+\index{RETURN_A_VALUE@{RETURN\_\-A\_\-VALUE}!fitstoad.cc@{fitstoad.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define RETURN\_\-A\_\-VALUE(Routine\-Name, Value)}\hfill\label{fitstoad_cc_a3}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}        TRANSLATOR_DEC(RoutineName) { return FitsKey(#RoutineName,Value);}
+\end{verbatim}\normalsize 
+\index{fitstoad.cc@{fitstoad.cc}!SIMPLE_TRANSLATOR@{SIMPLE\_\-TRANSLATOR}}
+\index{SIMPLE_TRANSLATOR@{SIMPLE\_\-TRANSLATOR}!fitstoad.cc@{fitstoad.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define SIMPLE\_\-TRANSLATOR(Routine\-Name, Key\-Tag)}\hfill\label{fitstoad_cc_a2}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}       TRANSLATOR_DEC(RoutineName) { return Head.KeyVal(KeyTag,Warn);}
+\end{verbatim}\normalsize 
+\index{fitstoad.cc@{fitstoad.cc}!TRANSLATOR_DEC@{TRANSLATOR\_\-DEC}}
+\index{TRANSLATOR_DEC@{TRANSLATOR\_\-DEC}!fitstoad.cc@{fitstoad.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define TRANSLATOR\_\-DEC(Routine\-Name)}\hfill\label{fitstoad_cc_a1}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}      FitsKey RoutineName( const FitsHeader &Head, const bool Warn) const
+\end{verbatim}\normalsize 

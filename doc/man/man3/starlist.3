@@ -1,0 +1,171 @@
+.TH "StarList" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+StarList \- lists of Stars. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <starlist.h>\fR
+.PP
+Inherits list.
+.PP
+Inherited by MatchedDetectionList, \fBPsfStars\fR, SENearStarList, and YquemStarList.
+.PP
+.SS Public Types
+
+.in +1c
+.ti -1c
+.RI "typedef \fBCountedRef\fR<Star> \fBElement\fR"
+.br
+.ti -1c
+.RI "typedef list<Element>::const_iterator \fBStarCIterator\fR"
+.br
+.ti -1c
+.RI "typedef list<Element>::iterator \fBStarIterator\fR"
+.br
+.in -1c
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBStarList\fR ()"
+.br
+.RI "\fI: default constructor (empty list).\fR"
+.ti -1c
+.RI "\fBStarList\fR (const string &FileName)"
+.br
+.RI "\fIreads a StarList from a file,.\fR"
+.ti -1c
+.RI "int \fBwrite\fR (const string &FileName)"
+.br
+.RI "\fIwrites to a file.\fR"
+.ti -1c
+.RI "int \fBread\fR (const string &FileName)"
+.br
+.RI "\fIobvious meaning.\fR"
+.ti -1c
+.RI "void \fBpush_back\fR (Star *t)"
+.br
+.ti -1c
+.RI "void \fBpush_back\fR (const Element &e)"
+.br
+.ti -1c
+.RI "virtual \fB~StarList\fR ()"
+.br
+.ti -1c
+.RI "void \fBdump\fR (ostream &stream=cout) const"
+.br
+.RI "\fIinvokes dump(stream) for all Stars in the list.\fR"
+.ti -1c
+.RI "void \fBFluxSort\fR ()"
+.br
+.RI "\fIa model routine to sort the list.\fR"
+.ti -1c
+.RI "void \fBExtractHead\fR (StarList< Star > &Out, int NHead) const"
+.br
+.RI "\fIcopy the head of the list at the end of an other list (that may be empty on input).\fR"
+.ti -1c
+.RI "void \fBCutTail\fR (const int NKeep)"
+.br
+.RI "\fIcuts the end of the list.\fR"
+.ti -1c
+.RI "void \fBExtractInFrame\fR (StarList< Star > &Out, const \fBFrame\fR &aFrame) const"
+.br
+.RI "\fIcopy the part of the list which is included in the frame at the end of another list.\fR"
+.ti -1c
+.RI "void \fBCutEdges\fR (const \fBFrame\fR &aFrame, float mindist)"
+.br
+.RI "\fIcut the part of the list which is at a distance < mindist of the edges defined by frame.\fR"
+.ti -1c
+.RI "void \fBCopyTo\fR (StarList< Star > &Copy) const"
+.br
+.RI "\fIclears Copy and makes a copy of the list to Copy.\fR"
+.ti -1c
+.RI "void \fBClearList\fR ()"
+.br
+.RI "\fIClears the list.\fR"
+.ti -1c
+.RI "template<class Operator> void \fBApplyTransfo\fR (const Operator &Op)"
+.br
+.RI "\fIenables to apply a geometrical transfo if Star is Basestar or derives from it.\fR"
+.ti -1c
+.RI "Star* \fBFindClosest\fR (double X, double Y) const"
+.br
+.RI "\fIreturns the closest Star from a given location.\fR"
+.ti -1c
+.RI "Star* \fBFindClosest\fR (const \fBPoint\fR &P) const"
+.br
+.RI "\fIsame as above. Can be used with any of our star-like stuff.\fR"
+.ti -1c
+.RI "bool \fBHasCloseNeighbor\fR (double X, double Y, double maxdist, double mindist=0.1) const"
+.br
+.RI "\fItrue if location has a nearby star in a ring between mindist and maxdist.\fR"
+.ti -1c
+.RI "bool \fBHasCloseNeighbor\fR (const \fBPoint\fR &P, double maxdist, double mindist=0.1) const"
+.br
+.RI "\fIsame as above. Can be used with any of our star-like stuff.\fR"
+.ti -1c
+.RI "Star* \fBClosestNeighbor\fR (double X, double Y, double mindist=0.1) const"
+.br
+.RI "\fInearby star to a star but not itself.\fR"
+.ti -1c
+.RI "Star* \fBClosestNeighbor\fR (const \fBPoint\fR &P, double mindist=0.1) const"
+.br
+.RI "\fIsame as above. Can be used with any of our star-like stuff.\fR"
+.ti -1c
+.RI "int \fBNumberOfNeighbors\fR (const double &X, const double &Y, const double &distmax) const"
+.br
+.ti -1c
+.RI "int \fBAllNeighbors\fR (StarList &NeighborList, const double &X, const double &Y, const double &distmax) const"
+.br
+.ti -1c
+.RI "int \fBAllNeighbors\fR (StarList &NeighborList, const \fBPoint\fR &Pt, const double &distmax) const"
+.br
+.ti -1c
+.RI "int \fBNumberOfNeighbors\fR (const \fBPoint\fR &Pt, const double &distmax) const"
+.br
+.in -1c
+.SS Protected Methods
+
+.in +1c
+.ti -1c
+.RI "int \fBascii_read\fR (const string &FileName)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+
+.SS template<class Star>  class StarList
+lists of Stars.
+.PP
+It is a template class, which means that the Star type remains undefined until a user defines it.  The list related operations (insertion, sort, traversal) are to be carried out using STL  list operations. Most of the Star operations rely on routines to be provided in  the Star class, usually user defined. The instanciation of this class for  \fBBaseStar\fR (i.e. the replacement  of the formal parameter 'Star' by '\fBBaseStar\fR') is  called BaseStarList.  Take care: what is stored is pointers on Star's and  NOT Star's. This implies that Stars being inserted in the list have to be  obtained using 'new'. The corresponding 'delete' are invoked in the destructor. 
+.PP
+.SH CONSTRUCTOR & DESTRUCTOR DOCUMENTATION
+.PP 
+.SS template<class Star> StarList<Star>::StarList<Star> (const string & FileName)
+.PP
+reads a StarList from a file,.
+.PP
+using the read method from the Star class.  See \fBBaseStar\fR for an example of implementation. 
+.SH MEMBER FUNCTION DOCUMENTATION
+.PP 
+.SS template<class Star>  template<class Operator> void StarList<Star>::ApplyTransfo (const Operator & Op)\fC [inline]\fR
+.PP
+enables to apply a geometrical transfo if Star is Basestar or derives from it.
+.PP
+could be extended to other type of transformations. 
+.SS template<class Star> void StarList<Star>::FluxSort ()\fC [inline]\fR
+.PP
+a model routine to sort the list.
+.PP
+see \fBDecreasingFlux\fR() to see what it is, if you  want another sorting criterion) 
+.SS template<class Star> int StarList<Star>::write (const string & FileName)
+.PP
+writes to a file.
+.PP
+calls iteratively the write method of the Star  class. It is unusable if the Star class does not  provide this functionnality. see \fBBaseStar\fR to see a possible implementation.  not const because the write routines of Root are not 
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

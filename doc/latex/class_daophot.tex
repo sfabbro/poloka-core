@@ -1,0 +1,108 @@
+\subsection{Daophot  Class Reference}
+\label{class_daophot}\index{Daophot@{Daophot}}
+a wrapper to most DAOPHOT routines. 
+
+
+{\tt \#include $<$daophot.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+\index{Daophot@{Daophot}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Daophot@{Daophot}}
+{\bf Daophot} ()\label{class_daophot_a0}
+
+\item 
+\index{Daophot@{Daophot}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Daophot@{Daophot}}
+{\bf Daophot} (const string \&Fits\-Name)\label{class_daophot_a1}
+
+\item 
+\index{Daophot@{Daophot}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Daophot@{Daophot}}
+{\bf Daophot} (const {\bf Reduced\-Image} \&Rim)\label{class_daophot_a2}
+
+\item 
+\index{~Daophot@{$\sim$Daophot}!Daophot@{Daophot}}\index{Daophot@{Daophot}!~Daophot@{$\sim$Daophot}}
+{\bf $\sim$Daophot} ()\label{class_daophot_a3}
+
+\item 
+\index{WriteOptions@{WriteOptions}!Daophot@{Daophot}}\index{Daophot@{Daophot}!WriteOptions@{Write\-Options}}
+void {\bf Write\-Options} (const string File\-Name=\char`\"{}daophot.opt\char`\"{}, const int First=0, const int Last=NOPT-1) const\label{class_daophot_a4}
+
+\item 
+\index{Option@{Option}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Option@{Option}}
+void {\bf Option} (const string Opt\-File=\char`\"{}daophot.opt\char`\"{}) const\label{class_daophot_a5}
+
+\item 
+\index{SetOptions@{SetOptions}!Daophot@{Daophot}}\index{Daophot@{Daophot}!SetOptions@{Set\-Options}}
+void {\bf Set\-Options} (const {\bf Reduced\-Image} \&Rim)\label{class_daophot_a6}
+
+\item 
+\index{AddStars@{AddStars}!Daophot@{Daophot}}\index{Daophot@{Daophot}!AddStars@{Add\-Stars}}
+void {\bf Add\-Stars} ()\label{class_daophot_a7}
+
+\item 
+\index{AllStar@{AllStar}!Daophot@{Daophot}}\index{Daophot@{Daophot}!AllStar@{All\-Star}}
+void {\bf All\-Star} (const string \&File\-With\-Stars\-To\-Fit) const\label{class_daophot_a8}
+
+\item 
+\index{Attach@{Attach}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Attach@{Attach}}
+void {\bf Attach} (const string Fits\-Name)\label{class_daophot_a9}
+
+\item 
+\index{Find@{Find}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Find@{Find}}
+void {\bf Find} () const\label{class_daophot_a10}
+
+\item 
+\index{Group@{Group}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Group@{Group}}
+void {\bf Group} () const\label{class_daophot_a11}
+
+\item 
+\index{Nstar@{Nstar}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Nstar@{Nstar}}
+void {\bf Nstar} () const\label{class_daophot_a12}
+
+\item 
+\index{Peak@{Peak}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Peak@{Peak}}
+void {\bf Peak} () const\label{class_daophot_a13}
+
+\item 
+\index{PeakFit@{PeakFit}!Daophot@{Daophot}}\index{Daophot@{Daophot}!PeakFit@{Peak\-Fit}}
+void {\bf Peak\-Fit} ({\bf SEStar} \&Star) const\label{class_daophot_a14}
+
+\item 
+\index{Pick@{Pick}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Pick@{Pick}}
+void {\bf Pick} () const\label{class_daophot_a15}
+
+\item 
+\index{Photometry@{Photometry}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Photometry@{Photometry}}
+void {\bf Photometry} () const\label{class_daophot_a16}
+
+\item 
+\index{Psf@{Psf}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Psf@{Psf}}
+void {\bf Psf} (const int Variability=0, const bool Manual=false)\label{class_daophot_a17}
+
+\item 
+\index{Sky@{Sky}!Daophot@{Daophot}}\index{Daophot@{Daophot}!Sky@{Sky}}
+void {\bf Sky} (float \&Sky\-Mean, float \&Sky\-Median, float \&Sky\-Mode, float \&Sky\-Sigma) const\label{class_daophot_a18}
+
+\item 
+\index{SubStar@{SubStar}!Daophot@{Daophot}}\index{Daophot@{Daophot}!SubStar@{Sub\-Star}}
+void {\bf Sub\-Star} () const\label{class_daophot_a19}
+
+\item 
+\index{IterPsf@{IterPsf}!Daophot@{Daophot}}\index{Daophot@{Daophot}!IterPsf@{Iter\-Psf}}
+void {\bf Iter\-Psf} (const {\bf Reduced\-Image} \&Rim, const bool Manual=false)\label{class_daophot_a20}
+
+\item 
+\index{PrecisePsf@{PrecisePsf}!Daophot@{Daophot}}\index{Daophot@{Daophot}!PrecisePsf@{Precise\-Psf}}
+void {\bf Precise\-Psf} (const {\bf Reduced\-Image} \&Rim)\label{class_daophot_a21}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+a wrapper to most DAOPHOT routines.
+
+
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf daophot.h}\end{CompactItemize}

@@ -1,0 +1,44 @@
+\subsection{fitsimage.h File Reference}
+\label{fitsimage_h}\index{fitsimage.h@{fitsimage.h}}
+I/O of images/headers in fits format. 
+
+
+{\tt \#include $<$string$>$}\par
+{\tt \#include $<$cstdio$>$}\par
+{\tt \#include $<$cstring$>$}\par
+{\tt \#include \char`\"{}image.h\char`\"{}}\par
+{\tt \#include \char`\"{}point.h\char`\"{}}\par
+{\tt \#include $<$fitsio.h$>$}\par
+{\tt \#include $<$vector$>$}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Fits\-Header}
+\begin{CompactList}\small\item\em Fits files and header keys.\item\end{CompactList}\item 
+class {\bf Fits\-Image}
+\begin{CompactList}\small\item\em This class enables basic manipulation of images stored in fits files.\item\end{CompactList}\item 
+class {\bf Fits\-Key}
+\begin{CompactList}\small\item\em Auxilary class for accessing fits header keys.\item\end{CompactList}\item 
+class {\bf Fits\-Key\-Array}
+\end{CompactItemize}
+\subsubsection*{Defines}
+\begin{CompactItemize}
+\item 
+\index{NOVAL@{NOVAL}!fitsimage.h@{fitsimage.h}}\index{fitsimage.h@{fitsimage.h}!NOVAL@{NOVAL}}
+\#define {\bf NOVAL}\ string(\char`\"{}NOVAL\char`\"{})\label{fitsimage_h_a0}
+
+\end{CompactItemize}
+\subsubsection*{Enumerations}
+\begin{CompactItemize}
+\item 
+enum {\bf Fits\-File\-Mode} \{ {\bf RO} =  0, 
+{\bf RW} =  1
+ \}
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+I/O of images/headers in fits format.
+
+The IO of images in the fits format are carried out using the cfitsio library. This library is written in C, and the most useful functionnalities have been wrapped here in C++ classes.
+

@@ -1,0 +1,23 @@
+\subsection{Data\-Base}\label{database_page}
+ \subsubsection{What does our so-called data base?}\label{intro_database}
+ The purpose of having some database code is to decouple most of the processing code from the actual way data is stored. The data can then be accessed through routines which transform abstract names into genuine file names. Implementing this way provides the tremendeous advantage that many actual database organizations can be accomadated through the same software interface. Most (if not all) code does not require any modification in case the actual data base used changes. At the moment, the proposed implementation only deals with images, not subtractions. What the data base software handles is file names, not contents.
+
+\subsubsection{The data base configuration file.}\label{dbconfig}
+
+
+The actual location where data is to be searched for is given through a configuration file. This configuration file is searched\begin{enumerate}
+\item 
+if the environment variable DBCONFIG is defined, as the file name it provides,\item 
+as .dbconfig in the current directory\item 
+as \$HOME/.dbconfig\end{enumerate}
+\subsubsection{Example of Db configuration file}\label{dbconfig_example}
+ A Db config file consists in mnemonic tags followed by actual file pathes. Those file pathes can use $\ast$ [] but not \{\}. Here is an example of a Db config file: \footnotesize\begin{verbatim}#this is a comment
+ImagePath
+{
+here : .
+cfht99 : /snovad15/cfht99/1999*
+vlt99 : /snovad1/vlt99/1999*
+newstuff : /snovad8/wiyn99
+}\end{verbatim}\normalsize 
+
+

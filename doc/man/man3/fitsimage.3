@@ -1,0 +1,79 @@
+.TH "FitsImage" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+FitsImage \- This class enables basic manipulation of images stored in fits files. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <fitsimage.h>\fR
+.PP
+Inherits \fBFitsHeader\fR, and \fBImage\fR.
+.PP
+Inherited by \fBFitsImageArray\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBFitsImage\fR (const string &FileName, const FitsFileMode Mode=RO)"
+.br
+.RI "\fIopens in (ReadOnly mode by default, use RW to modifiy or create) and loads the pixel data.\fR"
+.ti -1c
+.RI "\fBFitsImage\fR (const \fBFitsHeader\fR &Header)"
+.br
+.RI "\fIconstructor to be used starting from an existing \fBFitsHeader\fR.\fR"
+.ti -1c
+.RI "\fBFitsImage\fR (const string &NewFileName, const \fBFitsHeader\fR &a_fits_header, const \fBImage\fR &an_image)"
+.br
+.RI "\fIconstructor for a new FitsImage.\fR"
+.ti -1c
+.RI "\fBFitsImage\fR (const string &NewFileName, const \fBFitsHeader\fR &AHeader)"
+.br
+.RI "\fIconstructor of a new FitsImage using an existing header, a new name, and a zeroed \fBImage\fR. RW mode.\fR"
+.ti -1c
+.RI "\fBFitsImage\fR (const string &FileName, const \fBImage\fR &an_image)"
+.br
+.RI "\fIconstructor for a new FitsImage with a minimal header from an existing image.\fR"
+.ti -1c
+.RI "\fBFitsImage\fR (const string &FileName, const int Nx, const int Ny)"
+.br
+.RI "\fIconstructor for a new FitsImage with a minimal header from scratch.\fR"
+.ti -1c
+.RI "void \fBTrim\fR (const \fBFrame\fR &Region)"
+.br
+.RI "\fIExtract and replaces the trimed \fBImage\fR into a FitsImage.\fR"
+.ti -1c
+.RI "void \fBPreserveZeros\fR ()"
+.br
+.RI "\fIThis routine is to be called if one wants to preserve the value of 0 on I/O. Assumes contents >=0, as it is Used for weight maps.\fR"
+.ti -1c
+.RI "\fB~FitsImage\fR ()"
+.br
+.ti -1c
+.RI "bool \fBSetWriteAsFloat\fR ()"
+.br
+.ti -1c
+.RI "int \fBWrite\fR (bool force_bscale=false)"
+.br
+.ti -1c
+.RI "int \fBWrite\fR (const double &Bscale, const double &Bzero)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+This class enables basic manipulation of images stored in fits files.
+.PP
+For The image itself, see the \fBImage\fR class. The files opened in mode RW are actually written to disk by the destructor. \fBFitsHeader::EnableWrite\fR() allows to alter this default behavior. 
+.PP
+.SH CONSTRUCTOR & DESTRUCTOR DOCUMENTATION
+.PP 
+.SS FitsImage::FitsImage (const string & NewFileName, const \fBFitsHeader\fR & a_fits_header, const \fBImage\fR & an_image)
+.PP
+constructor for a new FitsImage.
+.PP
+To be used to assemble a FitsImage from a header and an image obtained separately. The associated mode is RW. The actual size of the saved image is the one of the image, not the one in the header. 
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

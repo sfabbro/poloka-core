@@ -1,0 +1,63 @@
+\subsection{astroutils.h File Reference}
+\label{astroutils_h}\index{astroutils.h@{astroutils.h}}
+{\tt \#include $<$string$>$}\par
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+\index{IsLeapYear@{IsLeapYear}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!IsLeapYear@{Is\-Leap\-Year}}
+bool {\bf Is\-Leap\-Year} (const int year)\label{astroutils_h_a0}
+
+\item 
+\index{JulianDay@{JulianDay}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!JulianDay@{Julian\-Day}}
+long {\bf Julian\-Day} (const int day, const int month, const int year)\label{astroutils_h_a1}
+
+\item 
+\index{JulianDay@{JulianDay}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!JulianDay@{Julian\-Day}}
+double {\bf Julian\-Day} (const int day, const int month, const int year, const int hour, const int min, const double sec)\label{astroutils_h_a2}
+
+\item 
+\index{JulianDay@{JulianDay}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!JulianDay@{Julian\-Day}}
+double {\bf Julian\-Day} (const {\bf Fits\-Header} \&Header)\label{astroutils_h_a3}
+
+\begin{CompactList}\small\item\em computes the julian date given a header.\item\end{CompactList}\item 
+\index{RedJulianDay@{RedJulianDay}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!RedJulianDay@{Red\-Julian\-Day}}
+double {\bf Red\-Julian\-Day} (const {\bf Fits\-Header} \&Header)\label{astroutils_h_a4}
+
+\begin{CompactList}\small\item\em computes the reduced julian date given a header.\item\end{CompactList}\item 
+\index{UtStringToDeci@{UtStringToDeci}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!UtStringToDeci@{Ut\-String\-To\-Deci}}
+double {\bf Ut\-String\-To\-Deci} (const string Ut\-String)\label{astroutils_h_a5}
+
+\item 
+\index{RaStringToDeg@{RaStringToDeg}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!RaStringToDeg@{Ra\-String\-To\-Deg}}
+double {\bf Ra\-String\-To\-Deg} (const string Ra\-String)\label{astroutils_h_a6}
+
+\begin{CompactList}\small\item\em -.\item\end{CompactList}\item 
+\index{DecStringToDeg@{DecStringToDeg}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!DecStringToDeg@{Dec\-String\-To\-Deg}}
+double {\bf Dec\-String\-To\-Deg} (const string Dec\-String)\label{astroutils_h_a7}
+
+\begin{CompactList}\small\item\em -.\item\end{CompactList}\item 
+\index{UtDeciToString@{UtDeciToString}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!UtDeciToString@{Ut\-Deci\-To\-String}}
+string {\bf Ut\-Deci\-To\-String} (double Ut\-Deci)\label{astroutils_h_a8}
+
+\begin{CompactList}\small\item\em -.\item\end{CompactList}\item 
+\index{RaDegToString@{RaDegToString}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!RaDegToString@{Ra\-Deg\-To\-String}}
+string {\bf Ra\-Deg\-To\-String} (double Ra\-Deg)\label{astroutils_h_a9}
+
+\item 
+\index{DecDegToString@{DecDegToString}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!DecDegToString@{Dec\-Deg\-To\-String}}
+string {\bf Dec\-Deg\-To\-String} (double Dec\-Deg)\label{astroutils_h_a10}
+
+\begin{CompactList}\small\item\em -.\item\end{CompactList}\item 
+\index{GetRaDecInDeg@{GetRaDecInDeg}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!GetRaDecInDeg@{Get\-Ra\-Dec\-In\-Deg}}
+void {\bf Get\-Ra\-Dec\-In\-Deg} ({\bf Fits\-Header} const \&Header, double \&Ra\-In\-Deg, double \&Dec\-In\-Deg)\label{astroutils_h_a11}
+
+\begin{CompactList}\small\item\em -.\item\end{CompactList}\item 
+\index{RaDec2000@{RaDec2000}!astroutils.h@{astroutils.h}}\index{astroutils.h@{astroutils.h}!RaDec2000@{Ra\-Dec2000}}
+void {\bf Ra\-Dec2000} ({\bf Fits\-Header} const \&Header, double \&Ra\-In\-Deg, double \&Dec\-In\-Deg)\label{astroutils_h_a12}
+
+\begin{CompactList}\small\item\em returns alpha delta in 2000 whatever the equinox used in header.\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+
+

@@ -1,0 +1,60 @@
+\subsection{simultaneousfit.h File Reference}
+\label{simultaneousfit_h}\index{simultaneousfit.h@{simultaneousfit.h}}
+A class to fit pixels simultaneously from a set of vignets. 
+
+
+{\tt \#include \char`\"{}imagelist.h\char`\"{}}\par
+{\tt \#include $<$lafnames.h$>$}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Simultaneous\-Fit}
+\begin{CompactList}\small\item\em Simultaneous fitting of Vignets.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{VignetFitIterator@{VignetFitIterator}!simultaneousfit.h@{simultaneousfit.h}}\index{simultaneousfit.h@{simultaneousfit.h}!VignetFitIterator@{Vignet\-Fit\-Iterator}}
+typedef Image\-List$<$Vignet\-Fit$>$::iterator {\bf Vignet\-Fit\-Iterator}\label{simultaneousfit_h_a4}
+
+\item 
+\index{VignetFitCIterator@{VignetFitCIterator}!simultaneousfit.h@{simultaneousfit.h}}\index{simultaneousfit.h@{simultaneousfit.h}!VignetFitCIterator@{Vignet\-Fit\-CIterator}}
+typedef Image\-List$<$Vignet\-Fit$>$::const\_\-iterator {\bf Vignet\-Fit\-CIterator}\label{simultaneousfit_h_a5}
+
+\end{CompactItemize}
+\subsubsection*{Enumerations}
+\begin{CompactItemize}
+\item 
+enum {\bf Minim\-Method} \{ {\bf Levenberg\-Marquardt}, 
+{\bf Newton\-Raphson}
+ \}
+\end{CompactItemize}
+\subsubsection*{Variables}
+\begin{CompactItemize}
+\item 
+\index{FitFlux@{FitFlux}!simultaneousfit.h@{simultaneousfit.h}}\index{simultaneousfit.h@{simultaneousfit.h}!FitFlux@{Fit\-Flux}}
+const int {\bf Fit\-Flux} = 1\label{simultaneousfit_h_a0}
+
+\item 
+\index{FitPos@{FitPos}!simultaneousfit.h@{simultaneousfit.h}}\index{simultaneousfit.h@{simultaneousfit.h}!FitPos@{Fit\-Pos}}
+const int {\bf Fit\-Pos} = 2\label{simultaneousfit_h_a1}
+
+\item 
+\index{FitGal@{FitGal}!simultaneousfit.h@{simultaneousfit.h}}\index{simultaneousfit.h@{simultaneousfit.h}!FitGal@{Fit\-Gal}}
+const int {\bf Fit\-Gal} = 4\label{simultaneousfit_h_a2}
+
+\item 
+\index{FitSky@{FitSky}!simultaneousfit.h@{simultaneousfit.h}}\index{simultaneousfit.h@{simultaneousfit.h}!FitSky@{Fit\-Sky}}
+const int {\bf Fit\-Sky} = 8\label{simultaneousfit_h_a3}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+A class to fit pixels simultaneously from a set of vignets.
+
+
+
+
+
+ The model on a given vignet to be fitted is  Model(i,j) = flux$\ast$PSF(i-xc,j-yc) + [Gal X {\bf Kernel} {\rm (p.\,\pageref{class_kernel})}](i,j) + sky where user chooses what to fit (flux, position, galaxy pixels and constant sky).  The flux and sky are free to change on each vignets, but the galaxy pixels  and the point source position are fixed at the best seeing resolution and photometric ratio vignet. PSF and {\bf Kernel} {\rm (p.\,\pageref{class_kernel})} should be given and will not be fitted.
+

@@ -1,0 +1,64 @@
+\subsection{basestar.h File Reference}
+\label{basestar_h}\index{basestar.h@{basestar.h}}
+{\tt \#include $<$iostream$>$}\par
+{\tt \#include $<$cstdio$>$}\par
+{\tt \#include $<$string$>$}\par
+{\tt \#include \char`\"{}point.h\char`\"{}}\par
+{\tt \#include \char`\"{}countedref.h\char`\"{}}\par
+{\tt \#include \char`\"{}rootstuff.h\char`\"{}}\par
+{\tt \#include \char`\"{}starlist.h\char`\"{}}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Base\-Star}
+\begin{CompactList}\small\item\em The base class for handling stars. Used by all matching routines.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Defines}
+\begin{CompactItemize}
+\item 
+\index{MEMPIX2DISK@{MEMPIX2DISK}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!MEMPIX2DISK@{MEMPIX2DISK}}
+\#define {\bf MEMPIX2DISK}\ 1\label{basestar_h_a0}
+
+\item 
+\index{DECALAGE_IJ_XY@{DECALAGE\_\-IJ\_\-XY}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!DECALAGE_IJ_XY@{DECALAGE\_\-IJ\_\-XY}}
+\#define {\bf DECALAGE\_\-IJ\_\-XY}\ 0.\label{basestar_h_a1}
+
+\item 
+\index{DECALAGE_XY_IJ@{DECALAGE\_\-XY\_\-IJ}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!DECALAGE_XY_IJ@{DECALAGE\_\-XY\_\-IJ}}
+\#define {\bf DECALAGE\_\-XY\_\-IJ}\ 0.\label{basestar_h_a2}
+
+\end{CompactItemize}
+\subsubsection*{Typedefs}
+\begin{CompactItemize}
+\item 
+\index{BaseStarList@{BaseStarList}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!BaseStarList@{Base\-Star\-List}}
+typedef {\bf Star\-List}$<${\bf Base\-Star}$>$ {\bf Base\-Star\-List}\label{basestar_h_a3}
+
+\item 
+\index{BaseStarCIterator@{BaseStarCIterator}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!BaseStarCIterator@{Base\-Star\-CIterator}}
+typedef Base\-Star\-List::const\_\-iterator {\bf Base\-Star\-CIterator}\label{basestar_h_a4}
+
+\item 
+\index{BaseStarIterator@{BaseStarIterator}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!BaseStarIterator@{Base\-Star\-Iterator}}
+typedef Base\-Star\-List::iterator {\bf Base\-Star\-Iterator}\label{basestar_h_a5}
+
+\item 
+\index{BaseStarRef@{BaseStarRef}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!BaseStarRef@{Base\-Star\-Ref}}
+typedef {\bf Counted\-Ref}$<${\bf Base\-Star}$>$ {\bf Base\-Star\-Ref}\label{basestar_h_a6}
+
+\end{CompactItemize}
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+\index{DecreasingFlux@{DecreasingFlux}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!DecreasingFlux@{Decreasing\-Flux}}
+bool {\bf Decreasing\-Flux} (const {\bf Base\-Star} $\ast$S1, const {\bf Base\-Star} $\ast$S2)\label{basestar_h_a7}
+
+\begin{CompactList}\small\item\em enables to sort easily a star\-List (of anything that derives from {\bf Base\-Star} {\rm (p.\,\pageref{class_basestar})}).\item\end{CompactList}\item 
+\index{DecodeFormat@{DecodeFormat}!basestar.h@{basestar.h}}\index{basestar.h@{basestar.h}!DecodeFormat@{Decode\-Format}}
+int {\bf Decode\-Format} (const char $\ast$Format\-Line, const char $\ast$Star\-Name)\label{basestar_h_a8}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+
+

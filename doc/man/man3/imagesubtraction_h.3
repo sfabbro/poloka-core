@@ -1,0 +1,44 @@
+.TH "imagesubtraction.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+imagesubtraction.h \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include "reducedimage.h"\fR
+.br
+\fC#include "psfmatch.h"\fR
+.br
+\fC#include "fileutils.h"\fR
+.br
+\fC#include "detection.h"\fR
+.br
+.SS Compounds
+
+.in +1c
+.ti -1c
+.RI "class \fBImageSubtraction\fR"
+.br
+.RI "\fIFor subtracting images using the Alard kernel fit technique. A basic assumption: Ref and New are already geometrically aligned.\fR"
+.in -1c
+.SS Typedefs
+
+.in +1c
+.ti -1c
+.RI "typedef \fBCountedRef\fR<\fBImageSubtraction\fR> \fBImageSubtractionRef\fR"
+.br
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "string \fBSubtractedName\fR (const string &RefName, const string &NewName)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+.PP
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

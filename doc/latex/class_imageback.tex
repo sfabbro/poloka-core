@@ -1,0 +1,85 @@
+\subsection{Image\-Back  Class Reference}
+\label{class_imageback}\index{ImageBack@{Image\-Back}}
+{\bf Image} {\rm (p.\,\pageref{class_image})} Back class to compute an image of the background. 
+
+
+{\tt \#include $<$imageback.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+{\bf Image\-Back} ({\bf Image} const \&Source\-Image, int Mesh\-Step, const {\bf Image} $\ast$Weight=NULL)
+\item 
+{\bf Image\-Back} ({\bf Image} const \&Source\-Image, int Mesh\-Step\-X, int Mesh\-Step\-Y, const {\bf Image} $\ast$Weight=NULL)
+\item 
+\index{Nx@{Nx}!ImageBack@{Image\-Back}}\index{ImageBack@{ImageBack}!Nx@{Nx}}
+int {\bf Nx} () const\label{class_imageback_a2}
+
+\item 
+\index{Ny@{Ny}!ImageBack@{Image\-Back}}\index{ImageBack@{ImageBack}!Ny@{Ny}}
+int {\bf Ny} () const\label{class_imageback_a3}
+
+\item 
+Pixel {\bf Value} (const int i, const int j) const
+\item 
+Pixel {\bf Rms} (const int i, const int j) const
+\item 
+{\bf Image}$\ast$ {\bf Background\-Image} ()
+\item 
+\index{BackValue@{BackValue}!ImageBack@{Image\-Back}}\index{ImageBack@{ImageBack}!BackValue@{Back\-Value}}
+const {\bf Image}\& {\bf Back\-Value} () const\label{class_imageback_a7}
+
+\item 
+\index{BackRms@{BackRms}!ImageBack@{Image\-Back}}\index{ImageBack@{ImageBack}!BackRms@{Back\-Rms}}
+const {\bf Image}\& {\bf Back\-Rms} () const\label{class_imageback_a8}
+
+\item 
+\index{Write@{Write}!ImageBack@{Image\-Back}}\index{ImageBack@{ImageBack}!Write@{Write}}
+int {\bf Write} (string File\-Name)\label{class_imageback_a9}
+
+\item 
+\index{ImageBack@{ImageBack}!ImageBack@{Image\-Back}}\index{ImageBack@{ImageBack}!ImageBack@{Image\-Back}}
+{\bf Image\-Back} (char $\ast$File\-Name, const {\bf Image} \&Source)\label{class_imageback_a10}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+{\bf Image} {\rm (p.\,\pageref{class_image})} Back class to compute an image of the background.
+
+
+
+\subsubsection{Constructor \& Destructor Documentation}
+\index{ImageBack@{Image\-Back}!ImageBack@{ImageBack}}
+\index{ImageBack@{ImageBack}!ImageBack@{Image\-Back}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}Image\-Back::Image\-Back ({\bf Image} const \& {\em Source\-Image}, int {\em Mesh\-Step}, const {\bf Image} $\ast$ {\em Weight} = NULL)}\hfill\label{class_imageback_a0}
+
+
+The constructor for a square Mesh (Mesh\-Step\-X=Mesh\-Step\-Y). \index{ImageBack@{Image\-Back}!ImageBack@{ImageBack}}
+\index{ImageBack@{ImageBack}!ImageBack@{Image\-Back}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}Image\-Back::Image\-Back ({\bf Image} const \& {\em Source\-Image}, int {\em Mesh\-Step\-X}, int {\em Mesh\-Step\-Y}, const {\bf Image} $\ast$ {\em Weight} = NULL)}\hfill\label{class_imageback_a1}
+
+
+The constructor for a rectangular Mesh (Mesh\-Step\-X!=Mesh\-Step\-Y). 
+
+\subsubsection{Member Function Documentation}
+\index{ImageBack@{Image\-Back}!BackgroundImage@{BackgroundImage}}
+\index{BackgroundImage@{BackgroundImage}!ImageBack@{Image\-Back}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}{\bf Image} $\ast$ Image\-Back::Background\-Image ()}\hfill\label{class_imageback_a6}
+
+
+returns the average background image in the coordinates of the original image. \index{ImageBack@{Image\-Back}!Rms@{Rms}}
+\index{Rms@{Rms}!ImageBack@{Image\-Back}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}Pixel Image\-Back::Rms (const int {\em i}, const int {\em j}) const}\hfill\label{class_imageback_a5}
+
+
+same for Rms. \index{ImageBack@{Image\-Back}!Value@{Value}}
+\index{Value@{Value}!ImageBack@{Image\-Back}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}Pixel Image\-Back::Value (const int {\em i}, const int {\em j}) const}\hfill\label{class_imageback_a4}
+
+
+returns the average background for pixel (i,j) in the coordinates of the original image. 
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf imageback.h}\end{CompactItemize}

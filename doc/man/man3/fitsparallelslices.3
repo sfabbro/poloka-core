@@ -1,0 +1,57 @@
+.TH "FitsParallelSlices" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+FitsParallelSlices \- Several fits images of the same size to be processed in parallel. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <fitsslice.h>\fR
+.PP
+Inherits vector.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBFitsParallelSlices\fR (const int SliceSize, const int Overlap=0)"
+.br
+.RI "\fIconstructor.\fR"
+.ti -1c
+.RI "\fB~FitsParallelSlices\fR ()"
+.br
+.ti -1c
+.RI "bool \fBAddFile\fR (const string &FileName)"
+.br
+.RI "\fIAdds a file in the list. Loads the first slice.\fR"
+.ti -1c
+.RI "int \fBLoadNextSlice\fR ()"
+.br
+.RI "\fIload next slice for all involved files. Returns 0 if already on last slice.\fR"
+.ti -1c
+.RI "int \fBSliceSize\fR () const"
+.br
+.RI "\fIsize of the current slice size. Different from the constructor value for last slice.\fR"
+.ti -1c
+.RI "int \fBImageJ\fR (const int SliceJ) const"
+.br
+.RI "\fIreturn the index in the whole image of the row SliceJ in the current slice.\fR"
+.ti -1c
+.RI "bool \fBLastSlice\fR () const"
+.br
+.RI "\fIare we in the last slice.\fR"
+.ti -1c
+.RI "int \fBNFiles\fR () const"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+Several fits images of the same size to be processed in parallel.
+.PP
+This class is to be used as a handler for \fBFitsSlice\fR's from files having the same sizes, that one wants to process in parallel (typically to average or sum images). Slices are cut along the second index of the whole image  and have the same size in x as the image.  See  for an example. 
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

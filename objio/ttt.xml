@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<objects xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:snls="http://supernovae.in2p3.fr/SNLS">
+<object xsi:type="AA" version="1">
+</object>
+<object xsi:type="Point" version="1">
+<x_ t="f8" v="0.000000"/>
+<y_ t="f8" v="0.000000"/>
+</object>
+<object xsi:type="Star" version="1">
+<object xsi:type="Point" version="1">
+<x_ t="f8" v="0.000000"/>
+<y_ t="f8" v="0.000000"/>
+</object>
+<id_ t="u4" v="0"/>
+<flux_ t="f8" v="0.000000"/>
+</object>
+<collection size="2">
+<object xsi:type="Star" version="1">
+<object xsi:type="Point" version="1">
+<x_ t="f8" v="0.000000"/>
+<y_ t="f8" v="0.000000"/>
+</object>
+<id_ t="u4" v="0"/>
+<flux_ t="f8" v="0.000000"/>
+</object>
+<object xsi:type="Star" version="1">
+<object xsi:type="Point" version="1">
+<x_ t="f8" v="0.000000"/>
+<y_ t="f8" v="0.000000"/>
+</object>
+<id_ t="u4" v="0"/>
+<flux_ t="f8" v="0.000000"/>
+</object>
+</collection>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+<object xsi:type="unsupported" version="0">
+</object>
+</objects>

@@ -1,0 +1,81 @@
+.TH "usnoutils.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+usnoutils.h \- access the usno catalog, match image catalogs to it. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include "sestar.h"\fR
+.br
+\fC#include "gtransfo.h"\fR
+.br
+\fC#include "vutils.h"\fR
+.br
+.SS Enumerations
+
+.in +1c
+.ti -1c
+.RI "enum \fBUsnoColor\fR { \fBRColor\fR, \fBBColor\fR }"
+.br
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "int \fBUsnoRead\fR (const \fBFrame\fR &F, UsnoColor Color, BaseStarList &ApmList)"
+.br
+.RI "\fIThis routine reads the USNO catalog stars within the given bounds.\fR"
+.ti -1c
+.RI "int \fBUsnoRead\fR (double minra, double maxra, double mindec, double maxdec, UsnoColor Color, BaseStarList &ApmList)"
+.br
+.RI "\fIsame as above.\fR"
+.ti -1c
+.RI "void \fBConvertMagToFlux\fR (BaseStarList *List)"
+.br
+.RI "\fIreplace the flux by pow(10, -flux/2.5).\fR"
+.ti -1c
+.RI "StarMatchList* \fBFindTransfoUsno\fR (const string &FitsImageName, \fBSEStarList\fR &sestarlist, \fBGtransfoLin\fR &UsnoToPix, BaseStarList &UsnoCat)"
+.br
+.ti -1c
+.RI "StarMatchList* \fBGuessedToGood\fR (const \fBGtransfo\fR *Guess, const \fBSEStarList\fR *OldImag, const BaseStarList *OldCat)"
+.br
+.ti -1c
+.RI "int \fBGetUsnoZeroPoint\fR (const StarMatchList *List, UsnoColor Color, double &zeropoint, double &errzero)"
+.br
+.RI "\fIfinds the zeropoint for magnitudes.\fR"
+.ti -1c
+.RI "void \fBFillMatchFile\fR (const \fBDbImage\fR &\fBImage\fR, const \fBGtransfo\fR &Pix2RaDec)"
+.br
+.ti -1c
+.RI "void \fBFillMatchFile\fR (const \fBFitsHeader\fR &header, const \fBSEStarList\fR &imageList, const \fBGtransfo\fR &Pix2RaDec, const string &MatchFileName)"
+.br
+.RI "\fIfills a file to be used when building finding charts, or to check the match.\fR"
+.ti -1c
+.RI "bool \fBUsnoProcess\fR (const string &fitsFileName, const string &catalogName, \fBDbImage\fR *dbimage, const bool write)"
+.br
+.ti -1c
+.RI "bool \fBUsnoProcess\fR (\fBDbImage\fR &dbimage, const bool write)"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+access the usno catalog, match image catalogs to it.
+.PP
+ usnoutils.cc
+.PP
+.SH FUNCTION DOCUMENTATION
+.PP 
+.SS int GetUsnoZeroPoint (const StarMatchList * List, UsnoColor Color, double & zeropoint, double & errzero)
+.PP
+finds the zeropoint for magnitudes.
+.PP
+from a matchlist between USNO and an image catalog, given a filter.  Assumes that stars in the starMatchList contain fluxes. 
+.SS int UsnoRead (const \fBFrame\fR & F, UsnoColor Color, BaseStarList & ApmList)
+.PP
+This routine reads the USNO catalog stars within the given bounds.
+.PP
+The x and y coordinates of the given stars refer to RA and DEC respectively expressed in degrees. The location of the catalog should be set by the user in the USNODIR environment variable. The catalog contains both R and B magnitude. The Color argument has to be RColor or BColor.  WARNING : The flux of the returned \fBBaseStar\fR's is in fact a magnitude. 
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

@@ -1,0 +1,77 @@
+.TH "ImageGtransfo" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+ImageGtransfo \- 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <transformedimage.h>\fR
+.PP
+Inherits ImageTransfo.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBImageGtransfo\fR (const \fBGtransfo\fR *TransfoFromRef, const \fBGtransfo\fR *TransfoToRef, const \fBFrame\fR &OutputImageSize, const string &GeomRefName)"
+.br
+.ti -1c
+.RI "\fBImageGtransfo\fR (const \fBReducedImage\fR &Ref, const \fBReducedImage\fR &ToAlign)"
+.br
+.RI "\fIthe output image size is the one of the Ref. Finds the transfo(s).\fR"
+.ti -1c
+.RI "\fBImageGtransfo\fR ()"
+.br
+.ti -1c
+.RI "\fBGtransfo\fR* \fBTransfoFromRef\fR () const"
+.br
+.ti -1c
+.RI "\fBGtransfo\fR* \fBTransfoToRef\fR () const"
+.br
+.ti -1c
+.RI "const \fBGtransfo\fR* \fBFromRef\fR () const"
+.br
+.ti -1c
+.RI "string \fBGeomRefName\fR () const"
+.br
+.ti -1c
+.RI "virtual void \fBdump\fR (ostream &s=cout)"
+.br
+.ti -1c
+.RI "void \fBTransformImage\fR (const \fBFitsImage\fR &Source, \fBFitsImage\fR &Transformed, const \fBReducedImage\fR *Source, \fBReducedImage\fR *Result, double DefaultVal=0) const"
+.br
+.RI "\fIthe one that transforms the image and update header.\fR"
+.ti -1c
+.RI "void \fBTransformWeightImage\fR (const \fBFitsImage\fR &Source, \fBFitsImage\fR &Transformed) const"
+.br
+.RI "\fITransforms a weight image.\fR"
+.ti -1c
+.RI "void \fBTransformBoolImage\fR (const \fBFitsImage\fR &Source, \fBFitsImage\fR &Transformed) const"
+.br
+.RI "\fItransforms a bool \fBImage\fR.\fR"
+.ti -1c
+.RI "void \fBTransformCatalog\fR (const \fBSEStarList\fR &Catalog, \fBSEStarList\fR &Transformed) const"
+.br
+.ti -1c
+.RI "bool \fBIsValid\fR () const"
+.br
+.ti -1c
+.RI "double \fBScaleFactor\fR () const"
+.br
+.ti -1c
+.RI "ImageTransfo* \fBClone\fR () const"
+.br
+.ti -1c
+.RI "\fB~ImageGtransfo\fR ()"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+geometric transfo of a reduced image. 
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

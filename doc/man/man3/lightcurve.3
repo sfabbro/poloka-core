@@ -1,0 +1,88 @@
+.TH "LightCurve" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+LightCurve \- The same FiducialStar monitored many nights. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <lightcurve.h>\fR
+.PP
+Inherits ImageList.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBLightCurve\fR (const NightList &AllNights, const PhotStar &OneStar)"
+.br
+.ti -1c
+.RI "\fBLightCurve\fR (istream &Stream)"
+.br
+.ti -1c
+.RI "\fBLightCurve\fR ()"
+.br
+.ti -1c
+.RI "void \fBAveragePosition\fR ()"
+.br
+.RI "\fItake the weighted mean of all positions.\fR"
+.ti -1c
+.RI "void \fBRelativeFluxes\fR ()"
+.br
+.RI "\fIcompute the relative fluxes according to the night photometric ratios.\fR"
+.ti -1c
+.RI "void \fBAbsoluteFluxes\fR ()"
+.br
+.RI "\fIcompute the absolute calibrated fluxes.\fR"
+.ti -1c
+.RI "void \fBdump\fR (ostream &Stream=cout) const"
+.br
+.ti -1c
+.RI "void \fBwrite_header\fR (ostream &Stream) const"
+.br
+.ti -1c
+.RI "void \fBwrite\fR (ostream &Stream) const"
+.br
+.ti -1c
+.RI "void \fBwrite\fR (const string &FileName) const"
+.br
+.ti -1c
+.RI "void \fBread\fR (istream &Stream)"
+.br
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "PhotStar \fBrefstar\fR"
+.br
+.ti -1c
+.RI "bool \fBIsStandard\fR"
+.br
+.RI "\fIreturns true if the FiducialStar is a standard star.\fR"
+.ti -1c
+.RI "string \fBFidName\fR"
+.br
+.RI "\fIname of the star, useful for bookeeping.\fR"
+.in -1c
+.SS Friends
+
+.in +1c
+.ti -1c
+.RI "bool \fBByIncreasingFlux\fR (const FiducialStar *one, const FiducialStar *two)"
+.br
+.RI "\fIsorts by increasing fluxes.\fR"
+.ti -1c
+.RI "bool \fBByIncreasingSignalToNoise\fR (const FiducialStar *one, const FiducialStar *two)"
+.br
+.RI "\fIsorts by increasing signal to noise.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+The same FiducialStar monitored many nights.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

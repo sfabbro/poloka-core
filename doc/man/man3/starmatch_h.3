@@ -1,0 +1,70 @@
+.TH "starmatch.h" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+starmatch.h \- pairs of points. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <iostream>\fR
+.br
+\fC#include <iterator>\fR
+.br
+\fC#include <algorithm>\fR
+.br
+\fC#include <string>\fR
+.br
+\fC#include "point.h"\fR
+.br
+\fC#include "basestar.h"\fR
+.br
+\fC#include "gtransfo.h"\fR
+.br
+.SS Compounds
+
+.in +1c
+.ti -1c
+.RI "class \fBStarMatch\fR"
+.br
+.RI "\fIa pair of stars, usually belonging to different images.\fR"
+.ti -1c
+.RI "class \fBStarMatchList\fR"
+.br
+.in -1c
+.SS Typedefs
+
+.in +1c
+.ti -1c
+.RI "typedef list<\fBStarMatch\fR>::iterator \fBStarMatchIterator\fR"
+.br
+.ti -1c
+.RI "typedef list<\fBStarMatch\fR>::const_iterator \fBStarMatchCIterator\fR"
+.br
+.in -1c
+.SS Functions
+
+.in +1c
+.ti -1c
+.RI "ostream& \fBoperator<<\fR (ostream &stream, const \fBStarMatch\fR &Match)"
+.br
+.ti -1c
+.RI "ostream& \fBoperator<<\fR (ostream &stream, const StarMatchList &List)"
+.br
+.RI "\fIA list of star matches,.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+pairs of points.
+.PP
+ Used to handles matches of star lists (image/image) or image/catalog to fit geometrical and photometric transformations.
+.PP
+.SH FUNCTION DOCUMENTATION
+.PP 
+.SS ostream& operator<< (ostream & stream, const StarMatchList & List)
+.PP
+A list of star matches,.
+.PP
+with the RefineTransfo and Cleanup convenience routines  to wrap the fit of the transformation. The fitted transformation belongs to the starMatchList object : if you want to store it for later  use, you have to clone it. To choose the type/degree of transfo, see RefineTransfo() 
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

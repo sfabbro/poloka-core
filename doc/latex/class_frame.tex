@@ -1,0 +1,145 @@
+\subsection{Frame  Class Reference}
+\label{class_frame}\index{Frame@{Frame}}
+rectangle with sides parallel to axes. 
+
+
+{\tt \#include $<$frame.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+\index{Frame@{Frame}!Frame@{Frame}}\index{Frame@{Frame}!Frame@{Frame}}
+{\bf Frame} ()\label{class_frame_a0}
+
+\item 
+\index{Frame@{Frame}!Frame@{Frame}}\index{Frame@{Frame}!Frame@{Frame}}
+{\bf Frame} (const {\bf Image} \&image)\label{class_frame_a1}
+
+\begin{CompactList}\small\item\em actual image frame.\item\end{CompactList}\item 
+\index{Frame@{Frame}!Frame@{Frame}}\index{Frame@{Frame}!Frame@{Frame}}
+{\bf Frame} (const double \&{\bf x\-Min}, const double \&{\bf y\-Min}, const double \&{\bf x\-Max}, const double \&{\bf y\-Max})\label{class_frame_a2}
+
+\begin{CompactList}\small\item\em this one is dangerous: you may swap the 2 middle arguments. Prefer next one.\item\end{CompactList}\item 
+\index{Frame@{Frame}!Frame@{Frame}}\index{Frame@{Frame}!Frame@{Frame}}
+{\bf Frame} (const {\bf Point} \&Lower\-Left, const {\bf Point} \&Upper\-Right)\label{class_frame_a3}
+
+\begin{CompactList}\small\item\em typical use: Frame(Point(xmin,ymin),Point(xmax,ymax)).\item\end{CompactList}\item 
+\index{Frame@{Frame}!Frame@{Frame}}\index{Frame@{Frame}!Frame@{Frame}}
+{\bf Frame} (const {\bf Fits\-Header} \&header, Which\-Frame which=Clipped\-Size\-Frame)\label{class_frame_a4}
+
+\begin{CompactList}\small\item\em 2 kinds of bounds in headers, the chip size and some that may be added by hand. See {\bf Write\-In\-Header}() {\rm (p.\,\pageref{class_frame_a22})}.\item\end{CompactList}\item 
+\index{Nx@{Nx}!Frame@{Frame}}\index{Frame@{Frame}!Nx@{Nx}}
+double {\bf Nx} () const\label{class_frame_a5}
+
+\begin{CompactList}\small\item\em number of pixels in x direction.\item\end{CompactList}\item 
+\index{Ny@{Ny}!Frame@{Frame}}\index{Frame@{Frame}!Ny@{Ny}}
+double {\bf Ny} () const\label{class_frame_a6}
+
+\begin{CompactList}\small\item\em number of pixels in y direction.\item\end{CompactList}\item 
+\index{Center@{Center}!Frame@{Frame}}\index{Frame@{Frame}!Center@{Center}}
+{\bf Point} {\bf Center} () const\label{class_frame_a7}
+
+\begin{CompactList}\small\item\em middle of the frame.\item\end{CompactList}\item 
+\index{ApplyTransfo@{ApplyTransfo}!Frame@{Frame}}\index{Frame@{Frame}!ApplyTransfo@{Apply\-Transfo}}
+Frame {\bf Apply\-Transfo} (const {\bf Gtransfo} \&T) const\label{class_frame_a8}
+
+\begin{CompactList}\small\item\em assumes that Transfo is a shift or involves a 'simple rotation'.\item\end{CompactList}\item 
+\index{operator *@{operator $\ast$}!Frame@{Frame}}\index{Frame@{Frame}!operator *@{operator $\ast$}}
+Frame {\bf operator $\ast$} (const Frame \&Right) const\label{class_frame_a9}
+
+\begin{CompactList}\small\item\em intersection of Frame's.\item\end{CompactList}\item 
+\index{operator *=@{operator $\ast$=}!Frame@{Frame}}\index{Frame@{Frame}!operator *=@{operator $\ast$=}}
+Frame\& {\bf operator $\ast$=} (const Frame \&Right)\label{class_frame_a10}
+
+\begin{CompactList}\small\item\em intersection of Frame's.\item\end{CompactList}\item 
+\index{operator+@{operator+}!Frame@{Frame}}\index{Frame@{Frame}!operator+@{operator+}}
+Frame {\bf operator+} (const Frame \&Right) const\label{class_frame_a11}
+
+\begin{CompactList}\small\item\em union of Frames.\item\end{CompactList}\item 
+\index{operator+=@{operator+=}!Frame@{Frame}}\index{Frame@{Frame}!operator+=@{operator+=}}
+Frame\& {\bf operator+=} (const Frame \&Right)\label{class_frame_a12}
+
+\begin{CompactList}\small\item\em union of Frames.\item\end{CompactList}\item 
+\index{CutMargin@{CutMargin}!Frame@{Frame}}\index{Frame@{Frame}!CutMargin@{Cut\-Margin}}
+void {\bf Cut\-Margin} (const double Margin\-Size)\label{class_frame_a13}
+
+\begin{CompactList}\small\item\em shrinks the frame (if Margin\-Size$>$0), enlarges it (if Margin\-Size$<$0).\item\end{CompactList}\item 
+\index{CutMargin@{CutMargin}!Frame@{Frame}}\index{Frame@{Frame}!CutMargin@{Cut\-Margin}}
+void {\bf Cut\-Margin} (const double Margin\-X, const double Margin\-Y)\label{class_frame_a14}
+
+\begin{CompactList}\small\item\em shrinks the frame (if Margin\-Size$>$0), enlarges it (if Margin\-Size$<$0).\item\end{CompactList}\item 
+\index{operator==@{operator==}!Frame@{Frame}}\index{Frame@{Frame}!operator==@{operator==}}
+bool {\bf operator==} (const Frame \&Right) const\label{class_frame_a15}
+
+\begin{CompactList}\small\item\em necessary for comparisons (!= is defined from this one implicitely).\item\end{CompactList}\item 
+\index{operator"!=@{operator"!=}!Frame@{Frame}}\index{Frame@{Frame}!operator!=@{operator!=}}
+bool {\bf operator!=} (const Frame \&Right) const\label{class_frame_a16}
+
+\begin{CompactList}\small\item\em comparison.\item\end{CompactList}\item 
+\index{Rescale@{Rescale}!Frame@{Frame}}\index{Frame@{Frame}!Rescale@{Rescale}}
+Frame {\bf Rescale} (const double Factor) const\label{class_frame_a17}
+
+\begin{CompactList}\small\item\em rescale it. The center does not move.\item\end{CompactList}\item 
+\index{Area@{Area}!Frame@{Frame}}\index{Frame@{Frame}!Area@{Area}}
+double {\bf Area} () const\label{class_frame_a18}
+
+\item 
+\index{InFrame@{InFrame}!Frame@{Frame}}\index{Frame@{Frame}!InFrame@{In\-Frame}}
+bool {\bf In\-Frame} (const double \&x, const double \&y) const\label{class_frame_a19}
+
+\begin{CompactList}\small\item\em inside?\item\end{CompactList}\item 
+\index{InFrame@{InFrame}!Frame@{Frame}}\index{Frame@{Frame}!InFrame@{In\-Frame}}
+bool {\bf In\-Frame} (const {\bf Point} \&pt) const\label{class_frame_a20}
+
+\begin{CompactList}\small\item\em same as above.\item\end{CompactList}\item 
+\index{MinDistToEdges@{MinDistToEdges}!Frame@{Frame}}\index{Frame@{Frame}!MinDistToEdges@{Min\-Dist\-To\-Edges}}
+double {\bf Min\-Dist\-To\-Edges} (const {\bf Point} \&P) const\label{class_frame_a21}
+
+\begin{CompactList}\small\item\em distance to closest boundary.\item\end{CompactList}\item 
+\index{WriteInHeader@{WriteInHeader}!Frame@{Frame}}\index{Frame@{Frame}!WriteInHeader@{Write\-In\-Header}}
+void {\bf Write\-In\-Header} ({\bf Fits\-Header} \&Head) const\label{class_frame_a22}
+
+\begin{CompactList}\small\item\em write a frame in the fits header.\item\end{CompactList}\item 
+\index{dump@{dump}!Frame@{Frame}}\index{Frame@{Frame}!dump@{dump}}
+void {\bf dump} (ostream \&stream=cout) const\label{class_frame_a23}
+
+\end{CompactItemize}
+\subsubsection*{Public Attributes}
+\begin{CompactItemize}
+\item 
+\index{xMin@{xMin}!Frame@{Frame}}\index{Frame@{Frame}!xMin@{x\-Min}}
+double {\bf x\-Min}\label{class_frame_m0}
+
+\begin{CompactList}\small\item\em coordinate of boundary.\item\end{CompactList}\item 
+\index{xMax@{xMax}!Frame@{Frame}}\index{Frame@{Frame}!xMax@{x\-Max}}
+double {\bf x\-Max}\label{class_frame_m1}
+
+\begin{CompactList}\small\item\em coordinate of boundary.\item\end{CompactList}\item 
+\index{yMin@{yMin}!Frame@{Frame}}\index{Frame@{Frame}!yMin@{y\-Min}}
+double {\bf y\-Min}\label{class_frame_m2}
+
+\begin{CompactList}\small\item\em coordinate of boundary.\item\end{CompactList}\item 
+\index{yMax@{yMax}!Frame@{Frame}}\index{Frame@{Frame}!yMax@{y\-Max}}
+double {\bf y\-Max}\label{class_frame_m3}
+
+\begin{CompactList}\small\item\em coordinate of boundary.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Friends}
+\begin{CompactItemize}
+\item 
+\index{operator<<@{operator$<$$<$}!Frame@{Frame}}\index{Frame@{Frame}!operator<<@{operator$<$$<$}}
+ostream\& {\bf operator$<$$<$} (ostream \&stream, const Frame \&Right)\label{class_frame_l0}
+
+\begin{CompactList}\small\item\em allows \footnotesize\begin{verbatim} cout << frame; \end{verbatim}\normalsize 
+.\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+rectangle with sides parallel to axes.
+
+when Frame's are used to define subparts of images, x\-Min and x\-Max refer to the first and last pixels in the subimage 
+
+
+
+The documentation for this class was generated from the following file:\begin{CompactItemize}
+\item 
+{\bf frame.h}\end{CompactItemize}

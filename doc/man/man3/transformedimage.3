@@ -1,0 +1,110 @@
+.TH "TransformedImage" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+TransformedImage \- class that operates the transformation of a \fBReducedImage\fR (image(s) + list). 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <transformedimage.h>\fR
+.PP
+Inherits \fBReducedImage\fR.
+.PP
+Inherited by TransformedImageAddFakes.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBTransformedImage\fR (const string &Name, const \fBReducedImage\fR &Source, const ImageTransfo *Transfo)"
+.br
+.RI "\fIto create a new TransformedImage, or locate an existing one.\fR"
+.ti -1c
+.RI "\fBTransformedImage\fR (const string &Name)"
+.br
+.RI "\fIassumes that the TransformedImage already exists.\fR"
+.ti -1c
+.RI "\fBTransformedImage\fR ()"
+.br
+.ti -1c
+.RI "string \fBSourceName\fR () const"
+.br
+.RI "\fIOriginal (untransformed) image name.\fR"
+.ti -1c
+.RI "\fBReducedImage\fR* \fBSource\fR () const"
+.br
+.RI "\fIOriginal (untransformed) image.\fR"
+.ti -1c
+.RI "\fBReducedImage\fR* \fBGeometricReference\fR ()"
+.br
+.RI "\fIGeometric reference (only applicable if ImageTransfo is \fBImageGtransfo\fR).\fR"
+.ti -1c
+.RI "const ImageTransfo* \fBTransfo\fR () const"
+.br
+.RI "\fIinvolved transformation.\fR"
+.ti -1c
+.RI "const \fBGtransfo\fR* \fBFromRef\fR () const"
+.br
+.RI "\fI\fBGtransfo\fR from reference to transformed image. Assumes that ImageTransfo is an \fBImageGtransfo\fR.\fR"
+.ti -1c
+.RI "virtual void \fBdump\fR (ostream &s=cout) const"
+.br
+.RI "\fIdumps basic info.\fR"
+.ti -1c
+.RI "virtual bool \fBMakeFits\fR ()"
+.br
+.RI "\fIproduce fits image.\fR"
+.ti -1c
+.RI "virtual bool \fBMakeCatalog\fR ()"
+.br
+.RI "\fIProduce the Saturated stars pixels mask, subtract the image background, detect with the SExtractor computed sigma. search the cosmics, and update catalog and weight for cosmics. No free coffee.\fR"
+.ti -1c
+.RI "virtual bool \fBMakeDead\fR ()"
+.br
+.RI "\fIproduce dead image.\fR"
+.ti -1c
+.RI "virtual bool \fBMakeSatur\fR ()"
+.br
+.RI "\fIproduce satur image.\fR"
+.ti -1c
+.RI "virtual bool \fBMakeCosmic\fR ()"
+.br
+.RI "\fIproduce cosmic image.\fR"
+.ti -1c
+.RI "virtual bool \fBMakeSatellite\fR ()"
+.br
+.RI "\fIproduce satellite image.\fR"
+.ti -1c
+.RI "virtual bool \fBMakeWeight\fR ()"
+.br
+.ti -1c
+.RI "bool \fBCreate\fR (const string &Where)"
+.br
+.RI "\fITo create the directories where the fits images, catalogues will be put: ex: ~/FakeDb/test: \fBDbImage\fR dbim("test"); dbim.Create("~/FakeDb/");.\fR"
+.ti -1c
+.RI "\fBReducedImage\fR* \fBClone\fR () const"
+.br
+.ti -1c
+.RI "\fBTransformedImage\fR (const TransformedImage &Original)"
+.br
+.ti -1c
+.RI "\fB~TransformedImage\fR ()"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+class that operates the transformation of a \fBReducedImage\fR (image(s) + list).
+.PP
+As for other descendants of \fBReducedImage\fR, the actual computations occur when you request the name of a data file (e.g. \fBFitsName\fR()). To geometrically align a set of images on the same reference, use ImagesAlign(). If you want to sum them, uses ImagesAlignAndSum() 
+.PP
+.SH CONSTRUCTOR & DESTRUCTOR DOCUMENTATION
+.PP 
+.SS TransformedImage::TransformedImage (const string & Name, const \fBReducedImage\fR & Source, const ImageTransfo * Transfo)
+.PP
+to create a new TransformedImage, or locate an existing one.
+.PP
+If you want to align A on B, the typical constructor call will be: TransformedImage(NewName, A, &ImageGtransfo(B,A)); To align a set of images on the same reference, use ImagesAlign(). 
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

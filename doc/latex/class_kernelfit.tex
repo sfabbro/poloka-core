@@ -1,0 +1,235 @@
+\subsection{Kernel\-Fit  Class Reference}
+\label{class_kernelfit}\index{KernelFit@{Kernel\-Fit}}
+{\bf Kernel} {\rm (p.\,\pageref{class_kernel})} fitting by least squares. 
+
+
+{\tt \#include $<$kernelfit.h$>$}
+
+\subsubsection*{Public Methods}
+\begin{CompactItemize}
+\item 
+\index{HKernelSizeX@{HKernelSizeX}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!HKernelSizeX@{HKernel\-Size\-X}}
+int {\bf HKernel\-Size\-X} ()\label{class_kernelfit_a0}
+
+\item 
+\index{HKernelSizeY@{HKernelSizeY}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!HKernelSizeY@{HKernel\-Size\-Y}}
+int {\bf HKernel\-Size\-Y} ()\label{class_kernelfit_a1}
+
+\item 
+\index{KernIndex@{KernIndex}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!KernIndex@{Kern\-Index}}
+int {\bf Kern\-Index} (int i\-Kernel, int i\-Spatial) const\label{class_kernelfit_a2}
+
+\item 
+\index{BackIndex@{BackIndex}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!BackIndex@{Back\-Index}}
+int {\bf Back\-Index} (int ib) const\label{class_kernelfit_a3}
+
+\item 
+\index{BackValue@{BackValue}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!BackValue@{Back\-Value}}
+double {\bf Back\-Value} (const double \&x, const double \&y) const\label{class_kernelfit_a4}
+
+\item 
+\index{DeleteConvolvedBest@{DeleteConvolvedBest}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!DeleteConvolvedBest@{Delete\-Convolved\-Best}}
+void {\bf Delete\-Convolved\-Best} ()\label{class_kernelfit_a5}
+
+\item 
+\index{KernelFit@{KernelFit}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!KernelFit@{Kernel\-Fit}}
+{\bf Kernel\-Fit} ()\label{class_kernelfit_a6}
+
+\item 
+\index{~KernelFit@{$\sim$KernelFit}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!~KernelFit@{$\sim$Kernel\-Fit}}
+{\bf $\sim$Kernel\-Fit} ()\label{class_kernelfit_a7}
+
+\item 
+\index{KernelsFill@{KernelsFill}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!KernelsFill@{Kernels\-Fill}}
+void {\bf Kernels\-Fill} ()\label{class_kernelfit_a8}
+
+\item 
+\index{AllocateConvolvedStamps@{AllocateConvolvedStamps}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!AllocateConvolvedStamps@{Allocate\-Convolved\-Stamps}}
+void {\bf Allocate\-Convolved\-Stamps} ()\label{class_kernelfit_a9}
+
+\item 
+\index{DeallocateConvolvedStamps@{DeallocateConvolvedStamps}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!DeallocateConvolvedStamps@{Deallocate\-Convolved\-Stamps}}
+void {\bf Deallocate\-Convolved\-Stamps} ()\label{class_kernelfit_a10}
+
+\item 
+\index{ComputeMAndB@{ComputeMAndB}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!ComputeMAndB@{Compute\-MAnd\-B}}
+void {\bf Compute\-MAnd\-B} ()\label{class_kernelfit_a11}
+
+\begin{CompactList}\small\item\em sums least square matrix and vector for all stamps.\item\end{CompactList}\item 
+\index{OneStampMAndB@{OneStampMAndB}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!OneStampMAndB@{One\-Stamp\-MAnd\-B}}
+void {\bf One\-Stamp\-MAnd\-B} (const {\bf Stamp} \&Astamp, double $\ast$Stamp\-M, double $\ast$Stamp\-B)\label{class_kernelfit_a12}
+
+\begin{CompactList}\small\item\em computes least square matrix and vector for one stamp.\item\end{CompactList}\item 
+\index{SubtractStampFromMAndB@{SubtractStampFromMAndB}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!SubtractStampFromMAndB@{Subtract\-Stamp\-From\-MAnd\-B}}
+void {\bf Subtract\-Stamp\-From\-MAnd\-B} ({\bf Stamp} \&AStamp)\label{class_kernelfit_a13}
+
+\begin{CompactList}\small\item\em subtract a stamp of the least square matrix and vector.\item\end{CompactList}\item 
+\index{Solve@{Solve}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!Solve@{Solve}}
+int {\bf Solve} ()\label{class_kernelfit_a14}
+
+\begin{CompactList}\small\item\em actually solves the system by calling linear algebra efficient routines.\item\end{CompactList}\item 
+\index{StampChi2@{StampChi2}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!StampChi2@{Stamp\-Chi2}}
+double {\bf Stamp\-Chi2} ({\bf Stamp} \&stamp, double VSky, double Inv\-Gain)\label{class_kernelfit_a15}
+
+\item 
+\index{NStampsUsed@{NStampsUsed}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!NStampsUsed@{NStamps\-Used}}
+int {\bf NStamps\-Used} () const\label{class_kernelfit_a16}
+
+\item 
+\index{FilterStamps@{FilterStamps}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!FilterStamps@{Filter\-Stamps}}
+void {\bf Filter\-Stamps} ()\label{class_kernelfit_a17}
+
+\item 
+int {\bf Do\-The\-Fit} (const Base\-Star\-List \&List, double \&Best\-Seeing, double \&Worst\-Seeing)
+\begin{CompactList}\small\item\em final wrapper that calls various routines to fill matrix and vector, and then solve.\item\end{CompactList}\item 
+\index{DoIt@{DoIt}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!DoIt@{Do\-It}}
+int {\bf Do\-It} (const Base\-Star\-List \&List, double \&Best\-Seeing, double \&Worst\-Seeing)\label{class_kernelfit_a19}
+
+\begin{CompactList}\small\item\em does the kernel fit (Do\-The\-Fit) and the convolution (Best\-Image\-Convolve).\item\end{CompactList}\item 
+\index{KernCompute@{KernCompute}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!KernCompute@{Kern\-Compute}}
+void {\bf Kern\-Compute} ({\bf Kernel} \&Result, const double X, const double Y) const\label{class_kernelfit_a20}
+
+\item 
+void {\bf Best\-Image\-Convolve} (int Update\-Kern\-Step=100)
+\begin{CompactList}\small\item\em convolves the best image with the current kernel (Usually set by Do\-The\-Fit).\item\end{CompactList}\item 
+\index{VarianceConvolve@{VarianceConvolve}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!VarianceConvolve@{Variance\-Convolve}}
+{\bf Image}$\ast$ {\bf Variance\-Convolve} (const {\bf Image} \&Source, int Update\-Kern=100)\label{class_kernelfit_a22}
+
+\end{CompactItemize}
+\subsubsection*{Public Attributes}
+\begin{CompactItemize}
+\item 
+\index{BestImage@{BestImage}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!BestImage@{Best\-Image}}
+const {\bf Image}$\ast$ {\bf Best\-Image}\label{class_kernelfit_m0}
+
+\begin{CompactList}\small\item\em pointer to 'best' image (smaller seeing).\item\end{CompactList}\item 
+\index{WorstImage@{WorstImage}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!WorstImage@{Worst\-Image}}
+const {\bf Image}$\ast$ {\bf Worst\-Image}\label{class_kernelfit_m1}
+
+\begin{CompactList}\small\item\em pointer to 'worst' image (larger seeing).\item\end{CompactList}\item 
+\index{BestImageBack@{BestImageBack}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!BestImageBack@{Best\-Image\-Back}}
+double {\bf Best\-Image\-Back}\label{class_kernelfit_m2}
+
+\begin{CompactList}\small\item\em the value of the sky of the best image.\item\end{CompactList}\item 
+\index{WorstImageBack@{WorstImageBack}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!WorstImageBack@{Worst\-Image\-Back}}
+double {\bf Worst\-Image\-Back}\label{class_kernelfit_m3}
+
+\begin{CompactList}\small\item\em the value of the sky of the worst image.\item\end{CompactList}\item 
+\index{SkyVarianceWorstImage@{SkyVarianceWorstImage}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!SkyVarianceWorstImage@{Sky\-Variance\-Worst\-Image}}
+double {\bf Sky\-Variance\-Worst\-Image}\label{class_kernelfit_m4}
+
+\begin{CompactList}\small\item\em the value of the sky variance of Worst\-Image.\item\end{CompactList}\item 
+\index{WorstImageGain@{WorstImageGain}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!WorstImageGain@{Worst\-Image\-Gain}}
+double {\bf Worst\-Image\-Gain}\label{class_kernelfit_m5}
+
+\begin{CompactList}\small\item\em the gain of Worst\-Image.\item\end{CompactList}\item 
+\index{KernAtCenterSum@{KernAtCenterSum}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!KernAtCenterSum@{Kern\-At\-Center\-Sum}}
+double {\bf Kern\-At\-Center\-Sum}\label{class_kernelfit_m6}
+
+\begin{CompactList}\small\item\em the kernel integral at the image center (photometric ratio).\item\end{CompactList}\item 
+\index{Kernels@{Kernels}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!Kernels@{Kernels}}
+vector$<${\bf Kernel}$>$ {\bf Kernels}\label{class_kernelfit_m7}
+
+\item 
+{\bf Stamp\-List}$\ast$ {\bf Best\-Image\-Stamps}
+\begin{CompactList}\small\item\em the base used to build the 'best' kernel $\ast$/ the list of stamps in the 'best' image.\item\end{CompactList}\item 
+\index{ConvolvedBest@{ConvolvedBest}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!ConvolvedBest@{Convolved\-Best}}
+{\bf Image}$\ast$ {\bf Convolved\-Best}\label{class_kernelfit_m9}
+
+\begin{CompactList}\small\item\em a pointer to the 'best' image convolved with the solution.\item\end{CompactList}\item 
+\index{convolutions@{convolutions}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!convolutions@{convolutions}}
+{\bf DImage}$\ast$ {\bf convolutions}\label{class_kernelfit_m10}
+
+\item 
+\index{backStamps@{backStamps}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!backStamps@{back\-Stamps}}
+{\bf DImage}$\ast$ {\bf back\-Stamps}\label{class_kernelfit_m11}
+
+\item 
+\index{optParams@{optParams}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!optParams@{opt\-Params}}
+Opt\-Params {\bf opt\-Params}\label{class_kernelfit_m12}
+
+\item 
+\index{mSize@{mSize}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!mSize@{m\-Size}}
+int {\bf m\-Size}\label{class_kernelfit_m13}
+
+\item 
+\index{backStart@{backStart}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!backStart@{back\-Start}}
+int {\bf back\-Start}\label{class_kernelfit_m14}
+
+\item 
+\index{m@{m}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!m@{m}}
+double$\ast$ {\bf m}\label{class_kernelfit_m15}
+
+\item 
+double$\ast$ {\bf b}
+\begin{CompactList}\small\item\em the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters $\ast$/;.\item\end{CompactList}\item 
+double$\ast$ {\bf solution}
+\begin{CompactList}\small\item\em the normal equations (i.e. grad(chi2) = 0) right hand side $\ast$/.\item\end{CompactList}\item 
+\index{chi2@{chi2}!KernelFit@{Kernel\-Fit}}\index{KernelFit@{KernelFit}!chi2@{chi2}}
+double {\bf chi2}\label{class_kernelfit_m18}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+{\bf Kernel} {\rm (p.\,\pageref{class_kernel})} fitting by least squares.
+
+Implementation of Ch. Alard's method for fitting (slowly variable)  convolution kernels. see astro-ph 9903111 \& astro-ph 9712287  (where most of the equations of page 2 are wrong). Main differences with the \char`\"{}isis\char`\"{} code provided by Alard himself: \begin{CompactItemize}
+\item 
+ if the integral of the kernel is requested to be constant over the image, we use Lagrange multipliers instead of something I could not understand. (paper from 97 page 3 first column). \item 
+ for the detection of outliers, we compute the chi2 of all stamps,  apply median filtering, refit, and iterate until stabilization of the number of stamps. This is in fact fairly fast because we have routines to  add or remove one stamp from the fit. \end{CompactItemize}
+
+
+
+
+\subsubsection{Member Function Documentation}
+\index{KernelFit@{Kernel\-Fit}!BestImageConvolve@{BestImageConvolve}}
+\index{BestImageConvolve@{BestImageConvolve}!KernelFit@{Kernel\-Fit}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}void Kernel\-Fit::Best\-Image\-Convolve (int {\em Update\-Kern} = 100)}\hfill\label{class_kernelfit_a21}
+
+
+convolves the best image with the current kernel (Usually set by Do\-The\-Fit).
+
+The Update\-Kern parameter is the pixel range over which the kernel will not be updated. The concolved image is to be found in Convolved\-Best. \index{KernelFit@{Kernel\-Fit}!DoTheFit@{DoTheFit}}
+\index{DoTheFit@{DoTheFit}!KernelFit@{Kernel\-Fit}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}int Kernel\-Fit::Do\-The\-Fit (const Base\-Star\-List \& {\em List}, double \& {\em Best\-Seeing}, double \& {\em Worst\-Seeing})}\hfill\label{class_kernelfit_a18}
+
+
+final wrapper that calls various routines to fill matrix and vector, and then solve.
+
+Before entering here, 'this' should have the Best\-Image and Worst\-Image fields assigned. The various sizes of the stamps involved in kernel fit are computed by Opt\-Params::Optimize\-Sizes(). There is no way yet to by-pass it and setup the fit conditions by yourself (it would be simple to implement). The returned value is 0 if the kernel fit failed (and hence 'this' contains no viable kernel). \begin{Desc}
+\item[{\bf Parameters: }]\par
+\begin{description}
+\item[
+{\em List}]contains the stars elligible to fit the kernel. \end{description}
+\end{Desc}
+
+
+\subsubsection{Member Data Documentation}
+\index{KernelFit@{Kernel\-Fit}!BestImageStamps@{BestImageStamps}}
+\index{BestImageStamps@{BestImageStamps}!KernelFit@{Kernel\-Fit}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}{\bf Stamp\-List} $\ast$ Kernel\-Fit::Best\-Image\-Stamps}\hfill\label{class_kernelfit_m8}
+
+
+the base used to build the 'best' kernel $\ast$/ the list of stamps in the 'best' image.
+
+/$\ast$ \index{KernelFit@{Kernel\-Fit}!b@{b}}
+\index{b@{b}!KernelFit@{Kernel\-Fit}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}double $\ast$ Kernel\-Fit::b}\hfill\label{class_kernelfit_m16}
+
+
+the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters $\ast$/;.
+
+/$\ast$ \index{KernelFit@{Kernel\-Fit}!solution@{solution}}
+\index{solution@{solution}!KernelFit@{Kernel\-Fit}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}double $\ast$ Kernel\-Fit::solution}\hfill\label{class_kernelfit_m17}
+
+
+the normal equations (i.e. grad(chi2) = 0) right hand side $\ast$/.
+
+/$\ast$ 
+
+The documentation for this class was generated from the following files:\begin{CompactItemize}
+\item 
+{\bf kernelfit.h}\item 
+kernelfit.cc\end{CompactItemize}

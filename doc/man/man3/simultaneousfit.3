@@ -1,0 +1,125 @@
+.TH "SimultaneousFit" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+SimultaneousFit \- Simultaneous fitting of Vignets. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <simultaneousfit.h>\fR
+.PP
+Inherits ImageList.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBSimultaneousFit\fR ()"
+.br
+.ti -1c
+.RI "\fB~SimultaneousFit\fR ()"
+.br
+.ti -1c
+.RI "void \fBFillMatAndVec\fR ()"
+.br
+.RI "\fIfill the entire matrix and vectors.\fR"
+.ti -1c
+.RI "bool \fBSolve\fR (const double &lambda=0, const bool invert=false)"
+.br
+.RI "\fIsolve the linear equation system.\fR"
+.ti -1c
+.RI "bool \fBIterateAndSolve\fR (const int MaxIterations, const double Epsilon=0.01)"
+.br
+.RI "\fIiterate on solution and solve the system.\fR"
+.ti -1c
+.RI "void \fBAssignStar\fR ()"
+.br
+.RI "\fIassign the VignetFit star.\fR"
+.ti -1c
+.RI "double \fBComputeChi2\fR ()"
+.br
+.RI "\fIcompute total chi2 and residuals of the fit.\fR"
+.ti -1c
+.RI "bool \fBApplyCorrections\fR (const double Factor=1)"
+.br
+.RI "\fIapply corrections of the last solution with a scale factor.\fR"
+.ti -1c
+.RI "void \fBMakeResidsAndWeights\fR ()"
+.br
+.RI "\fIupdate all vignets from last model fitted and resid.\fR"
+.ti -1c
+.RI "void \fBMakePsfs\fR ()"
+.br
+.RI "\fIredo all vignets integrated and convolved psfs and derivatives at the last fitted position.\fR"
+.ti -1c
+.RI "void \fBDoTheFit\fR (const double &MaxScale=1)"
+.br
+.RI "\fIfill, fit and shit.\fR"
+.ti -1c
+.RI "void \fBSetWhatToFit\fR (const int ToFit=FitFlux|FitGal)"
+.br
+.RI "\fIset what you want to fit.\fR"
+.ti -1c
+.RI "void \fBFindMinimumScale\fR (const double &WorstSeeing)"
+.br
+.RI "\fIget the minimum scaling factor to resize the vignets.\fR"
+.ti -1c
+.RI "void \fBMakeInitialModel\fR ()"
+.br
+.RI "\fIbuild a rough initial galaxy to start the iterative fit.\fR"
+.ti -1c
+.RI "void \fBResize\fR (const double &ScaleFactor)"
+.br
+.RI "\fIresize all the vignets of a scale factor.\fR"
+.ti -1c
+.RI "double \fBGetGalaxyFlux\fR (double &VarGalFlux) const"
+.br
+.RI "\fIcompute galaxy flux consistently with the rest.\fR"
+.ti -1c
+.RI "double \fBGetZeroFlux\fR (double &VarZeroFlux) const"
+.br
+.RI "\fIcompute zero flux as weighted average of zero nights.\fR"
+.ti -1c
+.RI "void \fBwrite\fR (const string &MiddleName) const"
+.br
+.RI "\fIwrite.\fR"
+.ti -1c
+.RI "double \fBChi2\fR () const"
+.br
+.RI "\fIreturns total chi2 of the fit.\fR"
+.ti -1c
+.RI "void \fBGetChi2\fR (double &newchi2, const double &oldchi2, double &lambda)"
+.br
+.ti -1c
+.RI "int \fBDof\fR () const"
+.br
+.RI "\fIreturns number of degrees of freedom.\fR"
+.ti -1c
+.RI "double \fBScale\fR () const"
+.br
+.RI "\fIreturns the current scale factor for vignets.\fR"
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "MinimMethod \fBMinim\fR"
+.br
+.ti -1c
+.RI "VignetFit* \fBVignetRef\fR"
+.br
+.RI "\fIpointer to the best seeing vignet.\fR"
+.ti -1c
+.RI "\fBVignet\fR* \fBgalaxy\fR"
+.br
+.RI "\fIpointer to the reconstructed galaxy centered double image.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+Simultaneous fitting of Vignets.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

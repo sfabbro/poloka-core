@@ -1,0 +1,204 @@
+\subsection{reducedimage.cc File Reference}
+\label{reducedimage_cc}\index{reducedimage.cc@{reducedimage.cc}}
+{\tt \#include $<$iostream$>$}\par
+{\tt \#include \char`\"{}fitsimage.h\char`\"{}}\par
+{\tt \#include \char`\"{}fileutils.h\char`\"{}}\par
+{\tt \#include \char`\"{}reducedimage.h\char`\"{}}\par
+{\tt \#include \char`\"{}astroutils.h\char`\"{}}\par
+{\tt \#include \char`\"{}frame.h\char`\"{}}\par
+{\tt \#include \char`\"{}fitstoad.h\char`\"{}}\par
+{\tt \#include \char`\"{}sestar.h\char`\"{}}\par
+{\tt \#include \char`\"{}cluster.h\char`\"{}}\par
+{\tt \#include \char`\"{}sextractor\_\-box.h\char`\"{}}\par
+{\tt \#include \char`\"{}toadscards.h\char`\"{}}\par
+{\tt \#include \char`\"{}seeing\_\-box.h\char`\"{}}\par
+{\tt \#include \char`\"{}fastfinder.h\char`\"{}}\par
+{\tt \#include \char`\"{}wcsutils.h\char`\"{}}\par
+{\tt \#include \char`\"{}imagelist.cc\char`\"{}}\par
+\subsubsection*{Defines}
+\begin{CompactItemize}
+\item 
+\index{TYPE_FILE_NAME@{TYPE\_\-FILE\_\-NAME}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!TYPE_FILE_NAME@{TYPE\_\-FILE\_\-NAME}}
+\#define {\bf TYPE\_\-FILE\_\-NAME}\ \char`\"{}type.name\char`\"{}\label{reducedimage_cc_a0}
+
+\item 
+\index{UNDEFINED@{UNDEFINED}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!UNDEFINED@{UNDEFINED}}
+\#define {\bf UNDEFINED}\ -1\label{reducedimage_cc_a1}
+
+\item 
+\#define {\bf READ\_\-ROUTINE}(ROUTINE\_\-NAME, VALUETYPE, FITS\_\-KEY\_\-NAME)
+\item 
+\#define {\bf SET\_\-ROUTINE}(ROUTINE\_\-NAME, VALUETYPE, FITS\_\-KEY\_\-NAME)
+\item 
+\#define {\bf REMOVE\_\-ROUTINE}(ROUTINE\_\-NAME, FITS\_\-KEY\_\-NAME)
+\item 
+\#define {\bf HAS\_\-ROUTINE}(ROUTINE\_\-NAME, FITS\_\-KEY\_\-NAME)
+\item 
+\#define {\bf READ\_\-AND\_\-SET\_\-ROUTINES}(ROUTINE\_\-NAME, VALUETYPE, FITS\_\-KEY\_\-NAME)
+\end{CompactItemize}
+\subsubsection*{Functions}
+\begin{CompactItemize}
+\item 
+\index{READ_AND_SET_ROUTINES@{READ\_\-AND\_\-SET\_\-ROUTINES}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!READ_AND_SET_ROUTINES@{READ\_\-AND\_\-SET\_\-ROUTINES}}
+{\bf READ\_\-AND\_\-SET\_\-ROUTINES} (Exposure, double,\char`\"{}TOADEXPO\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Epoch, double,\char`\"{}TOADEQUI\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Pixel\-Size, double,\char`\"{}TOADPIXS\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Gain, double,\char`\"{}TOADGAIN\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Readout\-Noise, double,\char`\"{}TOADRDON\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Band, string,\char`\"{}TOADBAND\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Filter, string,\char`\"{}TOADFILT\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Chip, int,\char`\"{}TOADCHIP\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Date, string,\char`\"{}TOADDATE\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Time\-Obs, string,\char`\"{}TOADUTIM\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Photom\-Reference, string,\char`\"{}PHOTOREF\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Target, string,\char`\"{}TOADOBJE\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Airmass, double,\char`\"{}TOADAIRM\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Signal\-To\-Noise23, double,\char`\"{}USNOSB23\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Zero\-Point, double,\char`\"{}ZEROUSNO\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(Zerop, double,\char`\"{}TOADPZPT\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(ZP0, double,\char`\"{}ZP0\char`\"{}) HAS\_\-ROUTINE(ZP0,\char`\"{}ZP0\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(ZP, double,\char`\"{}ZP\char`\"{}) HAS\_\-ROUTINE(ZP,\char`\"{}ZP\char`\"{}) READ\_\-AND\_\-SET\_\-ROUTINES(ZZZero\-P, double,\char`\"{}ZPTOADS\char`\"{}) HAS\_\-ROUTINE(ZZZero\-P,\char`\"{}ZPTOADS\char`\"{}) REMOVE\_\-ROUTINE(ZZZero\-P,\char`\"{}ZPTOADS\char`\"{}) double {\bf Reduced\-Image}\label{reducedimage_cc_a8}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Old\-Gain, double,\char`\"{}OLDGAIN\char`\"{})\label{reducedimage_cc_a9}
+
+\item 
+\index{REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}}
+{\bf REMOVE\_\-ROUTINE} (Seeing,\char`\"{}SESEEING\char`\"{})\label{reducedimage_cc_a10}
+
+\item 
+\index{READ_AND_SET_ROUTINES@{READ\_\-AND\_\-SET\_\-ROUTINES}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!READ_AND_SET_ROUTINES@{READ\_\-AND\_\-SET\_\-ROUTINES}}
+{\bf READ\_\-AND\_\-SET\_\-ROUTINES} (Seeing, double,\char`\"{}SESEEING\char`\"{})\label{reducedimage_cc_a11}
+
+\item 
+\index{REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}}
+{\bf REMOVE\_\-ROUTINE} (SESky,\char`\"{}SEXSKY\char`\"{})\label{reducedimage_cc_a12}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (SESky, double,\char`\"{}SEXSKY\char`\"{})\label{reducedimage_cc_a13}
+
+\item 
+\index{REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}}
+{\bf REMOVE\_\-ROUTINE} (SESigma,\char`\"{}SEXSIGMA\char`\"{})\label{reducedimage_cc_a14}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (SESigma, double,\char`\"{}SEXSIGMA\char`\"{})\label{reducedimage_cc_a15}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Back\-Sub, bool,\char`\"{}BACK\_\-SUB\char`\"{})\label{reducedimage_cc_a16}
+
+\item 
+\index{REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}}
+{\bf REMOVE\_\-ROUTINE} (Back\-Level,\char`\"{}BACKLEV\char`\"{})\label{reducedimage_cc_a17}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Sigma\-Back, double,\char`\"{}SKYSIGMA\char`\"{})\label{reducedimage_cc_a18}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Noise\-Pow, double,\char`\"{}NOISEPOW\char`\"{})\label{reducedimage_cc_a19}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Original\-Sky\-Level, double,\char`\"{}SKYLEV\char`\"{})\label{reducedimage_cc_a20}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Original\-Saturation, double,\char`\"{}ORIGSATU\char`\"{})\label{reducedimage_cc_a21}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Saturation, double,\char`\"{}SATURLEV\char`\"{})\label{reducedimage_cc_a22}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Flat\-Field\-Noise, double,\char`\"{}FLATNOIS\char`\"{})\label{reducedimage_cc_a23}
+
+\item 
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+{\bf SET\_\-ROUTINE} (Profile\-Error, double,\char`\"{}SIGPSF\char`\"{})\label{reducedimage_cc_a24}
+
+\item 
+\index{BoolImageOr@{BoolImageOr}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!BoolImageOr@{Bool\-Image\-Or}}
+bool {\bf Bool\-Image\-Or} (Reduced\-Image\-List \&List, string(Reduced\-Image::$\ast$In\-Fits\-File\-Name)() const, bool(Reduced\-Image::$\ast$Make\-In\-Fits)(), const string Out\-Fits\-Name)\label{reducedimage_cc_a25}
+
+\begin{CompactList}\small\item\em Performs the boolean OR of boolean images (Dead, Satur). call the \char`\"{}Make\char`\"{} routine (3rd argument) if the file (2nd argument) of one component is missing.\item\end{CompactList}\item 
+\index{BoolImageAnd@{BoolImageAnd}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!BoolImageAnd@{Bool\-Image\-And}}
+bool {\bf Bool\-Image\-And} (Reduced\-Image\-List \&List, string(Reduced\-Image::$\ast$In\-Fits\-File\-Name)() const, bool(Reduced\-Image::$\ast$Make\-In\-Fits)(), const string Out\-Fits\-Name)\label{reducedimage_cc_a26}
+
+\begin{CompactList}\small\item\em Performs the boolean AND of boolean images (Dead, Satur). call the \char`\"{}Make\char`\"{} routine (3rd argument) if the file (2nd argument) of one component is missing is missing.\item\end{CompactList}\item 
+\index{IncreasingSeeing@{IncreasingSeeing}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!IncreasingSeeing@{Increasing\-Seeing}}
+bool {\bf Increasing\-Seeing} (const {\bf Reduced\-Image} $\ast$one, const {\bf Reduced\-Image} $\ast$two)\label{reducedimage_cc_a27}
+
+\begin{CompactList}\small\item\em allows to sort a list in increasing seeing order.\item\end{CompactList}\item 
+\index{IncreasingDate@{IncreasingDate}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!IncreasingDate@{Increasing\-Date}}
+bool {\bf Increasing\-Date} (const {\bf Reduced\-Image} $\ast$one, const {\bf Reduced\-Image} $\ast$two)\label{reducedimage_cc_a28}
+
+\begin{CompactList}\small\item\em allows to sort a list in increasing date order.\item\end{CompactList}\item 
+\index{IncreasingResolution@{IncreasingResolution}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!IncreasingResolution@{Increasing\-Resolution}}
+bool {\bf Increasing\-Resolution} (const {\bf Reduced\-Image} $\ast$one, const {\bf Reduced\-Image} $\ast$two)\label{reducedimage_cc_a29}
+
+\begin{CompactList}\small\item\em allows to sort a list in increasing pixel scale order.\item\end{CompactList}\item 
+\index{DecreasingArea@{DecreasingArea}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!DecreasingArea@{Decreasing\-Area}}
+bool {\bf Decreasing\-Area} (const {\bf Reduced\-Image} $\ast$one, const {\bf Reduced\-Image} $\ast$two)\label{reducedimage_cc_a30}
+
+\begin{CompactList}\small\item\em allows to sort a list in decreasing area.\item\end{CompactList}\item 
+\index{ReducedImageRead@{ReducedImageRead}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!ReducedImageRead@{Reduced\-Image\-Read}}
+{\bf Reduced\-Image}$\ast$ {\bf Reduced\-Image\-Read} (const char $\ast$Name)\label{reducedimage_cc_a31}
+
+\begin{CompactList}\small\item\em to Reload an already existing {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}.\item\end{CompactList}\item 
+\index{ReducedImageRead@{ReducedImageRead}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!ReducedImageRead@{Reduced\-Image\-Read}}
+{\bf Reduced\-Image}$\ast$ {\bf Reduced\-Image\-Read} (const string \&Name)\label{reducedimage_cc_a32}
+
+\begin{CompactList}\small\item\em to Reload an already existing {\bf Reduced\-Image} {\rm (p.\,\pageref{class_reducedimage})}.\item\end{CompactList}\end{CompactItemize}
+\subsubsection*{Variables}
+\begin{CompactItemize}
+\item 
+\index{ImageList< ReducedImage >@{ImageList$<$ ReducedImage $>$}!reducedimage.cc@{reducedimage.cc}}\index{reducedimage.cc@{reducedimage.cc}!ImageList< ReducedImage >@{Image\-List$<$ Reduced\-Image $>$}}
+template class {\bf Image\-List$<$ Reduced\-Image $>$}\label{reducedimage_cc_a7}
+
+\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+ reducedimage.h
+
+
+
+\subsubsection{Define Documentation}
+\index{reducedimage.cc@{reducedimage.cc}!HAS_ROUTINE@{HAS\_\-ROUTINE}}
+\index{HAS_ROUTINE@{HAS\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define HAS\_\-ROUTINE(ROUTINE\_\-NAME, FITS\_\-KEY\_\-NAME)}\hfill\label{reducedimage_cc_a5}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}bool ReducedImage::Has##ROUTINE_NAME() const \
+{\
+  return( has_key(FITS_KEY_NAME,"Has"#ROUTINE_NAME));\
+}
+\end{verbatim}\normalsize 
+\index{reducedimage.cc@{reducedimage.cc}!READ_AND_SET_ROUTINES@{READ\_\-AND\_\-SET\_\-ROUTINES}}
+\index{READ_AND_SET_ROUTINES@{READ\_\-AND\_\-SET\_\-ROUTINES}!reducedimage.cc@{reducedimage.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define READ\_\-AND\_\-SET\_\-ROUTINES(ROUTINE\_\-NAME, VALUETYPE, FITS\_\-KEY\_\-NAME)}\hfill\label{reducedimage_cc_a6}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}        READ_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)\
+        SET_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)
+\end{verbatim}\normalsize 
+\index{reducedimage.cc@{reducedimage.cc}!READ_ROUTINE@{READ\_\-ROUTINE}}
+\index{READ_ROUTINE@{READ\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define READ\_\-ROUTINE(ROUTINE\_\-NAME, VALUETYPE, FITS\_\-KEY\_\-NAME)}\hfill\label{reducedimage_cc_a2}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}VALUETYPE ReducedImage::ROUTINE_NAME() const\
+{\
+  return read_##VALUETYPE##_key(FITS_KEY_NAME,#ROUTINE_NAME);\
+}
+\end{verbatim}\normalsize 
+\index{reducedimage.cc@{reducedimage.cc}!REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}}
+\index{REMOVE_ROUTINE@{REMOVE\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define REMOVE\_\-ROUTINE(ROUTINE\_\-NAME, FITS\_\-KEY\_\-NAME)}\hfill\label{reducedimage_cc_a4}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}void ReducedImage::Remove##ROUTINE_NAME()\
+{\
+  remove_key(FITS_KEY_NAME,"Remove"#ROUTINE_NAME);\
+}
+\end{verbatim}\normalsize 
+\index{reducedimage.cc@{reducedimage.cc}!SET_ROUTINE@{SET\_\-ROUTINE}}
+\index{SET_ROUTINE@{SET\_\-ROUTINE}!reducedimage.cc@{reducedimage.cc}}
+\paragraph{\setlength{\rightskip}{0pt plus 5cm}\#define SET\_\-ROUTINE(ROUTINE\_\-NAME, VALUETYPE, FITS\_\-KEY\_\-NAME)}\hfill\label{reducedimage_cc_a3}
+
+
+{\bf Value:}\footnotesize\begin{verbatim}bool ReducedImage::Set##ROUTINE_NAME(const VALUETYPE &Value, const string Comment)\
+{\
+  return set_##VALUETYPE##_key(Value,FITS_KEY_NAME,"Set"#ROUTINE_NAME, Comment);\
+}
+\end{verbatim}\normalsize 

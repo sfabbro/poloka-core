@@ -1,0 +1,48 @@
+.TH "PsfStars" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+PsfStars \- a class to select PSF stars from different ways. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <daophotpsf.h>\fR
+.PP
+Inherits \fBStarList\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBPsfStars\fR (const \fBReducedImage\fR &Rim)"
+.br
+.RI "\fIjust reads in the decent objects from a \fBReducedImage\fR.\fR"
+.ti -1c
+.RI "\fB~PsfStars\fR ()"
+.br
+.ti -1c
+.RI "size_t \fBFilterNei\fR ()"
+.br
+.RI "\fIremoves the stars with bad flags on the neighbor file created during PSF building.\fR"
+.ti -1c
+.RI "size_t \fBFilterAls\fR (const double ChiMax=3.0, const double SharpMin=-0.5, const double SharpMax=0.5)"
+.br
+.RI "\fIremoves the stars from the file created by ALLSTAR, given some cuts.\fR"
+.ti -1c
+.RI "size_t \fBFilterCond\fR (const PsfConditions &Cond)"
+.br
+.RI "\fIremoves the stars which do not verify the conditions Cond.\fR"
+.ti -1c
+.RI "size_t \fBFilterMultiIm\fR (const ReducedImageList &RimList, const \fBReducedImage\fR *ref, const double MaxDist=2)"
+.br
+.RI "\fIkeeps the stars in the set of images in RimList.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+a class to select PSF stars from different ways.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

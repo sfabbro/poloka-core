@@ -1,0 +1,14 @@
+\subsection{imageback.h File Reference}
+\label{imageback_h}\index{imageback.h@{imageback.h}}
+{\tt \#include $<$string$>$}\par
+{\tt \#include \char`\"{}image.h\char`\"{}}\par
+\subsubsection*{Compounds}
+\begin{CompactItemize}
+\item 
+class {\bf Image\-Back}
+\begin{CompactList}\small\item\em {\bf Image} {\rm (p.\,\pageref{class_image})} Back class to compute an image of the background.\item\end{CompactList}\end{CompactItemize}
+
+
+\subsubsection{Detailed Description}
+ This class deals with the computation of background average and fluctuations. The computation is carried out by the constructor, using an algorithm borrowed from Sextractor ({\tt http://terapix.iap.fr/sextractor}) : the average and sigma of pixels are computed over rectangles of size Mesh\-Step\-X$\ast$Mesh\-Step\-Y, once using all pixels, and a second time using only pixels within 2 sigmas of the average. Then a median filter (of half width 1) is applied to both maps.
+

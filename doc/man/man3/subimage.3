@@ -1,0 +1,61 @@
+.TH "SubImage" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+SubImage \- a class that allows to cut a subimage from a \fBReducedImage\fR. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <subimage.h>\fR
+.PP
+Inherits \fBReducedImage\fR.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBSubImage\fR ()"
+.br
+.ti -1c
+.RI "\fBSubImage\fR (const string &Name, const string &LargeImageName, const \fBFrame\fR &SubFrame)"
+.br
+.ti -1c
+.RI "bool \fBMakeFits\fR ()"
+.br
+.RI "\fIproduce fits image.\fR"
+.ti -1c
+.RI "bool \fBMakeWeight\fR ()"
+.br
+.ti -1c
+.RI "bool \fBMakeCosmic\fR ()"
+.br
+.RI "\fIproduce cosmic image.\fR"
+.ti -1c
+.RI "bool \fBMakeSatellite\fR ()"
+.br
+.RI "\fIproduce satellite image.\fR"
+.ti -1c
+.RI "bool \fBMakeSatur\fR ()"
+.br
+.RI "\fIproduce satur image.\fR"
+.ti -1c
+.RI "bool \fBMakeDead\fR ()"
+.br
+.RI "\fIproduce dead image.\fR"
+.ti -1c
+.RI "bool \fBMakeCatalog\fR ()"
+.br
+.RI "\fIProduce the Saturated stars pixels mask, subtract the image background, detect with the SExtractor computed sigma. search the cosmics, and update catalog and weight for cosmics. No free coffee.\fR"
+.ti -1c
+.RI "\fBReducedImage\fR* \fBClone\fR () const"
+.br
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+a class that allows to cut a subimage from a \fBReducedImage\fR.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.

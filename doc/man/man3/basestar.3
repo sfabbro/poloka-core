@@ -1,0 +1,97 @@
+.TH "BaseStar" 3 "8 Feb 2004" "toads" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+BaseStar \- The base class for handling stars. Used by all matching routines. 
+.SH SYNOPSIS
+.br
+.PP
+\fC#include <basestar.h>\fR
+.PP
+Inherits \fBPoint\fR, and RefCount.
+.PP
+Inherited by Detection, \fBJimStar\fR, NStarMatch, PhotStar, RollingStar, \fBSEStar\fR, and StandardStar.
+.PP
+.SS Public Methods
+
+.in +1c
+.ti -1c
+.RI "\fBBaseStar\fR ()"
+.br
+.ti -1c
+.RI "\fBBaseStar\fR (double xx, double yy, double ff)"
+.br
+.RI "\fIconstructor.\fR"
+.ti -1c
+.RI "\fBBaseStar\fR (const \fBPoint\fR &a_point, double a_flux)"
+.br
+.ti -1c
+.RI "double \fBX\fR () const"
+.br
+.RI "\fIaccess stuff.\fR"
+.ti -1c
+.RI "double \fBY\fR () const"
+.br
+.RI "\fI.\fR"
+.ti -1c
+.RI "void \fBread_it\fR (istream &rd, const char *format)"
+.br
+.ti -1c
+.RI "virtual void \fBwrite\fR (ostream &s=cout) const"
+.br
+.ti -1c
+.RI "virtual void \fBwriten\fR (ostream &s=cout) const"
+.br
+.ti -1c
+.RI "virtual void \fBdump\fR (ostream &stream=cout) const"
+.br
+.ti -1c
+.RI "virtual void \fBdumpn\fR (ostream &stream=cout) const"
+.br
+.ti -1c
+.RI "BaseStar& \fBoperator=\fR (const \fBPoint\fR &P)"
+.br
+.ti -1c
+.RI "virtual \fB~BaseStar\fR ()"
+.br
+.ti -1c
+.RI "virtual string \fBWriteHeader_\fR (ostream &stream=cout, const char *i=NULL) const"
+.br
+.ti -1c
+.RI "virtual void \fBWriteHeader\fR (ostream &stream=cout) const"
+.br
+.in -1c
+.SS Public Attributes
+
+.in +1c
+.ti -1c
+.RI "double \fBflux\fR"
+.br
+.in -1c
+.SS Static Public Methods
+
+.in +1c
+.ti -1c
+.RI "BaseStar* \fBread\fR (istream &rd, const char *format)"
+.br
+.ti -1c
+.RI "const char* \fBTypeName\fR ()"
+.br
+.in -1c
+.SS Friends
+
+.in +1c
+.ti -1c
+.RI "ostream& \fBoperator<<\fR (ostream &stream, const BaseStar &s)"
+.br
+.RI "\fIallows cout << aBaseStar;.\fR"
+.in -1c
+.SH DETAILED DESCRIPTION
+.PP 
+The base class for handling stars. Used by all matching routines.
+.PP
+
+
+.SH AUTHOR
+.PP 
+Generated automatically by Doxygen for toads from the source code.
