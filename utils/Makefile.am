@@ -11,7 +11,7 @@ bin_PROGRAMS = \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
  preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve \
- split_fits2 rustine_for_fringe assign dbls split_fits testdao test_matvect \
+ split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight
 
 
@@ -38,13 +38,12 @@ fitnight_LDFLAGS =  -ltoadslc -ltoadsdao
 make_daophot_SOURCES = make_daophot.cc
 make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 make_daophot_LDFLAGS =  -ltoadsdao
+
 testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
 
-
-test_matvect_SOURCES = test_matvect.cc
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
 split_fits_SOURCES = split_fits.cc
@@ -106,7 +105,7 @@ wiynpad_SOURCES = wiynpad.cc
 
 if AUTOINSTALL
 
-@prefix@/bin/% : .libs/%
+@prefix@/bin/% : %
 	ln -fs @abs_builddir@/.libs/$* @prefix@/bin/$*
 
 all   : $(patsubst %,@prefix@/bin/%,${bin_PROGRAMS})
