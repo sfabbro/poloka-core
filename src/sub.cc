@@ -30,10 +30,8 @@ makes use of a kernel fitting (see KernelFit) that can handle "mixed PSF's".
 
 A "subfile" details the contents of these subtraction components through
 DbImage names. The choice between a single subtraction and "split" subtraction
-is specified by putting "ONE SUBTRACTION" in this file. "ADDFAKES" is a 
-statement that drives the code to add fake supernovae in the input (new) images
-(they are not altered anyway!) for detection efficiency studies. This option
-roughly doubles the processing time. Blank lines in the subfile are ignored.
+is specified by putting "ONE SUBTRACTION" in this file. 
+Blank lines in the subfile are ignored.
 By default, newmake_sub reads a file named subfile in the current directory.
 
 "FIXGEO" aims at fixing the geometric reference used to align all the images.
@@ -57,8 +55,7 @@ ONE SUBTRACTION
 \endcode
 
 In this specific example, the split of images between NEW1 and NEW2 is
-irrelevant since we run a "simple" subtraction (as specified by ONE SUBTRACTION). ADDFAKES is commented and no fakes will be added.
-
+irrelevant since we run a "simple" subtraction (as specified by ONE SUBTRACTION). 
 Another Example:
 
  
@@ -377,8 +374,9 @@ StringList Sub::AllNewNames() const
     {
       const StringList &current = AllNew[i];
       for (StringCIterator k = current.begin(); k != current.end(); ++k)
-	res.push_back(*k);
+	{ string s = *k ; res.push_back(s);}
     }
+  cerr << "All New Names : " << res << endl ; 
   return res;
 }
 	     
@@ -585,8 +583,9 @@ int Sub::DoIt()
 	  // we are in fact in MC mode, and the stack.newStack
 	  // ImageSum Has already been prepared.
 	  // the type should be RegularKind
+	  cerr <<"Processing  in MC mode " << stack.Name() << endl ;
 	  if (stack.stackType != RegularKind)
-	    cerr <<"Error in Sub, bad compatibility with MC" << endl ;
+	    cerr <<"Error, bad stackType" << endl ;
 	  (stack.newStack)->Execute(DoFits | DoSatur | DoWeight);
 	  stack.newStack->FlagDiffractionSpikes(); //util?
 	}
@@ -630,6 +629,7 @@ int Sub::DoIt()
   else // only one subtraction
     {
       // we only have one new/sub
+      GlobalNew = AllNew[0].newStack ;
       GlobalSub = AllNew[0].sub;
       if (GlobalSub->Name() != GlobalSubName())
 	RenameDbImage(*GlobalSub,GlobalSubName());
