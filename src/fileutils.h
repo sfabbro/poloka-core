@@ -22,12 +22,18 @@ string BaseName(const std::string &Name);
 //! remove everything after the last period(.)
 string CutExtension(const std::string &Name);
 
+//! return what is left after the last "." 
+std::string FileExtension(const std::string &FileName);
+
 //!
 int   FileExists(const char *FileName);
 //!
 int   FileExists(const std::string &FileName);
 //!
 int   FileIsWritable(const char *FileName);
+
+//! remove files. FileNames should contain the names, separated by blanks
+bool RemoveFiles(const std::string &FileNames);
 
 //! does the file begin as a fits file?
 int   IsFits (const std::string &fname);
@@ -37,7 +43,7 @@ int   IsFits (const std::string &fname);
 int   DirectoryContents(const char *DirName, StringList &FileNames);
 
 //! return true for filename ending by ".Z" or ".gz"
-bool IsCompressed(const string &FileName);
+bool IsZipped(const string &FileName);
 
 
 //!

@@ -58,6 +58,15 @@ return string(result);
 }
 
 
+std::string FileExtension(const std::string &FileName)
+{
+  unsigned int dotpos = FileName.rfind('.');
+  if (dotpos > FileName.size()) return "";
+  return FileName.substr(dotpos+1,FileName.size());
+}
+
+
+
 int MKDir(const char *path, const bool Warn)
 {
 if (FileExists(path)) return 1;
@@ -125,12 +134,17 @@ return result;
 int MakeRelativeLink(const std::string &RealFile, 
 		     const std::string &LinkLocation)
 {
-string link_value = RelativeLink(StandardPath(RealFile).c_str(), 
+  string link_value = RelativeLink(StandardPath(RealFile).c_str(), 
 				 StandardPath(LinkLocation).c_str());
-string command = " ln -fs " + link_value + " " + string(LinkLocation);
-if (system(command.c_str()) == 0) return 1;
-cerr << " could not issue " << command << endl;
-return 0;
+  if (0==symlink(link_value.c_str(), LinkLocation.c_str()))
+    return 1;
+  std::cerr << " could not create a link " << std::endl
+	    << LinkLocation << "->" << link_value << std::endl;
+  return 0;
+  //string command = " ln -fs " + link_value + " " + LinkLocation;
+  //if (system(command.c_str()) == 0) return 1;
+  //cerr << " could not issue " << command << endl;
+  //return 0;
 }
 
 string AddSlash(const string &path)
@@ -147,6 +161,28 @@ return (access(FileName,F_OK) == 0);
 int FileExists(const string &FileName)
 {
 return (access(FileName.c_str(),F_OK) == 0);
+}
+
+typedef   std::vector<std::string> SVect;
+
+
+bool RemoveFiles(const std::string &FileNames)
+{
+  if (FileNames == "") return true;
+  SVect files;
+  DecomposeString(files,FileNames);
+  bool ok = true;
+  for (unsigned i = 0; i< files.size(); ++i)
+    {
+      const std::string &file = files[i];
+      if (0 != remove(file.c_str()))
+	{
+	  std::cerr << " something weird happened when removing " 
+		    << file << std::endl;
+	  ok = false;
+	}
+    }
+  return ok;
 }
 
 int FileIsWritable(const char *FileName)
@@ -225,7 +261,7 @@ return S_ISDIR(stat_struct.st_mode);
 }
 
 //! return true for filename ending by ".Z" or ".gz"
-bool IsCompressed(const string &FileName)
+bool IsZipped(const string &FileName)
 {
   const char*p = strrchr(FileName.c_str(),'.');
   return (strstr(p,".Z") == p || strstr(p,".gz") == p );
