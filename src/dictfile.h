@@ -109,7 +109,7 @@ for (DictFileCIterator line = file.begin(); line != file.end();
   ++line)
 {
   MyStruct a;
-  if (line->HasKey("Stuff")) a->stuff = i->Value("Stuff");
+  if (line->HasKey("Stuff")) a->stuff = line->Value("Stuff");
 }
 
 #endif
