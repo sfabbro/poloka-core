@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: sex.m4,v 1.1 2004/02/23 00:39:38 nrl Exp $
+# $Id: sex.m4,v 1.2 2004/02/23 01:53:55 nrl Exp $
 # 
 # autoconf macro to check the sextractor installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -23,9 +23,9 @@ AC_DEFUN([AM_CHECK_SEX],[
   [  sex_headers=$withval],
   )
 
- AC_ARG_WITH(sex-lib,
-  [  --with-sex-lib=<prefix>     prefix where the sex lib is installed],
-  [  sex_lib=$withval],
+ AC_ARG_WITH(sex-libs,
+  [  --with-sex-libs=<prefix>     prefix where the sextractor libs are installed],
+  [  sex_libs=$withval],
   )
  
 
@@ -76,27 +76,31 @@ AC_DEFUN([AM_CHECK_SEX],[
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
   SEX_LDFLAGS="-L$prefix/lib -lsex -lwcs"
  fi
+ echo " ---> $SEX_LDFLAGS"
+ 
  LDFLAGS="$LDFLAGS $SEX_LDFLAGS"
- AC_CHECK_LIB(sex,main,,
-  [echo "*** Library libsex not found.                                   "
-   echo "*** If sextractor is not installed on your system, install it first."
-   echo "*** You may retrieve it from:                                       "
-   echo "***    ftp://??????                                                 "
-   echo "***                                                                 "
-   echo "*** Keep in mind that ./configure looks for sextrator in the following"
-   echo "*** standard locations:                                             "
-   echo "***    /, /usr, /usr/local, \$FROGSHOME and <install prefix>        "
-   echo "***                                                                 "
-   echo "*** If you choose to install sextrator someplace else, you will have"
-   echo "*** to specify its install prefix using one or more of the following"
-   echo "*** configure options:                                              "
-   echo "***  --with-sex=                                                    "
-   echo "***  --with-sex-headers=                                            "
-   echo "***  --with-sex-libs=                                               "
-   echo "***                                                                 "
-   echo "*** Please check your sextrator installation and try again.           "
-  AC_MSG_ERROR(aborting.)
-  ])
+
+# FIXME: seems to break the type checks. Investigate.
+# AC_CHECK_LIB(sex,main,,
+#  [echo "*** Library libsex not found.                                   "
+#   echo "*** If sextractor is not installed on your system, install it first."
+#   echo "*** You may retrieve it from:                                       "
+#   echo "***    ftp://??????                                                 "
+#   echo "***                                                                 "
+#   echo "*** Keep in mind that ./configure looks for sextrator in the following"
+#   echo "*** standard locations:                                             "
+#   echo "***    /, /usr, /usr/local, \$FROGSHOME and <install prefix>        "
+#   echo "***                                                                 "
+#   echo "*** If you choose to install sextrator someplace else, you will have"
+#   echo "*** to specify its install prefix using one or more of the following"
+#   echo "*** configure options:                                              "
+#   echo "***  --with-sex=                                                    "
+#   echo "***  --with-sex-headers=                                            "
+#   echo "***  --with-sex-libs=                                               "
+#   echo "***                                                                 "
+#   echo "*** Please check your sextrator installation and try again.           "
+#  AC_MSG_ERROR(aborting.)
+#  ])
 
  # FIXME: check the version
 

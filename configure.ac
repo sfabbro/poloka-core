@@ -31,7 +31,7 @@ SWIG_ENABLE_CXX
 CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 
 # Checks for libraries.
-AM_PATH_PYTHON
+AM_PATH_PYTHON(2.0.0)
 # FIXME: Replace `main' with a function in `-lcrypt':
 AC_CHECK_LIB([crypt], [main])
 # FIXME: Replace `main' with a function in `-ldl':
@@ -43,7 +43,7 @@ AC_CHECK_LIB([nsl], [main])
 AM_PATH_XML2(2.6.2)
 AM_CHECK_CFITSIO(2.470)
 AM_CHECK_CERNLIB
-# AM_CHECK_SEX
+AM_CHECK_SEX
 
 
 # Checks for header files.
@@ -58,7 +58,7 @@ AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
 AC_C_VOLATILE
-AC_LANG(C++)
+AC_LANG(C)
 AC_CHECK_SIZEOF(char)
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)

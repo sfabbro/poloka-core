@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cfitsio.m4,v 1.1 2004/02/23 00:39:38 nrl Exp $
+# $Id: cfitsio.m4,v 1.2 2004/02/23 01:53:55 nrl Exp $
 # 
 # autoconf macro to check the cfitsio installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -76,7 +76,7 @@ AC_DEFUN([AM_CHECK_CFITSIO],[
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
   CFITSIO_LDFLAGS="-L$prefix/lib -lcfitsio"
  fi
- LDFLAGS="$LDFLAGS $CFITSIO_LDFLAGS"
+ LDFLAGS="$LDFLAGS $CFITSIO_LDFLAGS -lm"
  AC_CHECK_LIB(cfitsio,main,,
   [echo "*** Library libcfitsio not found.                                   "
    echo "*** If cfitsio is not installed on your system, install it first.   "
