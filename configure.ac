@@ -12,7 +12,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 AC_CANONICAL_HOST
-#AM_DISABLE_STATIC
+AM_DISABLE_STATIC
 
 # default prefix for installation is in the current dir
 AC_PREFIX_DEFAULT([`\pwd`/installarea])
