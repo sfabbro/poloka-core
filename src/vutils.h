@@ -51,8 +51,10 @@ void DConst_mean_median_sigma(const double *array, const int size, double &mean,
 //! computes the clipped-mean and sigma with cutting at k-sigma, return mean
 double clipmean(double *values, int &nval, double &sigma, const double &k=3.5, const int niter=4);
 
-//! fit a gaussian on a region about mean of half width k-sigma, return mean
-double gaussian(double *values, int &nval, double &sigma, const double &k=3.5);
+/*! fit a gaussian on a region about mean of half width k-sigma, return mean
+ * if first_evalutation, mean and sigma are guessed with  DConst_mean_median_sigma (using median)
+ */
+double gaussianfit(const double *values , int nval, double &mean, double &sigma, const double &k=3.5, bool first_evalutation=true);
 
 
 //template<class T>  T ScalProd(const T A[], const T B[], int N);

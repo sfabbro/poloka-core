@@ -80,17 +80,13 @@ int main(int argc, char **argv)
   double zp,rms;
   FILE *file = fopen("zpfitter.dat","w");
   
-  // clipmean
-  zp = clipmean(values,count,rms,3.0,3);
-  fprintf(file,"clipmean_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
-  printf("clipmean_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
-
   // gaussian
-  zp = gaussian(values,count,rms,3.0);
+  zp = gaussianfit(values,count,zp,rms,3.,true);
+  zp = gaussianfit(values,count,zp,rms,2.,false);
+  zp = gaussianfit(values,count,zp,rms,1.5,false);
+  zp = gaussianfit(values,count,zp,rms,1.,false);
   fprintf(file,"gaussian_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
   printf("gaussian_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
- 
-
   fclose(file);
   delete [] values;
   return EXIT_SUCCESS;
