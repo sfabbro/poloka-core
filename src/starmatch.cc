@@ -254,7 +254,9 @@ void StarMatchList::write_wnoheader(ostream & pr) const
       (starm.s1)->writen(pr);
       pr << " " ;
       (starm.s2)->writen(pr);
-      pr << " " << starm.Distance(identity) ;
+      double dx = starm.s1->x - starm.s2->x;
+      double dy = starm.s1->y - starm.s2->y;
+      pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy);
       pr << endl ;
     }
   pr.flags(old_flags);
