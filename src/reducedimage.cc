@@ -88,7 +88,9 @@ ReducedImage::FillSExtractorData(ForSExtractor & data,
       if ( SigmaBack() > 1.e-10 )
 	{
 	  data.sigma_back  = SigmaBack() ;
-	  cerr << "Using the background sigma written in header to compute detctions levels: " << data.sigma_back << endl ;
+	  cerr << "Using the background sigma written in " 
+	       << Name() << " header to compute detctions levels: " 
+	       << data.sigma_back << endl ;
 	}
     }
   data.FitsFileName = FitsImageName(Calibrated).c_str();
@@ -598,7 +600,7 @@ bool ReducedImage::MakeBad()
 { 
   if (MakeWeight())
     {
-      cout << " making " << FitsBadName() << endl;
+      cout << " making BadImage " << FitsBadName() << endl;
       // use "slicing" code in order to accomodate large images:
       FitsInOutParallelSlices inOut(FitsWeightName(),
 				    FitsBadName());

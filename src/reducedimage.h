@@ -132,7 +132,7 @@ Usefull in case of artificially smoothed images
   virtual bool MakeCatalog();
 
   
-//! MakeCatalog_ImageBizarre() is for sum-images, or convolved images, for which we do not want to subtract the background map, nor computing the saturated pixels map, and for which we provide the value of the sigmabackground. overwrite is set to true.
+//! MakeCatalog_ImageBizarre() is for sum-images, or convolved images, for which we do not want to subtract the background map, nor compute the saturated pixels map, and for which we provide the value of the sigmabackground. overwrite is set to true.
   bool MakeCatalog_ImageBizarre(){ 
     return MakeCatalog(/*redo_from_beg=*/false, /*overwrite = */ true,
 		       /*savemasksat = */ false, 
