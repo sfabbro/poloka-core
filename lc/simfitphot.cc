@@ -6,7 +6,10 @@
 #include "simfit.h"
 #include "simfitphot.h"
 
-//#define DEBUG
+
+static bool IncSeeing(const CountedRef<ReducedImage> one, const CountedRef<ReducedImage> two)
+{ return (one->Seeing() < two->Seeing());}
+
 
 static void init_phot(LightCurveList& Fiducials)
 {  
@@ -18,11 +21,10 @@ static void init_phot(LightCurveList& Fiducials)
     }
 
   // if no given reference, make it as best seeing image
-  //if (!Fiducials.RefImage) 
-  if (false)
+  if (!Fiducials.RefImage) 
     {
       
-      //Fiducials.RefImage = *min_element(Fiducials.Images.begin(), Fiducials.Images.end(), IncreasingSeeing);
+      Fiducials.RefImage = *min_element(Fiducials.Images.begin(), Fiducials.Images.end(), IncSeeing);
 
       for_each(Fiducials.Objects.begin(), Fiducials.Objects.end(),
 	       bind2nd(mem_fun(&Fiducial<PhotStar>::AssignImage), Fiducials.RefImage));
@@ -71,9 +73,7 @@ static void init_phot(LightCurveList& Fiducials)
 
 SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 {
-#ifdef DEBUG
-  cout << " SimFitPhot::SimFitPhot" << endl;
-#endif
+
   init_phot(Fiducials);
 
   zeFit.reserve(Fiducials.Images.size());
@@ -81,24 +81,18 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
   // 4 fwhm maximum size vignets
   const double rad = 4.*2.3548;
 
-  PhotStar *star = new PhotStar();
-  
-  zeFit.VignetRef = SimFitRefVignet(star, Fiducials.RefImage, 
-				    int(ceil(Fiducials.RefImage->Seeing()*rad)));
+  zeFit.VignetRef = SimFitRefVignet(Fiducials.RefImage, int(ceil(Fiducials.RefImage->Seeing()*rad)));
   
   double worstSeeing = -1e29;
   
   for (ReducedImageCIterator it=Fiducials.Images.begin(); it != Fiducials.Images.end(); ++it)
     {
       const double curSeeing = (*it)->Seeing();
-      SimFitVignet *vig = new SimFitVignet(star, *it, Fiducials.RefImage, int(ceil(curSeeing*rad)));
+      SimFitVignet *vig = new SimFitVignet(*it);
       zeFit.push_back(vig);
       if (worstSeeing < curSeeing) worstSeeing = curSeeing;
     }
  
-#ifdef DEBUG
-  cout << " SimFitPhot::SimFitPhot zeFit.FindMinimumScale" << endl;
-#endif
   zeFit.FindMinimumScale(worstSeeing);
 }
 
