@@ -145,8 +145,6 @@ main(int argc, char** argv)
   
   if(generate_persisters)
     cg.closeOutputFiles();
-  
-  exit(0);
 }
 
 

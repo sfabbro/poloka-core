@@ -146,6 +146,8 @@ void codegen::checkConfigFile_(std::string const& className, std::vector<templat
     bool ret = ti.readFromConfigFile(buff);
     if(ret && (ti.name()==className)) tvec.push_back(ti);
   }
+  
+  ifs.close();
 }
 
 

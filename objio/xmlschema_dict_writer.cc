@@ -12,19 +12,22 @@
 xmlschema_dict_writer::xmlschema_dict_writer(std::string const& filename)
   : dict_writer_base(filename)
 {
-  doc_ = xmlNewDoc((xmlChar*)"1.0");
-  rootNode_ = xmlNewNode(0, (xmlChar*)"xsd:schema");
-  xsdNs_ = xmlNewNs(rootNode_, (xmlChar*)"http://www.w3.org/2001/XMLSchema", (xmlChar*)"xsd");
-  xsiNs_ = xmlNewNs(rootNode_, (xmlChar*)"http://www.w3.org/2001/XMLSchema-instance", (xmlChar*)"xsi");
-  xmlDocSetRootElement(doc_,rootNode_);
+  if(filename!="") {
+    doc_ = xmlNewDoc((xmlChar*)"1.0");
+    rootNode_ = xmlNewNode(0, (xmlChar*)"xsd:schema");
+    xsdNs_ = xmlNewNs(rootNode_, (xmlChar*)"http://www.w3.org/2001/XMLSchema", (xmlChar*)"xsd");
+    xsiNs_ = xmlNewNs(rootNode_, (xmlChar*)"http://www.w3.org/2001/XMLSchema-instance", (xmlChar*)"xsi");
+    xmlDocSetRootElement(doc_,rootNode_);
+  }
 }
 
 
 xmlschema_dict_writer::~xmlschema_dict_writer()
 {
-  // delete doc_
-  xmlSaveFormatFileEnc(filename_.c_str(), doc_, "UTF-8", 1);
-  xmlFreeDoc(doc_);
+  if(filename_!="") {
+    xmlSaveFormatFileEnc(filename_.c_str(), doc_, "UTF-8", 1);
+    xmlFreeDoc(doc_);
+  }
 }
 
 
