@@ -9,7 +9,7 @@ bin_PROGRAMS = \
  make_calibration make_catalog make_cosmic \
  make_dead makefringe \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
- mosaique_int newmake_sub preptoads removeback selection \
+ newmake_sub preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad
 
 
