@@ -14,7 +14,7 @@ bin_PROGRAMS = \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
- compute essai
+ compute
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
