@@ -60,7 +60,7 @@ void LightCurve::write_short(ostream& Stream) const
 
   ios::fmtflags oldflags = Stream.flags();
 
-  if (front()->Image()) Stream << "# jd : \n";
+  if (front()->Image()) Stream << "# mmjd : \n";
   Stream << "# flux : \n"  
          << "# eflux : \n"
 	 << "# mag : using elixir zero point = " << elixir_zp << "\n"
@@ -75,7 +75,7 @@ void LightCurve::write_short(ostream& Stream) const
   for (LightCurve::const_iterator it = begin(); it != end(); ++it)
     {      
       const Fiducial<PhotStar> *fs = *it;
-      lcp.julianday = fs->Image()->JulianDate();
+      lcp.julianday = fs->Image()->ModifiedModifiedJulianDate();
       lcp.flux = fs->flux;
       lcp.eflux = sqrt(fs->varflux);
       lcp.computemag(elixir_zp);
@@ -101,7 +101,7 @@ void LightCurve::write_xml(const string &filename) const
     {      
       const Fiducial<PhotStar> *fs = *it;
       CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
-      lcp->julianday = fs->Image()->JulianDate();
+      lcp->julianday = fs->Image()->ModifiedModifiedJulianDate();
       lcp->flux = fs->flux;
       lcp->eflux = sqrt(fs->varflux);
       lcp-> computemag(elixir_zp);

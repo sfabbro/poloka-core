@@ -30,8 +30,8 @@ static RefStar* read_object(const string& line)
     {
       vector<string> option;
       DecomposeString(option, *it, '=');
-      if      (option[0]=="DATE_MIN") star->jdmin = JulianDay(option[1]);
-      else if (option[0]=="DATE_MAX") star->jdmax = JulianDay(option[1]);
+      if      (option[0]=="DATE_MIN") star->jdmin = atof(option[1].c_str());
+      else if (option[0]=="DATE_MAX") star->jdmax = atof(option[1].c_str());
       else if (option[0]=="NAME")     star->name  = option[1];
       else if (option[0]=="TYPE")     star->type  = atoi(option[1].c_str());
       else cerr << " read_object(" << line << ") : Error: \n" 
@@ -149,8 +149,8 @@ ostream& lc_write(ostream& Stream, const RefStarList& Objects, const ReducedImag
     {
       Stream << (*it)->x << " " 
 	     << (*it)->y << " "
-	     << " DATE_MIN=" << DateFromJulianDay((*it)->jdmin)
-	     << " DATE_MAX=" << DateFromJulianDay((*it)->jdmax)
+	     << " DATE_MIN=" << (*it)->jdmin
+	     << " DATE_MAX=" << (*it)->jdmax
 	     << " NAME="     << (*it)->name << endl;      
     }
 

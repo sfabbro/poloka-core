@@ -162,7 +162,7 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig)
     {           
       // we will fit the flux according to Lc.Ref and date
-      (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->JulianDate());
+      (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->ModifiedModifiedJulianDate());
       (*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name(); 
       // this resizes the vignet and update everything (kernel, psf, residus) 
       (*itVig)->ModifiedResid();
@@ -1443,7 +1443,7 @@ void SimFit::fillNightMat(LightCurve& Lc) {
   double timediff = 10./24.; // 10 hours
   int nimages = 0;
   for (;itLc != endLc; ++itLc) {
-    jd = (*itLc)->Image()->JulianDate();
+    jd = (*itLc)->Image()->ModifiedModifiedJulianDate();
     if(Lc.Ref->IsVariable(jd)) {
       nimages++;
       isinnight=false;
@@ -1472,7 +1472,7 @@ void SimFit::fillNightMat(LightCurve& Lc) {
   itLc = Lc.begin();
   int im = 0;
   for (;itLc != endLc; ++itLc) {
-    jd = (*itLc)->Image()->JulianDate();
+    jd = (*itLc)->Image()->ModifiedModifiedJulianDate();
     if(Lc.Ref->IsVariable(jd)) {
       for(unsigned int day=0;day<nightdates.size(); ++day) {
 	if(fabs(jd-nightdates[day])<timediff) {
