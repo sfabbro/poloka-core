@@ -198,6 +198,15 @@ double clipmean(double *values, int &nval, double &sigma, const double &k, const
   return mean;
 }
 
+double gaussian(double *values, int &nval, double &sigma, const double &k)
+{
+  double mean,median;
+  Dmean_median_sigma(values,nval,mean,median,sigma);
+  
+  printf("NOT IMPLEMENTED !!\n");
+  
+  return mean;
+}
 
 #ifdef LA_POUBELLE_DE_LHISTOIRE
 

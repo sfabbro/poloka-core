@@ -15,7 +15,8 @@ bin_PROGRAMS = \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
  compute enlargeimage calibrate coordfromimage enlargedead mask2dead \
- mkcat2 seeing mergelists
+ mkcat2 seeing mergelists \
+ zpfitter
 
 
 
@@ -49,6 +50,7 @@ modelvignet_LDFLAGS =  -ltoadslc -ltoadsdao
 calibrate_SOURCES = calibrate.cc
 calibrate_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
 calibrate_LDFLAGS =  -ltoadslc -ltoadsdao
+
 
 ### Programs depending on dao
 make_daophot_SOURCES = make_daophot.cc
@@ -125,7 +127,7 @@ enlargedead_SOURCES = enlargedead.cc
 mask2dead_SOURCES = mask2dead.cc
 seeing_SOURCES = seeing.cc
 mergelists_SOURCES = mergelists.cc
-
+zpfitter_SOURCES = zpfitter.cc
 
 
 ######## auto symbolic link #########

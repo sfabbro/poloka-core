@@ -48,8 +48,12 @@ float Fmedian_sigma(float *values, const int nval, float &sigma);
 void DConst_mean_median_sigma(const double *array, const int size, double &mean,  
 			      double &median, double &sigma);
 
-//! computes the clipped-mean and sigma with cutting at k-sigma
+//! computes the clipped-mean and sigma with cutting at k-sigma, return mean
 double clipmean(double *values, int &nval, double &sigma, const double &k=3.5, const int niter=4);
+
+//! fit a gaussian on a region about mean of half width k-sigma, return mean
+double gaussian(double *values, int &nval, double &sigma, const double &k=3.5);
+
 
 //template<class T>  T ScalProd(const T A[], const T B[], int N);
 #endif /* VUTILS__H */

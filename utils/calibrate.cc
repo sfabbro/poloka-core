@@ -41,6 +41,7 @@ class CalibratedStar : public BaseStar {
   CalibratedStar(BaseStar& toto) : BaseStar(toto) {};
   double ra,dec;
   double u,g,r,i,z,x,y;
+  double ue,ge,re,ie,ze;
   int id;
 };
 
@@ -176,6 +177,11 @@ int main(int argc, char **argv)
     cstar.r=entry->Value("mr");
     cstar.i=entry->Value("mi");
     cstar.z=entry->Value("mz");
+    cstar.ue=entry->Value("emu");
+    cstar.ge=entry->Value("emg");
+    cstar.re=entry->Value("emr");
+    cstar.ie=entry->Value("emi");
+    cstar.ze=entry->Value("emz");
     cstar.flux=star.flux;
     cstar.id=count_total;
     cstar.x=star.x;
@@ -206,6 +212,8 @@ int main(int argc, char **argv)
   stream << "#error :" << endl;
   stream << "#sky :" << endl;
   stream << "#skyerror :" << endl;
+  stream << "#mag :" << endl;
+  stream << "#mage :" << endl;
   stream << "#ra : initial " << endl;
   stream << "#dec : initial " << endl;
   stream << "#ix : initial x" << endl;
@@ -215,15 +223,17 @@ int main(int argc, char **argv)
   stream << "#r : from catalog" << endl;
   stream << "#i : from catalog" << endl;
   stream << "#z : from catalog" << endl;
+  stream << "#ue : from catalog" << endl;
+  stream << "#ge : from catalog" << endl;
+  stream << "#re : from catalog" << endl;
+  stream << "#ie : from catalog" << endl;
+  stream << "#ze : from catalog" << endl;
   stream << "#img : image number" << endl;
   stream << "#star : start number in the catalog" << endl;
   stream << "#chi2pdf : chi2 of PSF photometry" << endl;
   stream << "#end" <<endl;
   stream << setprecision(12);
-  // first let's try to compute the ZP
   
-  int count=0;
-  double *values = new double[lclist.size()];
   
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
@@ -247,6 +257,14 @@ int main(int argc, char **argv)
 	stream << sqrt(fs->varsky) << " ";
       else
 	stream << 0 << " ";
+      
+      // mag
+      if (band=="u") stream << cstar.u << " " << cstar.ue << " ";
+      if (band=="g") stream << cstar.g << " " << cstar.ge << " ";
+      if (band=="r") stream << cstar.r << " " << cstar.re << " ";
+      if (band=="i") stream << cstar.i << " " << cstar.ie << " ";
+      if (band=="z") stream << cstar.z << " " << cstar.ze << " ";
+      
       stream << cstar.ra << " ";
       stream << cstar.dec << " ";
       stream << cstar.x << " ";
@@ -256,23 +274,18 @@ int main(int argc, char **argv)
       stream << cstar.r << " ";
       stream << cstar.i << " ";
       stream << cstar.z << " ";
+      stream << cstar.ue << " ";
+      stream << cstar.ge << " ";
+      stream << cstar.re << " ";
+      stream << cstar.ie << " ";
+      stream << cstar.ze << " ";
       stream << count_img << " "; 
       stream << cstar.id << " "; 
       stream << chi2pdf << " ";      
       stream << endl;
-      
-      if(fs->flux<=0) continue;
-      values[count++]=2.5*log10(fs->flux/cstar.flux);
     }
   }
   stream.close();
-  
-  double zp,rms;
-  zp = clipmean(values,count,rms,3.0,3);
-  FILE *file = fopen("calibration.summary","w");
-  fprintf(file,"RESULT_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
-  fclose(file);
-
   return EXIT_SUCCESS;
 }
 
