@@ -108,13 +108,5 @@ bool UpdateRaDec(FitsHeader &Header);
 
 
 
-///////////
-//! NRL 04/2004 : adding this, so that standardstar compiles
-//! retrieves the (lin) WCS transfo from a header.
-bool WCSTransfoFromHeader(const string &FitsImageName, GtransfoLin &Pix2RaDec);
-bool WCSTransfoFromHeader(const FitsHeader& Header, GtransfoLin &Pix2RaDec);
-///////////
-
-
 #endif /* WCSUTILS__H */
 
