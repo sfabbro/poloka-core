@@ -120,7 +120,8 @@ libtoads_la_SOURCES = \
   kernelfit.cc                kernelfit.h \
   psfmatch.cc                 psfmatch.h  \
   swarpstack.cc		      swarpstack.h \
-  dicstar.cc                  dicstar.h
+  dicstar.cc                  dicstar.h \
+  dictfile.cc		      dictfile.h
 
 
 
@@ -131,6 +132,7 @@ libtoads_la_SOURCES = \
 #  transformedimage_dict.cc 
 
 include_HEADERS = \
+dictfile.h \
 dicstar.h \
 vutils.h         \
 wcsutils.h       \

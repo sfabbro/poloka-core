@@ -145,7 +145,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
       zeFit.DoTheFit(2);
       if(i==-12) {
 	ofstream lstream((string(dir+"/lc_init0.dat")).c_str());
-	Lc.write_short((ostream&)lstream);
+	Lc.write_lc2fit((ostream&)lstream);
 	lstream.close();
 	zeFit.write("sn_init0",dir, WriteWeight|WriteData);
       }
@@ -154,7 +154,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
       zeFit.DoTheFit(2);
      }
     ofstream lstream((string(dir+"/lc_init.dat")).c_str());
-    Lc.write_short((ostream&)lstream);
+    Lc.write_lc2fit((ostream&)lstream);
     lstream.close();
     //return;
 #ifdef DEBUG
@@ -179,8 +179,8 @@ void SimFitPhot::operator() (LightCurve& Lc)
   }
   
   zeFit.write("sn",dir, WriteLightCurve|WriteGalaxy|WriteResid|WriteWeight|WriteData|WriteVignetsInfo|WriteMatrices);
-  ofstream lstream((string(dir+"/lc.dat")).c_str());
-  Lc.write_short((ostream&)lstream);
+  ofstream lstream((string(dir+"/lc2fit.dat")).c_str());
+  Lc.write_lc2fit((ostream&)lstream);
   lstream.close();
   Lc.write_xml((string(dir+"/lc.xml")).c_str()); 
   

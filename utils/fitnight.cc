@@ -7,6 +7,7 @@
 #include "lightcurvepoint_dict.h"
 #include "objio.h"
 #include "typemgr.h"
+#include "dictfile.h"
 
 using namespace std;
 
@@ -199,6 +200,10 @@ int main(int argc, char **argv)
     }
   }
   
+  DictFile lcdata("lc2fit.dat");
+  string instrumentName = lcdata.GlobalValue("INSTRUMENT");
+  string bandName = lcdata.GlobalValue("BAND");
+  string magSystem = lcdata.GlobalValue("MAGSYS");
   
   if(false) {
     cout << lcpoints.size() << endl;
@@ -215,15 +220,15 @@ int main(int argc, char **argv)
   cout << "zp=" << zp << endl;
 
 
-  ofstream outputlc("lc_per_night.dat");
-  outputlc << "# mmjd : (days since January 1st, 2003)\n"
-	   << "# flux : \n"  
-	   << "# eflux : \n"
-	   << "# mag : using zeropoint \n"
-	   << "# emag_minus : useful for drawing\n"
-	   << "# emag_plus : useful for drawing\n"
-	   << "# zeropoint : elixir zp\n";
-  outputlc << "# end \n";
+  ofstream outputlc("lc2fit_per_night.dat");
+  outputlc << "#Date : (days since January 1st, 2003)\n"
+	   << "#Flux : \n"  
+	   << "#Fluxerr : \n"
+	   << "#ZP : elixir zp\n";
+  outputlc << "@INSTRUMENT " << instrumentName << endl;
+  outputlc << "@BAND " << bandName << endl;
+  outputlc << "@MAGSYS " << magSystem << endl;
+  
   
   vector< CountedRef<LightCurvePoint> > newlcpoints;
   double jd;

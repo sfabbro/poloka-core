@@ -18,7 +18,8 @@ RefStar* RefStar::read(istream & Stream, const char *Format)
 	 >> rstar->dec 
 	 >> rstar->varra 
 	 >> rstar->vardec
-	 >> rstar->covradec;
+	 >> rstar->covradec
+	 >> rstar->band;
   rstar->PhotStar::read(Stream, Format);
   return rstar;
 }
@@ -33,7 +34,8 @@ void RefStar::writen(ostream &Stream) const
 	 << dec << ' '
 	 << varra << ' '
 	 << vardec << ' '
-	 << covradec << ' ';
+	 << covradec << ' '
+  	 << band << ' ';
   PhotStar::writen(Stream);
 }
 
@@ -48,7 +50,9 @@ string RefStar::WriteHeader_(ostream & Stream, const char* Num) const
 	 << "# dec : declination (J2000) \n"
 	 << "# varra : variance of ra \n"
 	 << "# vardec : variance of dec \n"
-	 << "# covradec: covariance term ra,dec \n";
+	 << "# covradec: covariance term ra,dec \n"
+	 << "# band: band (char) \n";
+  
   return PhotStar::WriteHeader_(Stream, Num) + "RefStar 0 ";
 }
 

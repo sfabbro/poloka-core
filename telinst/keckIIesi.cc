@@ -69,10 +69,6 @@ public :
     double s = sin(angle);
     GtransfoLin rotate(0,0,c,-s,s,c);
     
-#ifdef DEBUG
-    GtransfoLin rotate(0,0,-1,0,0,-1);
-#endif
-      
     return ComputeLinWCS (Head, center, rotate, Guess);
   }
 

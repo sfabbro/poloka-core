@@ -11,7 +11,7 @@ class RefStar : public Fiducial<PhotStar> {
 
 public:
 
-  RefStar() : jdmin(0), jdmax(0), ra(0), dec(0), varra(0), vardec(0), covradec(0) {}
+  RefStar() : jdmin(0), jdmax(0), ra(0), dec(0), varra(0), vardec(0), covradec(0), band('?') {}
 
   RefStar(const ReducedImage *Rim) : Fiducial<PhotStar>(Rim) {}
   
@@ -20,7 +20,8 @@ public:
   double jdmin,jdmax;
   double ra,dec;
   double varra, vardec, covradec;
-
+  char band;
+  
   bool IsVariable(const double& Jd) const { return (Jd <= jdmax && Jd >= jdmin); }
 
   friend ostream& operator << (ostream &Stream, const RefStar &Star);

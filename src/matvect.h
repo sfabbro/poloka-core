@@ -67,9 +67,9 @@ class Mat {
   const double* Data() const {return data;};
   double* NonConstData() {return data;};
 
-  void dump(std::ostream& Stream) const;
+  
   friend std::ostream& operator << (std::ostream &stream, const Mat &m)
-    { m.dump(stream); return stream;}
+    { m.writeASCII(stream); return stream;}
   
   // get a block of this matrix as a new matrix
   // size (x_max-x_min+1)*(y_max-y_min+1) (both min and max included)
@@ -84,7 +84,9 @@ class Mat {
   // i/o in fits for matrices
   int readFits(const std::string &FitsName);
   int writeFits(const std::string &FitsName) const;
-
+  int readASCII(std::istream& Stream);
+  int writeASCII(std::ostream& Stream) const;
+  
   void Symmetrize(const char* UorL = "L");
   
   // inverts a symetric posdef matrix using DSINV  CERNLIB's routine

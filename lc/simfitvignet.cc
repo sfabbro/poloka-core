@@ -119,7 +119,7 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Re
   DPixel *ppdy = Dy.begin();
 
   double integrale = 0;
-
+  cout << "in  TabulatedPsf::Tabulate DUMP , Pt.x, Pt.y = " << Pt.x << " " << Pt.y << endl;
   for (int j=Rect.ystart; j<Rect.yend; ++j)
     for (int i=Rect.xstart; i<Rect.xend; ++i, ++ppsf, ++ppdx, ++ppdy) 
       {

@@ -192,7 +192,8 @@ void SimFit::Resize(const double& ScaleFactor)
   int hrefx = VignetRef->Hx();
   int hrefy = VignetRef->Hy();
   
-  if(fabs(ScaleFactor-1)>0.01) {
+  if(true) {
+  //if(fabs(ScaleFactor-1)>0.01) {
   if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
     {
       cerr << " SimFit::Resize(" << ScaleFactor 

@@ -147,15 +147,33 @@ double& Mat::operator () (const unsigned int i, const unsigned int j) {
   return data[i+j*nx];
 }
 
-void Mat::dump(ostream& Stream) const {
-    for(unsigned int j=0;j<ny;j++) {
-      Stream << "0.." << nx-1 << "," << j << ": ";
-      for(unsigned int i=0;i<nx;i++) {
-	Stream << " " << float((*this)(i,j));
-      }
-      Stream << endl;
+int Mat::writeASCII(ostream& Stream) const {
+  Stream << nx << " " << ny << endl;
+  for(unsigned int j=0;j<ny;j++) {
+    //Stream << "0.." << nx-1 << "," << j << ": ";
+    for(unsigned int i=0;i<nx;i++) {
+      Stream << " " << float((*this)(i,j));
+    }
+    Stream << endl;
+  }
+  return 0;
+}
+
+int Mat::readASCII(istream& Stream) {
+  unsigned int  fnx,fny;
+  
+  Stream >> fnx >> fny;
+  allocate(fnx,fny);
+  
+  double val;
+  for(unsigned int j=0;j<ny;j++) {
+    for(unsigned int i=0;i<nx;i++) {
+      Stream >> val;
+      (*this)(i,j)=val;
     }
   }
+  return 0;
+}
 
 
 void Mat::Identity() {

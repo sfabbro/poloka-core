@@ -53,6 +53,44 @@ void LightCurve::push_back(const ReducedImage* Rim)
   push_back(fidStar);
 }
 
+void LightCurve::write_lc2fit(ostream& Stream) const
+{
+ 
+  double elixir_zp = computeElixirZeroPoint();
+
+  ios::fmtflags oldflags = Stream.flags();
+
+  if (front()->Image()) Stream << "#Date : (days since January 1st, 2003)\n";
+  Stream << "#Flux : in units of ADU in reference image\n"  
+         << "#Fluxerr : \n"
+	 << "#ZP : elixir zp\n";
+  if (front()->Image()) Stream << "#Image : \n";
+  Stream << "@INSTRUMENT MEGACAM\n";
+  Stream << "@BAND " << Ref->band << "\n";
+  Stream << "@MAGSYS AB\n";
+  
+  LightCurvePoint lcp;
+  for (LightCurve::const_iterator it = begin(); it != end(); ++it)
+    {      
+      const Fiducial<PhotStar> *fs = *it;
+      if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
+	continue;
+      lcp.julianday = fs->Image()->ModifiedModifiedJulianDate();
+      lcp.flux = fs->flux;
+      lcp.eflux = sqrt(fs->varflux);
+      //lcp.computemag(elixir_zp);
+      lcp.zeropoint = elixir_zp;
+      Stream << lcp;
+      if (fs->Image()) 
+	Stream << "  " << fs->Image()->Name();
+      else 
+	if(front()->Image())
+	  Stream << " none ";
+      Stream << endl;
+    }
+  Stream.flags(oldflags);
+}
+/*
 void LightCurve::write_short(ostream& Stream) const
 {
  
@@ -86,7 +124,7 @@ void LightCurve::write_short(ostream& Stream) const
     }
   Stream.flags(oldflags);
 }
-
+*/
 void LightCurve::write_xml(const string &filename) const
 {
 #ifdef FNAME
@@ -127,7 +165,6 @@ ostream& operator << (ostream& Stream, const LightCurve& Lc)
 }
 
 
-
 LightCurveList::LightCurveList(istream& LcFileStream) 
 {
 #ifdef FNAME
@@ -161,7 +198,8 @@ ostream& operator << (ostream& Stream, const LightCurveList& Fiducials)
   return Stream;
 }
 
-#define USE_SKMAGATT
+
+
 
 double LightCurve::computeElixirZeroPoint() const {
   // > COMMENT   Formula for Photometry, based on keywords given in this header:
@@ -171,39 +209,6 @@ double LightCurve::computeElixirZeroPoint() const {
   
   string photometric_image_fitsname = Ref->Image()->FitsName(); // default
   double photomratio = 1; // flux(photometric_image)/flux(reference_image=Ref->Image())
-  
-#ifdef USE_SKMAGATT
-
-  // we first try to find the image with the smallest attenuation
-  // as given by the elixir keyword SKMAGATT (this keyword is not in all images)
-
-  double min_attenuation = 12; 
-  double attenuation;
-  
-  
-  for (LightCurve::const_iterator it = begin(); it != end(); ++it) {
-  //for (ReducedImageCIterator im=Images.begin(); im != Images.end(); ++im) {
-    const Fiducial<PhotStar> *fs = *it;
-#ifdef DEBUG
-    cout << fs->Image()->FitsName() << " photomratio = " << fs->photomratio << endl;
-#endif
-    FitsHeader head(fs->Image()->FitsName());
-    if(head.HasKey("SKMAGATT")) {
-      attenuation = head.KeyVal("SKMAGATT");
-      if(attenuation<min_attenuation) {
-	min_attenuation = attenuation;
-	photometric_image_fitsname = fs->Image()->FitsName();
-	photomratio = fs->photomratio;
-      }
-    }
-  }
-  if(min_attenuation>10) {
-    cout << "LightCurve::computeElixirZeroPoint WARNING no info on attenuation, using reference image zero point" << endl;
-  }
-  cout << "LightCurve::computeElixirZeroPoint min_attenuation= " << min_attenuation << endl;
-  cout << "LightCurve::computeElixirZeroPoint photometric_image= " << photometric_image_fitsname << endl; 
-  
-#endif
   
   double expo,PHOT_C,PHOT_K,AIRMASS;
   expo=1;
