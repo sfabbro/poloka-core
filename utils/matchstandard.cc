@@ -150,10 +150,10 @@ int main(int argc, char **argv)
 	  continue;
 	}
       FitsHeader head(fitsFileName);
-      band = head.KeyVal("TOADBAND");
-      chip = head.KeyVal("TOADCHIP");
-      instName = head.KeyVal("TOADINST");
-      date = head.KeyVal("TOADDATE");
+      band = static_cast<string>(head.KeyVal("TOADBAND"));
+      chip = static_cast<string>(head.KeyVal("TOADCHIP"));
+      instName = static_cast<string>(head.KeyVal("TOADINST"));
+      date = static_cast<string>(head.KeyVal("TOADDATE"));
 
       zerotheo = ReadTheoZeroPoint(head);
       //      zerotheo = ReadTheoZeroPoint(head) - 2.5*log10(head.KeyVal("TOADEXPO"));
