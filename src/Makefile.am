@@ -2,7 +2,7 @@ EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
 
 AM_CPPFLAGS = -Wall -I../objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
-AM_LDFLAGS = -L../objio -L@libdir@ -ltoadio @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@
+AM_LDFLAGS = -L../objio -L@libdir@ -ltoadio @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
 
 AM_YFLAGS = -l -d
 
