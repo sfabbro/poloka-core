@@ -1,10 +1,10 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.12 2004/03/07 01:04:00 nrl Exp $
+// $Id: objio.h,v 1.13 2004/03/08 13:22:42 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/07 01:04:00 $
-// by:            $Author: nrl $
+// Last modified: $Date: 2004/03/08 13:22:42 $
+// by:            $Author: guy $
 // 
 #ifndef OBJIO_H
 #define OBJIO_H
@@ -408,18 +408,14 @@ public:
     cout << "about to read the reference tag:" << endl;
     stream_.read_start_reference_tag(addr);
     cout << "read CountedRef: addr=" << addr << endl;
-    T* pt = dynamic_cast<T*>(check_address_(addr));
-    if(pt) {
-      CountedRef<T> tmp(pt);
-      r = tmp; // FIXME: nrl: check that a countedref can be copied
-    }
-    else {
+    //T* pt = dynamic_cast<T*>(check_address_(addr));
+    T* pt = (T*)(check_address_(addr));
+    if(!pt) {
       pt = new T;
       *this >> *pt;
-      CountedRef<T> tmp(pt);
-      r = tmp;
       register_address_(addr,pt);
     }
+    r = pt;
     stream_.read_end_reference_tag();
   }
   
