@@ -339,10 +339,8 @@ void SimFitVignet::Update()
   if(!kernel_updated)
     BuildKernel();
 
-#ifndef ONEPSFPERIMAGE
   if(!psf_updated)
     BuildPsf();
-#endif
   
 #ifdef DEBUG
   // check sizes
@@ -371,7 +369,7 @@ void SimFitVignet::Update()
     cout << Psf << endl;
     abort();
   }
-#endif
+#endif 
 
   if(!resid_updated) { 
 #ifdef ONEPSFPERIMAGE
@@ -386,6 +384,27 @@ void SimFitVignet::Update()
     else
       UpdateResid_psf();
 #endif
+  }
+}
+
+  // check whether there are weights>0 on the position of the star,
+  // if not, FitFlux=false 
+void SimFitVignet::CheckWeight() {
+  
+  DPixel sumw=0;
+  int center_hy = min(2,hy);
+  int center_hx = min(2,hx);
+  
+
+  for (int j=-center_hy; j<=center_hy; ++j)
+    for (int i=-center_hx; i<=center_hx; ++i)
+      sumw += Weight(i,j);
+  
+  if(sumw<1.e-20) {
+    cout << "WARNING SimFitVignet::CheckWeight : null weight at center, set FitFlux,FitSky to false" << endl;
+    CanFitFlux=false;
+    CanFitSky=false;
+    CanFitPos=false;
   }
 }
 
@@ -406,8 +425,12 @@ void SimFitVignet::Resize( int Hx_new,  int Hy_new)
   }else{
     Vignet::Resize(Hx_new,Hy_new);
     OptWeight.Allocate(Nx(),Ny());
-    kernel_updated = false;
+#ifndef ONEPSFPERIMAGE
+    Psf.Allocate(Nx(),Ny());  // if use kernel, Psf is computed with resid
+#else
     psf_updated    = false;
+#endif
+    kernel_updated = false;
     resid_updated  = false;
   }
   Update();

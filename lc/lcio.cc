@@ -44,7 +44,7 @@ static RefStar* read_object(const string& line)
       cerr << "    dates are not correct " << endl;
       return false;
     }
-  
+  //cout << "jdmin jdmax = " << star->jdmin << " " << star->jdmax << endl;
   return star;
 }
 
@@ -65,7 +65,7 @@ static ReducedImage* read_image(const string& line)
       delete red;
       return 0;
     }
- 
+  //cout << "mmjd " << words.front() << " " << red->ModifiedModifiedJulianDate() << endl;
   return red;
 }
 

@@ -45,7 +45,7 @@ public:
 
   //! tabulated derivative of the psf with y
   Kernel Dy;
-
+  
   void Resize(const int Hx, const int Hy);
 
   void Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius);
@@ -142,7 +142,11 @@ public:
 
   bool FitFlux; // do we need to fit the flux
   bool FitPos; //  do we need to fit the position
+  bool FitSky; // do we need to fit the sky bg
   bool UseGal; // do we need to use a model for the galaxy (does not mean we necessarly fit it)
+  bool CanFitFlux; // do we need to fit the flux
+  bool CanFitPos; //  do we need to fit the position
+  bool CanFitSky; // do we need to fit the sky bg
   bool DontConvolve;
   
   double inverse_gain;
@@ -199,6 +203,9 @@ public:
   
   //! write a lot of stuff, to use in case of problem 
   void DumpDebug() const;
+
+  //! check whether there are weights>0 on the position of the star
+  void CheckWeight();
 
   //! enable "cout << SimFitVignet << endl"
   //friend ostream& operator << (ostream & stream, const SimFitVignet& myVignet);

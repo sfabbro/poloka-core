@@ -23,29 +23,35 @@ bool Vignet::Load(const PhotStar *AStar)
 #endif
 
   if (!AStar) return false;
-
-  Star = AStar;
-
-  int xc = int(Star->x);
-  int yc = int(Star->y);
-  
-  xstart = max(0, xc-hx);
-  ystart = max(0, yc-hy);
-  xend   = min(xc+hx+1, rim->XSize());
-  yend   = min(yc+hy+1, rim->YSize());
-  
-  Allocate();
-
   if (!rim->HasImage())
     {
       cerr << " Vignet::Load() : Error : " << rim->Name() << " does not have image" << endl;
       return false;
     } 
-  
-  Data.readFromImage(rim->FitsName(), *this);
 
-  if (rim->HasWeight()) Weight.readFromImage(rim->FitsWeightName(), *this);
+  Star = AStar;
+  int xc = int(Star->x);
+  int yc = int(Star->y);
   
+  //xstart = max(0, xc-hx);
+  //ystart = max(0, yc-hy);
+  //xend   = min(xc+hx+1, rim->XSize());
+  //yend   = min(yc+hy+1, rim->YSize());
+  
+  // we want to keep the same size ofr the vignet but put zeros for weights outside image
+  // this is now done in dimage
+  xstart = xc-hx;
+  ystart = yc-hy;
+  xend   = xc+hx+1;
+  yend   = yc+hy+1;
+  
+  Allocate();
+  
+  Data.readFromImage(rim->FitsName(), *this,0);
+  if (rim->HasWeight()) 
+    Weight.readFromImage(rim->FitsWeightName(), *this,0);
+  
+
   return true;
 }
 

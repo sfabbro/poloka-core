@@ -15,7 +15,6 @@
 SimFit::SimFit()
 {
   refill = true;
-  solved = false;
   fit_flux = fit_gal = true; fit_sky = fit_pos = false ;
   use_gal = true;
   fluxstart = galstart = skystart = xind = yind = 0;
@@ -35,10 +34,18 @@ void SimFit::SetWhatToFit(unsigned int ToFit)
   use_gal |= fit_gal; // use the galaxy if we fit it
   dont_use_vignets_with_star = false;
 
-  
+  int count=0;
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
-    (*itVig)->FitPos = fit_pos;
+    (*itVig)->FitPos = fit_pos && (*itVig)->CanFitPos;
     (*itVig)->UseGal = use_gal;
+    (*itVig)->FitSky = fit_sky && (*itVig)->CanFitSky;
+    (*itVig)->FitFlux = fit_flux && (*itVig)->CanFitFlux;
+    cout << count << " vignet whattofit: " 
+	 << (*itVig)->FitPos << " "
+	 << (*itVig)->UseGal << " "
+	 << (*itVig)->FitSky << " "
+	 << (*itVig)->FitFlux << endl;
+    count++;
   }
   
   cout << " SimFit::SetWhatToFit(" << ToFit << ") : fit_flux " << fit_flux << " fit_pos " << fit_pos 
@@ -108,7 +115,7 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
       return;
     }
   
-  fillNightMat(Lc);
+  //fillNightMat(Lc);
   
   // define the size of the reference vignet
   
@@ -162,11 +169,16 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig)
     {           
       // we will fit the flux according to Lc.Ref and date
-      (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->ModifiedModifiedJulianDate());
+      (*itVig)->CanFitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->ModifiedModifiedJulianDate());
+      (*itVig)->CanFitPos       = (*itVig)->CanFitFlux;
+      (*itVig)->CanFitSky       = true;
       (*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name(); 
       // this resizes the vignet and update everything (kernel, psf, residus) 
       (*itVig)->ModifiedResid();
       (*itVig)->AutoResize();
+      // check whether there are weights>0 on the position of the star,
+      // if not, FitFlux, FitSky =false 
+      (*itVig)->CheckWeight();       
     }
 }
 
@@ -179,6 +191,7 @@ void SimFit::Resize(const double& ScaleFactor)
   
   int hrefx = VignetRef->Hx();
   int hrefy = VignetRef->Hy();
+  
   
   if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
     {
@@ -206,6 +219,8 @@ void SimFit::Resize(const double& ScaleFactor)
     (*it)->AutoResize();
   }
   
+  hrefx = VignetRef->Hx();
+  hrefy = VignetRef->Hy();
 #ifdef DEBUG
   cout <<   "   SimFit::Resize whattofit = " << fit_flux << "," << fit_pos << "," << fit_gal << "," << fit_sky << endl;
 #endif
@@ -219,9 +234,9 @@ void SimFit::Resize(const double& ScaleFactor)
     {
       for (SimFitVignetCIterator it=begin(); it != end(); ++it)
 	if ((*it)->FitFlux) fluxend++;
-      
-      fluxend--; // we want fluxend = nfluxes-1
-    }
+    }  
+  fluxend--; // we want fluxend = nfluxes-1
+    
   
   // position
   xind = yind = fluxend;
@@ -250,8 +265,10 @@ void SimFit::Resize(const double& ScaleFactor)
   if (fit_sky)
     {
       skystart += 1;
-      skyend    = skystart + size()-1;
+      for (SimFitVignetCIterator it=begin(); it != end(); ++it)
+	if ((*it)->FitSky) skyend++;
     }
+  
   
   nparams = (fluxend-fluxstart+1) + (yind-fluxend) + (galend-yind) + (skyend-galend);
 
@@ -325,6 +342,12 @@ void SimFit::FillMatAndVec()
   if (fit_sky)             fillSkySky();
 
   // no need to symmetrize the matrix
+
+  if(PMat.SizeX()<20 && PMat.SizeY()<20) {
+    cout << "===== PMat =====" << endl;
+    cout << PMat << endl;
+    cout << "===== PMat =====" << endl;
+  }
 }
 
 int SimFit::galind(const int i, const int j) const
@@ -404,7 +427,7 @@ void SimFit::fillFluxPos()
     {
       const SimFitVignet *vi = *it;
 
-      if (!vi->FitFlux) continue;
+      if (!vi->FitFlux || !vi->FitPos) continue;
       // sum over the smallest area between psf and vignet
       int hx = vi->Hx();
       int hy = vi->Hy();
@@ -545,10 +568,10 @@ void SimFit::fillFluxSky()
   double summat;
   DPixel *pw, *ppsf;
 
-  for (SimFitVignetCIterator it = begin(); it != end(); ++it, ++skyind)
+  for (SimFitVignetCIterator it = begin(); it != end(); ++it)
     {
       const SimFitVignet *vi = *it;
-      if (!vi->FitFlux) continue;
+      if (vi->FitFlux && vi->FitSky) {
 
       // sum over smallest between psf and data coordinates
       int hx = vi->Hx();
@@ -567,7 +590,11 @@ void SimFit::fillFluxSky()
       // now fill in matrix part
 
       PMat(fluxstart+fluxind,skystart+skyind) = summat;
-      ++fluxind;
+      }
+      if(vi->FitFlux)
+	++fluxind; 
+      if(vi->FitSky)
+	++skyind; 
     }
 }
 
@@ -592,7 +619,7 @@ void SimFit::fillPosPos()
   for (SimFitVignetCIterator it = begin(); it != end(); ++it)
     {
       const SimFitVignet *vi = *it;
-      if (!vi->FitFlux) continue;
+      if (!vi->FitPos) continue;
 
       // sum over the smallest area between psf derivative and vignet
       int hx = vi->Hx();
@@ -650,7 +677,7 @@ void SimFit::fillPosGal()
   for (SimFitVignetCIterator it = begin(); it != end(); ++it)
     {
       const SimFitVignet *vi = *it;
-      if (!vi->FitFlux) continue;
+      if (!vi->FitPos) continue;
 
       int hx = vi->Hx();
       int hy = vi->Hy();
@@ -737,36 +764,39 @@ void SimFit::fillPosSky()
   double summatx, summaty;
 
   // loop over vignets
-  for (SimFitVignetCIterator it = begin(); it != end(); ++it, ++skyind)
+  for (SimFitVignetCIterator it = begin(); it != end(); ++it)
     {
       const SimFitVignet *vi = *it;
-      if (!vi->FitFlux) continue;
+      if (vi->FitSky && vi->FitPos) {
 
-      // sum over the smallest area between psf and vignet
-      int hx = vi->Hx();
-      int hy = vi->Hy();
-      summatx = 0.;
-      summaty = 0.;
-
-      for (int j=-hy; j<=hy; ++j)
-	{
-	  pw   = &(vi->OptWeight)(-hx,j);
-	  ppdx = &(vi->Psf.Dx)(-hx,j);
-	  ppdy = &(vi->Psf.Dy)(-hx,j);
-	  for (int i=-hx; i<=hx; ++i) 
-	    {
-	      summatx += (*ppdx) * (*pw);
-	      summaty += (*ppdy) * (*pw);
-	      ++ppdx; ++ppdy; ++pw;
-	    }
-	}
-      
-      summatx *= vi->Star->flux; // JG
-      summaty *= vi->Star->flux; // JG
-
-      // now fill matrix part
-      PMat(skystart+skyind,xind) = summatx;
-      PMat(skystart+skyind,yind) = summaty;
+	// sum over the smallest area between psf and vignet
+	int hx = vi->Hx();
+	int hy = vi->Hy();
+	summatx = 0.;
+	summaty = 0.;
+	
+	for (int j=-hy; j<=hy; ++j)
+	  {
+	    pw   = &(vi->OptWeight)(-hx,j);
+	    ppdx = &(vi->Psf.Dx)(-hx,j);
+	    ppdy = &(vi->Psf.Dy)(-hx,j);
+	    for (int i=-hx; i<=hx; ++i) 
+	      {
+		summatx += (*ppdx) * (*pw);
+		summaty += (*ppdy) * (*pw);
+		++ppdx; ++ppdy; ++pw;
+	      }
+	  }
+	
+	summatx *= vi->Star->flux; // JG
+	summaty *= vi->Star->flux; // JG
+	
+	// now fill matrix part
+	PMat(skystart+skyind,xind) = summatx;
+	PMat(skystart+skyind,yind) = summaty;
+	
+	++skyind;
+      }
     }
 }
 
@@ -983,9 +1013,11 @@ void SimFit::fillGalSky()
   int skyind = 0;
   double summat;
 
-  for (SimFitVignetCIterator it = begin(); it != end(); ++it, ++skyind)
+  for (SimFitVignetCIterator it = begin(); it != end(); ++it)
     {
       const SimFitVignet *vi = *it;
+      if(vi->FitSky) {
+      
       int hx = vi->Hx();
       int hy = vi->Hy();
       
@@ -1002,6 +1034,7 @@ void SimFit::fillGalSky()
 		  PMat(galind(i,j),ind) = *pw++;
 		}
 	    }
+	  ++skyind;
 	  continue;
 	}
 
@@ -1034,6 +1067,8 @@ void SimFit::fillGalSky()
 	      PMat(galind(is,js),ind) = summat;
 	    }
 	}
+      ++skyind;
+      }
     }
 }
 
@@ -1051,10 +1086,11 @@ void SimFit::fillSkySky()
   int skyind = 0;
   double sumvec, summat;
   DPixel *pres, *pw;
-  for (SimFitVignetCIterator it = begin(); it != end(); ++it, ++skyind)
+  for (SimFitVignetCIterator it = begin(); it != end(); ++it)
     {
       const SimFitVignet *vi = *it;
-      
+      if(vi->FitSky) {
+
       // sum over vignet
       int hx = vi->Hx();
       int hy = vi->Hy();
@@ -1076,6 +1112,8 @@ void SimFit::fillSkySky()
       int ind = skystart+skyind;
       Vec(ind) = sumvec;
       PMat(ind,ind) = summat;
+      ++skyind;
+      }
     }
 }
 
@@ -1107,9 +1145,17 @@ double SimFit::computeChi2() const
 
 bool SimFit::Update(double Factor)
 {
-  // update only if is fitted
-  if (!solved) return false;
+  if(fit_pos) {
+    float maxoffset=1;  // we don't want to get offsets larger than one pixel
+    if(fabs(Vec(xind)*Factor)>maxoffset) {
+      return Update(0.9*maxoffset/fabs(Vec(xind)));
+    }
+    if(fabs(Vec(yind)*Factor)>maxoffset) {
+      return Update(0.9*maxoffset/fabs(Vec(yind)));
+    }
+  }
 
+  
 #ifdef DEBUG
   cout << " SimFit::Update(" << Factor << "): updating parameters \n";
 #endif
@@ -1148,7 +1194,7 @@ bool SimFit::Update(double Factor)
 	abort();
       }
       // update sky
-      if (fit_sky) vi->Star->sky += Vec(skyind++)*Factor;
+      if (fit_sky && (vi->FitSky)) vi->Star->sky += Vec(skyind++)*Factor;
       
       // update residuals and convolved psf
       vi->ModifiedResid();
@@ -1164,12 +1210,14 @@ double SimFit::oneNRIteration(double OldChi2)
   cout << " > SimFit::oneNRIteration(double OldChi2)" << endl;
 #endif
   FillMatAndVec();
-
-  solved = (cholesky_solve(PMat,Vec,"L") == 0);
-  //#include <vutils.h>
-  //solved = MatSolve(Mat,nparams,Vec);
-  if (!solved) return 1e29;
-  //DumpMatrices();
+  
+  if (cholesky_solve(PMat,Vec,"L") != 0) {
+    PMat.writeFits("DEBUG_pmat.fits");
+    cout << "Vec:" << endl;
+    cout << Vec << endl;
+    cout << "Quit ..." << endl;
+    abort();
+  }
 
   Update(1.);  
   double curChi2 = computeChi2();
@@ -1221,17 +1269,16 @@ bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
   double oldchi2;
   chi2 = computeChi2();
   int iter = 0;
-
+  double diff = 1000;
   do
     {
-      cout << "   in SimFit::IterateAndSolve() : Iteration # " 
+      cout << "   in SimFit::IterateAndSolve(" << MaxIter << ") : Iteration # " 
 	   << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;
       oldchi2 = chi2;
       chi2 = oneNRIteration(oldchi2);
-#ifdef DEBUG
-      cout << "   in SimFit::IterateAndSolve fabs(chi2-oldchi2)/((chi2+oldchi2)/2} = " << (fabs(chi2-oldchi2)/((chi2+oldchi2)/2)) << endl;
-#endif 
-    }while ((iter++ < MaxIter) && (fabs(chi2-oldchi2) > ((chi2+oldchi2)/2.*Eps)));
+      diff = fabs(chi2-oldchi2);
+      cout << "   diff = " << diff << endl;
+    }while ((iter++ < MaxIter) && (diff>Eps));
   
   cout << "   in SimFit::IterateAndSolve() : Iteration # " 
        << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;
@@ -1248,13 +1295,6 @@ bool SimFit::GetCovariance()
 #ifdef FNAME
   cout << " > SimFit::GetCovariance()" << endl;
 #endif
-  if (!solved) 
-    {
-      cerr << " SimFit::GetCovariance() : system not solved yet" << endl;
-      return false;
-    }
-
-  cout << " SimFit::GetCovariance() : starting" << endl;
   
   // someday we should recompute the covariance ala MINOS
   
@@ -1315,11 +1355,12 @@ void SimFit::FitInitialGalaxy() {
   }
   SetWhatToFit(FitGal);
   dont_use_vignets_with_star = true;
-  DoTheFit();
+  Resize(1);
+  IterateAndSolve(2);
 }
 
 
-void SimFit::DoTheFit()
+void SimFit::DoTheFit(int MaxIter)
 {
 #ifdef FNAME
   cout << " > SimFit::DoTheFit() : Starting" << endl;  
@@ -1335,7 +1376,7 @@ void SimFit::DoTheFit()
 #endif 
 
   Resize(1);
-  if (!IterateAndSolve(20)) return;
+  if (!IterateAndSolve(MaxIter)) return;
   if (!GetCovariance())    return;
 
 #ifdef DEBUG
@@ -1422,10 +1463,9 @@ void SimFit::write(const string& StarName,const string &DirName, unsigned int wh
     vm.writeFits(DirName+"/vec_"+StarName+".fits");
     
     // create matrix of Nights and Images
+    fillNightMat();
     NightMat.writeFits(DirName+"/nightmat_"+StarName+".fits");
   }
-  
-
 }
 
 void SimFit::fillNightMat(LightCurve& Lc) {
@@ -1488,6 +1528,65 @@ void SimFit::fillNightMat(LightCurve& Lc) {
   cout << NightMat << endl;
   return;
 }
+
+
+void SimFit::fillNightMat() { // using simfitvignet
+#ifdef FNAME
+  cout << " > SimFit::fillNightMat" << endl;
+#endif
+  
+  double jd; // julian day
+  vector<double> nightdates;
+  bool isinnight;
+  double timediff = 10./24.; // 10 hours
+  int nimages = 0;
+  
+  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
+    if((*itVig)->FitFlux) {
+      jd = (*itVig)->Image()->ModifiedModifiedJulianDate();
+      nimages++;
+      isinnight=false;
+      for(unsigned int day=0;day<nightdates.size(); ++day) {
+	if(fabs(jd-nightdates[day])<timediff) {
+	  isinnight = true;
+	  break;
+	}
+      }
+      if(!isinnight) {
+	nightdates.push_back(jd);
+      }
+    }
+  } 
+  int nnights = nightdates.size(); // number of nights for this lightcurve
+  NightMat.allocate(nnights,nimages); // szie of matrix
+  // now we fill this matrix
+    //        nights
+  //      <----------->
+  // i   |   1 
+  // m   |   1
+  // a   |   1
+  // g   |    1
+  // e   |    1
+  // s   |     1 ...  
+  
+  int im = 0;
+  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
+    if((*itVig)->FitFlux) {
+      jd = (*itVig)->Image()->ModifiedModifiedJulianDate();
+      for(unsigned int day=0;day<nightdates.size(); ++day) {
+	if(fabs(jd-nightdates[day])<timediff) {
+	  NightMat(day,im)=1;
+	  break;
+	}
+      }
+      im++;
+    }
+  }
+  //cout << "========= NightMat ==========" << endl;
+  //cout << NightMat << endl;
+  return;
+}
+
 
 ostream& operator << (ostream& Stream, const CountedRef<SimFitVignet> &Vig)
 {

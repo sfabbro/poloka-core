@@ -21,7 +21,7 @@ public:
   double ra,dec;
   double varra, vardec, covradec;
 
-  bool IsVariable(const double& Jd) const { return (Jd < jdmax && Jd > jdmin); }
+  bool IsVariable(const double& Jd) const { return (Jd <= jdmax && Jd >= jdmin); }
 
   friend ostream& operator << (ostream &Stream, const RefStar &Star);
 

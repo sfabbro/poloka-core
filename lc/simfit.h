@@ -46,7 +46,6 @@ class SimFit : public vector< CountedRef<SimFitVignet> > {
 private:
   // flags
   bool refill;            // whether we need to refill the gal-gal matrix part
-  bool solved;            // whether the system is solved
   bool fit_flux;          // whether we fit the point source fluxes
   bool fit_gal;           // whether we fit the galaxy
   bool fit_sky;           // whether we fit the sky
@@ -122,7 +121,7 @@ public:
   void FillMatAndVec();
 
   //! iterate on solution and solve the system
-  bool IterateAndSolve(int MaxIter=10, double Eps=0.0001);
+  bool IterateAndSolve(int MaxIter=10, double Eps=0.005);
 
   //! a procedure to fill up the covariance into the Mat and the proper SimFitVignets...
   bool GetCovariance();
@@ -131,7 +130,7 @@ public:
   bool Update(double Factor=1.);
 
   //! fill, fit and shit: do everything
-  void DoTheFit();
+  void DoTheFit(int MaxIter=10);
 
   //! returns the chi2 of the current fit
   double Chi2() const { return chi2; }
@@ -162,7 +161,18 @@ public:
   // e   |    1
   // s   |     1 ...  
   void fillNightMat(LightCurve& Lc);
-
+  
+  //! fill a boolean matrix
+  //        nights
+  //      <----------->
+  // i   |   1 
+  // m   |   1
+  // a   |   1
+  // g   |    1
+  // e   |    1
+  // s   |     1 ...  
+  void fillNightMat();
+  
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);
   

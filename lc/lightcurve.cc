@@ -60,10 +60,10 @@ void LightCurve::write_short(ostream& Stream) const
 
   ios::fmtflags oldflags = Stream.flags();
 
-  if (front()->Image()) Stream << "# mmjd : \n";
+  if (front()->Image()) Stream << "# mmjd : (days since January 1st, 2003)\n";
   Stream << "# flux : \n"  
          << "# eflux : \n"
-	 << "# mag : using elixir zero point = " << elixir_zp << "\n"
+	 << "# mag : using zeropoint\n"
 	 << "# emag_minus : useful for drawing\n"
     	 << "# emag_plus : useful for drawing\n"
 	 << "# zeropoint : elixir zp\n";

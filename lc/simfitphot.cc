@@ -139,18 +139,29 @@ void SimFitPhot::operator() (LightCurve& Lc)
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
 #endif
-    zeFit.SetWhatToFit(FitFlux); // then flux
-    zeFit.UseGalaxyModel(true);  
-    zeFit.DoTheFit();
+     for(int i=0;i<3;i++) {
+      zeFit.SetWhatToFit(FitFlux); // then flux
+      zeFit.UseGalaxyModel(true);  
+      zeFit.DoTheFit(2);
+      if(i==-12) {
+	ofstream lstream((string(dir+"/lc_init0.dat")).c_str());
+	Lc.write_short((ostream&)lstream);
+	lstream.close();
+	zeFit.write("sn_init0",dir, WriteWeight|WriteData);
+      }
+      zeFit.SetWhatToFit(FitPos); // then pos
+      zeFit.UseGalaxyModel(true);  
+      zeFit.DoTheFit(2);
+     }
     ofstream lstream((string(dir+"/lc_init.dat")).c_str());
     Lc.write_short((ostream&)lstream);
     lstream.close();
-    
+    //return;
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
      zeFit.SetWhatToFit(FitFlux | FitGal | FitPos | FitSky); // then everything    
-     zeFit.DoTheFit();     
+     zeFit.DoTheFit(30);     
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() Robustify  =============" << endl;
 #endif
@@ -160,7 +171,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() refit FitFlux | FitPos | FitGal =============" << endl;
 #endif	
-     zeFit.DoTheFit();
+     zeFit.DoTheFit(30);
   }else{
     zeFit.DoTheFit(); 
   }
