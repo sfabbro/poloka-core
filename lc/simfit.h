@@ -68,7 +68,35 @@ private:
   void fillGalGal();
   void fillGalSky();
   void fillSkySky();
-
+  
+#define CHECK_MAT_BOUNDS // uncomment this to use the 3 following functions when filling matrices
+  
+#ifdef CHECK_MAT_BOUNDS
+  double& fillVec(int i){
+    if(i<0 || i>=nparams) {
+      cout << "fillVec ERROR i,nparams = " << i << "," << nparams << endl;
+      abort();
+    }
+    return Vec[i];
+  };
+  
+  double& fillMat(int i) {
+    if(i<0 || i>=nparams*nparams) {
+      cout << "fillMat ERROR i,nparams*nparams = " << i << "," << nparams*nparams << endl;
+      abort();
+    }
+    return Mat[i];
+  };
+  
+  double& fillMatGal(int i) {
+    if(i<0 || i>=nfx*nfy) {
+      cout << "fillMat ERROR i,nfx*nfy = " << i << "," << nfx*nfy << endl;
+      abort();
+    }
+    return  MatGal[i];
+  }
+#endif 
+  
   // compute the chi2 of the current fit
   double computeChi2() const;
 
@@ -126,7 +154,9 @@ public:
 
   //! write galaxy, covariance matrix and lightcurve on disk
   void write(const string &StarName) const;
-
+  
+  void DumpMatrices(); 
+  
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);
   

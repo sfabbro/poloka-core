@@ -13,14 +13,20 @@
 
 static void resize_vec(double* &vec, const int n)
 {
+#ifdef FNAME
+  cout << " > resize_vec(double* &vec, const int n), vec= " << vec << " n= " << n << endl; 
+#endif
   if (vec) delete [] vec;
   vec = new double[n];
 }
 
-static void resize_mat(double* &mat, const int n)
+static void resize_mat(double* &mat, const int nx, const int ny)
 {
+#ifdef FNAME
+  cout << " > resize_mat(double* &mat, const int nx, const int ny), mat = " << mat << " nx,ny= " << nx << "," << ny << endl; 
+#endif
   if (mat) delete [] mat;
-  mat = new double[n*n];
+  mat = new double[nx*ny];
 }
 
 extern "C" {
@@ -262,9 +268,11 @@ void SimFit::Resize(const double &ScaleFactor)
     {
       for (SimFitVignetCIterator it=begin(); it != end(); ++it)
 	if ((*it)->FitFlux) fluxend++;
+      
+      fluxend--; // we want fluxend = nfluxes-1
     }
   
-  fluxend--; // we want fluxend = nfluxes
+  
 
   // position
   xind = yind = fluxend;
@@ -295,15 +303,26 @@ void SimFit::Resize(const double &ScaleFactor)
       skyend    = skystart + size()-1;
     }
 
-  nparams = (fluxend-fluxstart) + (yind-fluxend) + (galend-yind) + (skyend-galend);
+  nparams = (fluxend-fluxstart+1) + (yind-fluxend) + (galend-yind) + (skyend-galend);
   ndata = 0;
 
   for (SimFitVignetCIterator it = begin(); it != end(); ++it) 
     ndata += (2*(*it)->Hx()+1) * (2*(*it)->Hy()+1);
 
   resize_vec(Vec, nparams);
-  resize_mat(Mat, nparams);
-  resize_mat(MatGal, nfx*nfy);
+  resize_mat(Mat, nparams, nparams);
+  resize_mat(MatGal, nfx,nfy);
+
+#ifdef DEBUG
+  cout << "   nparams = " << nparams << endl;
+  cout << "   nfx     = " << nfx << endl;
+  cout << "   nfy     = " << nfy << endl;
+  cout << "   fluxstart,fluxend  = " << fluxstart << "," << fluxend << endl;
+  cout << "   xind,yind          = " << xind << "," << yind << endl;
+  cout << "   galstart,galend    = " << galstart << "," << galend << endl;
+  cout << "   skystart,skyend    = " << skystart << "," << skyend << endl;  
+#endif
+
 }
 
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -350,6 +369,11 @@ void SimFit::FillMatAndVec()
 
   for (int i=0; i<nparams; ++i) 
     for (int j=i+1; j<nparams; ++j) Mat[i*nparams+j] = Mat[j*nparams+i];
+
+#ifdef DEBUG_FILLMAT
+  DumpMatrices();
+#endif
+
 }
 
 int SimFit::galind(const int i, const int j) const
@@ -398,8 +422,14 @@ void SimFit::fillFluxFlux()
 
       // now fill in the matrix and vector
       int ind = fluxstart+fluxind;
+
+#ifdef CHECK_MAT_BOUNDS
+      fillVec(ind) = sumvec;
+      fillMat(ind*nparams+ind) = summat;
+#else
       Vec[ind] = sumvec;
       Mat[ind*nparams+ind] = summat;
+#endif      
       ++fluxind;
     }
 }
@@ -445,8 +475,14 @@ void SimFit::fillFluxPos()
 
       // now fill in the matrix and vector
       int ind = fluxstart+fluxind;
+
+#ifdef CHECK_MAT_BOUNDS
+      fillMat(xind*nparams+ind) = summatx;
+      fillMat(yind*nparams+ind) = summaty;
+#else
       Mat[xind*nparams+ind] = summatx;
       Mat[yind*nparams+ind] = summaty;
+#endif
       ++fluxind;
     }  
 }
@@ -491,7 +527,11 @@ void SimFit::fillFluxGal()
 	      pw   = &(vi->Weight)(-hx,j);
 	      for (int i=-hx; i<=hx; ++i)
 		{
+#ifdef CHECK_MAT_BOUNDS
+		  fillMat(galind(i,j)*nparams+ind) = (*ppsf) * (*pw);
+#else
 		  Mat[galind(i,j)*nparams+ind] = (*ppsf) * (*pw);
+#endif
 		  ++ppsf; ++pw;
 		}
 	    }
@@ -526,7 +566,11 @@ void SimFit::fillFluxGal()
 		      ++pkern; ++ppsf; ++pw;
 		    }
 		}
+#ifdef CHECK_MAT_BOUNDS
+	      fillMat(galind(is,js)*nparams+ind) = summat;
+#else
 	      Mat[galind(is,js)*nparams+ind] = summat;
+#endif
 	    }
 	}
       ++fluxind;
@@ -569,7 +613,11 @@ void SimFit::fillFluxSky()
 	    }  
 	}
       // now fill in matrix part
+#ifdef CHECK_MAT_BOUNDS
+      fillMat((fluxstart+fluxind)*nparams + skystart+skyind) = summat;
+#else
       Mat[(fluxstart+fluxind)*nparams + skystart+skyind] = summat;
+#endif
       ++fluxind;
     }
 }
@@ -619,12 +667,19 @@ void SimFit::fillPosPos()
     }
 
   // now fill in the matrix and vector
+#ifdef CHECK_MAT_BOUNDS
+  fillVec(xind) = sumvecx;
+  fillVec(yind) = sumvecy;
+  fillMat(xind*nparams + xind) = summatx;
+  fillMat(yind*nparams + yind) = summaty;
+  fillMat(yind*nparams + xind) = summatxy;
+#else
   Vec[xind] = sumvecx;
   Vec[yind] = sumvecy;
   Mat[xind*nparams + xind] = summatx;
   Mat[yind*nparams + yind] = summaty;
   Mat[yind*nparams + xind] = summatxy;
-
+#endif
 }
 
 void SimFit::fillPosGal()
@@ -659,8 +714,13 @@ void SimFit::fillPosGal()
 	      pw   = &(vi->Weight)(-hx,j);
 	      for (int i=-hx; i<=hx; ++i)
 		{
+#ifdef CHECK_MAT_BOUNDS
+		  fillMat(galind(i,j)*nparams + xind) += (*ppdx) * (*pw);
+		  fillMat(galind(i,j)*nparams + yind) += (*ppdy) * (*pw);
+#else
 		  Mat[galind(i,j)*nparams + xind] += (*ppdx) * (*pw);
 		  Mat[galind(i,j)*nparams + yind] += (*ppdy) * (*pw);
+#endif
 		  ++ppdx; ++ppdy; ++pw;
 		}
 	    }
@@ -696,8 +756,13 @@ void SimFit::fillPosGal()
 		      ++pkern; ++ppdx; ++ppdy; ++pw;
 		    }
 		}
+#ifdef CHECK_MAT_BOUNDS
+	      fillMat(galind(is,js)*nparams+xind) += summatx;
+	      fillMat(galind(is,js)*nparams+yind) += summaty;      
+#else
 	      Mat[galind(is,js)*nparams+xind] += summatx;
 	      Mat[galind(is,js)*nparams+yind] += summaty;
+#endif
 	    }
 	} // end of loop on pixels
 
@@ -742,8 +807,13 @@ void SimFit::fillPosSky()
 	    }
 	}
       // now fill matrix part
+#ifdef CHECK_MAT_BOUNDS
+      fillMat((skystart+skyind)*nparams+xind) = summatx;
+      fillMat((skystart+skyind)*nparams+yind) = summaty;
+#else
       Mat[(skystart+skyind)*nparams+xind] = summatx;
       Mat[(skystart+skyind)*nparams+yind] = summaty;
+#endif
     }
 }
 
@@ -777,7 +847,11 @@ void SimFit::fillGalGal()
 	  for (int j=-hy; j<=hy; ++j)
 	    for (int i=-hx; i<=hx; ++i)
 	      {
+#ifdef CHECK_MAT_BOUNDS		
+		fillVec(galind(i,j)) += (vi->Resid)(i,j) * (vi->Weight)(i,j);
+#else
 		Vec[galind(i,j)] += (vi->Resid)(i,j) * (vi->Weight)(i,j);
+#endif
 	      }
 	  continue;
 	}
@@ -821,8 +895,12 @@ void SimFit::fillGalGal()
 #ifdef DEBUG_FILLMAT
 	      cout << " Vec(" << galind(is,js) << ") += " << sumvec << endl;
 #endif
-
+#ifdef CHECK_MAT_BOUNDS
+	      fillVec(galind(is,js)) += sumvec;
+#else
 	      Vec[galind(is,js)] += sumvec;
+#endif
+
 	    }
 	}
     }
@@ -833,8 +911,13 @@ void SimFit::fillGalGal()
     {
       int ngal = galend-galstart+1;
       for (int j=0; j<ngal; ++j) 
-	for (int i=j+1; i<ngal; ++i) 
+	for (int i=j+1; i<ngal; ++i) {
+#ifdef CHECK_MAT_BOUNDS
+	  fillMat((galstart+i)*nparams+j+galstart) = fillMatGal(i*ngal+j);
+#else
 	  Mat[(galstart+i)*nparams+j+galstart] = MatGal[i*ngal+j];
+#endif
+	}
       return;
     }
   
@@ -842,7 +925,7 @@ void SimFit::fillGalGal()
      use the simplified relation, which in one dimension can be written as:
      matrix(m,n) = sum_ik ker[ik-(in-im)] * ker(ik) * weight(ik+im). 
      This is also a convolution, but again, borders are messy. */
-
+  
 #ifdef DEBUG
   cout << " Computing galaxy-galaxy matrix terms (longest loop) ... " << endl;
   int count = 0;
@@ -871,7 +954,11 @@ void SimFit::fillGalGal()
 	    for (int i=-hx; i<=hx; ++i)
 	      {
 		int ind = galind(i,j);
+#ifdef CHECK_MAT_BOUNDS		
+		fillMat(ind*nparams+ind) += (vi->Weight)(i,j);
+#else
 		Mat[ind*nparams+ind] += (vi->Weight)(i,j);
+#endif
 	      }
 	  continue;
 	}
@@ -907,7 +994,11 @@ void SimFit::fillGalGal()
 			        * (vi->Weight)(ik+im,jk+jm);
 		      }	    
 		  }
-	      Mat[(galstart+m)*nparams+galstart+n] += summat; 	
+#ifdef CHECK_MAT_BOUNDS
+	      fillMat((galstart+m)*nparams+galstart+n) += summat; 	
+#else
+	      Mat[(galstart+m)*nparams+galstart+n] += summat; 
+#endif
 	    }
 	}
     }
@@ -920,9 +1011,13 @@ void SimFit::fillGalGal()
 #endif
   int ngal = galend-galstart+1;
   for (int j=0; j<ngal; ++j) 
-    for (int i=j+1; i<ngal; ++i) 
+    for (int i=j+1; i<ngal; ++i) {
+#ifdef CHECK_MAT_BOUNDS      
+      fillMatGal(i*ngal+j) = fillMat((galstart+i)*nparams+j+galstart);
+#else
       MatGal[i*ngal+j] = Mat[(galstart+i)*nparams+j+galstart];
-  
+#endif
+    }
   refill = false;
 #ifdef DEBUG
   cout << " SimFit::fillGalGal done " << endl;
@@ -963,7 +1058,11 @@ void SimFit::fillGalSky()
 	      pw = &(vi->Weight)(-hx,j);
 	      for (int i=-hx; i<=hx; ++i)
 		{
+#ifdef CHECK_MAT_BOUNDS		  
+		  fillMat(galind(i,j)*nparams+ind) = *pw++;
+#else
 		  Mat[galind(i,j)*nparams+ind] = *pw++;
+#endif
 		}
 	    }
 	  continue;
@@ -995,7 +1094,11 @@ void SimFit::fillGalSky()
 		    }
 		}
 	      // now fill matrix elements
+#ifdef CHECK_MAT_BOUNDS
+	      fillMat(galind(is,js)*nparams+ind) = summat;
+#else
 	      Mat[galind(is,js)*nparams+ind] = summat;
+#endif
 	    }
 	}
     }
@@ -1038,8 +1141,14 @@ void SimFit::fillSkySky()
 
       // now fill out the matrix and vector
       int ind = skystart+skyind;
+#ifdef CHECK_MAT_BOUNDS
+      fillVec(ind) = sumvec;
+      fillMat(ind*nparams+ind) = summat;
+#else
       Vec[ind] = sumvec;
       Mat[ind*nparams+ind] = summat;
+#endif
+      
     }
 }
 
@@ -1326,7 +1435,7 @@ ostream& operator << (ostream& Stream, const SimFit &SimFit)
   Stream << " SimFit with " << SimFit.size() << " vignettes: " << endl
 	 << "   Params : npar" << endl
 	 << " -----------------------" << endl
-	 << "     flux : " << SimFit.fluxend - SimFit.fluxstart << endl
+	 << "     flux : " << SimFit.fluxend - SimFit.fluxstart + 1 << endl
 	 << " position : " << SimFit.yind - SimFit.fluxend << endl
 	 << "   galaxy : " << SimFit.nfx   << "X"  << SimFit.nfy << endl
 	 << "      sky : " << SimFit.skyend -  SimFit.galend  << endl
@@ -1346,6 +1455,29 @@ ostream& operator << (ostream& Stream, const SimFit &SimFit)
 }
 
 
+void SimFit::DumpMatrices() {
+  cout << "====  SimFit::DumpMatrices ====" << endl;
+  cout  << endl;
+  for(int i=0;i<nparams;i++) {
+    //if(i%10==0)
+    cout << "Vec[" << i << "]\t= " << float(Vec[i]) << endl;
+  }
+  return;
+  for(int j=0;j<nparams;j++) {
+    cout << "Mat[i+" << j << "*nparams]\t= ";
+    for(int i=0;i<nparams;i++) {
+      cout << Mat[i+j*nparams] << " ";
+    }
+    cout << endl;
+  }
+  for(int j=0;j<nfy;j++) {
+    cout << "MatGal[i+" << j << "*nfx]\t= ";
+    for(int i=0;i<nfx;i++) {
+      cout << MatGal[i+j*nfx] << " ";
+    }
+    cout << endl;
+  } 
+}
 
 // could not make it work. was designed to replace the ugly test in the fillGalGal loop above
 #if 0
