@@ -9,15 +9,8 @@
 #include "countedref.h"
 #include "countedref.h"
 
-//#include "rootstuff.h"
-
-
 template <class T> class ImageList :
   public  vector<CountedRef<T> >
-  
-#ifdef USE_ROOT
-, public TObject 
-#endif /* USE_ROOT */
 {
 
 private:
@@ -39,10 +32,6 @@ public:
   //!
   void dump(ostream& stream = cout) const 
   { for (const_iterator ri = begin(); ri != end(); ++ri) (*ri)->dump(stream);}
-
-#ifndef SWIG
-  ClassDef(ImageList,1);
-#endif /* SWIG */
 
 };
 
