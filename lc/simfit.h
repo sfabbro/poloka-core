@@ -126,7 +126,7 @@ public:
   void FindMinimumScale(double WorstSeeing);
 
   //! resize all the vignets of a scale factor, resize matrixes, and compute indices
-  void Resize(double ScaleFactor);
+  void Resize(const double& ScaleFactor);
 
   //! allow to change full data set to another star
   void Load(LightCurve& Lc);
@@ -158,7 +158,7 @@ public:
   //! write galaxy, covariance matrix and lightcurve on disk
   void write(const string &StarName) const;
   
-  void DumpMatrices(); 
+  ostream& DumpMatrices(ostream& Stream=cout) const; 
   
   void UseGalaxyModel(bool useit = true) {use_gal = useit;};
 
