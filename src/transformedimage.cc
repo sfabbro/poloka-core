@@ -470,7 +470,6 @@ bool TransformedImage::MakeFits()
   FitsImage inFits(source->FitsName());
   FitsImage outFits(fileName, (FitsHeader &) inFits);
   cout << "============================= " << endl;
-  SetFitsHeader(&outFits,RW); // we set to the transformed image, the pointer to this outFits
   double defaultVal = source->BackLevel();
   cout << " Default value for outside frame " << defaultVal << endl;
   transfo->TransformImage(inFits, outFits, source, this, defaultVal);
