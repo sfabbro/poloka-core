@@ -1,8 +1,12 @@
 // -*- C++ -*-
-// $Id: cpptype.cc,v 1.3 2004/03/06 23:15:42 nrl Exp $
+// $Id: cpptype.cc,v 1.4 2004/03/08 09:20:29 guy Exp $
 // \file cpptype.cc
 // 
 // 
+
+#include <iostream>
+#include <vector>
+#include <string>
 #include <algorithm>
 #include "cpptype.h"
 
@@ -294,7 +298,7 @@ void CppType::clear()
 // 2. the <( and )>
 void  CppType::cleanTokens_(std::vector<std::string>& tok)
 {
-  std::string<std::string>::iterator it,itp;
+  std::vector<std::string>::iterator it,itp;
   
   for(it=tok.begin();it!=tok.end();) {
     if( *it==""  ||
