@@ -147,7 +147,7 @@ public:
    //! Extraction flags 
  int Flag() const  {return flag;}
  
-  //! number of bad pixels in iso area 
+  //! another flag (refers to bad pixels and cosmics)
   int FlagBad() const  {return flagbad;}
   
    //!  star/galaxy classification: [0=gal ... 1=star] 
