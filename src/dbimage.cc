@@ -26,6 +26,7 @@ class DbConfigFile {
 public :
   DbConfigFile(const char* FileName);
   void AddImagePath(const char *a_path, const char *a_path_name);
+  void AddCatalogPath(const char * a_path);
   /* given an image name, returns its location 
      (as given in the config file ) */
 
@@ -34,11 +35,13 @@ public :
   void dump(ostream &stream = cout) const { stream << *this;}
   PathList GetImagePathes(const string &PathName) const;
   string FileName() const { return fileName;};
+  string FindCatalog(const string &FileName, const bool Warn) const;
 
 private :
   string fileName;
   vector<Path> image_pathes;
   void add_simple_image_path(const string &a_path, const string &a_path_name);
+  vector<string> catalog_pathes;
 };
 
 
@@ -61,6 +64,12 @@ void DbConfigAddImagePath(const char * a_path, const char *a_path_name)
 {
 DbConfig()->AddImagePath(a_path,a_path_name);
 }
+
+void DbConfigAddCatalogPath(const char * a_path)
+{
+DbConfig()->AddCatalogPath(a_path);
+}
+
 
 
 	   }  /* end of extern C */
@@ -212,6 +221,28 @@ else add_simple_image_path(a_path, a_path_name);
 }
 
 
+void  DbConfigFile::AddCatalogPath(const char *a_path)
+{
+  /* here we should  translate a_path if it contains a $ or a * (using ls) */
+if (strchr(a_path,'*') || strchr(a_path,'$') || a_path[0] == '~' )
+  {
+  StringList pathes;
+  ExpandPath(a_path, pathes);
+  for (StringIterator pi = pathes.begin(); pi != pathes.end(); ) 
+        if (!FileExists((*pi).c_str())) pi = pathes.erase(pi); else ++pi;
+  if (pathes.size() == 0) 
+    {
+      cerr << " cannot expand " << a_path << endl;
+      return;
+    }
+  for (StringCIterator pi = pathes.begin(); pi != pathes.end(); ++pi ) 
+    catalog_pathes.push_back(AddSlash(string(*pi)));
+  }
+else catalog_pathes.push_back(AddSlash(string(a_path)));
+}
+
+
+
 static int file_is_in_path(const string& ImageName, const string &Path)
 {
 string the_image_directory_name = Path+ImageName;
@@ -252,6 +283,27 @@ for (unsigned int i = 0; i < config.image_pathes.size(); i++)
 stream << " symbolic tag : " << config.image_pathes[i].symbolicName << " , actual path : " << config.image_pathes[i].path << endl;
 return stream;
 } 
+
+
+string DbConfigFile::FindCatalog(const string &FileName, const bool Warn) const
+{
+  if (FileName == "") return "";
+  string cand;
+  if (FileName[0] == '/') cand = FileName;
+  else for (unsigned i = 0; i < catalog_pathes.size(); ++i)
+    {
+      cand = catalog_pathes[i]+FileName;
+      if (FileExists(cand)) return cand;
+    }
+  if (Warn) std::cerr << "DbConfigFindCatalog :  cannot locate " << FileName << std::endl;
+  return cand;
+}
+
+// locator for catalogs
+string DbConfigFindCatalog(const string &FileName, const bool Warn)
+{
+  return DbConfig()->FindCatalog(FileName, Warn);
+}
 
 
 /**************************** implementation of DbImage ********************************/

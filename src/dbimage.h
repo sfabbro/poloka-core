@@ -46,6 +46,13 @@ vlt99 : /snovad1/vlt99/1999*
 newstuff : /snovad8/wiyn99
 }
 
+CatalogPath
+{
+  /data/my_catalogs
+  /data/my_od/catalogs
+  /data/catalogs/D*
+}
+
 \endcode
 */
 
@@ -276,6 +283,9 @@ int DbConfigSetDumpLevel(const int level);
 
 string DbConfigFileName();
 
+//! locate a catalog within pathes given in the CatalogPath section of your dbconfig
+string DbConfigFindCatalog(const string &FileName, const bool Warn = true);
+
 
 #endif /* __cplusplus */
 
@@ -290,6 +300,7 @@ extern "C" {
      hence separated from dbimage.cc. */
 
 void DbConfigAddImagePath(const char * a_path, const char *a_path_name);
+void DbConfigAddCatalogPath(const char * a_path);
 int  DbConfigFileParse(const char*ConfigFileName);
 
 #ifdef __cplusplus

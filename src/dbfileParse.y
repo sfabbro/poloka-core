@@ -23,6 +23,10 @@ FILE *yyin;
 %type <string> image_path
 %type <string> image_pathes
 
+%token CATALOGPATH
+%type <string> catalog_path
+%type <string> catalog_pathes
+
 %%
 
 config : definitions
@@ -32,12 +36,20 @@ definitions : definition
             | definitions definition
 
 definition : IMAGEPATH '{' image_pathes '}'
+            | CATALOGPATH '{' catalog_pathes '}'
 ;
 
 image_pathes : image_path
         | image_pathes  image_path
 ;
 
+catalog_pathes : catalog_path
+        | catalog_pathes catalog_path
+;
+
+
+catalog_path : STRING {DbConfigAddCatalogPath($1); $$ = $1;}
+;
 
 image_path : STRING ':' STRING { DbConfigAddImagePath($3,$1); $$ = $1;}
          | image_path ',' STRING {  DbConfigAddImagePath($3,$1); $$ = $1;}

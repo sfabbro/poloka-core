@@ -28,6 +28,7 @@ space [ \t\n]
 non_space [^  \t\n]
 %%
 ^#.*$              {;}
+"CatalogPath"{space}* {return CATALOGPATH;}
 "ImagePath"{space}* {return IMAGEPATH;}
 \. {yylval.string = StringNew(yytext); return STRING;}
 {non_space}+ {if (strlen(yytext) == 1)

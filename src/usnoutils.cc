@@ -756,6 +756,8 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
   READ_IF_EXISTS(ignoreBad,"IGNORE_BAD",IParam);
   READ_IF_EXISTS(ignoreSatur,"IGNORE_SATUR",IParam);
 
+  astromCatalogName = DbConfigFindCatalog(astromCatalogName);
+
   if (asciiWCS && wcsFileName == "")
     {
       std::cout << " you have requested an ascii WCS file without providing a WCS_FILE_NAME" << std::endl;
@@ -1048,7 +1050,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	      std::cerr << " ERROR: Cannot figure out which astrom catalog I used...., contact maintainer " << std::endl;
 	    }
 	}
-      header.AddOrModKey("REFCAT",astromRef, " Name of the ref. cat. astrom. and photom.");
+      header.AddOrModKey("REFCAT",BaseName(astromRef), " Name of the ref. cat. astrom. and photom.");
       
 
       if (MatchPrefs.dumpMatches)
@@ -1099,7 +1101,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	  */
 	  if (MatchPrefs.astromCatalogName != "" )
 	    header.AddOrModKey("ZP", zeropoint,
-			       " zp w.r.t. "+MatchPrefs.astromCatalogName);
+			       " zp w.r.t. "+
+			       BaseName(MatchPrefs.astromCatalogName));
 	}
 
       double skysig;
