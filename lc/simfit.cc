@@ -8,7 +8,7 @@
 #include "simfit.h"
 
 #define FNAME // name of functions ar dumped
-//#define DEBUG // some output
+#define DEBUG // some output
 //#define DEBUG_FILLMAT // lots of debug from matrices filling
 
 static void resize_vec(double* &vec, const int n)
@@ -35,9 +35,11 @@ extern "C" {
 };
 
 static int cholesky_solve(double *a, double *b, int n)
-{  
+{
+#ifdef FNAME
+  cout << " >  cholesky_solve" << endl;
+#endif  
   int nhrs = 1, info = 0;
-
   dposv_("L", &n, &nhrs, a, &n, b, &n, &info);
 
   if (info != 0) 
@@ -95,7 +97,7 @@ void SimFit::SetWhatToFit(unsigned int ToFit)
        << " fit_gal " << fit_gal << " fit_sky " << fit_sky << endl;
 //#endif
 
-  if (resize) Resize(scale);
+  //if (resize) Resize(scale);
 }
 
 void SimFit::FindMinimumScale(double WorstSeeing)
@@ -149,7 +151,7 @@ double SimFit::GetWorstSeeing() {
   return worstSeeing;
 }
 
-void SimFit::Load(LightCurve& Lc)
+void SimFit::Load(LightCurve& Lc, bool keepstar)
 {
 #ifdef FNAME
   cout << " > SimFit::Load(LightCurve& Lc)" << endl;
@@ -173,8 +175,10 @@ void SimFit::Load(LightCurve& Lc)
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig, ++itLc)
     {      
       //(*itVig)->Load(*itLc); // this does not modify the kernel so I would better use SetStar which does nothing but set the star
-      (*itVig)->SetStar(*itLc); // just set the star
-      (*itVig)->BuildKernel(); // rebuild kernel 
+      if(!keepstar) {
+	(*itVig)->SetStar(*itLc); // just set the star
+	(*itVig)->BuildKernel(); // rebuild kernel
+      } 
       if((*itVig)->Kern.HSizeX()>worst_kernel)
 	worst_kernel = (*itVig)->Kern.HSizeX();
       if((*itVig)->Kern.HSizeY()>worst_kernel)
@@ -194,7 +198,8 @@ void SimFit::Load(LightCurve& Lc)
 #endif
   
   // the VignetRef has already been build
-  VignetRef->SetStar(Lc.Ref); // just set the star
+  if(!keepstar)
+    VignetRef->SetStar(Lc.Ref); // just set the star
   VignetRef->Resize(radius,radius); // now resize, this reloads data, update psf, and makeInitialGalaxy
 #ifdef DEBUG
   SimFitRefVignet *toto = VignetRef;
@@ -204,7 +209,7 @@ void SimFit::Load(LightCurve& Lc)
 #endif 
 
   // now resize all vignets and initialize residus
-  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig, ++itLc)
+  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig)
     {           
       // we will fit the flux according to Lc.Ref and date
       (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->JulianDate()); 
@@ -213,6 +218,7 @@ void SimFit::Load(LightCurve& Lc)
       (*itVig)->UseGal = use_gal;
       
       // this resizes the vignet and update everything (kernel, psf, residus) 
+      (*itVig)->ModifiedResid();
       (*itVig)->AutoResize();
     }
 }
@@ -253,11 +259,20 @@ void SimFit::Resize(const double& ScaleFactor)
     hrefx = VignetRef->Hx();
     hrefy = VignetRef->Hy();
     
-    // resize and update everything for all vignets
-    for (SimFitVignetIterator it = begin(); it != end(); ++it)
-      (*it)->AutoResize();
+    //for (SimFitVignetIterator it = begin(); it != end(); ++it)
+    //(*it)->AutoResize();
   }
   
+  // anyway, resize and update everything for all vignets
+  for (SimFitVignetIterator it = begin(); it != end(); ++it) {
+    (*it)->ModifiedResid();
+    (*it)->AutoResize();
+  }
+  
+#ifdef DEBUG
+  cout <<   "   SimFit::Resize whattofit = " << fit_flux << "," << fit_pos << "," << fit_gal << "," << fit_sky << endl;
+#endif
+
   // recompute matrix indices
   hfx = hfy = nfx = nfy = 0;
   fluxstart = fluxend = 0;
@@ -349,7 +364,7 @@ void SimFit::FillMatAndVec()
   cout << " > SimFit::FillMatAndVec() : Initialize " << endl;  
 #endif
 
-  memset(Vec, 0, nparams*sizeof(double));
+  memset(Vec, 0, nparams*sizeof(double)); // big bug !!
   memset(Mat, 0, nparams*nparams*sizeof(double));
 
 #ifdef DEBUG
@@ -375,10 +390,11 @@ void SimFit::FillMatAndVec()
 #endif
 
   for (int i=0; i<nparams; ++i) 
-    for (int j=i+1; j<nparams; ++j) Mat[i*nparams+j] = Mat[j*nparams+i];
-
+    for (int j=i+1; j<nparams; ++j) 
+      Mat[i*nparams+j] = Mat[j*nparams+i];
+  //Mat[j*nparams+i] = Mat[i*nparams+j];
 #ifdef DEBUG
-  DumpMatrices();
+  //DumpMatrices();
 #endif
 
 }
@@ -435,6 +451,7 @@ void SimFit::fillFluxFlux()
       int ind = fluxstart+fluxind;
 
 #ifdef CHECK_MAT_BOUNDS
+      cout << " in fillfluxflux ind = " << ind << endl;
       fillVec(ind) = sumvec;
       fillMat(ind*nparams+ind) = summat;
 #else
@@ -477,6 +494,14 @@ void SimFit::fillFluxPos()
 	  ppsf = &(vi->Psf)   (-hx,j);
 	  ppdx = &(vi->Psf.Dx)(-hx,j);
 	  ppdy = &(vi->Psf.Dy)(-hx,j);
+#ifdef DEBUG_FILLMAT
+	  cout << "   SimFit::fillFluxPos pw,ppsf,ppdx,ppdy " 
+	       << *pw << "," 
+	       << *ppsf << ","
+	       << *ppdx << ","
+	       << *ppdy << endl;
+	    
+#endif
 	  for (int i=-hx; i<=hx; ++i) 
 	    {
 	      summatx += (*ppsf) * (*ppdx) * (*pw);
@@ -484,18 +509,24 @@ void SimFit::fillFluxPos()
 	      ++pw; ++ppsf; ++ppdx; ++ppdy;
 	    }
 	}
-
+      
+      summatx *= vi->Star->flux; //JG
+      summaty *= vi->Star->flux; //JG
+      
       // now fill in the matrix and vector
-      int ind = fluxstart+fluxind++;
+      int ind = fluxstart+fluxind;
 
 #ifdef CHECK_MAT_BOUNDS
+      cout << " in fillfluxpos ind = " << ind << endl;
+      cout << "   SimFit::fillFluxPos fillMat(" << xind*nparams+ind << ")=" <<summatx << endl;
+      cout << "   SimFit::fillFluxPos fillMat(" << yind*nparams+ind << ")=" <<summaty << endl;
       fillMat(xind*nparams+ind) = summatx;
       fillMat(yind*nparams+ind) = summaty;
 #else
       Mat[xind*nparams+ind] = summatx;
       Mat[yind*nparams+ind] = summaty;
 #endif
-
+      fluxind++;
     }  
 }
 
@@ -661,26 +692,49 @@ void SimFit::fillPosPos()
       int hx = vi->Hx();
       int hy = vi->Hy();
 
+      double flux = vi->Star->flux;
+      double flux2 = flux*flux;
+
       for (int j=-hy; j<=hy; ++j)
 	{
 	  pw   = &(vi->Weight)(-hx,j);
 	  pres = &(vi->Resid) (-hx,j);
 	  ppdx = &(vi->Psf.Dx)(-hx,j);
 	  ppdy = &(vi->Psf.Dy)(-hx,j);
+#ifdef DEBUG_FILLMAT
+	  cout << "   SimFit::fillPosPos pw,pres,ppdx,ppdy " 
+	       << *pw << "," 
+	       << *pres << ","
+	       << *ppdx << ","
+	       << *ppdy << endl;
+#endif
 	  for (int i=-hx; i<=hx; ++i) 
 	    {
-	      sumvecx  += (*pres) * (*ppdx) * (*pw);
-	      sumvecy  += (*pres) * (*ppdy) * (*pw);
-	      summatx  += (*ppdx) * (*ppdx) * (*pw);
-	      summaty  += (*ppdy) * (*ppdy) * (*pw);
-	      summatxy += (*ppdx) * (*ppdy) * (*pw);
+// 	      sumvecx  += (*pres) * (*ppdx) * (*pw);
+// 	      sumvecy  += (*pres) * (*ppdy) * (*pw);
+// 	      summatx  += (*ppdx) * (*ppdx) * (*pw);
+// 	      summaty  += (*ppdy) * (*ppdy) * (*pw);
+// 	      summatxy += (*ppdx) * (*ppdy) * (*pw);
+	      
+	      sumvecx  += (*pres) * (*ppdx) * (*pw) * flux;
+	      sumvecy  += (*pres) * (*ppdy) * (*pw) * flux;
+	      summatx  += (*ppdx) * (*ppdx) * (*pw) * flux2;
+	      summaty  += (*ppdy) * (*ppdy) * (*pw) * flux2;
+	      summatxy += (*ppdx) * (*ppdy) * (*pw) * flux2;
 	      ++pw; ++pres; ++ppdx; ++ppdy;
 	    }
 	}    
     }
 
+
   // now fill in the matrix and vector
 #ifdef CHECK_MAT_BOUNDS
+  cout << "fillVec("<< xind<<") = " << sumvecx << endl;
+  cout << "fillVec("<<yind<<") = " << sumvecy << endl;
+  cout << "fillMat("<<xind*nparams + xind<<") = " << summatx << endl;
+  cout << "fillMat("<<yind*nparams + yind<<") = " << summaty << endl;
+  cout << "fillMat("<<yind*nparams + xind<<") = " << summatxy << endl;
+  
   fillVec(xind) = sumvecx;
   fillVec(yind) = sumvecy;
   fillMat(xind*nparams + xind) = summatx;
@@ -726,6 +780,12 @@ void SimFit::fillPosGal()
 	      ppdx = &(vi->Psf.Dx)(-hx,j);
 	      ppdy = &(vi->Psf.Dy)(-hx,j);
 	      pw   = &(vi->Weight)(-hx,j);
+#ifdef DEBUG_FILLMAT
+	  cout << "   SimFit::fillPosGal pw,ppdx,ppdy " 
+	       << *pw << "," 
+	       << *ppdx << ","
+	       << *ppdy << endl;
+#endif
 	      for (int i=-hx; i<=hx; ++i)
 		{
 #ifdef CHECK_MAT_BOUNDS
@@ -770,6 +830,11 @@ void SimFit::fillPosGal()
 		      ++pkern; ++ppdx; ++ppdy; ++pw;
 		    }
 		}
+	      
+	      summatx *= vi->Star->flux; // JG
+	      summaty *= vi->Star->flux; // JG
+	      
+
 #ifdef CHECK_MAT_BOUNDS
 	      fillMat(galind(is,js)*nparams+xind) += summatx;
 	      fillMat(galind(is,js)*nparams+yind) += summaty;      
@@ -821,8 +886,15 @@ void SimFit::fillPosSky()
 	      ++ppdx; ++ppdy; ++pw;
 	    }
 	}
+      
+      summatx *= vi->Star->flux; // JG
+      summaty *= vi->Star->flux; // JG
+
       // now fill matrix part
 #ifdef CHECK_MAT_BOUNDS
+      cout << "   SimFit::fillPosSky() fillMat(" << (skystart+skyind)*nparams+xind << ")=" <<summatx << endl;
+      cout << "   SimFit::fillPosSky() fillMat(" << (skystart+skyind)*nparams+yind << ")=" <<summaty << endl;
+      
       fillMat((skystart+skyind)*nparams+xind) = summatx;
       fillMat((skystart+skyind)*nparams+yind) = summaty;
 #else
@@ -898,7 +970,7 @@ void SimFit::fillGalGal()
 		  pw    = &(vi->Weight)(ikstart,jk);
 
 #ifdef DEBUG_FILLMAT
-		  cout << " pkern pres pw " << *pkern << " " << *pres << " " << *pw << endl;
+		  //cout << "   fillGalGal pkern,pres,pw " << *pkern << "," << *pres << "," << *pw << endl;
 #endif
 
 		  for (int ik=ikstart; ik<=ikend; ++ik)
@@ -908,7 +980,7 @@ void SimFit::fillGalGal()
 		    }
 		}
 #ifdef DEBUG_FILLMAT
-	      cout << " Vec(" << galind(is,js) << ") += " << sumvec << endl;
+	      //cout << " Vec(" << galind(is,js) << ") += " << sumvec << endl;
 #endif
 #ifdef CHECK_MAT_BOUNDS
 	      fillVec(galind(is,js)) += sumvec;
@@ -922,7 +994,7 @@ void SimFit::fillGalGal()
 
   // now if weights do not change (that is not robustify), 
   // we do not need to refill this part at each iteration
-  if (!refill) 
+  if (false && !refill) 
     {
 
       int ngal = galend-galstart+1; 
@@ -1213,10 +1285,13 @@ bool SimFit::Update(double Factor)
   // update the reference position and psf
   if (fit_pos) 
     {
-      cout << " x  y  " << VignetRef->Star->x << " " << VignetRef->Star-> y << endl
-	   << " dx dy " << Vec[xind]*Factor << " " <<  Vec[yind]*Factor << endl;
-
-      if (!(VignetRef->ShiftCenter(Point(Vec[xind]*Factor, Vec[yind]*Factor)))) return false;
+#ifdef DEBUG
+      cout << "   in SimFit::Update shifting of x  y  " << VignetRef->Star->x << " " << VignetRef->Star-> y << endl
+	   << " dx dy " << Vec[xind]*Factor << " " <<  Vec[yind]*Factor << " (xind,yind)=" << xind << "," << yind <<  endl;
+#endif
+      if (!(VignetRef->ShiftCenter(Point(Vec[xind]*Factor, Vec[yind]*Factor)))) {
+	abort();
+      }
       VignetRef->UpdatePsfResid();
     }
 
@@ -1261,6 +1336,7 @@ double SimFit::oneNRIteration(double OldChi2)
   //#include <vutils.h>
   //solved = MatSolve(Mat,nparams,Vec);
   if (!solved) return 1e29;
+  //DumpMatrices();
 
   Update(1.);  
   double curChi2 = computeChi2();
@@ -1408,18 +1484,28 @@ void SimFit::DoTheFit()
       cout << " SimFit::DoTheFit(): fit position and resize vignets at min scale" << endl;
 #endif
       bool oldfit_sky = fit_sky;
+      bool oldfit_gal = fit_gal;
       fit_sky = false;
-      if (fit_gal) Resize(minscale);
+      fit_gal = false;	
+      if (fit_gal) 
+	Resize(minscale);
+      else
+	Resize(1);
       if (!IterateAndSolve(30)) return;
       if (!GetCovariance())     return;
       fit_sky = oldfit_sky;
+      fit_gal = oldfit_gal;
     }
 
-  return;
+  //return;
 
   // Freeze position, resize the vignets and fit linearly the rest
   bool oldfit_pos = fit_pos;
   fit_pos = false;
+  // one has to tell all vignets we don't fit the pos anymore
+  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig)
+    (*itVig)->FitPos = fit_pos;
+  
   // only do those iteration if you are not at maximum scale, we want to fit the sky
   // or we did not fit anything yet.
   if (minscale != oldscale || fit_sky || oldfit_pos)
@@ -1447,23 +1533,27 @@ void SimFit::write(const string& StarName) const
 {
   cout << " SimFit::write(" << StarName << ")" << endl;
   // dump light curve and vignets
-  ofstream lstream(string("lightcurve_"+StarName+".dat").c_str());
+  ofstream lstream(string("results/lightcurve_"+StarName+".dat").c_str());
   lstream << setiosflags(ios::fixed);
   front()->Star->WriteHeader(lstream);
-  const string name = "simfit_vignets_"+StarName+".fits";
-  VignetRef->Galaxy.writeFits("galaxy_"+StarName+".fits");
+  const string name = "results/simfit_vignets_"+StarName+".fits";
+  VignetRef->Galaxy.writeFits("results/galaxy_"+StarName+".fits");
   for (SimFitVignetCIterator it=begin(); it != end() ; ++it)
     {
       const SimFitVignet *vi = *it;
       lstream << *vi->Star << endl;
-      //vi->writeInImage(name);
+      vi->Kern.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_kern.fits");
+      vi->Resid.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_resid.fits");
+      vi->Data.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_data.fits");
+      vi->Psf.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_psf.fits");
+      
     }
   lstream.close();
 
   // dump covariance matrix
   if (Mat != 0 && Mat != 0) 
     {
-      ofstream cstream(string("cov_"+StarName+".dat").c_str());
+      ofstream cstream(string("results/cov_"+StarName+".dat").c_str());
       cstream << setiosflags(ios::fixed);
       for(int j=fluxstart; j<=fluxend; ++j)
 	{
@@ -1511,7 +1601,7 @@ ostream& SimFit::DumpMatrices(ostream& Stream) const {
   Stream << "====  SimFit::DumpMatrices ====" << endl;
   Stream  << endl;
   ios::fmtflags oldflags = Stream.flags();
-  Stream << setiosflags(ios::fixed);
+  //Stream << setiosflags(ios::fixed);
   for(int i=0;i<nparams;i++) {
     //if(i%10==0)
     Stream << "Vec[" << i << "]\t= " << float(Vec[i]) << endl;
@@ -1523,13 +1613,13 @@ ostream& SimFit::DumpMatrices(ostream& Stream) const {
     }
     Stream << endl;
   }
-  for(int j=0;j<nfy;j++) {
-    Stream << "MatGal[i+" << j << "*nfx]\t= ";
-    for(int i=0;i<nfx;i++) {
-      Stream << MatGal[i+j*nfx] << " ";
-    }
-    Stream << endl;
-  } 
+//   for(int j=0;j<nfy;j++) {
+//     Stream << "MatGal[i+" << j << "*nfx]\t= ";
+//     for(int i=0;i<nfx;i++) {
+//       Stream << MatGal[i+j*nfx] << " ";
+//     }
+//     Stream << endl;
+//   } 
   Stream.flags(oldflags);
   return Stream;
 

@@ -7,7 +7,7 @@
 #include "simfitphot.h"
 
 #define FNAME
-#define DEBUG
+//#define DEBUG
 
 static bool IncSeeing(const CountedRef<ReducedImage> one, const CountedRef<ReducedImage> two)
 { return (one->Seeing() < two->Seeing());}
@@ -129,14 +129,15 @@ void SimFitPhot::operator() (LightCurve& Lc)
 #endif
      zeFit.Load(Lc);
      zeFit.DoTheFit();
-     zeFit.write("sn_init"); // we have to change this
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
-     zeFit.SetWhatToFit(FitFlux | FitPos | FitGal);    
+     zeFit.SetWhatToFit(FitFlux | FitGal | FitPos);    
+     zeFit.Load(Lc,true); // keep star (so keep fluxes)
+     zeFit.DoTheFit();
+  }else{
+    zeFit.Load(Lc);
+    zeFit.DoTheFit();   
   }
-  zeFit.Load(Lc);
-  zeFit.DoTheFit();
   zeFit.write("sn"); // we have to change this
 }
-

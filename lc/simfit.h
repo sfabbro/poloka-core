@@ -70,7 +70,7 @@ private:
   void fillGalSky();
   void fillSkySky();
   
-#define CHECK_MAT_BOUNDS // uncomment this to use the 3 following functions when filling matrices
+  //#define CHECK_MAT_BOUNDS // uncomment this to use the 3 following functions when filling matrices
   
 #ifdef CHECK_MAT_BOUNDS
   double& fillVec(int i){
@@ -129,7 +129,7 @@ public:
   void Resize(const double& ScaleFactor);
 
   //! allow to change full data set to another star
-  void Load(LightCurve& Lc);
+  void Load(LightCurve& Lc, bool keepstar=false);
 
   //! fill the entire matrix and vectors
   void FillMatAndVec();
