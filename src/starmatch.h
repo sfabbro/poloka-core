@@ -206,6 +206,9 @@ class StarMatchList : public list<StarMatch> {
   //! deletes the tail of the match list 
   void CutTail(const int NKeep);
 
+  //! count the number of elements for which distance is < mindist
+  int RecoveredNumber(double mindist) const;
+
   //! print the matching transformation quality (transfo, chi2, residual, nused) 
   void DumpTransfo(ostream &stream = cout) const;
 

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #include "gtransfo.h"
 #include "starmatch.h"
@@ -284,6 +285,11 @@ void
 StarMatchList::write(const string &filename) const
 {
   ofstream pr(filename.c_str()) ;
+  cerr <<"Writing with fixed precision " << endl ;
+  pr  << resetiosflags(ios::scientific) ;
+  pr  << setiosflags(ios::fixed) ;
+  int oldprec = pr.precision();
+  pr<< setprecision(10);
   write(pr);
   pr.close();
 }
@@ -300,6 +306,18 @@ void StarMatchList::Swap()
     {
       it->Swap() ; 
     }
+}
+
+int StarMatchList::RecoveredNumber(double mindist) const
+{
+  int n = 0 ;
+  GtransfoIdentity identity;
+  for (StarMatchCIterator it= begin(); it!= end(); ++it )
+    {
+      if ((*it).Distance(identity) < mindist)
+	n++ ;
+    }
+  return(n);
 }
 
 
