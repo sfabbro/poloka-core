@@ -1221,3 +1221,45 @@ double ImageAndWeightError(const Image &I, const Image &W, const double MinWeigh
 }
 
 
+// still used as a check, as saturation value are still sometimes misset.
+#include "histo1d.h"
+
+double Image::ComputeSaturation() const
+{
+  double max = MaxValue();
+  Histo1d histo(int(max/500.), 0, max + 1 ); //HC
+  for (int j = 0; j < Ny() ; ++j)
+    for (int i = 0; i < Nx() ; ++i)
+      histo.Fill((*this)(i,j), 1 );
+ 
+  double X;
+  double Y = histo.MaxBin(X);
+  double maxcoup = X;
+  int nmax = (int) max ;
+  Histo1d Satur(nmax , 0 , max);
+  double Saturation=0, Sat;
+  int count =1, nombre =0;
+  for (int l=0; l<20; l++)
+    {
+      histo.ZeroBins(max*0.05*l, max*0.05*(l+1)); 
+      Sat = X;
+      Y = histo.MaxBin(X);
+      if (Sat == X)
+        {
+          count ++;
+          if (count > nombre && Sat != maxcoup)
+            {
+              nombre = count;
+              Saturation =Sat;
+            }
+        }
+      else
+        {
+          count =1;
+ 
+        }
+ 
+    }
+ 
+  return Saturation;
+}

@@ -252,6 +252,8 @@ class Image {
   void Cosmics(const double &Sigma, const double &Mean,
 	       const double &seeing, Image &CosmicImage);
 
+ //still used as a check, as saturation value are still sometimes misset.
+  double ComputeSaturation() const ; 
 
   void ApplyFun(double (&F)(double))
   {
