@@ -71,6 +71,7 @@ SimFit::SimFit()
   refill = true;
   solved = false;
   fit_flux = fit_gal = true; fit_sky = fit_pos = false ;
+  use_gal = true;
   fluxstart = galstart = skystart = xind = yind = 0;
   fluxend = galend = skyend = 0;
   scale = 1., minscale = 0.; chi2 = 1e29;
@@ -86,6 +87,7 @@ void SimFit::SetWhatToFit(const unsigned int ToFit)
   fit_pos  = (ToFit & FitPos);
   fit_gal  = (ToFit & FitGal);
   fit_sky  = (ToFit & FitSky);
+  use_gal |= fit_gal; // use the galaxy if we fit it
 }
 
 void SimFit::FindMinimumScale(const double &WorstSeeing)
@@ -95,14 +97,14 @@ void SimFit::FindMinimumScale(const double &WorstSeeing)
 #endif
 
   int hmin = max(int(ceil(WorstSeeing*2.3548)), 5);
-  int hrefx = VignetRef.Data.HSizeX();
-  int hrefy = VignetRef.Data.HSizeY();
+  int hrefx = VignetRef->Data.HSizeX();
+  int hrefy = VignetRef->Data.HSizeY();
   int hkx = 0;
   int hky = 0;
 
 #ifdef DEBUG
-  cout << "VignetRef.Data.HSizeX() = " << hrefx << endl;
-  cout << "VignetRef.Data.HSizeY() = " << hrefy << endl;
+  cout << "VignetRef->Data.HSizeX() = " << hrefx << endl;
+  cout << "VignetRef->Data.HSizeY() = " << hrefy << endl;
 #endif
 
   for (SimFitVignetIterator it = begin(); it != end(); ++it)
@@ -117,7 +119,7 @@ void SimFit::FindMinimumScale(const double &WorstSeeing)
 	}
     }
 
-  minscale = double(min(hrefx,hrefy)) / double(min(VignetRef.Data.HSizeX(),VignetRef.Data.HSizeY()));
+  minscale = double(min(hrefx,hrefy)) / double(min(VignetRef->Data.HSizeX(),VignetRef->Data.HSizeY()));
 
 #ifdef DEBUG
   cout << " SimFit::FindMinimumScale(" << WorstSeeing 
@@ -164,7 +166,7 @@ void SimFit::Load(LightCurve& Lc)
     {      
       //(*itVig)->Load(*itLc); // this does not modify the kernel so I would better use SetStar which does nothing but set the star
       (*itVig)->SetStar(*itLc); // just set the star
-      (*itVig)->BuildKernel(VignetRef.Image()); // rebuild kernel 
+      (*itVig)->BuildKernel(); // rebuild kernel 
       if((*itVig)->Kern.HSizeX()>worst_kernel)
 	worst_kernel = (*itVig)->Kern.HSizeX();
       if((*itVig)->Kern.HSizeY()>worst_kernel)
@@ -184,32 +186,26 @@ void SimFit::Load(LightCurve& Lc)
 #endif
   
   // the VignetRef has already been build
-  VignetRef.SetStar(Lc.Ref); // just set the star
-  VignetRef.Resize(radius,radius); // now resize, this reloads data, update psf, and makeInitialGalaxy
-  
-  int hx_ref = VignetRef.Hx();
-  int hy_ref = VignetRef.Hy();
-  
-  
+  VignetRef->SetStar(Lc.Ref); // just set the star
+  VignetRef->Resize(radius,radius); // now resize, this reloads data, update psf, and makeInitialGalaxy
+#ifdef DEBUG
+  SimFitRefVignet *toto = VignetRef;
+  cout << " in SimFit::Load,  VignetRef     = " << toto << endl;
+  cout << " in SimFit::Load,  VignetRef->Hx() = " <<  VignetRef->Hx() << endl;
+  cout << " in SimFit::Load,  VignetRef->Hy() = " <<  VignetRef->Hy() << endl;
+#endif 
+
   // now resize all vignets and initialize residus
-  
-  int hx_kernel,hy_kernel;
-  
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig, ++itLc)
-    {      
-      hx_kernel = (*itVig)->Kern.HSizeX();
-      hy_kernel = (*itVig)->Kern.HSizeY();
-      (*itVig)->Resize(hx_ref-hx_kernel,hy_ref-hy_kernel); // resize vignet, this will actually read the data
-      
+    {           
       // we will fit the flux according to Lc.Ref and date
       (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->JulianDate()); 
       (*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name();
+      (*itVig)->FitPos = fit_pos;
+      (*itVig)->UseGal = use_gal;
       
-      // update residus (depends on what we want to fit)
-      if      (( fit_pos) && ( fit_gal)) (*itVig)->UpdatePsfResid(VignetRef);
-      else if (( fit_pos) && (!fit_gal)) (*itVig)->UpdatePsfResid(VignetRef.Psf);
-      else if ((!fit_pos) && ( fit_gal)) (*itVig)->UpdateResid(VignetRef.Galaxy);
-      else                               (*itVig)->UpdateResid();
+      // this resizes the vignet and update everything (kernel, psf, residus) 
+      (*itVig)->AutoResize();
     }
 }
 
@@ -219,46 +215,40 @@ void SimFit::Resize(const double &ScaleFactor)
 #ifdef DEBUG
   cout << " SimFit::Resize(" << ScaleFactor << ");" << endl;
 #endif
- 
-  int hrefx = VignetRef.Hx();
-  int hrefy = VignetRef.Hy();
-
+  
+  int hrefx = VignetRef->Hx();
+  int hrefy = VignetRef->Hy();
+  
   if(fabs(ScaleFactor-1)<0.001) {
 #ifdef DEBUG
     cout << " actually do not resize " << endl;
 #endif    
   }else{
-  if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
-    {
-      cerr << " SimFit::Resize(" << ScaleFactor 
-	   << ") : Warning: nothing to fit, not resizing. " << endl;
-      return;
-    }
-  
-  scale = max(ScaleFactor, minscale);
-  cout << " SimFit::Resize(" << ScaleFactor 
-       << "): with chosen scale factor = " << scale << endl;
-  
-  // resize vignets
-  
-  VignetRef.Resize(int(ceil(scale*double(VignetRef.Hx()))),
-		   int(ceil(scale*double(VignetRef.Hy()))));
-  
-  
-  hrefx = VignetRef.Hx();
-  hrefy = VignetRef.Hy();
-  for (SimFitVignetIterator it = begin(); it != end(); ++it) 
-    {
-      SimFitVignet *vi = *it;
-      vi->Resize(hrefx - vi->Kern.HSizeX(), hrefy - vi->Kern.HSizeY());
-      // since the vignet is resized, we need to re-update residus
-      if      (( fit_pos) && ( fit_gal)) vi->UpdatePsfResid(VignetRef);
-      else if (( fit_pos) && (!fit_gal)) vi->UpdatePsfResid(VignetRef.Psf);
-      else if ((!fit_pos) && ( fit_gal)) vi->UpdateResid(VignetRef.Galaxy);
-      else                               vi->UpdateResid();
-
-    }
+    if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
+      {
+	cerr << " SimFit::Resize(" << ScaleFactor 
+	     << ") : Warning: nothing to fit, not resizing. " << endl;
+	return;
+      }
+    
+    scale = max(ScaleFactor, minscale);
+    cout << " SimFit::Resize(" << ScaleFactor 
+	 << "): with chosen scale factor = " << scale << endl;
+    
+    // resize vignets
+    
+    VignetRef->Resize(int(ceil(scale*double(VignetRef->Hx()))),
+		     int(ceil(scale*double(VignetRef->Hy()))));
+    
+    
+    hrefx = VignetRef->Hx();
+    hrefy = VignetRef->Hy();
+    
+    // resize and update everything for all vignets
+    for (SimFitVignetIterator it = begin(); it != end(); ++it)
+      (*it)->AutoResize();
   }
+  
   // recompute matrix indices
   hfx = hfy = nfx = nfy = 0;
   fluxstart = fluxend = 0;
@@ -370,7 +360,7 @@ void SimFit::FillMatAndVec()
   for (int i=0; i<nparams; ++i) 
     for (int j=i+1; j<nparams; ++j) Mat[i*nparams+j] = Mat[j*nparams+i];
 
-#ifdef DEBUG_FILLMAT
+#ifdef DEBUG
   DumpMatrices();
 #endif
 
@@ -412,6 +402,10 @@ void SimFit::fillFluxFlux()
 	  pw   = &(vi->Weight)(-hx,j);
 	  pres = &(vi->Resid) (-hx,j);
 	  ppsf = &(vi->Psf)   (-hx,j);
+#ifdef DEBUG
+	  cout << "pw,pres,ppsf " << *pw << "," << *pres << "," << *ppsf << endl;
+#endif
+
 	  for (int i=-hx; i<=hx; ++i) 
 	    {
 	      sumvec += (*pres) * (*ppsf) * (*pw);
@@ -1177,13 +1171,13 @@ bool SimFit::Update(const double& Factor)
   if (fit_gal)
     for (int j=-hfy; j<=hfy; ++j) 
       for (int i=-hfx; i<=hfx; ++i)
-	VignetRef.Galaxy(i,j) += Vec[galind(i,j)]*Factor;
+	VignetRef->Galaxy(i,j) += Vec[galind(i,j)]*Factor;
 
   // update the reference position and psf
   if (fit_pos) 
     {
-      if (!(VignetRef.ShiftCenter(Point(Vec[xind]*Factor, Vec[yind]*Factor)))) return false;
-      VignetRef.UpdatePsfResid();
+      if (!(VignetRef->ShiftCenter(Point(Vec[xind]*Factor, Vec[yind]*Factor)))) return false;
+      VignetRef->UpdatePsfResid();
     }
 
   // update all vignets
@@ -1203,10 +1197,8 @@ bool SimFit::Update(const double& Factor)
       if (fit_sky) vi->Star->sky += Vec[skyind++]*Factor;
 
       // update residuals and convolved psf
-      if      (( fit_pos) && ( fit_gal)) vi->UpdatePsfResid(VignetRef);
-      else if (( fit_pos) && (!fit_gal)) vi->UpdatePsfResid(VignetRef.Psf);
-      else if ((!fit_pos) && ( fit_gal)) vi->UpdateResid(VignetRef.Galaxy);
-      else                               vi->UpdateResid();
+      vi->ModifiedResid();
+      vi->Update();
     }
 
   return true;
@@ -1322,9 +1314,9 @@ bool SimFit::GetCovariance()
 
   if (fit_pos)
     {
-      VignetRef.Star->varx  = scale * Mat[xind*nparams+xind];
-      VignetRef.Star->vary  = scale * Mat[yind*nparams+yind];
-      VignetRef.Star->covxy = scale * Mat[xind*nparams+yind];
+      VignetRef->Star->varx  = scale * Mat[xind*nparams+xind];
+      VignetRef->Star->vary  = scale * Mat[yind*nparams+yind];
+      VignetRef->Star->covxy = scale * Mat[xind*nparams+yind];
     }
   
   return true;

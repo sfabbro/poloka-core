@@ -36,7 +36,8 @@ private:
   bool fit_gal;           // whether we fit the galaxy
   bool fit_sky;           // whether we fit the sky
   bool fit_pos;           // whether we fit the point source position
-  
+  bool use_gal;           // one can use the galaxy model but not fit it
+
   // vector and matrices for the system Mat*Params=Vec
   double *Vec;            // vector r.h.s and Params when solved
   double *Mat;            // matrix l.h.s then covariance matrix when inverted
@@ -111,7 +112,7 @@ public:
   // default destructor, copy constructor and assigning operator are OK  
 
   //! reference to the best seeing vignet
-  SimFitRefVignet VignetRef;
+  CountedRef<SimFitRefVignet> VignetRef;
 
   //! set what you want to fit
   void SetWhatToFit(const unsigned int ToFit = FitFlux);
@@ -157,6 +158,8 @@ public:
   
   void DumpMatrices(); 
   
+  void UseGalaxyModel(bool useit = true) {use_gal = useit;};
+
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);
   
