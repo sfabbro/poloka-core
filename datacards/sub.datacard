@@ -8,9 +8,11 @@
 #
 ###########     Parameters for fake supernova generation
 #
+#choices are:WITH_MODEL, WITH_GAUSSIAN, WITH_DAOPSF  
+@ADDITION_METHOD WITH_DAOPSF
 #choices are: FAKES_RANDOM, FAKES_INHOST, 
-#             FAKES_ADAPTED, FAKES_ONGRID 
-@METHOD FAKES_RANDOM
+#             FAKES_ADAPTED, FAKES_ONGRID
+@GENERATION_METHOD FAKES_RANDOM
 # number of fake SNe added on the images
 @NUMBER_OF_FAKES 500
 # magnitude range of SNe magnitude (g,r,i filters)
