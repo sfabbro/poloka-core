@@ -68,18 +68,24 @@ This is done in AddToImage.
 2) A Simulated supernova (SimSNStar, inheriting from BaseStar).
 This regroups all the generated parameters: position, flux, 
 magnitude, host caracteristics.
-It also contains a ModelStar : indeed, if one chooses to add
+
+How to randomly generate a SimSNStar is put in "simulation.h".
+
+3) A Simulated supernova + a Model Star (SimSNWModelStar, inheriting from SimSNStar)
+Indeed, if one chooses to add
 a supernova using a ModelStar, then the position of the 
 supernova must be slightly
-modeified so that the shift between the SN position and the
+modified so that the shift between the SN position and the
 Model position be an integer number of pixels.
 Methods to marry a Simulated supernova to a Model Star are 
-provide, along with the method to add it on an image.
+provided, along with the method to add it on an image.
 
-How to generate a supernova is put in "simulation.h".
+How to randomly generate a SimSNWModelStar 
+and marry it to a ModelStar is described in "simulation.h".
 
-3)Simulated Supernova List
-A method to add it on an image, using the Model method.
+
+4)Simulated Supernova W Model Star List
+A method to add it on an image, using of course the Model method.
 It also writes a debug file, so that one can check 
 the "integer shift" assumption : e.g., it gives 
 the fractional part of the real shift between the model 
@@ -146,8 +152,6 @@ class ModelStar : public BaseStar
 };
 
 
- 
-
 class SimSNStar : public BaseStar 
 {
   CLASS_VERSION(SimSNStar,1);
@@ -163,7 +167,6 @@ class SimSNStar : public BaseStar
   double  fluxmax_gal; 
  
  public:
-  /*! concerning host galaxy */
 
   double Mag_SN() const {return mag_sn;}
   double& Mag_SN() {return mag_sn;}
@@ -177,11 +180,6 @@ class SimSNStar : public BaseStar
   double& A_Gal() {return a_gal;}
   double Fluxmax_Gal() const {return fluxmax_gal;}
   double& Fluxmax_Gal() {return fluxmax_gal;}
-
-  /* not happy with this. model star should be separated */
-
-  ModelStar model_on_ref ;
-
   
   SimSNStar();
   SimSNStar(double xx, double yy, double ff);
@@ -189,12 +187,33 @@ class SimSNStar : public BaseStar
   std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
   virtual void    read_it(istream& r, const char *Format); 
   static SimSNStar* read(istream& r, const char* Format);
+};
+
+
+/* a Simulated Supernova, and a model star to add it on an image. */
+
+class SimSNWModelStar : public SimSNStar 
+{
+  CLASS_VERSION(SimSNWModelStar,1);
+  #define SimSNWModelStar__is__persistent
+ 
+ public:
+
+  ModelStar model_on_ref ;
+
+  SimSNWModelStar() : SimSNStar(){};
+  SimSNWModelStar(double xx, double yy, double ff) : SimSNStar(xx,yy,ff){};
+  SimSNWModelStar(const SimSNStar &AStar) : SimSNStar(AStar){};
+  virtual void writen(ostream & pr = cout) const;
+  std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
+  virtual void    read_it(istream& r, const char *Format); 
+  static SimSNWModelStar* read(istream& r, const char* Format);
 
   //! As indicated in Name : select the closest star in SEStarList
   // of beautiful stars, and compute the integer shift, the photometric ratio
   // !! Modifies the SimSNStar coordinates so that shift be integer.
   // the shift is computed not in the ref frame (coordinate of the 
-  //  SimSNStar and of the StarList) bu in the coordinates obtained
+  //  SimSNStar and of the StarList) but in the coordinates obtained
   // with the provided transfo.
   void MariageToAModelStar(SEStarList const & BellesEtoiles, 
 			   const Gtransfo *Transfo,
@@ -216,7 +235,7 @@ class SimSNStar : public BaseStar
 int integer_delta(double xsn, double xmodel);
 
 
-class SimSNStarList : public StarList<SimSNStar> 
+class SimSNWModelStarList : public StarList<SimSNWModelStar> 
 {
   public :
   //! Adds a fake supernova list to an image
@@ -236,13 +255,13 @@ class SimSNStarList : public StarList<SimSNStar>
 
 
 #ifndef SWIG
-BaseStarList* SimSN2Base(SimSNStarList * This);
-const BaseStarList* SimSN2Base(const SimSNStarList * This);
+BaseStarList* SimSNWModel2Base(SimSNWModelStarList * This);
+const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This);
 #endif
 
-typedef SimSNStarList::const_iterator SimSNStarCIterator;
-typedef SimSNStarList::iterator SimSNStarIterator;
-typedef CountedRef<SimSNStar> SimSNStarRef;
+typedef SimSNWModelStarList::const_iterator SimSNWModelStarCIterator;
+typedef SimSNWModelStarList::iterator SimSNWModelStarIterator;
+typedef CountedRef<SimSNWModelStar> SimSNWModelStarRef;
 
 
 

@@ -169,7 +169,7 @@ void ModelStar::AddToImage(const Image &image, Image & dest,
 
 
 
-/********************* Simulated SN Star ********************/
+/* ******************** Simulated SN Star ******************* */
 
 SimSNStar::SimSNStar()
 : BaseStar(0.,0.,0.)
@@ -205,8 +205,7 @@ string SimSNStar::WriteHeader_(ostream &pr, const char *i) const
   pr << "# y_gal"<< i << " : host pos on ref" << endl; 
   pr << "# a_gal"<< i << " : galaxie size in pix." << endl; 
   pr << "# fmax_gal"<< i << " : galaxie pix. max value on ref" << endl;
-  string ModelStarFormat = model_on_ref.WriteHeader_(pr,"mod");
-  return BaseStarFormat + ModelStarFormat + " SimSNStar 1 ";
+  return BaseStarFormat + " SimSNStar 1 ";
 }
 
 
@@ -215,7 +214,6 @@ void SimSNStar::writen(ostream & pr) const
   BaseStar::writen(pr);
   pr << ' ' << mag_sn << ' ' << mag_gal << ' ' << x_gal<< ' ' << y_gal 
      << ' ' << a_gal << ' ' << fluxmax_gal ;
-  model_on_ref.writen(pr);
 }
 
 
@@ -228,13 +226,44 @@ void SimSNStar::read_it(istream& r, const char* Format)
   r >> y_gal  ;
   r >> a_gal  ;
   r >>  fluxmax_gal ;
-  model_on_ref.read_it(r, Format);
   return;
 }
 
 SimSNStar*  SimSNStar::read(istream& r, const char *Format)
 {
   SimSNStar *pstar = new SimSNStar();  
+  pstar->read_it(r, Format);
+  return(pstar);
+}
+
+/*     ************** SimSNWModelStar ************** */
+
+string SimSNWModelStar::WriteHeader_(ostream &pr, const char *i) const
+{
+  if (i == NULL) i = "";
+  string SimSNFormat =  SimSNStar::WriteHeader_(pr,i);
+  string ModelStarFormat = model_on_ref.WriteHeader_(pr,"mod");
+  return SimSNFormat + ModelStarFormat + " SimSNWModelStar 1 ";
+  }
+
+
+void SimSNWModelStar::writen(ostream & pr) const
+{
+  SimSNStar::writen(pr);
+  model_on_ref.writen(pr);
+}
+
+
+void SimSNWModelStar::read_it(istream& r, const char* Format)
+{
+  SimSNStar::read_it(r, Format);
+  model_on_ref.read_it(r, Format);
+  return;
+}
+
+SimSNWModelStar*  SimSNWModelStar::read(istream& r, const char *Format)
+{
+  SimSNWModelStar *pstar = new SimSNWModelStar();  
   pstar->read_it(r, Format);
   return(pstar);
 }
@@ -255,7 +284,7 @@ int integer_delta(double xsn, double xmodel)
 
 
 void 
-SimSNStar::MariageToAModelStar(SEStarList const & BellesEtoiles, 
+SimSNWModelStar::MariageToAModelStar(SEStarList const & BellesEtoiles, 
 			       const Gtransfo *Transfo, const Gtransfo *TransfoInv)
 {
   double xsn1, ysn1; //coord sn image 1.
@@ -289,7 +318,7 @@ SimSNStar::MariageToAModelStar(SEStarList const & BellesEtoiles,
 }
 
 void 
-SimSNStar::MariageToAModelStar(SEStarList const & BellesEtoiles)
+SimSNWModelStar::MariageToAModelStar(SEStarList const & BellesEtoiles)
 {
   
   Gtransfo *Transfo = new GtransfoIdentity;    
@@ -344,7 +373,7 @@ static void PrepareDebug()
   return ;
 }
 static
-void DebugModelMethod(const SimSNStar  & sim, const Gtransfo *Transfo)
+void DebugModelMethod(const SimSNWModelStar  & sim, const Gtransfo *Transfo)
 {
   // position of SN on image i
   double Xsn, Ysn ; 
@@ -382,15 +411,15 @@ void DebugModelMethod(const SimSNStar  & sim, const Gtransfo *Transfo)
 
 
 void 
-SimSNStarList::AddWModelToImage(Image &image, 
+SimSNWModelStarList::AddWModelToImage(Image &image, 
 				const Gtransfo *Transfo,  
 				Image * psat,
 				double satlevel, bool print_debug) const
 {
   if (print_debug) PrepareDebug();
-  for (SimSNStarCIterator i = begin(); i != end(); ++i)
+  for (SimSNWModelStarCIterator i = begin(); i != end(); ++i)
     {
-      const SimSNStar *s = *i;
+      const SimSNWModelStar *s = *i;
       if (print_debug) DebugModelMethod(*s,Transfo);
       s->AddWModelToImage(image, Transfo, psat, satlevel);
     }
@@ -402,12 +431,13 @@ SimSNStarList::AddWModelToImage(Image &image,
 
 
 
+
 // Converter :
-BaseStarList* SimSN2Base(SimSNStarList * This)
+BaseStarList* SimSNWModel2Base(SimSNWModelStarList * This)
 { return (BaseStarList*) This;}
 
-const BaseStarList* SimSN2Base(const SimSNStarList * This)
+const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This)
 { return (BaseStarList*) This;} 
 
 #include "starlist.cc" /* since starlist is a template class */
-template class StarList<SimSNStar>;  /* to force instanciation */
+template class StarList<SimSNWModelStar>;  /* to force instanciation */
