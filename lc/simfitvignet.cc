@@ -111,6 +111,7 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius
 
 void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
 {
+
   Resize(Rect.Hx(), Rect.Hy());
 
   DPixel *ppsf = begin();
@@ -208,7 +209,7 @@ void SimFitRefVignet::Resize(const int Hx, const int Hy)
   Vignet::Resize(Hx,Hy);
   
   // resize Psf, Psf.Dx, Psf.Dy if necessary
-  Psf.Tabulate(*Star,*psf,Hx);
+  Psf.Tabulate(*Star,*psf,*this);
 
   // resize Galaxy 
   if(Galaxy.Nx()!=Data.Nx() || Galaxy.Ny()!=Data.Ny())
@@ -224,7 +225,7 @@ void SimFitRefVignet::Load(const PhotStar *Star)
   Vignet::Load(Star);
   
   if (!psf) psf = new DaoPsf(*rim);
-  Psf.Tabulate(*Star, *psf, hx);
+  Psf.Tabulate(*Star, *psf, *this);
   makeInitialGalaxy(); 
   UpdatePsfResid();
 }

@@ -192,7 +192,7 @@ void SimFit::Resize(const double& ScaleFactor)
   int hrefx = VignetRef->Hx();
   int hrefy = VignetRef->Hy();
   
-  
+  if(fabs(ScaleFactor-1)>0.01) {
   if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
     {
       cerr << " SimFit::Resize(" << ScaleFactor 
@@ -209,7 +209,7 @@ void SimFit::Resize(const double& ScaleFactor)
   
   VignetRef->Resize(int(ceil(scale*double(VignetRef->Hx()))),
 		    int(ceil(scale*double(VignetRef->Hy()))));
-  
+  }
   hrefx = VignetRef->Hx();
   hrefy = VignetRef->Hy();
   
@@ -219,8 +219,7 @@ void SimFit::Resize(const double& ScaleFactor)
     (*it)->AutoResize();
   }
   
-  hrefx = VignetRef->Hx();
-  hrefy = VignetRef->Hy();
+
 #ifdef DEBUG
   cout <<   "   SimFit::Resize whattofit = " << fit_flux << "," << fit_pos << "," << fit_gal << "," << fit_sky << endl;
 #endif
@@ -1159,6 +1158,7 @@ bool SimFit::Update(double Factor)
 #ifdef DEBUG
   cout << " SimFit::Update(" << Factor << "): updating parameters \n";
 #endif
+  
 
   // update the galaxy
   if (fit_gal)
@@ -1181,13 +1181,22 @@ bool SimFit::Update(double Factor)
   // update all vignets
   int fluxind = fluxstart;
   int skyind  = skystart;
+  int start = 1;
+  
   for (SimFitVignetIterator it=begin(); it != end(); ++it)
     {
       SimFitVignet *vi = *it;
-
+      
+      if(start && (vi->CanFitFlux)) {
+	cout << "      in SimFit::Update DUMP : " << vi->Star->flux << " " << vi->Star->x << " " << vi->Star->y << endl;
+	start=0;
+      }
+      
       // update flux
-      if ((fit_flux) && (vi->FitFlux)) vi->Star->flux += Vec(fluxind++)*Factor;
-
+      if ((fit_flux) && (vi->FitFlux)) {
+	vi->Star->flux += Vec(fluxind++)*Factor;
+      }
+ 
       // update pos (not really required if not vignetref)
       if ((fit_pos) && !(vi->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
 	cout << "ShiftCenter failure" << endl;
