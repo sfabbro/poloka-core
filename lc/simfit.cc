@@ -81,6 +81,7 @@ SimFit::SimFit()
   Vec = 0;
   Mat = 0;
   MatGal = 0;
+  dont_use_vignets_with_star = false;
 }
 
 void SimFit::SetWhatToFit(unsigned int ToFit)
@@ -91,13 +92,15 @@ void SimFit::SetWhatToFit(unsigned int ToFit)
   if (fit_gal  != (ToFit & FitGal))  { fit_gal  = (ToFit & FitGal ); resize=true; }
   if (fit_sky  != (ToFit & FitSky))  { fit_sky  = (ToFit & FitSky ); resize=true; }
   use_gal |= fit_gal; // use the galaxy if we fit it
+  dont_use_vignets_with_star = false;
 
-//#ifdef DEBUG
+  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
+    (*itVig)->FitPos = fit_pos;
+    (*itVig)->UseGal = use_gal;
+  }
+  
   cout << " SimFit::SetWhatToFit(" << ToFit << ") : fit_flux " << fit_flux << " fit_pos " << fit_pos 
        << " fit_gal " << fit_gal << " fit_sky " << fit_sky << endl;
-//#endif
-
-  //if (resize) Resize(scale);
 }
 
 void SimFit::FindMinimumScale(double WorstSeeing)
@@ -212,11 +215,8 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig)
     {           
       // we will fit the flux according to Lc.Ref and date
-      (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->JulianDate()); 
-      (*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name();
-      (*itVig)->FitPos = fit_pos;
-      (*itVig)->UseGal = use_gal;
-      
+      (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->JulianDate());
+      (*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name(); 
       // this resizes the vignet and update everything (kernel, psf, residus) 
       (*itVig)->ModifiedResid();
       (*itVig)->AutoResize();
@@ -298,7 +298,8 @@ void SimFit::Resize(const double& ScaleFactor)
   galstart = galend = yind;
   if (fit_gal)
     {
-      galstart += 1;
+      if(fluxend)
+	galstart += 1;
       hfx = hrefx;
       hfy = hrefy;
       nfx = 2*hfx+1;
@@ -925,6 +926,9 @@ void SimFit::fillGalGal()
 #endif
   for (SimFitVignetCIterator it = begin(); it != end(); ++it)
     {
+      if((*it)->FitFlux && dont_use_vignets_with_star)
+	continue;
+
       const SimFitVignet *vi = *it;
       int hx = vi->Hx();
       int hy = vi->Hy();
@@ -1032,7 +1036,8 @@ void SimFit::fillGalGal()
       count++;
       cout << "  " << count << "/" << zesize << endl;
 #endif    
-
+       if((*it)->FitFlux && dont_use_vignets_with_star)
+	continue;
 
       const SimFitVignet *vi = *it;
       int hx = vi->Hx();
@@ -1258,6 +1263,8 @@ double SimFit::computeChi2() const
   int count = 0;
   double ic = 0;
   for (SimFitVignetCIterator it=begin(); it != end(); ++it) {
+    if((*it)->FitFlux && dont_use_vignets_with_star)
+      continue;
     ic = (*it)->Chi2();
     c += ic;
     count ++;
@@ -1459,6 +1466,16 @@ bool SimFit::GetCovariance()
   return true;
 }
 
+void SimFit::FitInitialGalaxy() {
+#ifdef FNAME
+  cout << " > SimFit::FitInitialGalaxy()" << endl;  
+#endif
+  SetWhatToFit(FitGal);
+  dont_use_vignets_with_star = true;
+  DoTheFit();
+}
+
+
 void SimFit::DoTheFit()
 {
 #ifdef FNAME
@@ -1581,9 +1598,13 @@ ostream& operator << (ostream& Stream, const SimFit &MyFit)
 
   Stream << " SimFit with " << MyFit.size() << " vignettes: " << endl
 	 << "   Params : npar" << endl
-	 << " -----------------------" << endl
-	 << "     flux : " << MyFit.fluxend - MyFit.fluxstart + 1 << endl
-	 << " position : " << MyFit.yind - MyFit.fluxend << endl
+	 << " -----------------------" << endl;
+  if(MyFit.fluxend>0)
+    Stream << "     flux : " << MyFit.fluxend - MyFit.fluxstart + 1 << endl;
+  else
+    Stream << "     flux : " << 0 << endl;
+
+  Stream << " position : " << MyFit.yind - MyFit.fluxend << endl
 	 << "   galaxy : " << MyFit.nfx   << "X"  << MyFit.nfy << endl
 	 << "      sky : " << MyFit.skyend -  MyFit.galend  << endl
 	 << " -----------------------" << endl

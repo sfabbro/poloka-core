@@ -37,6 +37,7 @@ private:
   bool fit_sky;           // whether we fit the sky
   bool fit_pos;           // whether we fit the point source position
   bool use_gal;           // one can use the galaxy model but not fit it
+  bool dont_use_vignets_with_star; // this when you want to fit the galaxy only, see 
 
   // vector and matrices for the system Mat*Params=Vec
   double *Vec;            // vector r.h.s and Params when solved
@@ -161,6 +162,10 @@ public:
   ostream& DumpMatrices(ostream& Stream=cout) const; 
   
   void UseGalaxyModel(bool useit = true) {use_gal = useit;};
+  
+  //! fit initial galaxy using only vignets without burning star
+  void SimFit::FitInitialGalaxy();
+  
 
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);

@@ -104,13 +104,23 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 
 void SimFitPhot::operator() (LightCurve& Lc)
 {
+#ifdef DEBUG
+    cout << " ============= SimFitPhot::operator() zeFit.Load =============" << endl;
+#endif  
+  zeFit.Load(Lc);
   
-
   switch (Lc.Ref->type)
     {
     case 0: // sn+galaxy
-      zeFit.SetWhatToFit(FitFlux);
-      zeFit.UseGalaxyModel(false);
+#ifdef DEBUG
+      cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
+#endif
+      zeFit.FitInitialGalaxy(); // first fit inital galaxy
+#ifdef DEBUG
+      cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
+#endif
+      zeFit.SetWhatToFit(FitFlux); // then flux
+      zeFit.UseGalaxyModel(true);
       break;
     case 1: //star 
       zeFit.SetWhatToFit(FitFlux | FitPos         );
@@ -124,16 +134,11 @@ void SimFitPhot::operator() (LightCurve& Lc)
     }
   
   if(Lc.Ref->type == 0) {
-#ifdef DEBUG
-    cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
-#endif
-     zeFit.Load(Lc);
      zeFit.DoTheFit();
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
-     zeFit.SetWhatToFit(FitFlux | FitGal | FitPos);    
-     zeFit.Load(Lc,true); // keep star (so keep fluxes)
+     zeFit.SetWhatToFit(FitFlux | FitGal | FitPos); // then everything    
      zeFit.DoTheFit();
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() Robustify  =============" << endl;
@@ -147,7 +152,6 @@ void SimFitPhot::operator() (LightCurve& Lc)
      zeFit.DoTheFit();
      
   }else{
-    zeFit.Load(Lc);
     zeFit.DoTheFit();   
   }
   string dir = Lc.Ref->name;
