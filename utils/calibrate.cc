@@ -108,8 +108,6 @@ int main(int argc, char **argv)
   // get keys for mag
   string band = header.KeyVal("TOADBAND");
   string mag_key=getkey("m"+band,catalog);
-  string error_key=getkey("em"+band,catalog);
-  string nmes_key=getkey("nmes"+band,catalog);
   
   BaseStar star;
   int count_total=0;
@@ -206,6 +204,8 @@ int main(int argc, char **argv)
   
   // now we want to write many many things, let's make a list
   ofstream stream(matchedcatalogname.c_str());
+  stream << "@NSTARS " << count_ok << endl;
+  stream << "@NIMAGES " << dbimages.size() << endl;
   stream << "#x :" << endl;
   stream << "#y :" << endl;
   stream << "#flux :" << endl;
