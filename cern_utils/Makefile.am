@@ -19,7 +19,7 @@ if USECERNLIB
 
 if AUTOINSTALL
 
-@prefix@/bin/% : .libs/%
+@prefix@/bin/% : %
 	ln -fs @abs_builddir@/.libs/$* @prefix@/bin/$*
 
 all   : $(patsubst %,@prefix@/bin/%,${bin_PROGRAMS})

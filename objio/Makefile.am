@@ -58,7 +58,7 @@ if AUTOINSTALL
 @prefix@/include/% : @abs_builddir@/%
 	ln -fs @abs_builddir@/$* @prefix@/include/$*
 
-@prefix@/bin/% : .libs/%
+@prefix@/bin/% : %
 	ln -fs @abs_builddir@/.libs/$* @prefix@/bin/$*
 
 all :  $(patsubst %,@prefix@/bin/%,${bin_PROGRAMS}) $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadio.*)) $(patsubst %,@prefix@/include/%,${include_HEADERS})
