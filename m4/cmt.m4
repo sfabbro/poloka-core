@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cmt.m4,v 1.6 2004/05/19 06:16:26 guy Exp $
+# $Id: cmt.m4,v 1.7 2004/06/28 14:55:52 guy Exp $
 # 
 # autoconf macro to check  cmt
 # 
@@ -56,5 +56,11 @@ AC_SUBST(CMT_CFLAGS)
 AC_SUBST(CMT_LDFLAGS)
 
 AC_MSG_RESULT(ok)
+
+AC_MSG_NOTICE(CMT_CFLAGS= $CMT_CFLAGS)
+AC_MSG_NOTICE(CMT_LDFLAGS= $CMT_LDFLAGS)
+
+
+
 ]
 )
