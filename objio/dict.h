@@ -60,11 +60,6 @@ public:
   std::string                      templateSymbolicArg(int i) const { return symbolicTypes_[i]; }
   std::string                      templateRealArg(int i) const { return realTypes_[i]; }
   
-  // FIXME: nrl -- 03/2004 put this in the code generator
-  std::string                      templateSymbolicArgList(bool first, bool last) const;
-  std::string                      templateSymbolicArgListDecl(bool first, bool last) const;
-
-  
   bool                             operator==(dict const&) const;
   
   void                             update(templateInstantiation const&);
@@ -74,6 +69,10 @@ public:
   void                             read(dict_reader_base const&);
   
   void                             print(int verbosity) const;
+  
+  // FIXME: nrl -- 03/2004 put this in the code generator
+  std::string                      templateSymbolicArgList(bool first, bool last) const;
+  std::string                      templateSymbolicArgListDecl(bool first, bool last) const;
   
 protected:
   unsigned int version_;

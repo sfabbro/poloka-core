@@ -108,7 +108,7 @@ main(int argc, char** argv)
     }
   if(optind>=argc) usage();
   headerName=argv[optind];
-
+  
   std::string cmd;
   std::string tmp_name;  
   std::stringstream sstrm;
@@ -128,9 +128,9 @@ main(int argc, char** argv)
     cg.openOutputFiles(outputFileName);
   }
   
-  dict d;
   int i,sz=dr.size();
   for(i=0;i<sz;i++) {
+    dict d;
     dr.read(d);
     if(list && !list_members) 
       d.print(0);

@@ -32,7 +32,6 @@ xmlstream::~xmlstream()
 }
 
 
-
 void  xmlstream::open(std::string const& filename, int mode, int compression)
 {
   close();

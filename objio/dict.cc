@@ -186,9 +186,12 @@ void dict::member_t::copy(dict::member_t const& d)
 
 void dict::member_t::update()
 {
-  if( isPointer || isReference || arraySize.size() )
+  if( isPointer || isReference )
     isPersistent=false;
   else
+    isPersistent=true;
+  
+  if( arraySize.size() == 1 )
     isPersistent=true;
 }
 

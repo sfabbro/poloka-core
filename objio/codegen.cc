@@ -81,16 +81,16 @@ void codegen::generatePersister(dict const& d)
 {
   std::vector<templateInstantiation> tvec;
   checkConfigFile_(d.name(), tvec);
-  std::cout << " checkConfigFile_... tvec.size()="
-	    << tvec.size() << std::endl;
   
-  int ii,sz=(int)tvec.size();
-  for(ii=0;ii<sz;ii++)
-    std::cout << tvec[ii].fullSymbolicName() 
-	      << " --> " 
-	      << tvec[ii].fullRealName()
-	      << std::endl;
+  //  std::cout << " checkConfigFile_... tvec.size()="
+  //	    << tvec.size() << std::endl;
   
+  //  int ii,sz=(int)tvec.size();
+  //  for(ii=0;ii<sz;ii++)
+  //    std::cout << tvec[ii].fullSymbolicName() 
+  //	      << " --> " 
+  //	      << tvec[ii].fullRealName()
+  //	      << std::endl;
   
   openClassHeaderFile(d.name());
   if(!d.isTemplate()) {
@@ -191,8 +191,46 @@ void codegen::classPersisterDecl_(dict const& dict_)
 {
   if(!dict_.isPersistent()) { return; }
   
-  unsigned int i;
+  unsigned int i,j;
   std::string nm;
+
+  // the read and write functions
+  class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
+	       << "void write(obj_output<IOS>& oo,"
+	       << dict_.fullSymbolicName() << " const& p, const char* name=0)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << dict_.fullSymbolicName() << ", IOS> pp(p);" << std::endl
+	       << "  oo.write(pp);" << std::endl
+	       << "  return oo;" << std::endl
+	       << "}" << std::endl << std::endl;
+  
+  class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
+	       << "void read(obj_input<IOS> const& oi,"
+	       << dict_.fullSymbolicName() << "& p)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << dict_.fullSymbolicName() << ",IOS> pp(p);" << std::endl
+	       << "  oi.read(pp);" << std::endl
+	       << "  return oi;" << std::endl
+	       << "}" << std::endl << std::endl;
+
+  // the << and >> operators
+  class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
+	       << "obj_output<IOS>& operator<<(obj_output<IOS>& oo,"
+	       << dict_.fullSymbolicName() << " const& p)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << dict_.fullSymbolicName() << ", IOS> pp(p);" << std::endl
+	       << "  oo.write(pp);" << std::endl
+	       << "  return oo;" << std::endl
+	       << "}" << std::endl << std::endl;
+  
+  class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
+	       << "obj_input<IOS> const& operator>>(obj_input<IOS> const& oi,"
+	       << dict_.fullSymbolicName() << "& p)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << dict_.fullSymbolicName() << ",IOS> pp(p);" << std::endl
+	       << "  oi.read(pp);" << std::endl
+	       << "  return oi;" << std::endl
+	       << "}" << std::endl << std::endl;
   
   class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
 	       << "class persister<" << dict_.fullSymbolicName() << ",IOS> : "
@@ -261,12 +299,16 @@ void codegen::classPersisterDecl_(dict const& dict_)
   for(i=0;i<dict_.baseList().size();i++) {
     nm = dict_.baseList()[i];
     class_ofs_h_ << "    {persister<" << nm << ",IOS> p(*(" << nm << "*)obj_);"
-		 << "oo.write(p);}" << std::endl;
+		 << "write(oo,p);}" << std::endl;
   }
   for(i=0;i<dict_.size();i++)
-    if( dict_.member(i).isPersistent )
-      class_ofs_h_ << "    oo.write(obj_->" << dict_.member(i).name
+    if( dict_.member(i).isPersistent && dict_.member(i).arraySize.size()==0 )
+      class_ofs_h_ << "    write(oo, obj_->" << dict_.member(i).name
 		   << ", \"" << dict_.member(i).name << "\");" << std::endl;
+    else if( dict_.member(i).isPersistent && dict_.member(i).arraySize.size()==1 )
+      class_ofs_h_ << "    write(oo, obj_->" << dict_.member(i).name
+		   << "," << dict_.member(i).arraySize[0] <<  ", \"" << dict_.member(i).name << "\");" << std::endl;
+  
   class_ofs_h_ << "}" 
 	       << std::endl << std::endl;
   
@@ -275,14 +317,17 @@ void codegen::classPersisterDecl_(dict const& dict_)
   for(i=0;i<dict_.baseList().size();i++) {
     nm = dict_.baseList()[i];
     class_ofs_h_ << "     {persister<" << nm << ",IOS> p(*(" << nm << "*)obj_);"
-		 << "oi.read(p);}" << std::endl;
+		 << "read(oi,p);}" << std::endl;
   }
   for(i=0;i<dict_.size();i++) 
-    if( dict_.member(i).isPersistent )
-      class_ofs_h_ << "    oi.read(obj_->" << dict_.member(i).name << ");" << endl;
+    if( dict_.member(i).isPersistent && dict_.member(i).arraySize.size()==0 )
+      class_ofs_h_ << "    read(oi, obj_->" << dict_.member(i).name << ");" << endl;
+    else if( dict_.member(i).isPersistent && dict_.member(i).arraySize.size()==1 )
+      class_ofs_h_ << "    read(oi, obj_->" << dict_.member(i).name
+		   << "," << dict_.member(i).arraySize[0] <<  ");" << std::endl;
+  
   class_ofs_h_ << "}"
 	       << std::endl << std::endl;
-  
   
   // the friends
   class_ofs_h_ << "  template<class ZZ> friend class obj_input;"  << std::endl
@@ -296,25 +341,6 @@ void codegen::classPersisterDecl_(dict const& dict_)
   
   // end of persister<OBJ,IOS>
   class_ofs_h_ << "};" << std::endl << std::endl;
-  
-  // the << and >> operators
-  class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
-	       << "obj_output<IOS>& operator<<(obj_output<IOS>& oo,"
-	       << dict_.fullSymbolicName() << " const& p)" << std::endl
-	       << "{" << std::endl
-	       << "  persister<" << dict_.fullSymbolicName() << ", IOS> pp(p);" << std::endl
-	       << "  oo.write(pp);" << std::endl
-	       << "  return oo;" << std::endl
-	       << "}" << std::endl << std::endl;
-  
-  class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
-	       << "obj_input<IOS> const& operator>>(obj_input<IOS> const& oi,"
-	       << dict_.fullSymbolicName() << "& p)" << std::endl
-	       << "{" << std::endl
-	       << "  persister<" << dict_.fullSymbolicName() << ",IOS> pp(p);" << std::endl
-	       << "  oi.read(pp);" << std::endl
-	       << "  return oi;" << std::endl
-	       << "}" << std::endl << std::endl;
   
   ofs_h_ << "#include \"" << dict_.name() << "__persister.h\"" << std::endl;
 }

@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.4 2004/03/01 22:01:44 nrl Exp $
+// $Id: xmlstream.h,v 1.5 2004/03/02 12:40:16 nrl Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -51,13 +51,16 @@ public:
   inline void     read(float8& v) const;
   inline void     read(std::string&) const;
   
+  template<class T>
+  inline void     read(T*&) const;
+  
   inline void     skip() const;
   
   
   inline void     write_start_object_tag(std::string const& name, unsigned int version, void const* addr=0);
   inline void     write_end_object_tag();
   
-  inline void     write_start_raw_pointer_tag(const char* name=0, void const* addr=0);
+  inline void     write_start_raw_pointer_tag(const char* name, void const* addr=0);
   inline void     write_end_raw_pointer_tag();
   
   inline void     write_start_collection_tag(unsigned int size, const char* name=0, void const* addr=0);
@@ -74,7 +77,9 @@ public:
   inline void     write(float4 v, const char* name=0, void const* addr=0);
   inline void     write(float8 v, const char* name=0, void const* addr=0);
   inline void     write(const std::string& v, const char* name=0, void const* addr=0);
-
+  
+  template<class T>
+  inline void     write(T const*, const char* name=0);
   
 private:
   xmlTextReaderPtr reader_;  
@@ -271,7 +276,7 @@ void xmlstream::write_start_raw_pointer_tag(const char* name, void const* addr)
   if(name) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"name", "%s", name);
   if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
 					     "%lu", addr);
-  
+  xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
 
@@ -349,6 +354,31 @@ void xmlstream::write(std::string const& v, const char* name, void const* addr)
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
+
+template<class T>
+inline void xmlstream::write(T const* t, const char* name)
+{
+  assert_writer_ok;
+  
+  if(name==0)
+    xmlTextWriterStartElement(writer_, (xmlChar*)"address");
+  else {
+    xmlTextWriterStartElement(writer_, (xmlChar*)name);
+  }
+  xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"v","%lu",(void*)t);
+  xmlTextWriterEndElement(writer_);
+  xmlTextWriterWriteFormatString(writer_, "\n");
+}
+
+
+//template<class T>
+//void xmlstream::write(T const* t)
+//{
+//  assert_writer_ok;
+//  if(name==0) {
+//    
+//  }
+//}
 
 #undef simple_type_read_def
 #undef assert_reader_ok

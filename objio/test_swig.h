@@ -99,6 +99,19 @@ private:
   template<class Z,class ZZ> friend class persister;
 };
 
+
+
+class Tutu {
+public:
+  double toto;
+  double glop[220];
+  float  gloups[20];
+  
+  static const unsigned short __version__=1;
+  template<class Z,class ZZ> friend class persister;
+};
+
+
 #endif
 
 

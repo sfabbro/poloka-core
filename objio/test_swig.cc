@@ -37,9 +37,11 @@ int main()
   std::vector<std::string> string_vector;
   map<std::string,short> string_short_map;
   std::list< std::vector< std::map<string,unsigned int> > > stupidly_complex_example;
-
+  
   B<int> b;
   BB<string,string> bb;
+  
+  Tutu tutu;
   
   p.x()=2;
   p.y()=5.243;
@@ -86,6 +88,7 @@ int main()
   oo << string_short_map;
   oo << b;
   oo << bb;
+  oo << tutu;
   
   Point* ppp = &s;
   oo.write(ppp);
