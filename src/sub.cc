@@ -43,23 +43,14 @@ Here is an example of a "subfile":
 # subtraction for fieldP1ccd9
 REF
 502809o09 <SubImage>
-502810o09
-502811o09
-502813o09
-502814o09
-502815o09
 502816o09
 502817o09
 NEW1
 504604o09
 504605o09
-504606o09
-504607o09
 NEW2
 504613o09
 504614o09
-504615o09
-504616o09
 #ADDFAKES
 ONE SUBTRACTION
 #FIXGEO
@@ -68,6 +59,21 @@ ONE SUBTRACTION
 
 In this specific example, the split of images between NEW1 and NEW2 is
 irrelevant since we run a "simple" subtraction (as specified by ONE SUBTRACTION). ADDFAKES is commented and no fakes will be added.
+
+Another Example:
+
+ 
+\code
+REF
+master_LDP_D3_r_run16 ref=[2262:4544,10686:16051]
+NEW SWARP_STACK
+744309o00
+744309o01
+744309o09
+744309o10
+744309o18
+\endcode
+
 
 
 */
