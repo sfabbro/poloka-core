@@ -83,7 +83,6 @@ AC_CONFIG_FILES([Makefile
                  cern_stuff/Makefile
                  dao_stuff/Makefile
                  datacards/Makefile
-                 dbutils/Makefile
                  doc/Makefile
                  doc/Doxyfile
                  objio/Makefile

@@ -1,4 +1,4 @@
-EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h
+EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
 
 #AM_CPPFLAGS = -I/home/nrl/Work/frogs/sex/v222/src
