@@ -12,7 +12,7 @@
 #include "toadtypes.h"
 #include "dict.h"
 #include "persister.h"
-#include "objio.h"
+//#include "objio.h"
 
 #include "xmlexceptions.h"
 #include "xmlstream.h"
