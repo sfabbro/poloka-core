@@ -77,7 +77,8 @@ int main(int argc, char **argv)
     while(getline(lcfile,line)) {
       if(line[0]=='#')
 	continue;
-      sscanf(line.c_str(),"%f %f %f",&x,&y,&flux);
+      if(sscanf(line.c_str(),"%f %f %f",&x,&y,&flux)!=3)
+	sscanf(line.c_str(),"x %f y %f flux %f",&x,&y,&flux); // older version
       if(flux>fluxmax)
 	fluxmax=flux;
     }
