@@ -28,6 +28,7 @@ class CalibratedStar : public BaseStar {
   CalibratedStar(BaseStar& toto) : BaseStar(toto) {};
   double ra,dec;
   double u,g,r,i,z;
+  int id;
 };
 
 int main(int argc, char **argv)
@@ -57,7 +58,7 @@ int main(int argc, char **argv)
   FitsHeader header(lclist.RefImage->FitsName());
   // prepare transfo and frames for stars' selection
   Frame W = lclist.RefImage->UsablePart();
-  W = W.Rescale(0.5);
+  W = W.Rescale(0.8); // remove boundaries
   Gtransfo* Pix2RaDec=0;
   WCSFromHeader(header, Pix2RaDec);
   Gtransfo *RaDec2Pix = Pix2RaDec->InverseTransfo(0.01,W);
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
 
   
   BaseStar star;
-  int count_total=catalog.size();
+  int count_total=0;
   int count_total_stars=0;
   int count_ok=0;
   
@@ -85,6 +86,8 @@ int main(int argc, char **argv)
   
   for(DictFileCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
 
+    count_total++;
+    
     // apply a cut on cgal
     if(double(entry->Value("cgalcat"))>0.2) continue; // not a nice star
     
@@ -140,11 +143,12 @@ int main(int argc, char **argv)
     cstar.i=entry->Value("i");
     cstar.z=entry->Value("z");
     cstar.flux=star.flux;
-    
+    cstar.id=count_total;
+
     //keep a link between the two of them
     assocs[(RefStar*)rstar] = cstar;
-    if(count_ok>1)
-      break;
+    //if(count_ok>10)
+    //break;
   }
   
   cout << count_total << " objects in the catalog" << endl;
@@ -158,20 +162,50 @@ int main(int argc, char **argv)
   // does everything
   for_each(lclist.begin(), lclist.end(), doFit);
   
-  // now we want to write many many things
-  
+  // now we want to write many many things, let's make a list
+  ofstream stream("calibration.list");
+  stream << "#star :" << endl;
+  stream << "#ra :" << endl;
+  stream << "#dec :" << endl;
+  stream << "#u :" << endl;
+  stream << "#g :" << endl;
+  stream << "#r :" << endl;
+  stream << "#i :" << endl;
+  stream << "#z :" << endl;
+  stream << "#img :" << endl;
+  stream << "#flux :" << endl;
+  stream << "#error :" << endl;
+  stream << "#end" <<endl;
   // first let's try to compute the ZP
   double weight;
   double sumzp=0;
   double sumweight=0;
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
-    cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
+    //cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
+    int count_img=0;
     for (LightCurve::const_iterator it = ilc->begin(); it != ilc->end(); ++it) { // loop on points
+      count_img++;
       const Fiducial<PhotStar> *fs = *it;
       if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
 	continue;
-      cout << cstar.flux << " " << fs->flux << " " << sqrt(fs->varflux) << endl;
+      
+      stream << cstar.id << " ";
+      stream << cstar.ra << " ";
+      stream << cstar.dec << " ";
+      stream << cstar.u << " ";
+      stream << cstar.g << " ";
+      stream << cstar.r << " ";
+      stream << cstar.i << " ";
+      stream << cstar.z << " ";
+      stream << count_img << " ";
+      stream << fs->flux << " ";
+      if(fs->varflux>0)
+	stream << sqrt(fs->varflux) << " ";
+      else
+	stream << 0 << " ";
+      stream << endl;
+      
       weight = 1./fs->varflux;
       sumweight += weight;
       sumzp += 2.5*log10(fs->flux/cstar.flux)*weight;
@@ -179,7 +213,7 @@ int main(int argc, char **argv)
   }
   double zp = sumzp/sumweight;
   cout << "zp=" << zp << endl;
-  
+  stream.close();
   return EXIT_SUCCESS;
 }
 
