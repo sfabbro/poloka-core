@@ -1,9 +1,6 @@
 #include <iomanip>
 #include "vignet.h"
 
-#define FNAME
-#define DEBUG
-
 void Vignet::Allocate()
 {
 #ifdef FNAME
@@ -140,14 +137,9 @@ double Vignet::Chi2() const
   if (Resid.IsEmpty() || Weight.IsEmpty()) return -1.;
 
   double chi2 = 0.;
-  DPixel *pw, *pres;
-  for (int j=-hy; j<=hy; ++j)
-    {
-      pw   = &Weight(-hx,j);
-      pres = &Resid (-hx,j);
-	for (int i=-hx; i<=hx; ++i, ++pres) 
-	  chi2 += *pw++ * (*pres) * (*pres) ;
-    }
+  DPixel *pw=Weight.begin(), *pres=Resid.begin();
+  for (int i=Nx()*Ny(); i; --i, ++pres)
+    chi2 += *pw++ * (*pres) * (*pres);
   
   return chi2;
 }
@@ -157,18 +149,14 @@ double Vignet::MeanResid() const
   
   double mean = 0.;
   double npix = 0.;
-  DPixel *pres;
-  for (int j=-hy; j<=hy; ++j)
+  DPixel *pres = Resid.begin();
+  for (int i=Nx()*Ny(); i; --i)
     {
-      pres = &Resid(-hx,j);
-	for (int i=-hx; i<=hx; ++i) 
-	  {
-	    mean += (*pres++);
-	    npix++;
-	  }
+      mean += (*pres++);
+      npix++;
     }
-    
   if (npix != 0.) return mean/npix;
+
   return 0.;
 }
   
@@ -192,9 +180,10 @@ ostream& operator << (ostream & stream, const Vignet& Vig)
 	 << " rect = " << (Window) Vig << endl;
   
   if (!Vig.Resid.IsEmpty())
-    stream << " chi2 = " << Vig.Chi2() 
+    stream << " Resid chi2 = " << Vig.Chi2() 
 	   << " mean resid = " << Vig.MeanResid() << endl;
     
+  if (Vig.rim)  stream << " Image " << Vig.rim->Name() << endl;
   if (Vig.Star) stream << " Star " << *Vig.Star << endl;
   
   return stream;
