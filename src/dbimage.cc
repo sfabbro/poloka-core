@@ -387,19 +387,29 @@ static string GzTestedName(string Name)
   else return gzname;
 }
 
+static string FzTestedName(string Name)
+{
+  // By default, if nothing, returns fzname
+  string fitsname =   Name+".fits"; 
+  string fzname = Name+".fz"; 
+  if (FileExists(fitsname)) return fitsname;
+  else return fzname;
+}
+
+
 string DbImage::FitsImageName(const DbImageKind Kind) const 
 {
   // commented out for "virtual" image installation
   // if (!IsValid()) return string(""); 
-if (Kind == Raw)        return directory + "raw.fits";
+if (Kind == Raw)        return FzTestedName(directory + "raw.fits");
 if (Kind == Elixir)     return ElixirName();
-if (Kind == Calibrated) return directory + "calibrated.fits";
+if (Kind == Calibrated) return FzTestedName(directory + "calibrated");
 return "";
 }
 
 string DbImage::ElixirName() const
 {
-  return directory + "elixir.fits";
+  return FzTestedName(directory + "elixir");
 }
 
 string DbImage::ImageCatalogName(const DbImageCatalogKind Kind) const 
@@ -477,7 +487,7 @@ return directory + "bad.fits";
 string DbImage::FitsWeightName() const
 {
 if (!IsValid()) return string("");
-return directory + "weight.fits";
+return FzTestedName( directory + "weight");
 }
 
 string DbImage::FitsCosmicName() const
