@@ -5,6 +5,7 @@
 #include "kernelfit.h"
 #include "basestar.h"
 #include "vutils.h"
+#include "matvect.h"
 
 //#define DEBUG
 
@@ -24,32 +25,6 @@ for (int i=0; i<nblock; ++i)
  for (int i=0; i<remainder; ++i) {sum+= (*x)*(*y); ++x; ++y;}
 return sum;
 }  
-
-
-class Mat
-{
-  double *data;
-  int d1,d2;
-public :
-  Mat(const int D1, const int D2) : d1(D1),  d2(D2)
-  { data = new double[d1*d2]; memset(data,0,sizeof(double)*d1*d2); };
-  ~Mat() { delete [] data;}
-  double operator () (const int i, const int j) const { return data[i*d1+j];}
-  double& operator () (const int i, const int j) { return data[i*d1+j];}
-};
-
-class Vect
-{
-  double *data;
-  int d;
-public :
-  Vect(const int D): d(D)
-  { data = new double[d]; memset(data,0,sizeof(double)*d); };
-  ~Vect() { delete [] data;}
-  double operator () (const int i) const { return data[i];}
-  double& operator () (const int i) { return data[i];}
-};
-
 
 int KernelFit::FitDifferentialBackground(const double NSig)
 {  
