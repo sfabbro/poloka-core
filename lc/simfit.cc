@@ -68,6 +68,9 @@ SimFit::SimFit()
   fluxend = galend = skyend = 0;
   scale = 1., minscale = 0.; chi2 = 1e29;
   nfx = nfy = hfx = hfy = nparams = ndata = 0;
+  Vec = 0;
+  Mat = 0;
+  MatGal = 0;
 }
 
 void SimFit::SetWhatToFit(const unsigned int ToFit)
@@ -116,6 +119,19 @@ void SimFit::FindMinimumScale(const double &WorstSeeing)
 
 }
 
+double SimFit::GetWorstSeeing() {
+#ifdef FNAME
+  cout << " > SimFit::GetWorstSeeing(LightCurve& Lc)" << endl;
+#endif 
+  double worstSeeing = 0;
+  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
+    double currentseeing = (*itVig)->Image()->Seeing();
+    if(currentseeing>worstSeeing)
+      worstSeeing=currentseeing;
+  }
+  return worstSeeing;
+}
+
 void SimFit::Load(LightCurve& Lc)
 {
 #ifdef FNAME
@@ -127,27 +143,52 @@ void SimFit::Load(LightCurve& Lc)
       cerr << " SimFit::Load() : Error : trying to load a LightCurve of different size \n";
       return;
     }
-  VignetRef.Load(Lc.Ref);
-  VignetRef.UpdatePsfResid();
+  
+  // get worst seeing to set the size of reference vignette
+  double worstSeeing = GetWorstSeeing();
 
-  LightCurve::const_iterator itLc = Lc.begin();
-
+  // define the size of the reference vignet
+  // 4 x fwhm 
+  int radius = int(ceil(4.*2.3548*worstSeeing));
 #ifdef DEBUG
-  const PhotStar* star = (*itLc);
-  cout << " SimFit::Load star = " << *star << endl;
+  cout << " in SimFit::Load, Reference vignet radius is = " << radius << endl;
 #endif
 
+  // the VignetRef has already been build
+  VignetRef.SetStar(Lc.Ref); // just set the star
+  VignetRef.Resize(radius,radius); // now resize, this reloads data, update psf, and makeInitialGalaxy
+  
+  int hx_ref = VignetRef.Hx();
+  int hy_ref = VignetRef.Hy();
+  
+  
+  // now load all kernels to get the maximum kernel size
+  LightCurve::const_iterator itLc = Lc.begin();
+  int hx_kernel,hy_kernel;
+  
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig, ++itLc)
     {      
-      (*itVig)->Load(*itLc);
+      //(*itVig)->Load(*itLc); // this does not modify the kernel so I would better use SetStar which does nothing but set the star
+      (*itVig)->SetStar(*itLc); // just set the star
+      (*itVig)->BuildKernel(VignetRef.Image()); // rebuild kernel 
+      
+      hx_kernel = (*itVig)->Kern.HSizeX();
+      hy_kernel = (*itVig)->Kern.HSizeY();
+      (*itVig)->Resize(hx_ref-hx_kernel,hy_ref-hy_kernel); // now resize vignet, this will actually read the data
+      
+      
       (*itVig)->FitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->JulianDate());
       (*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name();
-      (*itVig)->BuildKernel(VignetRef.Image());
+      
       if      (( fit_pos) && ( fit_gal)) (*itVig)->UpdatePsfResid(VignetRef);
       else if (( fit_pos) && (!fit_gal)) (*itVig)->UpdatePsfResid(VignetRef.Psf);
       else if ((!fit_pos) && ( fit_gal)) (*itVig)->UpdateResid(VignetRef.Galaxy);
       else                               (*itVig)->UpdateResid();
     }
+  
+  //FindMinimumScale(worstSeeing); // a quoi ca sert ??
+  minscale = 1;
+  
 }
 
 void SimFit::Resize(const double &ScaleFactor)
@@ -157,31 +198,38 @@ void SimFit::Resize(const double &ScaleFactor)
   cout << " SimFit::Resize(" << ScaleFactor << ");" << endl;
 #endif
  
+  int hrefx = VignetRef.Hx();
+  int hrefy = VignetRef.Hy();
 
+  if(fabs(scale-1)<0.01) {
+#ifdef DEBUG
+    cout << " actually do not resize " << endl;
+#endif    
+  }else{
   if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
     {
       cerr << " SimFit::Resize(" << ScaleFactor 
 	   << ") : Warning: nothing to fit, not resizing. " << endl;
       return;
     }
-
+  
   scale = max(ScaleFactor, minscale);
   cout << " SimFit::Resize(" << ScaleFactor 
        << "): with chosen scale factor = " << scale << endl;
-
+  
   // resize vignets
   
   VignetRef.Resize(int(ceil(scale*double(VignetRef.Hx()))),
 		   int(ceil(scale*double(VignetRef.Hy()))));
   
-  int hrefx = VignetRef.Hx();
-  int hrefy = VignetRef.Hy();
+  hrefx = VignetRef.Hx();
+  hrefy = VignetRef.Hy();
   for (SimFitVignetIterator it = begin(); it != end(); ++it) 
     {
       SimFitVignet *vi = *it;
       vi->Resize(hrefx - vi->Kern.HSizeX(), hrefy - vi->Kern.HSizeY());
     }
-
+  }
   // recompute matrix indices
   hfx = hfy = nfx = nfy = 0;
   fluxstart = fluxend = 0;
