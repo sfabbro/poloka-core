@@ -1,12 +1,17 @@
 // -*- C++ -*-
-// $Id: test_cppstuff.cc,v 1.2 2004/03/06 23:15:43 nrl Exp $
+// $Id: test_cppstuff.cc,v 1.3 2004/03/08 13:20:44 guy Exp $
 // 
 // \file test_cppstuff.cc
 // 
+
+#include <iostream>
+#include <vector>
+#include <string>
 #include "cpptype.h"
 #include "cppclass.h"
 #include "cppswigclassreader.h"
 
+using namespace std;
 
 int main()
 {
