@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.6 2004/03/02 12:40:16 nrl Exp $
+// $Id: objio.h,v 1.7 2004/03/02 18:49:13 nrl Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/02 12:40:16 $
+// Last modified: $Date: 2004/03/02 18:49:13 $
 // by:            $Author: nrl $
 // 
 #ifndef OBJIO_H
@@ -491,6 +491,21 @@ void read(obj_input<IOS> const& io, std::map<T,U>& m)
 }
 
 
+
+// FIXME: this may be dangerous
+template<class IOS, class T>
+void write(obj_output<IOS>& oo, T const& t, const char* name=0)
+{
+  persister<T,IOS> pp(t);
+  oo.write(pp,name);
+}
+
+template<class IOS, class T>
+void read(obj_input<IOS> const& io, T& t)
+{
+  persister<T,IOS> pp(t);
+  io.read(pp);
+}
 
 #endif
 

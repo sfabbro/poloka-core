@@ -21,5 +21,6 @@
 static const unsigned short __version__=id;\
 template<class U,class V>friend class persister;\
 
+
 #endif
 

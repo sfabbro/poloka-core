@@ -19,6 +19,7 @@ public:
   virtual unsigned int size() const=0;
   std::string          filename() const { return filename_; }
   inline virtual void  read(dict& d) const;
+  virtual void         close()=0;
   
 protected:
   std::string filename_;

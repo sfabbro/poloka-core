@@ -40,8 +40,16 @@ swig_dict_reader::swig_dict_reader(std::string const& filename)
 
 swig_dict_reader::~swig_dict_reader()
 {
-  xmlXPathFreeContext(ctx_);
-  xmlFreeDoc(doc_);
+  //  xmlXPathFreeContext(ctx_);
+  //  xmlFreeDoc(doc_);
+}
+
+
+void swig_dict_reader::close()
+{
+  xmlCleanupParser();
+  xmlXPathFreeContext(ctx_); ctx_=0;
+  xmlFreeDoc(doc_); doc_=0;
 }
 
 

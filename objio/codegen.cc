@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <map>
 
 #include "codegen.h"
 
@@ -193,7 +194,21 @@ void codegen::classPersisterDecl_(dict const& dict_)
   
   unsigned int i,j;
   std::string nm;
-
+  
+  // the includes 
+  std::map<std::string,bool> types_;
+  for(i=0;i<dict_.size();i++) {
+    std::map<std::string,bool>::iterator it;
+    it = types_.find(dict_.member(i).type);
+    if(it == types_.end() ) {
+      class_ofs_h_ << "#ifdef " << dict_.member(i).type << "__is__persistent" << std::endl
+		   << "#include \"" << dict_.member(i).type << "__persister.h\"" << std::endl
+		   << "#endif" << std::endl;
+      types_[dict_.member(i).type]=true;
+    }
+  }
+  class_ofs_h_ << std::endl << std::endl;
+  
   // the read and write functions
   class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
 	       << "void write(obj_output<IOS>& oo,"
@@ -201,7 +216,6 @@ void codegen::classPersisterDecl_(dict const& dict_)
 	       << "{" << std::endl
 	       << "  persister<" << dict_.fullSymbolicName() << ", IOS> pp(p);" << std::endl
 	       << "  oo.write(pp);" << std::endl
-	       << "  return oo;" << std::endl
 	       << "}" << std::endl << std::endl;
   
   class_ofs_h_ << "template<class IOS" << dict_.templateSymbolicArgListDecl(true,false) << " >" << std::endl
@@ -210,7 +224,6 @@ void codegen::classPersisterDecl_(dict const& dict_)
 	       << "{" << std::endl
 	       << "  persister<" << dict_.fullSymbolicName() << ",IOS> pp(p);" << std::endl
 	       << "  oi.read(pp);" << std::endl
-	       << "  return oi;" << std::endl
 	       << "}" << std::endl << std::endl;
 
   // the << and >> operators
@@ -372,7 +385,7 @@ void codegen::classPersisterCode_(dict const& dict_)
   }
   ofs_cc_ << "};" << std::endl;
   
-  ofs_cc_ << "type_registrar<" << dict_.fullRealName() << ",xmlstream> __" << counter_++ << "__registration__;"
+  ofs_cc_ << "type_registrar<" << dict_.fullRealName() << ",xmlstream> __" << dict_.name() << counter_++ << "__registration__;"
 	  << std::endl;
   
   ofs_cc_ << std::endl;

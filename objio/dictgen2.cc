@@ -135,6 +135,7 @@ main(int argc, char** argv)
     if(generate_persisters)
       cg.generatePersister(d);
   }
+  dr.close();
   
   if(swig_xml_output_filename!="" && !generate_swig_stuff) 
     remove(swig_xml_output_filename.c_str());
@@ -145,34 +146,7 @@ main(int argc, char** argv)
   if(generate_persisters)
     cg.closeOutputFiles();
   
-  exit(0);  
-
-  //  xmlTextReaderPtr reader=0;
-
-  
-  
-  // OK, now, we should have a xmlTextReader pointing on a SWIG XML file
-  //  dict myDict;
-  //  codegen cg(headerName);
-  //  if(outputFileName!="")
-  //    cg.openSourceFiles(outputFileName);
-  
-  //  dict_output<xmlostream> dout("test_swig.dict",0);
-  //  while( /*myDict.readFromSwigXMLStream(reader) ==*/1 ) {
-  //    if(list)
-  //      myDict.print(verbose);
-  //    if(generate_persisters)
-  //      cg.generatePersister(myDict);
-  //    if(generate_xmlschema) {
-  //      std::string filename = xmlSchemaOutputFileName.substr(0, xmlSchemaOutputFileName.find(".xml"));
-  //      filename = filename.substr(0, filename.find(".xsd"));
-  //      filename = filename + "_" + myDict.name() + ".xsd";
-  //      std::cout << " generate_schema ! filename=" << filename << std::endl;
-  //    }
-  //  }
-  
-  
-  //  dout.close();
+  exit(0);
 }
 
 
@@ -241,3 +215,30 @@ std::string  runSwig(string const& headerName, bool verbose)
   //    std::cout << cmd << std::endl;
   //  system(cmd.c_str());
   
+
+  //  xmlTextReaderPtr reader=0;
+
+  
+  
+  // OK, now, we should have a xmlTextReader pointing on a SWIG XML file
+  //  dict myDict;
+  //  codegen cg(headerName);
+  //  if(outputFileName!="")
+  //    cg.openSourceFiles(outputFileName);
+  
+  //  dict_output<xmlostream> dout("test_swig.dict",0);
+  //  while( /*myDict.readFromSwigXMLStream(reader) ==*/1 ) {
+  //    if(list)
+  //      myDict.print(verbose);
+  //    if(generate_persisters)
+  //      cg.generatePersister(myDict);
+  //    if(generate_xmlschema) {
+  //      std::string filename = xmlSchemaOutputFileName.substr(0, xmlSchemaOutputFileName.find(".xml"));
+  //      filename = filename.substr(0, filename.find(".xsd"));
+  //      filename = filename + "_" + myDict.name() + ".xsd";
+  //      std::cout << " generate_schema ! filename=" << filename << std::endl;
+  //    }
+  //  }
+  
+  
+  //  dout.close();

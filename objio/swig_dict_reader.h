@@ -17,6 +17,7 @@ public:
   ~swig_dict_reader();
   
   virtual unsigned int size() const { return sz_; }
+  virtual void         close();
   
 private:
   mutable unsigned int iptr_;
