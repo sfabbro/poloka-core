@@ -1,11 +1,14 @@
 # -*- autoconf -*-
 # 
-# $Id: cmt.m4,v 1.1 2004/03/01 11:15:07 guy Exp $
+# $Id: cmt.m4,v 1.2 2004/03/04 12:15:52 guy Exp $
 # 
 # autoconf macro to check  cmt
 # 
-# 
+
+####################################### 
 AC_DEFUN([CHECK_CMT],[
+
+# message
 AC_MSG_CHECKING(cmt configuration)
 AC_MSG_RESULT( )
 
