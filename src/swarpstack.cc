@@ -234,7 +234,7 @@ struct Ccd
     FitsHeader head(R.FitsName());
     gain = head.KeyVal("TOADGAIN");
     chip = head.KeyVal("TOADCHIP");
-    filter = head.KeyVal("TOADFILT");
+    filter = string(head.KeyVal("TOADFILT"));
     sigmaBack = R.SigmaBack();
     fluxScale = FluxScale;
   }
