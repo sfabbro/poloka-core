@@ -237,10 +237,17 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   seeing = max(worst->Seeing(), best->Seeing());  
   photomRatio = fit->KernAtCenterSum;
   if (!ref_is_best) photomRatio = 1.0/photomRatio;
-  sigmaBack = sqrt(sqr(best->SigmaBack()*photomRatio) + sqr(worst->SigmaBack()));  
-  cout << " Final seeing = " << seeing << endl;
-  cout << " Photometric ratio (New/Ref) = " << photomRatio << endl;
-  cout << " Combined images predicted sigma = " << sigmaBack << endl;
+  sigmaBack = sqrt(sqr(best->SigmaBack()*photomRatio) + sqr(worst->SigmaBack()));
+  cout << "PsfMatch_SUMMARY_best_worst_photomratio_nstamps_chi2/dof " 
+       << best->Name() << " "
+       << worst->Name() << " "
+       << fit->NStampsUsed() << " "
+       << fit->chi2 << " "
+       << endl;
+  
+  //cout << " Final seeing = " << seeing << endl;
+  //cout << " Photometric ratio (New/Ref) = " << photomRatio << endl;
+  //cout << " Combined images predicted sigma = " << sigmaBack << endl;
 
   // dump some info about the fitted kernel
   int stepx = fit->BestImage->Nx()/4;
