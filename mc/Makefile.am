@@ -19,13 +19,17 @@ simulation_dict.cc \
 simsnstar.cc simsnstar.h \
 simulation.cc simulation.h \
 myrdm.cc myrdm.h \
-agaussian.cc agaussian.h 
+agaussian.cc agaussian.h \
+mcimage.cc mcimage.h \
+mcsub.cc mcsub.h 
 
 include_HEADERS = \
 agaussian.h \
 simsnstar.h \
 simulation.h \
-myrdm.h 
+myrdm.h \
+mcimage.h \
+mcsub.h
 
 
 CLEANFILES = *_dict.h *_dict.cc *__persister.h *__persister.cc
