@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.1 2004/02/20 10:48:42 nrl Exp $
+// $Id: xmlstream.h,v 1.2 2004/02/24 16:33:22 nrl Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -180,7 +180,7 @@ int xmlistream::nextOpeningTag_(xmlChar const* tagname) const throw(XMLException
   xmlChar const* cur_tagname=xmlTextReaderConstName(reader_);
   if( xmlStrcmp(tagname,cur_tagname)==0 )
     return 1;
-  throw XMLException("unable tp find next opening element");
+  throw XMLException("unable to find next opening element");
 }
 
 
@@ -346,7 +346,6 @@ void xmlistream::read(type_& v) const                   \
     return;                                             \
   }                                                     \
   v = (type_)cvfunc_((const char*)value);               \
-  nextClosingTag_();                                    \
   xmlFree(typ);                                         \
   xmlFree(value);                                       \
 }                                                       \
@@ -463,7 +462,12 @@ void xmlostream::end_collection()
 void xmlostream::write(type v, const char* name)                             \
 {                                                                            \
    assert_writer_ok;                                                         \
-   xmlTextWriterStartElement(writer_, (xmlChar*)name);                       \
+   if(name==0) {                                                             \
+     xmlTextWriterStartElement(writer_, (xmlChar*)"object");                 \
+   }                                                                         \
+   else {                                                                    \
+     xmlTextWriterStartElement(writer_, (xmlChar*)name);                     \
+   }                                                                         \
    xmlTextWriterWriteAttribute(writer_, (xmlChar*)"t", (xmlChar*)#typname);  \
    xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"v",#format,v);      \
    xmlTextWriterEndElement(writer_);                                         \
@@ -481,14 +485,17 @@ simple_type_write_def(uint8,  u8, %lu)
 simple_type_write_def(float4, f4, %f)
 simple_type_write_def(float8, f8, %lf)
 
-
-
 void xmlostream::write(std::string const& v, const char* name)
 {
   assert_writer_ok;
-  xmlTextWriterStartElement(writer_, (xmlChar*)"string");
-  if(name)  writeNameAttribute_(name);
-  xmlTextWriterWriteFormatString(writer_, "%s", v.c_str());
+  if(name==0) {
+    xmlTextWriterStartElement(writer_, (xmlChar*)"object");
+  }
+  else {
+    xmlTextWriterStartElement(writer_, (xmlChar*)name);
+  }
+  xmlTextWriterWriteAttribute(writer_, (xmlChar*)"t", (xmlChar*)"string");
+  xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"v","%s",v.c_str());
   xmlTextWriterEndElement(writer_);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }

@@ -99,21 +99,24 @@ protected:
 };
 
 
-template<class T, class IOS>
-obj_output<IOS>& operator<<(obj_output<IOS>& oo, T const& p)
-{
-  persister<T> pp(p);
-  oo.write(pp);
-  return oo;
-}
+// default IO operators
+//template<class IOS, class T>
+//obj_output<IOS>& operator<<(obj_output<IOS>& oo, T const& p)
+//{
+//  persister<T> pp(p);
+//  oo.write(pp);
+//  return oo;
+//}
 
-template<class T, class IOS>
-obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, T& p)
-{
-  persister<T> pp(p);
-  oi.read(pp);
-  return oi;
-};
+//template<class IOS, class T>
+//obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, T& p)
+//{
+//  persister<T> pp(p);
+//  oi.read(pp);
+//  return oi;
+//};
+
+
 
 
 /* 

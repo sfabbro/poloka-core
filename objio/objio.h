@@ -76,8 +76,10 @@ class obj_output { //: public obj_output_base {
   void           write(std::vector<T> const& v, const char* name=0) {
     stream_.start_collection(v.size(), name);
     typename std::vector<T>::const_iterator it;
-    for(it=v.begin();it!=v.end();it++)
-      *this << *it; //      write(*it);
+    for(it=v.begin();it!=v.end();it++) {
+      *this << *it;
+      //      write(*it);
+    }
     stream_.end_collection();
   }
 
@@ -86,7 +88,7 @@ class obj_output { //: public obj_output_base {
     stream_.start_collection(m.size(), name);
     typename std::map<T,U>::const_iterator it;
     for(it=m.begin();it!=m.end();it++)
-      *this << *it; //      write(*it);
+      write(*it); // this time, we must use write(). Because we know what we are writing out...
     stream_.end_collection();
   }
   
@@ -125,12 +127,32 @@ private:
 
 
 
-template<class IOS, class T>
-inline obj_output<IOS>& operator<<(obj_output<IOS>& oo, T t)
-{
-  oo.write(t);
-  return oo;
-}
+// VERY DANGEROUS ! GET RID OF THIS! --nrl 02/2004
+//template<class IOS, class T>
+//inline obj_output<IOS>& operator<<(obj_output<IOS>& oo, T t)
+//{
+//  oo.write(t);
+//  return oo;
+//}
+
+#define define_output_operator(type)                       \
+template<class IOS>                                        \
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, type v)   \
+{                                                          \
+  oo.write(v); return oo;                                  \
+}                                                          \
+ 
+define_output_operator(int1)
+define_output_operator(uint1)
+define_output_operator(int2)
+define_output_operator(uint2)
+define_output_operator(int4)
+define_output_operator(uint4)
+define_output_operator(int8)
+define_output_operator(uint8)
+define_output_operator(float4)
+define_output_operator(float8)
+define_output_operator(std::string)
 
 
 
@@ -185,7 +207,8 @@ public:
     T val;
     stream_.start_collection(sz);
     for(i=0;i<sz;i++) {
-      read(val);
+      //      read(val);
+      *this >> val;
       l.push_back(val);
     }
     stream_.end_collection();
@@ -197,12 +220,12 @@ public:
     T val;
     stream_.start_collection(sz);
     for(i=0;i<sz;i++) {
-      read(val);
+      //      read(val);
+      *this >> val;
       v.push_back(val);
     }
     stream_.end_collection();
   }
-  
   
   template<class T, class U>
   void         read(std::map<T,U>& m) const {
@@ -221,8 +244,11 @@ public:
     unsigned int sz;
     T v1; U v2;
     stream_.start_collection(sz);
-    read(v1); p.first=v1;
-    read(v2); p.second=v2;
+    // read(v1); 
+    *this >> v1; p.first=v1;
+    // read(v2); 
+    *this >> v2;
+    p.second=v2;
     stream_.end_collection();
   }
   
@@ -246,14 +272,34 @@ private:
 };
 
 
-template<class IOS, class T>
-inline obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, T& t)
-{
-  oi.read(t);
-  return oi;
-}
+// NRL 02/2004: VERY DANGEROUS! GET RID OF THIS!
+//template<class IOS, class T>
+//inline obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, T& t)
+//{
+//  oi.read(t);
+//  return oi;
+//}
 
 
+
+#define define_input_operator(type)                        \
+template<class IOS>                                        \
+obj_input<IOS> const& operator>>(obj_input<IOS> const& oo, type& v) \
+{                                                          \
+  oo.read(v); return oo;                                   \
+}                                                          \
+ 
+define_input_operator(int1)
+define_input_operator(uint1)
+define_input_operator(int2)
+define_input_operator(uint2)
+define_input_operator(int4)
+define_input_operator(uint4)
+define_input_operator(int8)
+define_input_operator(uint8)
+define_input_operator(float4)
+define_input_operator(float8)
+define_input_operator(std::string)
 
 
 

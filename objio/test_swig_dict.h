@@ -73,8 +73,8 @@ void write_members(obj_output<IOS>& oo) const {
 }
 
 template<class IOS>void read_members(obj_input<IOS> const& oi) {
-oi.read(obj_->x_);
-oi.read(obj_->y_);
+  oi.read(obj_->x_);
+  oi.read(obj_->y_);
 }
 
 template<class T> friend class obj_input;
@@ -119,12 +119,14 @@ private:
   template<class IOS>
   void write_members(obj_output<IOS>& oo) const {
     persister<Point> p(*((Point*)obj_));
-    oo.write(p, "_1");
+    oo.write(p, "Point");
     oo.write(obj_->id_, "id_");
     oo.write(obj_->flux_, "flux_");
   }
 
   template<class IOS>void read_members(obj_input<IOS> const& oi) {
+    persister<Point> p(*(Point*)obj_);
+    oi.read(p);
     oi.read(obj_->id_);
     oi.read(obj_->flux_);
   }
