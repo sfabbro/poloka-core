@@ -11,6 +11,9 @@
 
 using namespace std;
 
+static double sq(const double x) { return x*x;}
+
+
 int main(int argc, char **argv)
 {
   bool fitsingleflux=false;
@@ -90,7 +93,7 @@ int main(int argc, char **argv)
   
   vector<int> suppressedfluxes;
   Vect flux_per_night;
-  Mat AtWA_invert;
+  Mat FluxPerNightCovMat;
   Mat AtWA;
   Mat FluxWeightMat;
 
@@ -103,16 +106,15 @@ int main(int argc, char **argv)
     //cout << "FluxWeightMat" << endl;
     //cout << FluxWeightMat << endl;
     AtWA = A.transposed()*FluxWeightMat*A;
-    AtWA_invert = AtWA; AtWA_invert.SymMatInvert();
-    flux_per_night = (AtWA_invert*(A.transposed()*FluxWeightMat))*FluxVec;
-
+    FluxPerNightCovMat= AtWA; 
+    FluxPerNightCovMat.SymMatInvert();
+    flux_per_night = (FluxPerNightCovMat*(A.transposed()*FluxWeightMat))*FluxVec;
 #ifdef DEBUG
     cout << "Mean flux per night" << endl;
     cout << flux_per_night << endl;
     cout << "Covariance matrix" << endl;
-    cout << AtWA_invert << endl;
+    cout <<FluxPerNightCovMat<< endl;
 #endif
- 
     // now compute chi2
     Vect B = FluxVec - A*flux_per_night;
 
@@ -133,7 +135,7 @@ int main(int argc, char **argv)
     double chi2_max = 0;
     for(unsigned int iflux = 0 ;iflux<B.Size();++iflux) {
       
-      flux_chi2 = pow(B(iflux),2)*FluxWeightMat(iflux,iflux);
+      flux_chi2 = sq(B(iflux))*FluxWeightMat(iflux,iflux);
       if(flux_chi2>chi2_max) {
 	chi2_max = flux_chi2;
 	outlier = iflux;
@@ -184,10 +186,10 @@ int main(int argc, char **argv)
     
     {
       ofstream st("flux_per_night_covmat.dat");
-      st <<  AtWA_invert;
+      st <<  FluxPerNightCovMat;
       st.close();
     }
-    AtWA_invert.writeFits("flux_per_night_covmat.fits");
+    FluxPerNightCovMat.writeFits("flux_per_night_covmat.fits");
     
     {
       ofstream st("flux_per_expo_weightmat.dat");
@@ -261,7 +263,7 @@ int main(int argc, char **argv)
   for(unsigned int night = 0; night < flux_per_night.Size(); ++ night) {
     CountedRef<LightCurvePoint> newpoint = new LightCurvePoint();
     newpoint->flux = flux_per_night(night);
-    newpoint->eflux = sqrt(FluxCovarianceMat(night,night));
+    newpoint->eflux = sqrt(FluxPerNightCovMat(night,night));
     newpoint->computemag(zp);
     // now get julian day (mean of all exposures)
     jd=0;
