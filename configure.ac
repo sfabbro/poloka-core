@@ -61,9 +61,10 @@ CHECK_SEX
 
 # Check cernlib 
 AC_ARG_ENABLE(cernlib,
-[AC_HELP_STRING([--disable-cernlib],[Do not use cernlib, programs such as l2tup will no be compiled ])],,
-[CHECK_CERNLIB])
-
+[AC_HELP_STRING([--disable-cernlib],[Do not use cernlib, programs such as l2tup will no be compiled ])],
+[cernlib=false],
+[ cernlib=true ; CHECK_CERNLIB ])
+AM_CONDITIONAL(CERNLIB, test x$cernlib = xtrue)
 
 # Checks for header files.
 AC_HEADER_DIRENT
