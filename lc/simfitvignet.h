@@ -71,6 +71,9 @@ public:
 
   //! empty constructor allocate nothing
   SimFitRefVignet() { DaoPsf *p = 0; psf = p; }
+  
+  //! does not do much
+  SimFitRefVignet(const ReducedImage *Rim);
 
   //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels.
   //! also initialize Psf if any, but assumes Kern not present.
@@ -91,6 +94,10 @@ public:
   //!
   void UpdatePsfResid();
 
+
+  void SetStar(const PhotStar *RefStar) {
+    Star = RefStar;
+  }
   //!
   void Load(const PhotStar *RefStar);
 
@@ -127,6 +134,10 @@ public:
 
   //! tabulated PSF and its derivatives to allow fast computation
   TabulatedPsf Psf;
+  
+  void SetStar(const PhotStar *RefStar) {
+    Star = RefStar;
+  }
 
   void Resize(const int Hx, const int Hy);
 

@@ -94,6 +94,13 @@ void TabulatedPsf::Scale(const double& s)
 
 
 //=========================================================================================
+SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim)
+  : Vignet(Rim), psf(new DaoPsf(*Rim))
+{
+#ifdef FNAME
+  cout << " > SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim)" << endl;
+#endif
+}
 
 SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius)
   : Vignet(Rim, Radius), psf(new DaoPsf(*Rim))
@@ -123,10 +130,10 @@ void SimFitRefVignet::Resize(const int Hx, const int Hy)
   
   // resize Data, Weight, Resid if necessary
   Vignet::Resize(Hx,Hy);
-  //Vignet::Allocate(Nx(), Ny());
-
+  
   // resize Psf, Psf.Dx, Psf.Dy if necessary
-  Psf.Resize(Hx,Hy);
+  //Psf.Resize(Hx,Hy);
+  Psf.Tabulate(*Star,*psf,Hx);
 
   // resize Galaxy 
   makeInitialGalaxy();
@@ -213,7 +220,8 @@ void SimFitVignet::Resize(const int Hx, const int Hy)
 
   // resize psf if necessary
   Psf.Resize(Hx,Hy);
-
+  // and need to retabulate it
+  
 }
 
 void SimFitVignet::BuildKernel(const ReducedImage* Ref)
