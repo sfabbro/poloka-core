@@ -1,3 +1,7 @@
+#ifndef CLUSTER2_HEADER
+#define CLUSTER2_HEADER
+
+
 class PixCoord {
 public:
   PixCoord() {
@@ -80,3 +84,5 @@ static void saveclustersinimage( const std::list<mycluster> &clusters , Image &i
      cluster->setinimage(image,1);
    }
 }
+
+#endif
