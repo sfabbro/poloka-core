@@ -115,6 +115,9 @@ class ModelStar : public BaseStar
   
  public:
 
+
+
+  double PhotFactor() const {return photFactor;}
   double XShift() const {return xShift ;}
   double YShift() const {return yShift ;}
 
@@ -337,7 +340,7 @@ const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This);
 
 
 #include "image.h"
-#include "daophotpsf.h"
+class DaoPsf;
 
 
 void AddWDaoPsfToImage(DaoPsf const & daopsf, double xc, double yc, 
