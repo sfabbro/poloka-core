@@ -7,10 +7,15 @@
 
 void  usage()
 {
-  cerr << " dbls [<options>] [<symbolic_path> ... ] [<image> ... ] \n" <<
-    " options among -raw -cal -flat -dead `-sat -satgz -cat -cos -weight\n" <<
-    "         -a also outputs non existent file names (as well as dangling links) \n" <<
-    endl;
+  cerr <<"dbls [<options>] [<symbolic_path> ... ] [<image> ... ] \n" 
+       <<" options among -raw -cal -flat -dead -sat -satgz -cat -cos -weight"
+       << endl
+       <<"  -a also outputs non existent file names(as well as dangling links)"
+       << endl
+       << "'dbls -dump' reads and dumps the config file contents" 
+       << endl
+       << "'dbls -example' provides a dbconfigfile example" 
+       << endl;
 }
 
 static int PrintIfAbsent = 0;
@@ -52,6 +57,10 @@ void dump_info(const DbImageList &list, char **which_info, const int ninfo)
 
 int main(int argc,char **argv)
 {
+  if (argc <=1)
+    {
+      usage(); exit(1);
+    }
   StringList path_list;
   DbImageList image_list;
   DbConfigSetDumpLevel(1); /* short print out */
@@ -70,6 +79,16 @@ int main(int argc,char **argv)
 		case 'a' : PrintIfAbsent = 1; break;
 		default : usage(); exit(1);
 		}
+	    }
+	  else if (string(arg) == "-dump")
+	    {
+	      DbConfigDump();
+	      exit(0);
+	    }
+	  else if (string(arg) == "-example")
+	    {
+	      DbConfigExample();
+	      exit(0);
 	    }
 	  else which_info[n_info++] = arg+1; 
 	  continue;
