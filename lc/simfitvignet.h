@@ -57,13 +57,17 @@ class SimFitRefVignet : public Vignet {
 
 private:
 
-  //! build a rough initial galaxy to start the iterative fit
-  void makeInitialGalaxy();
 
-  //!
-  CountedRef<DaoPsf> psf;
+
+
   
 public:
+  
+  //!
+  CountedRef<DaoPsf> psf;
+
+  //! build a rough initial galaxy to start the iterative fit
+  void makeInitialGalaxy();
 
   //! empty constructor allocate nothing
   SimFitRefVignet() { DaoPsf *p = 0; psf = p; }
