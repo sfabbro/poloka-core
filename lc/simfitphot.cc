@@ -142,7 +142,9 @@ void SimFitPhot::operator() (LightCurve& Lc)
     zeFit.SetWhatToFit(FitFlux); // then flux
     zeFit.UseGalaxyModel(true);  
     zeFit.DoTheFit();
-    //zeFit.write("sn_init1",dir,WriteLightCurve|WriteVignetsInfo|WriteMatrices);
+    ofstream lstream((string(dir+"/lc_init.dat")).c_str());
+    Lc.write_short((ostream&)lstream);
+    lstream.close();
     
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
