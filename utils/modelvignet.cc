@@ -99,15 +99,11 @@ int main(int argc, char **argv)
   for(int j=-hy;j<=hy;++j) {
     dy = j+hy;
     for(int i=-hx;i<=hx;++i) {
-      if(true) {
-	if(weight(i,j)>1.e-30) {
-	  image(i+hx,dy)=galaxy(i,j);
-	  v = galaxy(i,j) +fluxmax*vignet->Psf(i,j);
-	  image(i+hx+(2*hx+1)+1,dy)=v;
-	  if(v>vmax)
-	    vmax=v;
-	}
-      }
+      image(i+hx,dy)=galaxy(i,j);
+      v = galaxy(i,j) +fluxmax*vignet->Psf(i,j);
+      image(i+hx+(2*hx+1)+1,dy)=v;
+      if(v>vmax)
+	vmax=v;
     }
   }
   for(int j=-hy;j<=hy;++j) {
