@@ -23,8 +23,6 @@ class ImageSubtraction : public ReducedImage, public PsfMatch {
 CLASS_VERSION(ImageSubtraction,1);
 #define ImageSubtraction__is__persistent
 
-    bool Create(const string &Where);
-  
   public :
     //! the constructor takes a copy of both ReducedImage.
     ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage);
@@ -38,6 +36,8 @@ CLASS_VERSION(ImageSubtraction,1);
 
     //! Carry out the kernel fit, convolve, and outputs the subtraction image.
     ImageSubtraction(); // necessary for persistence.
+
+    virtual const string  TypeName() const { return "ImageSubtraction";}
 
     bool MakeFits() ;
 

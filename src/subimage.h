@@ -29,6 +29,8 @@ class SubImage : public ReducedImage {
 	   const string &LargeImageName, 
 	   const Frame &SubFrame);
 
+
+  virtual const string  TypeName() const { return "SubImage";}
   //!
   bool MakeFits();
   //!

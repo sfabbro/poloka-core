@@ -16,11 +16,7 @@ SubImage::SubImage(const string &Name, const string &LargeImageName,
   ReducedImage large(largeImageName);
   largeFrame = Frame(FitsHeader(large.FitsName()), WholeSizeFrame);
   // create the sub if needed
-  if (!IsValid())
-    {
-      DbImage::Create("here");
-      SetTypeName("SubImage");
-    }
+  Create("here");
 }
 
 

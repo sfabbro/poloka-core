@@ -146,24 +146,13 @@ CLASS_VERSION(TransformedImage,1)
   //! assumes that the TransformedImage already exists
     TransformedImage(const string &Name);
 
-  //! createur vide pour persister
+  //! empty constructor for persistence
   TransformedImage(){};
+
+  virtual const string  TypeName() const { return "TransformedImage";}
 
   //! Original (untransformed) image name
   string  SourceName() const { return sourceName;}
-
-#ifdef STORAGE // pas utilise
-
-  //! Original (untransformed) image.
-  ReducedImageRef Source() const;
-
-  //! Geometric reference (only applicable if ImageTransfo is ImageGtransfo)
-  ReducedImageRef GeometricReference();
-
-  //! Geometric reference name (only applicable if ImageTransfo is ImageGtransfo)
-  string GeomRefName()const ;
-#endif
-
 
   //! involved transformation.
   const ImageTransfoRef Transfo() const {return transfo;};
@@ -184,7 +173,6 @@ CLASS_VERSION(TransformedImage,1)
   virtual bool MakeCosmic();
   virtual bool MakeSatellite();
   virtual bool MakeWeight();
-  bool Create(const string &Where);
   ReducedImage* Clone() const;
   TransformedImage(const TransformedImage &Original);
   

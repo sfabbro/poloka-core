@@ -398,15 +398,6 @@ TransformedImage::TransformedImage(const string &TransformedName,
 
 
 
-bool TransformedImage::Create(const string &Where)
-{
-if (!IsValid()) // the transformed image does not exists
-  { // create the DbImage
-    return (DbImage::Create(Where) && SetTypeName("TransformedImage"));
-  }
-return true;
-}
-
 TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 {
   string fileName =   EverythingElseFileName();

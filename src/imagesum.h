@@ -102,12 +102,13 @@ public :
   ImageSum(){};
   ReducedImageList Components() const;
 
+  virtual const string  TypeName() const { return "ImageSum";}
+
   bool MakeFits() ;
   bool MakeCatalog() ; 
   bool MakeDead();
   bool MakeSatur();
   bool MakeWeight();
-  bool Create(const string &Where);
   ReducedImage *Clone() const;
 
   void dump(ostream & s = cout) const;

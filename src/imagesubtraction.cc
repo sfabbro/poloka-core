@@ -48,14 +48,6 @@ ImageSubtraction::ImageSubtraction(const string &Name)
 #endif
 
 
-bool ImageSubtraction::Create(const string &Where)
-{
-  if (!IsValid()) // does not exist
-    { // create the DbImage
-    return (DbImage::Create(Where) && SetTypeName("ImageSubtraction"));
-    }
-return true;
-}
 ReducedImage *ImageSubtraction::Clone() const
 {
   ReducedImage *clone = new ImageSubtraction(*this);

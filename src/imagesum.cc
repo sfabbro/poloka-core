@@ -322,16 +322,6 @@ string name_of_weightingMethod(const WeightingMethod weightingMethod)
 }
 
 
-bool ImageSum::Create(const string &Where)
-{
-  if (!IsValid()) // the sum image does not exists
-    { // create the DbImage
-      return (DbImage::Create(Where) && SetTypeName("ImageSum"));
-    }
-  return true;
-}
-
-
 #include "vutils.h"
 // may go in vutils
 

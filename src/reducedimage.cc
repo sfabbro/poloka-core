@@ -11,6 +11,7 @@
 #include "gtransfo.h"
 #include "cluster2.h"
 #include "imagebinning.h"
+#include "wcsutils.h"
 
 /* it seems that a constructor cannot call another constructor:
    hence put a routine that both call */
@@ -59,21 +60,19 @@ bool ReducedImage::MakeFits()
 #include "seeing_box.h" /*pour le calcul du seeing lors du catalogue */
 
 
+#define SATUR_COEFF 0.95
+
+
 /* Pour remplir le carnet d'ordres de SExtractor */
 /* si le fond est deja soustrait, on le sauve pas, et on prend = cste
    (SExtractor le recalcule quand meme) sinon, SExtractor le
    calculera, l'utilisera, et on le sauvera.
 */
 
-void 
-
-
-#define SATUR_COEFF 0.95
-
-
-ReducedImage::FillSExtractorData(ForSExtractor & data, 
-				 bool  fond_deja_soustrait, bool sauver_fond,
-				 bool use_sigma_header)
+void ReducedImage::FillSExtractorData(ForSExtractor & data, 
+				      bool  fond_deja_soustrait, 
+				      bool sauver_fond,
+				      bool use_sigma_header)
 {
   // what concerns on-the-flight decompression
   const char *tmpdir = getenv("IMAGE_TMP_DIR");
@@ -569,6 +568,7 @@ bool ReducedImage::MakeWeight()
 	    remove(lowName.c_str());
 	    FitsImage low(lowName, (const Image &) image);
 	    low.AddOrModKey("BITPIX",8);
+	    CopyWCS(image,low); // for MIBI to display correctly
 	  }
 	  weights.AddOrModKey("LOWPIXS",true, 
 			      "zeroed weight of pixels too low in image");
@@ -840,43 +840,6 @@ and inheriters. They would disappear if we switched to root for I/O's .
 but in fact what we have at the moment just does not work. i.e. most
 of the reduced images cannot be put back in the same state as when
 they were created just using their name. */
-
-#define TYPE_FILE_NAME "type.name"
-
-string ReducedImage::TypeFileName() const
-{
-return Dir()+"type.name";
-}
-
-bool ReducedImage::SetTypeName(const string &TypeName)
-{
-string fileName = TypeFileName();
-FILE *file = fopen(fileName.c_str(),"w");
-if (!file) 
-  {
-    cerr << " could not open " <<  fileName << endl;
-    return false;
-  }
-fprintf(file,"%s",TypeName.c_str());
-fclose(file);
-return true;
-}
-			       
-
-string ReducedImage::TypeName() const
-{
-char name[256];
-string fileName = TypeFileName();
-FILE *file = fopen(fileName.c_str(),"r");
-if (!file)
-  {
-    cerr << "cannot open in read mode " << fileName << endl;
-    return "NoType";
-  }
-fscanf(file,"%s",name);
-fclose(file);
-return string(name);
-}
 
 
 bool ReducedImage::ActuallyReduced() const
@@ -1583,7 +1546,6 @@ bool ReducedImage::SamePhysicalSize(const ReducedImage &OtherImage) const
 
 
 
-#include "wcsutils.h"
 double ReducedImage::OverlapArcmin2(const ReducedImage& Other) const
 {
   return Arcmin2Overlap(FitsHeader(FitsName()), FitsHeader(Other.FitsName()));

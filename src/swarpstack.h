@@ -41,8 +41,6 @@ private:
 
   std::string tmpDir;
 
-  bool Create(const string &Where);
-
   
 public :
   SwarpStack(const string &Name, const ReducedImageList &Images,
@@ -55,6 +53,9 @@ public :
 
   SwarpStack(const string &Name);
   SwarpStack() {};
+
+
+  virtual const string  TypeName() const { return "SwarpStack";}
   //  ReducedImageList Components() const;
 
   bool MakeFits() ;

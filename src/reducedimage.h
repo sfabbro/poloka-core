@@ -63,7 +63,11 @@ public :
   explicit ReducedImage(const DbImage&);
   //!
   ReducedImage(const string &Name);
- 
+
+
+  virtual const string  TypeName() const { return "ReducedImage";}
+
+  //!
   bool HasImage() const { return (FileExists(FitsName()));}
   bool HasBack() const { return (FileExists(FitsBackName()));}
   bool HasMiniBack() const { return (FileExists(FitsMiniBackName()));}
@@ -174,10 +178,6 @@ Usefull in case of artificially smoothed images
 
   //! shorthand call for Make{Fits,Catalog,Dead,Satur}. ToDo may conveniently be contructed using predefined tags DoFits DoCatalog DoDead DoSatur.
   bool Execute(const int ToDo);
-
-  string TypeName() const;
-  bool SetTypeName(const string &TypeName);
-  string TypeFileName() const;
 
   //! dumps basic info.
   virtual void dump(ostream &s = cout ) const;

@@ -452,18 +452,6 @@ struct Collection : public list<Shoot>
 
 /*********************** class SwarpStack ***********************/
 
-bool SwarpStack::Create(const string &Where) 
-{
-  bool ok1 = true;
-  if (!IsValid()) // the sum image does not exists
-    { // create the DbImage
-      ok1 = (DbImage::Create(Where) 
-	     && SetTypeName("SwarpStack"));
-    }
-  if (ok1 && !FileExists(SwarpPermDir())) MKDir(SwarpPermDir().c_str());
-  return true;
-}
-
 const std::string SwarpStack::SwarpTmpDir()
 {
   if (tmpDir == "")
@@ -491,6 +479,8 @@ SwarpStack::SwarpStack(const string &Name, const ReducedImageList &Images,
 		       const Frame &SubFrame): ReducedImage(Name)
 {
   if (!Create("here")) return;
+  // create the directory for swarp files
+  if (!FileExists(SwarpPermDir()) && !MKDir(SwarpPermDir().c_str()) ) return;
   images = Images;
   photomAstromReference = PhotomAstromReference;
   photomAstromReferenceFrame = SubFrame;
