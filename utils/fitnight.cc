@@ -9,12 +9,17 @@
 
 using namespace std;
 
-
-
-
 int main(int argc, char **argv)
 {
-  
+  bool fitsingleflux=false;
+  if(argc>1) {
+    if(strcmp(argv[1],"-single")==0) {
+      fitsingleflux=true;
+      cout << "fit of a single constant flux for all points" << endl;
+    }
+  }
+
+ 
   // vecteur de flux
   Vect FluxVec;
   {
@@ -24,16 +29,27 @@ int main(int argc, char **argv)
     FluxVec = m;
   }
   int nflux = FluxVec.Size();
-  
+  //cout << FluxVec << endl;
   
   // matrice de covariance
   Mat CovarianceMat;  
   if(CovarianceMat.readFits("pmat_sn.fits")!=0)
     return -1;
+  //cout << "CovarianceMat" << endl;
+  //cout << CovarianceMat << endl;
+
   Mat FluxCovarianceMat = CovarianceMat.SubBlock(0,nflux-1,0,nflux-1);
   FluxCovarianceMat.Symmetrize("L");
+      
+  //cout << FluxCovarianceMat << endl;
   Mat A;
-  A.readFits("nightmat_sn.fits");
+  if(!fitsingleflux) {
+    A.readFits("nightmat_sn.fits");
+  }else{  
+    A.allocate(1,nflux);
+    for(int i=0;i<nflux;++i)
+      A(0,i)=1;
+  }
   cout << A << endl;
   
   vector<int> suppressedfluxes;
@@ -41,6 +57,8 @@ int main(int argc, char **argv)
   
     Mat FluxWeightMat = FluxCovarianceMat;
     FluxWeightMat.SymMatInvert();
+    //cout << "FluxWeightMat" << endl;
+    //cout << FluxWeightMat << endl;
     Mat AtWA = A.transposed()*FluxWeightMat*A;
     Mat AtWA_invert = AtWA; AtWA_invert.SymMatInvert();
     Vect flux_per_night = (AtWA_invert*(A.transposed()*FluxWeightMat))*FluxVec;
