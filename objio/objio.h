@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.16 2004/03/16 17:31:22 guy Exp $
+// $Id: objio.h,v 1.17 2004/03/17 15:18:02 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/16 17:31:22 $
+// Last modified: $Date: 2004/03/17 15:18:02 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -94,11 +94,8 @@ public:
   void           write(std::list<T> const& l, const char* name=0) {
     stream_.write_start_collection_tag(l.size(), name);
     typename std::list<T>::const_iterator it;
-    for(it=l.begin();it!=l.end();it++) {
-      persister<T,IOS> p(*it);
-      write(p);
-      // *this << *it;
-    }
+    for(it=l.begin();it!=l.end();it++)
+      *this << *it;
     stream_.write_end_collection_tag();
   }
 
@@ -107,36 +104,28 @@ public:
     stream_.write_start_collection_tag(v.size(), name);
     typename std::vector<T>::const_iterator it;
     for(it=v.begin();it!=v.end();it++) {
-      persister<T,IOS> p(*it);
-      write(p);
-      //*this << *it;
+      *this << *it;
     }
     stream_.write_end_collection_tag();
   }
 
   template<class T, class U>
-  void           write( std::map<T,U> const& m, const char* name=0) {
+  void           write(std::map<T,U> const& m, const char* name=0) {
     stream_.write_start_collection_tag(m.size(), name);
     typename std::map<T,U>::const_iterator it;
-    for(it=m.begin();it!=m.end();it++) {
+    for(it=m.begin();it!=m.end();it++)
       // this time, we must use write().
       // Because we know what we are writing out...
-      
-      const  std::pair<T,U>&  pairTU = *it;
-      write(pairTU);
-      //write(*it);
-    }
+      write(*it);
     stream_.write_end_collection_tag();
   }
   
   
   template<class T, class U>
-  void           write( std::pair<T,U> const& p, const char* name=0) {
+  void           write(std::pair<T,U> const& p, const char* name=0) {
     stream_.write_start_collection_tag(2, name);
-    persister<T,IOS> fp(p.first);
-    persister<U,IOS> sp(p.second);
-    write(fp);
-    write(sp);
+    *this << p.first;
+    *this << p.second;
     stream_.write_end_collection_tag();
   }
   
@@ -368,12 +357,11 @@ public:
   void         read(std::list<T>& l) const {
     unsigned int i, sz;
     T val;
+    l.clear();
     stream_.read_start_collection_tag(sz);
-    l.clear(); // we reset the list
     for(i=0;i<sz;i++) {
-      persister<T,IOS> p(val);
-      read(p);
-      //*this >> val;
+      //      read(val);
+      *this >> val;
       l.push_back(val);
     }
     stream_.read_end_collection_tag();
@@ -383,11 +371,11 @@ public:
   void         read(std::vector<T>& v) const {
     unsigned int i, sz;
     T val;
-    stream_.read_start_collection_tag(sz);
     v.clear();
+    stream_.read_start_collection_tag(sz);
     for(i=0;i<sz;i++) {
-      persister<T,IOS> p(val);
-      read(p);
+      //      read(val);
+      *this >> val;
       v.push_back(val);
     }
     stream_.read_end_collection_tag();
@@ -397,8 +385,8 @@ public:
   void         read(std::map<T,U>& m) const {
     unsigned int i, sz;
     std::pair<T,U> val;
-    stream_.read_start_collection_tag(sz);
     m.clear();
+    stream_.read_start_collection_tag(sz);
     for(i=0;i<sz;i++) {
       read(val);
       m[val.first]=val.second;
@@ -411,13 +399,8 @@ public:
     unsigned int sz;
     T v1; U v2;
     stream_.read_start_collection_tag(sz);
-    persister<T,IOS> p1(v1);
-    persister<U,IOS> p2(v2);
-    read(p1);
-    read(p2);
-    //*this >> v1; 
-    //*this >> v2;
-    p.first=v1;
+    *this >> v1; p.first=v1;
+    *this >> v2;
     p.second=v2;
     stream_.read_end_collection_tag();
   }
@@ -653,6 +636,25 @@ void read(obj_input<IOS> const& io, T& t)
   persister<T,IOS> pp(t);
   io.read(pp);
 }
+
+// FIXME: this may be dangerous
+
+template<class IOS, class T>
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, T const& t)
+{
+  persister<T,IOS> pp(t);
+  oo.write(pp);
+  return oo;
+}
+
+template<class IOS, class T>
+obj_input<IOS> const& operator>>(obj_input<IOS> const& io, T& t)
+{
+  persister<T,IOS> pp(t);
+  io.read(pp);
+  return io;
+}
+
 
 #endif
 
