@@ -3,6 +3,8 @@
 // file swig_dict_reader.cc
 // 
 // 
+
+#include <iostream>
 #include <sstream>
 
 #include <libxml/parser.h>
@@ -10,7 +12,7 @@
 #include "dict.h"
 #include "swig_dict_reader.h"
 
-
+using namespace std;
 
 //struct swig_type {
 //  std::string type;
