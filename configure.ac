@@ -1,14 +1,17 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
+PACKAGE=repack2
+VERSION=0.1.0
 AC_PREREQ(2.57)
-AC_INIT(repack2, 0.1.0, regnault@in2p3.fr)
+AC_INIT(repack2,0.1.0,regnault@in2p3.fr)
 AC_CONFIG_SRCDIR([config.h.in])
-AM_CONFIG_HEADER([config.h])
+#AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 AC_CANONICAL_HOST
-AM_DISABLE_STATIC
+#AM_DISABLE_STATIC
 
 # optional features
 
@@ -94,6 +97,8 @@ CXXFLAGS="-g"
 CPPFLAGS="-g"
 CFLAGS="-g"
 FFLAGS="-g"
+
+
 
 AC_CONFIG_FILES([Makefile
                  bindings/Makefile
