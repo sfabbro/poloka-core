@@ -2,11 +2,6 @@
 #ifndef SIMFIT__H
 #define SIMFIT__H
 
-// soon enough the now obsolete lapack++ will disappear from this code.
-#include <lafnames.h> 
-#include LA_GEN_MAT_DOUBLE_H
-#include LA_VECTOR_DOUBLE_H 
-
 #include "lightcurve.h"
 #include "simfitvignet.h"
 
@@ -43,9 +38,9 @@ private:
   bool fit_pos;           // whether we fit the point source position
   
   // vector and matrices for the system Mat*Params=Vec
-  LaVectorDouble Vec;     // vector r.h.s and Params when solved
-  LaGenMatDouble Mat;     // matrix l.h.s then covariance matrix when inverted
-  LaGenMatDouble MatGal;  // gal-gal matrix part to avoid refilling
+  double *Vec;            // vector r.h.s and Params when solved
+  double *Mat;            // matrix l.h.s then covariance matrix when inverted
+  double *MatGal;         // gal-gal matrix part to avoid refilling
 
   // indices
   int fluxstart, fluxend; // start and end indices for flux parameters in Mat and Vec
@@ -101,9 +96,6 @@ public:
 
   //! allow to change full data set to another star
   void Load(LightCurve& Lc);
-
-  //! create vignets and get ready for fiiting 
-  void CreateAndLoad(LightCurve& LC);
 
   //! fill the entire matrix and vectors
   void FillMatAndVec();
