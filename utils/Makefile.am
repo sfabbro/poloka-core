@@ -2,7 +2,7 @@ EXTRA_DIST =
 
 bin_PROGRAMS = \
  header astrom changekey checker create_precise_std_file \
- dbimstat dead_correction defringe defringe2 detectonedb \
+ dbimstat dead_correction defringe defringe2  \
  elixir_to_toads findsatellite flatfield fringefinder \
  image_align image_combine image_register image_select \
  image_stats image_sub image_sum lbl2toads maglimeval \
@@ -27,7 +27,6 @@ dbimstat_SOURCES = dbimstat.cc
 dead_correction_SOURCES = dead_correction.cc
 defringe_SOURCES = defringe.cc
 defringe2_SOURCES = defringe2.cc
-detectonedb_SOURCES = detectonedb.cc
 elixir_to_toads_SOURCES = elixir_to_toads.cc
 findsatellite_SOURCES = findsatellite.cc
 flatfield_SOURCES = flatfield.cc
