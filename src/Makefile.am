@@ -26,8 +26,6 @@ libtoads_la_SOURCES = \
   sestar_dict.cc \
   candidatestar_dict.cc \
   jimstar_dict.cc \
-  photstar_dict.cc \
-  fidstar_dict.cc \
   rollingstar_dict.cc \
   senearstar_dict.cc \
   standardstar_dict.cc \
@@ -63,10 +61,8 @@ libtoads_la_SOURCES = \
   basestar.cc                 basestar.h       \
   candidatestar.cc            candidatestar.h  \
   candstar.cc                 candstar.h       \
-  fidstar.cc                  fidstar.h        \
   jimstar.cc                  jimstar.h        \
   nstarmatch.cc               nstarmatch.h     \
-  photstar.cc                 photstar.h       \
   rollingstar.cc              rollingstar.h    \
   senearstar.cc               senearstar.h     \
   sestar.cc                   sestar.h         \
@@ -148,10 +144,8 @@ point.h          \
 basestar.h       \
 candidatestar.h  \
 candstar.h       \
-fidstar.h        \
 jimstar.h        \
 nstarmatch.h     \
-photstar.h       \
 rollingstar.h    \
 senearstar.h     \
 sestar.h         \
