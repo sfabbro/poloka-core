@@ -12,7 +12,7 @@
 
 
 
-static void elixir_process(ReducedImage &Rim, bool old_fringe_method, bool always_defringe)
+static void elixir_process(ReducedImage &Rim, bool old_fringe_method, bool always_defringe, bool never_defringe)
 {
   
   FitsImage *elixir = new FitsImage(Rim.ElixirName());
@@ -33,30 +33,32 @@ static void elixir_process(ReducedImage &Rim, bool old_fringe_method, bool alway
   
 
   // remove fringes
-  string band = StringToUpper(image.KeyVal("TOADBAND"));
-  if (band == "I" || band =="Z") {
-    if(old_fringe_method) {
-      if(! FringeUtils::IsDefringed(image) || always_defringe ) {
-	cout << " removing fringes " << endl;
-	FitsImage fringemap(Rim.FitsFringeName());
-	if(!fringemap.IsValid()) {
-	  cout << "ERROR in elixir_to_toads , fringemap " << Rim.FitsFringeName() << " is not valid" << endl;
-	  return;
-	}
-	RemoveFringes(image, fringemap, true);
-	image.AddOrModKey("FRINGED","SUB","Fringe pattern subtracted");
-      }
-    }else{
-      if(! FringeUtils::IsDefringed(image) || always_defringe ) {
-	if(! FringeUtils::IsDefringedWithNewMethod(image)) {
-	  cout << " removing fringes with the new method" << endl;
-	  float nsigma = 3;
-	  if(band == "Z")
-	    nsigma = 5;
-	  if(FringeUtils::RemoveFringes(image,Rim.FitsFringeName(),0,nsigma,0,1)!=0) {
-	    cout << "ERROR in elixir_to_toads at FringeUtils::RemoveFringes" << endl;
+  if(!never_defringe) {
+    string band = StringToUpper(image.KeyVal("TOADBAND"));
+    if (band == "I" || band =="Z") {
+      if(old_fringe_method) {
+	if(! FringeUtils::IsDefringed(image) || always_defringe ) {
+	  cout << " removing fringes " << endl;
+	  FitsImage fringemap(Rim.FitsFringeName());
+	  if(!fringemap.IsValid()) {
+	    cout << "ERROR in elixir_to_toads , fringemap " << Rim.FitsFringeName() << " is not valid" << endl;
+	    return;
 	  }
-	  image.AddOrModKey("FRINGED","SUBNEW","Fringe pattern subtracted (new method)");
+	  RemoveFringes(image, fringemap, true);
+	  image.AddOrModKey("FRINGED","SUB","Fringe pattern subtracted");
+	}
+      }else{
+	if(! FringeUtils::IsDefringed(image) || always_defringe ) {
+	  if(! FringeUtils::IsDefringedWithNewMethod(image)) {
+	    cout << " removing fringes with the new method" << endl;
+	    float nsigma = 3;
+	    if(band == "Z")
+	      nsigma = 5;
+	    if(FringeUtils::RemoveFringes(image,Rim.FitsFringeName(),0,nsigma,0,1)!=0) {
+	      cout << "ERROR in elixir_to_toads at FringeUtils::RemoveFringes" << endl;
+	    }
+	    image.AddOrModKey("FRINGED","SUBNEW","Fringe pattern subtracted (new method)");
+	  }
 	}
       }
     }
@@ -125,6 +127,7 @@ void DumpHelp(const char *programname) {
   cout << programname << "  <DbImage(s)> " << endl 
        << " option:  --old_fringe_method (use old method to remove fringes)" << endl
        << "          --always_defringe (try to defringe image in any case (if the fringe pattern is a new one)" << endl
+       << "          --never_defringe" << endl
        << endl
        << "   will:\n" 
        << "     - trim the calibrated.fits \n"
@@ -141,6 +144,7 @@ int main(int argc,char **argv)
   if(argc <=1)
     DumpHelp(argv[0]);
   
+  bool never_defringe = false;
   bool old_fringe_method = false;
   bool always_defringe = false;
   
@@ -154,6 +158,10 @@ int main(int argc,char **argv)
       always_defringe = true;
       continue;
     }
+    if (!strcmp(argv[i],"--never_defringe")) {
+      never_defringe = true;
+      continue;
+    }
     string filename = argv[i];
     filenames.push_back(filename);
   }
@@ -165,7 +173,7 @@ int main(int argc,char **argv)
   }
   for(int im=0;im<nimages;im++) {
     ReducedImage im(filenames[im]);
-    elixir_process(im,old_fringe_method,always_defringe);
+    elixir_process(im,old_fringe_method,always_defringe,never_defringe);
   }
 
   return EXIT_SUCCESS;
