@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cfitsio.m4,v 1.4 2004/02/23 12:32:03 nrl Exp $
+# $Id: cfitsio.m4,v 1.5 2004/02/23 12:59:47 nrl Exp $
 # 
 # autoconf macro to check the cfitsio installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -41,6 +41,8 @@ AC_DEFUN([CHECK_CFITSIO],[
 
  if test -n "$cfitsio_headers" ; then
   CFITSIO_CPPFLAGS="-I$cfitsio_headers"
+ elif test -n "$CFITSIOHOME" ; then
+  CFITSIO_CPPFLAGS="-I$CFITSIOHOME/include"
  elif test -n "$FROGSHOME" ; then
   CFITSIO_CPPFLAGS="-I$FROGSHOME/include"
  elif test -n "$prefix" && test "$prefix" != "NONE"; then 
@@ -72,6 +74,8 @@ AC_DEFUN([CHECK_CFITSIO],[
 
  if test -n "$cfitsio_libs" ; then
   CFITSIO_LDFLAGS="-L$cfitsio_libs -lcfitsio"
+ elif test -n "$CFITSIOHOME" ; then
+  CFITSIO_LDFLAGS="-L$CFITSIOHOME/lib -lcfitsio" 
  elif test -n "$FROGSHOME" ; then
   CFITSIO_LDFLAGS="-L$FROGSHOME/lib -lcfitsio"
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
