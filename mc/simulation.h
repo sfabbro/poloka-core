@@ -119,6 +119,9 @@ bool
 SelectModelStars(ReducedImageList & imglist, SEStarList const & stlref, 
 		 SEStarList &BellesEtoiles, Image * model);
 
+void 
+SelectionOfModelStars(SEStarList const &starList,
+		      SEStarList &BellesEtoiles, Image * model);
 
 
 //! ForSim regroups all the necessary elements to perform the generation
@@ -146,12 +149,23 @@ public :
   //! creator reads DatSim from default datacard, select model star
   //! in the list  ListForModelStars, finds the related zero-point etc. in 
   //! the RefImage header, select host gal in the ref image catalogue 
+  //! for debug, a fits image with the used host gals is saved.
   ForSim(ReducedImage const & RefImage);
     
   //! this creator does nothing. ForSim can be filled afterwards as 
   //! done in above  creator with Fill method.
   ForSim(){zero_point=0.;XrefCCD=0; YrefCCD=0; XCCD=0; YCCD=0;}
-  void Fill(ReducedImage const & RefImage);
+  //! for debug, a fits image with the used host gals is saved.
+  void Fill(ReducedImage const & RefImage);  
+//! Does it.
+  void MakeListSN(SimSNStarList & SNList);
+
+private :
+  //! as indicated in Name. 
+  void Construct_SNList_Random(SimSNStarList & SNList) ;
+  void Construct_SNList_Damier(SimSNStarList & SNList);  
+  void Construct_SNList_WHost(SimSNStarList & SNList);
+
 
 };
     
@@ -177,26 +191,20 @@ public :
   //! the RefImage header, select host gal in the ref image catalogue 
   ForSimWModel(ReducedImage const & RefImage, 
 	       SEStarList const & ListForModelStars, 
-	       const ImageGtransfo* tf);
+	       const ImageGtransfo* tf=NULL);
     
   //! this creator does nothing. ForSim can be filled afterwards as 
   //! done in above  creator with Fill method.
   ForSimWModel(){Transfo =NULL;TransfoInv=NULL ;}
   //! 
   void Fill(ReducedImage const & RefImage, SEStarList const & ListForModelStars, 
-	 const ImageGtransfo* tf);
+	 const ImageGtransfo* tf=NULL);
     
   //If you need another creator, feel free to add yours.
 
   //! Does it.
-  void MakeListSN(SimSNWModelStarList & SNList);
-
-private :
-  // tirage et association a etoile modele.
-  void Construct_Sn_Random(SimSNWModelStarList & SNList) ;
-  void Construct_Sn_Damier(SimSNWModelStarList & SNList);
-  void Construct_SnList_WHost(SimSNWModelStarList & SNList);
-
+  //! for debug, a fits image with the used model stars is saved.
+  void MakeListSNWModel(SimSNWModelStarList & SNList);
 };
     
 
