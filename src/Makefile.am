@@ -57,7 +57,6 @@ libtoads_la_SOURCES = \
   wcsutils.cc                 wcsutils.h       \
   toadscards.cc               toadscards.h     \
   datacards.cc                datacards.h      \
-  dynccd.cc                   dynccd.h         \
   datdetec.cc                 datdetec.h       \
   fileutils.cc                fileutils.h      \
   rootstuff.cc                rootstuff.h      \
