@@ -3,8 +3,8 @@
 // \file gtransfo.h
 // \brief Geometrical transformations (of 2D points)
 // 
-// Last modified: $Date: 2004/04/26 13:30:40 $
-// By:            $Author: guy $
+// Last modified: $Date: 2004/07/19 13:29:59 $
+// By:            $Author: astier $
 // 
 #ifndef GTRANSFO_H
 #define GTRANSFO_H
@@ -611,7 +611,10 @@ class TanPix2RaDec : public Gtransfo {
 	{double xout, yout; apply(Pin.x, Pin.y, xout,yout); return Point(xout,yout);}
 
     //! composition with GtransfoLin
-    TanPix2RaDec operator *(const GtransfoLin &Right);
+    TanPix2RaDec operator *(const GtransfoLin &Right) const;
+
+  Gtransfo *ReduceCompo(const Gtransfo *Right) const;
+
 
     //! approximate inverse : it ignores corrections;
     TanRaDec2Pix invert() const;

@@ -1706,7 +1706,7 @@ void TanPix2RaDec::operator = (const TanPix2RaDec &Original)
   cos0 = cos(dec0);
   sin0 = sin(dec0);
   corr = NULL;
-  if (Original.corr) corr = new GtransfoCub(*corr);
+  if (Original.corr) corr = new GtransfoCub(*Original.corr);
 }  
 
 
@@ -1746,7 +1746,16 @@ void TanPix2RaDec::apply(const double Xin, const double Yin,
   Yout = rad2deg(dect);
 }
 
-TanPix2RaDec TanPix2RaDec::operator *(const GtransfoLin &Right)
+
+Gtransfo * TanPix2RaDec::ReduceCompo(const Gtransfo *Right) const
+{
+  const GtransfoLin *lin = dynamic_cast<const GtransfoLin *>(Right);
+  if (lin && lin->Degree() == 1) return new TanPix2RaDec((*this)*(*lin));
+  return NULL;
+}
+
+
+TanPix2RaDec TanPix2RaDec::operator *(const GtransfoLin &Right) const
 {
   TanPix2RaDec result(*this);
   result.linPix2Tan = result.linPix2Tan * Right;
