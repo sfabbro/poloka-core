@@ -310,25 +310,26 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 
   // we re-flag for saturation here
   int nsat = FlagSaturatedStars(stlse, data.saturation);
-  cerr << nsat << " stars flagged as saturated. " << endl ;
+  cout << nsat << " (extra) stars flagged as saturated. " << endl ;
 
   if (pmasksat) 
     { 
-    pmasksat->EnableWrite(true); 
-    cerr << "Writing Saturated stars pixels map in " 
+    pmasksat->EnableWrite(true);
+    cout << "Writing Saturated stars pixels map in " 
 	 << FitsSaturName() << endl ;
-    delete pmasksat;
+    cout << " we have " << pmasksat->SumPixels() 
+	 << " pixels flagged as saturated" << endl;
+    delete pmasksat; // causes the actual writing.
     }
 
   SetSESky(Fond, "SExtractor computed background");
   SetSESigma(SigmaFond, "SExtractor computed sigma on background"); 
-  // mise a zero starliste s le fond est soustrait
-  // et correction de la saturation 
+  // set back to zero in starlist and correct saturation in image
   if (soustraire_fond)
     {
-      // mise a zero du fond des etoiles
+      // set back ("Fond() ") of stars to zero.
       SetStarsBackground(stlse,0.);
-      // on update les cles
+      // update saturation level in image header
       SetOriginalSaturation(Saturation(),"Original saturation level before sky subtraction"); 
       SetSaturation(Saturation()-Fond,"Saturation level corrected from sky subtraction"); 
       SetBackLevel(0.," SExtractor Background subtracted"); // activates BackSub 
@@ -346,7 +347,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
     }
 
 
-  if (HasBad())  
+  if (HasBad())
     {
       cout << " removing binary mask " << FitsBadName() << endl;
       remove(FitsBadName().c_str()); 
@@ -407,6 +408,33 @@ bool ReducedImage::IsToadsWeight()
   return true ;
 }
 
+
+/* what makes MakeWeight complicated is that it is the product
+   of many factors :
+   - sky variance
+   - flat variations
+   - satellites (or planes)
+   - dead pixels
+   - cosmics
+   - (NOT satur, which is handled separately)
+
+  this would be simple if  it could be done right away. But :
+  - The catalog routine makes use of weight.
+  - cosmic finding requires the seeing (got from catalog)
+  - the sky variance is best estimated after sky subtraction done
+    while making the catalog
+
+  and perhaps other constraints. 
+
+  So the choosen approach is to write in the weight image what was done
+  and to make a routine that updates according to what is missing
+  and what is available
+*/ 
+
+
+
+
+
 bool ReducedImage::MakeWeight()
 {
   if ( HasWeight() && (! IsToadsWeight()) )
@@ -423,19 +451,27 @@ bool ReducedImage::MakeWeight()
   bool addsatellite = true;
   bool addflat = true;
   bool updatevar  = true;
+  bool addlow = true;
   double oldvariance = 1 ;
   double newvariance = 1./(SigmaBack()*SigmaBack());
   if (HasWeight())
     {
       if (true)
-	// to keep FitsHeader of weight as local, 
-	// avoiding conflict opening of the same file
+	// to keep FitsHeader of weight local, 
+	// avoiding conflict opening of the same file in RW
 	{
 	  FitsHeader head(FitsWeightName());
-	  adddead = !(head.HasKey("DEADPIXS") && head.KeyVal("DEADPIXS"));
-	  addcosmic = !(head.HasKey("COSMPIXS") && head.KeyVal("COSMPIXS"));
-	  addflat = !(head.HasKey("FLATPIXS") && head.KeyVal("FLATPIXS"));
-	  addsatellite = !(head.HasKey("SATEPIXS") && head.KeyVal("SATEPIXS"));
+	  adddead = !(head.HasKey("DEADPIXS") && head.KeyVal("DEADPIXS")) 
+	    && HasDead();
+	  addcosmic = !(head.HasKey("COSMPIXS") && head.KeyVal("COSMPIXS"))
+	    && HasCosmic();
+	  addflat = !(head.HasKey("FLATPIXS") && head.KeyVal("FLATPIXS")) 
+	    && HasFlat() ;
+	  addsatellite = !(head.HasKey("SATEPIXS") && head.KeyVal("SATEPIXS"))
+	    && HasSatellite();
+	  // to cut on too low pixels ,we wait for background subtraction:
+	  addlow = !(head.HasKey("LOWPIXS") && head.KeyVal("LOWPIXS"))
+	    && BackSub();
 
 	  updatevar = false ;
 	  // many different cases:
@@ -485,7 +521,8 @@ bool ReducedImage::MakeWeight()
 		}
 	    }
 	}
-      if ( !updatevar && !adddead && !addcosmic && !addflat && !addsatellite) 
+      if ( !updatevar && !adddead && !addcosmic && !addflat && 
+	   !addsatellite && !addlow) 
 	return true;
       if (destroy_weights)
 	{
@@ -511,32 +548,64 @@ bool ReducedImage::MakeWeight()
   FitsImage &weights = *pweights; // does nothing!
 
 
+
+  /* kill pixels which are too low (usually unidentified bad columns)
+     or central area of saturated stars (on some instruments) */
+  if (addlow)
+    {
+      FitsImage image(FitsName()); // important: don't open RW here
+      // wait for image to be back subtracted:
+      if (image.HasKey("BACK_SUB") && bool(image.KeyVal("BACK_SUB")))
+	{
+	  Pixel mean,sigma;
+	  image.MeanSigmaValue(&mean, & sigma);
+	  double threshold = mean - 10. * sigma;
+	  // only alters the memory image as long as we don't write it.
+	  image.Simplify(threshold,0,1);
+	  int nlow = int(image.SumPixels());
+	  weights *= (1-image);
+	  {
+	    std::string lowName = Dir()+"/low.fits.gz";
+	    remove(lowName.c_str());
+	    FitsImage low(lowName, (const Image &) image);
+	    low.AddOrModKey("BITPIX",8);
+	  }
+	  weights.AddOrModKey("LOWPIXS",true, 
+			      "zeroed weight of pixels too low in image");
+	  weights.AddOrModKey("LOWTHRE", threshold, 
+			      " under this (actual) image value, kill pixel");
+	  std::cout << " zeroing weight of low (" << nlow 
+		    << ") image pixels in " 
+		    << FitsWeightName()  << std::endl;
+	}
+    }
+      
   // check if we have dead, cosmics and flat frames and use them.
   // satur is out of the game because we wish to keep it separate.
+
   if (updatevar)
     {
       //fill with the inverse of the sky variance
       double s = newvariance / oldvariance ;
       weights *= s ; 
-      weights.AddOrModKey("VARPIXS",true);
+      weights.AddOrModKey("VARPIXS",true," this weight accounts for sky variance");
       weights.AddOrModKey("INVERVAR",newvariance );
       cout << "accounting for sky variance in  " << FitsWeightName() 
 	   << " old, new variance^-1: " <<  oldvariance << " " 
 	   << newvariance << endl;
-      cout << "accounting for sky variance in  " << FitsWeightName() << endl;
     }
   if (adddead && HasDead())
     {
       FitsImage dead(FitsDeadName());
       weights *= (1.- dead);
-      weights.AddOrModKey("DEADPIXS",true);
+      weights.AddOrModKey("DEADPIXS",true, " this weight accounts for dead pixels");
       cout << " zeroing dead pixels in " << FitsWeightName() << endl;
     }
   if (addcosmic && HasCosmic())
     {
       FitsImage cosmic(FitsCosmicName());
       weights *= (1.- cosmic);
-      weights.AddOrModKey("COSMPIXS",true);
+      weights.AddOrModKey("COSMPIXS",true," this weight accounts for (identified) cosmics");
       cout << " zeroing cosmic pixels in " << FitsWeightName() << endl;
     }
 
@@ -544,7 +613,7 @@ bool ReducedImage::MakeWeight()
     {
       FitsImage satellite(FitsSatelliteName());
       weights *= (1.- satellite);
-      weights.AddOrModKey("SATEPIXS",true);
+      weights.AddOrModKey("SATEPIXS",true, " this weight accounts for satelitte tracks");
       cout << " zeroing satellite pixels in " << FitsWeightName() << endl;
     }
 
@@ -581,7 +650,7 @@ bool ReducedImage::MakeWeight()
 		flat(i,j) *= factor;
 	} 
       weights.MultiplyBySquare(flat) ;
-      weights.AddOrModKey("FLATPIXS",true);
+      weights.AddOrModKey("FLATPIXS",true," this weight accounts for flat variations");
       cout << " accounting for flat variations in " << FitsWeightName() << endl;
     }
   // print some statistics
@@ -658,7 +727,7 @@ void ReducedImage::FlagCosmicsInCatalog(const Image &CosmicImage,
 	Point where(i,j);
 	const BaseStar *b = finder.FindClosest(where, dist);
 	SEStar *cosmic = (SEStar *) b;
-	if (cosmic && (cosmic->Distance(where) < dist)) 
+	if (cosmic && (cosmic->Distance(where) < dist) && !cosmic->IsCosmic())
 	  {
 	    nobj++; 
 	    cosmic->FlagAsCosmic();
@@ -1128,7 +1197,7 @@ bool  ReducedImage::BackSub() const
   FitsHeader head(FitsName());
   if (head.IsValid())
     {
-      if (head.HasKey("BACK_SUB")) return bool(head.KeyVal("BACK_SUB"));//
+      if (head.HasKey("BACK_SUB")) return bool(head.KeyVal("BACK_SUB"));
     }
   return(false);
 }
@@ -1653,11 +1722,15 @@ bool ReducedImage::FlagDiffractionSpikes() {
   std::list<mycluster> saturatedclusters;
   
   // read satur and make cluster list
- 
-  FitsImage satur(FitsSaturName(),RW);
+  int nx,ny;
+  Image satur; // I want RW access but this is not possible with cfitsio when fitsfile is compressed
   
-  int nx = satur.Nx();
-  int ny = satur.Ny();
+  {
+    FitsImage satur_ro(FitsSaturName(),RO);
+    nx = satur_ro.Nx();
+    ny = satur_ro.Ny();
+    satur = satur_ro;
+  }
   
   if(rebin>1) {      
     rebin_image(satur,rebin,rebin);
@@ -1710,11 +1783,14 @@ bool ReducedImage::FlagDiffractionSpikes() {
   if(rebin>1) {   
     unbin_image(satur,nx,ny,rebin,rebin);
   }
-
-  satur.AddCommentLine("This satur file was modified by ReducedImage::FlagDiffractionSpikes");
+  
+  // save satur in fits
+  {
+    FitsImage saturfits(FitsSaturName(),FitsHeader(FitsSaturName()),satur); // this is an astuce to write gzip compressed fits image
+    saturfits.AddCommentLine("This satur file was modified by ReducedImage::FlagDiffractionSpikes");
+  }
   cout << "Ending ReducedImage::FlagDiffractionSpikes" << endl;
   
-  // (save satur at delete)
   return true;
 }
 
