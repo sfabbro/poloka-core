@@ -5,31 +5,36 @@
 #include "reducedimage.h"
 #include "frame.h"
 #include "basestar.h"
+#include "kernelfit.h"
 
 
-class KernelFit;
 class Kernel;
 class Stamp;
 
 
 //! A class that wraps calls to KernelFit. Used both to carry out subtractions (ImageSubtraction) and just kernel fitting (for the light curve).
+
+#include "persistence.h"
+
 class PsfMatch {
 private:
+
+  CLASS_VERSION(PsfMatch,1);
+  #define PsfMatch__is__persistent
+
   bool ref_is_best;
   ReducedImageRef best,worst;
   string refName, newName;
-  bool  shouldNotDeleteFit;
   Frame intersection;
   double seeing,sigmaBack,photomRatio;
-  KernelFit* fit;
+  KernelFitRef fit;
 
 public:
   string NotFilteredStarListName();
 
   //!
-  PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch = NULL, bool noswap=false);
+  PsfMatch(const ReducedImageRef Ref, const ReducedImageRef New, const PsfMatch *APreviousMatch = NULL, bool noswap=false);
   ~PsfMatch();
-  PsfMatch(const PsfMatch &Original);
   PsfMatch();
 
   BaseStarList objectsUsedToFit;
@@ -50,8 +55,20 @@ public:
   ReducedImage* New() { return ((ref_is_best)? worst : best); }
   ReducedImage* Best() { return best;}
   ReducedImage* Worst() { return worst;}
-  KernelFit const* GetKernelFit() const {return fit;}
+  KernelFitRef const GetKernelFit() const {return fit;}
   void SetKernelFit(KernelFit *kernel);
+
+  void dump(std::ostream &stream = std::cout) const{;
+  stream << "refName, newName;" << refName << " " <<  newName << endl ;
+  stream << "Frame " ; intersection.dump();
+  stream << endl << "seeing,sigmaBack,photomRatio : " 
+	 << seeing << " " << sigmaBack<< " " 
+	 << photomRatio << endl ;
+  stream << "KernelFit";
+  fit->dump();  
+  }
+
+
 };
 
 #endif //PSFMATCH__H
