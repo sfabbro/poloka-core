@@ -30,6 +30,7 @@ histo4d.cc_cppflags = $(optimize_it)
 gtransfo.cc_cppflags = $(optimize_it)
 detection.cc_cppflags = $(optimize_it)
 matvec.cc_cppflags = $(optimize_it)
+aperturephotometry.cc_cppflags = $(optimize_it)
 
 lib_LTLIBRARIES = libtoads.la
 libtoads_la_SOURCES = \
@@ -119,8 +120,8 @@ libtoads_la_SOURCES = \
   psfmatch.cc                 psfmatch.h  \
   swarpstack.cc		      swarpstack.h \
   dicstar.cc                  dicstar.h \
-  dictfile.cc		      dictfile.h
-
+  dictfile.cc		      dictfile.h \
+  aperturephotometry.cc       aperturephotometry.h
 
 
 #  imagesum_dict.cc \
@@ -195,7 +196,8 @@ psfmatch.h  \
 swarpstack.h    \
 night.h     \
 nightelement.h  \
-matvect.h
+matvect.h \
+aperturephotometry.h
 
 
 
