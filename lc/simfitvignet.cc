@@ -10,6 +10,8 @@
 //#define FNAME
 //#define DEBUG
 
+#define VALCUTOFF 0.
+
 TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
   : Kernel(Radius), Dx(Radius), Dy(Radius)
 { 
@@ -281,6 +283,7 @@ SimFitVignet::SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref)
   FitFlux = false;
   FitPos = false;
   UseGal = false;
+  inverse_gain = 1./Rim->Gain();
 }
 
 SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimFitRefVignet* Ref)
@@ -296,6 +299,7 @@ SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimF
   FitFlux = false;
   FitPos = false;
   UseGal = false;
+  inverse_gain = 1./Rim->Gain();
   //Update();
 }
 
@@ -334,8 +338,11 @@ void SimFitVignet::Update()
   }
   if(!kernel_updated)
     BuildKernel();
+
+#ifndef ONEPSFPERIMAGE
   if(!psf_updated)
     BuildPsf();
+#endif
   
 #ifdef DEBUG
   // check sizes
@@ -349,8 +356,13 @@ void SimFitVignet::Update()
   int hy_resid = Resid.HSizeY();
   int hx_psf = Psf.HSizeX();
   int hy_psf = Psf.HSizeY();
+#ifndef ONEPSFPERIMAGE
   if (hx_data !=  hx_weight || hx_data != hx_resid || hx_data != hx_psf
       || hy_data !=  hy_weight || hy_data != hy_resid || hy_data != hy_psf ) {
+#else
+ if (hx_data !=  hx_weight || hx_data != hx_resid
+      || hy_data !=  hy_weight || hy_data != hy_resid ) {
+#endif
     cout << "   SimFitVignet::Update ERROR wrong size " << endl;
     cout << Kern << endl;
     cout << Data << endl;
@@ -361,11 +373,19 @@ void SimFitVignet::Update()
   }
 #endif
 
-  if(!resid_updated) {
-    if(FitPos && UseGal) UpdateResid_psf_gal();
-    else if(FitPos && (!UseGal))  UpdateResid_psf();
-    else if((!FitPos) && UseGal)  UpdateResid_gal();
-    else  UpdateResid(); 
+  if(!resid_updated) { 
+#ifdef ONEPSFPERIMAGE
+    BuildPsf(); // this loads a daophot psf
+    if(UseGal)
+      UpdateResid_gal();
+    else
+      UpdateResid();
+#else
+    if(UseGal) 
+      UpdateResid_psf_gal(); // compute psf as convolution of reference psf*kernel
+    else
+      UpdateResid_psf();
+#endif
   }
 }
 
@@ -385,6 +405,7 @@ void SimFitVignet::Resize( int Hx_new,  int Hy_new)
 #endif
   }else{
     Vignet::Resize(Hx_new,Hy_new);
+    OptWeight.Allocate(Nx(),Ny());
     kernel_updated = false;
     psf_updated    = false;
     resid_updated  = false;
@@ -393,10 +414,32 @@ void SimFitVignet::Resize( int Hx_new,  int Hy_new)
 }
 
 void  SimFitVignet::BuildPsf() {
+#ifdef FNAME
+  cout << " > SimFitVignet::BuildPsf()" << endl;
+#endif
+
+#ifndef ONEPSFPERIMAGE
+  
   if(!VignetRef->psf) {
-    cerr << " SimFitVignet::BuildPsf ERROR no VignetRef->psf to tabulate !!" << endl;
+    cout << "SimFitVignet::BuildPsf ERROR VignetRef has no psf" <<endl;
+    abort();
   }
   Psf.Tabulate(*Star,*(VignetRef->psf),*this);
+  // now scale this according to kernel integral
+  if(!kernel_updated)
+    BuildKernel();
+  double photomratio = Kern.sum();
+  Psf*=photomratio;
+  
+#else
+  
+  if(!psf) {
+    psf = new DaoPsf(*rim);
+  }
+  Psf.Tabulate(*Star,*psf,*this);
+
+#endif
+  
   psf_updated = true;
 }
 
@@ -450,9 +493,11 @@ void SimFitVignet::UpdateResid_psf_gal()
   double sump, sumx, sumy, sumg;
   DPixel *pdat, *pres, *ppsf, *ppdx, *ppdy;
   DPixel *pkern, *prpsf, *prpdx, *prpdy, *prgal;
+  DPixel *pw,*pow;
   int hkx = Kern.HSizeX();
   int hky = Kern.HSizeY();
-  
+  double val;
+
   for (int j=-hy; j<=hy; ++j)
     {
       pdat = &Data   (-hx,j);
@@ -460,7 +505,9 @@ void SimFitVignet::UpdateResid_psf_gal()
       ppsf = &Psf    (-hx,j);
       ppdx = &Psf.Dx (-hx,j);
       ppdy = &Psf.Dy (-hx,j);
-      for (int i=-hx; i<=hx; ++i, ++pres, ++ppsf, ++ppdx, ++ppdy)
+      pw   = &Weight (-hx,j);
+      pow  = &OptWeight (-hx,j);
+      for (int i=-hx; i<=hx; ++i, ++pres, ++ppsf, ++ppdx, ++ppdy, ++pw, ++pow)
 	{
 	  sumg = sump = sumx = sumy = 0.;
 	  pkern = Kern.begin();
@@ -485,14 +532,19 @@ void SimFitVignet::UpdateResid_psf_gal()
 	    DumpDebug();
 	    abort();
 	  }
-
-	  *pres = *pdat - Star->flux*sump - sumg - Star->sky;
+	  val = Star->flux*sump+sumg+Star->sky;
+	  *pres = *pdat - val;
 	  *ppsf = sump;
 	  *ppdx = sumx;
 	  *ppdy = sumy;
-
-	  
-
+	  if(*pw == 0)
+	    *pow = 0;
+	  else {
+	    if(val>VALCUTOFF)
+	      *pow = 1./(1./(*pw)+val*inverse_gain);
+	    else
+	      *pow = *pw;
+	  }
 	  ++pdat;
 	}
     }
@@ -509,9 +561,11 @@ void SimFitVignet::UpdateResid_psf()
   double sump, sumx, sumy;
   DPixel *pdat, *pres, *ppsf, *ppdx, *ppdy;
   DPixel *pkern, *prpsf, *prpdx, *prpdy;
+  DPixel *pw,*pow;
   int hkx = Kern.HSizeX();
   int hky = Kern.HSizeY();
-
+  double val;
+  
   const TabulatedPsf& RefPsf = VignetRef->Psf;
 
   for (int j=-hy; j<=hy; ++j)
@@ -521,7 +575,9 @@ void SimFitVignet::UpdateResid_psf()
       ppsf = &Psf    (-hx,j);
       ppdx = &Psf.Dx (-hx,j);
       ppdy = &Psf.Dy (-hx,j);
-      for (int i=-hx; i<=hx; ++i, ++pres, ++ppsf, ++ppdx, ++ppdy)
+      pw   = &Weight (-hx,j);
+      pow  = &OptWeight (-hx,j);
+      for (int i=-hx; i<=hx; ++i, ++pres, ++ppsf, ++ppdx, ++ppdy, ++pw, ++pow)
 	{
 	  sump = sumx = sumy = 0.;
 	  pkern = Kern.begin();
@@ -538,12 +594,20 @@ void SimFitVignet::UpdateResid_psf()
 		  --prpsf; --prpdx ; --prpdy;
 		}
 	    }
-	  
-	  *pres = *pdat - Star->flux * sump - Star->sky;
+	  val =  Star->flux * sump + Star->sky;
+	  *pres = *pdat - val;
 	  *ppsf = sump;
 	  *ppdx = sumx;
 	  *ppdy = sumy;
-	  ++pdat;
+	   if(*pw == 0)
+	    *pow = 0;
+	   else {
+	     if(val>VALCUTOFF)
+	       *pow  = 1./(1./(*pw)+val*inverse_gain);
+	     else
+	       *pow = *pw;
+	   }
+	   ++pdat;
 	}
     }
    resid_updated = true;
@@ -565,9 +629,10 @@ void SimFitVignet::UpdateResid_gal()
 
   double sumg;
   DPixel *pdat, *pres, *ppsf, *pkern, *prgal;
+  DPixel *pw,*pow;
   int hkx = Kern.HSizeX();
   int hky = Kern.HSizeY();
-
+  double val;
   const Kernel& RefGal = VignetRef->Galaxy;
 
   for (int j=-hy; j<=hy; ++j)
@@ -575,7 +640,9 @@ void SimFitVignet::UpdateResid_gal()
       pdat = &Data  (-hx,j);
       pres = &Resid (-hx,j);
       ppsf = &Psf   (-hx,j);
-      for (int i=-hx; i<=hx; ++i, ++pres)
+      pw   = &Weight (-hx,j);
+      pow  = &OptWeight (-hx,j);
+      for (int i=-hx; i<=hx; ++i, ++pres, ++pw, ++pow)
 	{
 	  sumg = 0.;
 	  pkern = Kern.begin();
@@ -587,8 +654,17 @@ void SimFitVignet::UpdateResid_gal()
 		  sumg += (*pkern) * (*prgal);
 		  ++pkern; --prgal;
 		}
-	    }	  
-	  *pres = *pdat - Star->flux* *ppsf - sumg - Star->sky;
+	    }
+	  val = Star->flux* *ppsf + sumg + Star->sky;
+	  *pres = *pdat - val;
+	  if(*pw == 0)
+	    *pow = 0;
+	  else {
+	    if(val>VALCUTOFF)
+	      *pow = 1./(1./(*pw)+val*inverse_gain);
+	    else
+	      *pow = *pw;
+	  }
 	  ++pdat;  ++ppsf; 
 	}
     }
@@ -604,13 +680,22 @@ void SimFitVignet::UpdateResid()
 #endif
   
   DPixel *pdat = Data.begin(), *pres = Resid.begin(), *ppsf = Psf.begin();
-
-  
-
+  DPixel *pw = Weight.begin();
+  DPixel *pow = OptWeight.begin();
+  double val;
   for (int i=Nx()*Ny(); i; --i)
-    {	
-      *pres = *pdat - Star->flux * *ppsf - Star->sky;
-      ++pres; ++pdat; ++ppsf;
+    {
+      val = Star->flux * *ppsf + Star->sky;
+      *pres = *pdat - val;
+       if(*pw == 0)
+	 *pow = 0;
+       else {
+	 if(val>VALCUTOFF)
+	   *pow  = 1./(1./(*pw)+val*inverse_gain);
+	 else
+	   *pow=*pw;
+       }
+       ++pres; ++pdat; ++ppsf; ++pw; ++pow;
     }
    resid_updated = true;
 }
@@ -638,8 +723,13 @@ void SimFitVignet::DumpDebug() const {
   VignetRef->Psf.writeFits("refpsf_DEBUG.fits");
   Kern.writeFits("kern_DEBUG.fits");
 }
+
 double SimFitVignet::Chi2() const {
-  double chi2 = Vignet::Chi2();
+  double chi2 = 0;
+  DPixel *pow=OptWeight.begin(), *pres=Resid.begin();
+  for (int i=Nx()*Ny(); i; --i, ++pres)
+    chi2 += *pow++ * (*pres) * (*pres);
+  
   if(chi2>=0)
     return chi2;
   

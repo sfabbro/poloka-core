@@ -15,6 +15,10 @@
 //!  Primarly to use for SimultaneousFit.
 //
 
+// uncomment this to use one daophot psf per image, kernels are still used for the galaxy and for the photometric ratio
+//#define ONEPSFPERIMAGE
+
+
 class TabulatedPsf : public Kernel {
 
 public:
@@ -119,6 +123,10 @@ private:
 
 public:
 
+#ifdef ONEPSFPERIMAGE
+  CountedRef<DaoPsf> psf;
+#endif
+
   //! empty constructor allocate nothing
   SimFitVignet() : FitFlux(false) {}
 
@@ -136,9 +144,14 @@ public:
   bool FitPos; //  do we need to fit the position
   bool UseGal; // do we need to use a model for the galaxy (does not mean we necessarly fit it)
   bool DontConvolve;
+  
+  double inverse_gain;
 
   //! a kernel to convolve a reference to match the current vignet
   Kernel Kern;
+  
+  //! weight taking into account star flux
+  Kernel OptWeight;
 
   //! tabulated PSF and its derivatives to allow fast computation
   TabulatedPsf Psf;

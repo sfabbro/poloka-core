@@ -360,7 +360,7 @@ void SimFit::fillFluxFlux()
 
       for (int j=-hy; j<=hy; ++j)
 	{
-	  pw   = &(vi->Weight)(-hx,j);
+	  pw   = &(vi->OptWeight)(-hx,j);
 	  pres = &(vi->Resid) (-hx,j);
 	  ppsf = &(vi->Psf)   (-hx,j);
 #ifdef DEBUG_TOTO
@@ -413,7 +413,7 @@ void SimFit::fillFluxPos()
 
       for (int j=-hy; j<=hy; ++j)
 	{
-	  pw   = &(vi->Weight)(-hx,j);
+	  pw   = &(vi->OptWeight)(-hx,j);
 	  ppsf = &(vi->Psf)   (-hx,j);
 	  ppdx = &(vi->Psf.Dx)(-hx,j);
 	  ppdy = &(vi->Psf.Dy)(-hx,j);
@@ -484,7 +484,7 @@ void SimFit::fillFluxGal()
 	  for (int j=-hy;  j<=hy; ++j)
 	    {
 	      ppsf = &(vi->Psf)   (-hx,j);
-	      pw   = &(vi->Weight)(-hx,j);
+	      pw   = &(vi->OptWeight)(-hx,j);
 	      for (int i=-hx; i<=hx; ++i)
 		{
 		  PMat(galind(i,j),ind) = (*ppsf) * (*pw);
@@ -515,7 +515,7 @@ void SimFit::fillFluxGal()
 		{
 		  pkern = &(vi->Kern)  (ikstartis,jk-js);
 		  ppsf  = &(vi->Psf)   (ikstart,jk);
-		  pw    = &(vi->Weight)(ikstart,jk);
+		  pw    = &(vi->OptWeight)(ikstart,jk);
 		  for (int ik=ikstart; ik<=ikend; ++ik)
 		    {
 		      summat += (*ppsf) * (*pkern) * (*pw);
@@ -556,7 +556,7 @@ void SimFit::fillFluxSky()
       summat = 0.;
       for (int j=-hy; j<=hy; ++j)
 	{
-	  pw   = &(vi->Weight)(-hx,j);
+	  pw   = &(vi->OptWeight)(-hx,j);
 	  ppsf = &(vi->Psf)   (-hx,j);
 	  for (int i=-hx; i<=hx; ++i) 
 	    {
@@ -603,7 +603,7 @@ void SimFit::fillPosPos()
 
       for (int j=-hy; j<=hy; ++j)
 	{
-	  pw   = &(vi->Weight)(-hx,j);
+	  pw   = &(vi->OptWeight)(-hx,j);
 	  pres = &(vi->Resid) (-hx,j);
 	  ppdx = &(vi->Psf.Dx)(-hx,j);
 	  ppdy = &(vi->Psf.Dy)(-hx,j);
@@ -663,7 +663,7 @@ void SimFit::fillPosGal()
 	    {
 	      ppdx = &(vi->Psf.Dx)(-hx,j);
 	      ppdy = &(vi->Psf.Dy)(-hx,j);
-	      pw   = &(vi->Weight)(-hx,j);
+	      pw   = &(vi->OptWeight)(-hx,j);
 #ifdef DEBUG_FILLMAT
 	  cout << "   SimFit::fillPosGal pw,ppdx,ppdy " 
 	       << *pw << "," 
@@ -701,7 +701,7 @@ void SimFit::fillPosGal()
 		  pkern = &(vi->Kern)  (ikstartis,jk-js);
 		  ppdx = &(vi->Psf.Dx)(ikstart,jk);
 		  ppdy = &(vi->Psf.Dy)(ikstart,jk);
-		  pw    = &(vi->Weight)(ikstart,jk);
+		  pw    = &(vi->OptWeight)(ikstart,jk);
 		  for (int ik=ikstart; ik<=ikend; ++ik)
 		    {
 		      summatx += (*ppdx) * (*pkern) * (*pw);
@@ -750,7 +750,7 @@ void SimFit::fillPosSky()
 
       for (int j=-hy; j<=hy; ++j)
 	{
-	  pw   = &(vi->Weight)(-hx,j);
+	  pw   = &(vi->OptWeight)(-hx,j);
 	  ppdx = &(vi->Psf.Dx)(-hx,j);
 	  ppdy = &(vi->Psf.Dy)(-hx,j);
 	  for (int i=-hx; i<=hx; ++i) 
@@ -803,7 +803,7 @@ void SimFit::fillGalGal()
 	  for (int j=-hy; j<=hy; ++j)
 	    for (int i=-hx; i<=hx; ++i)
 	      {
-		Vec(galind(i,j)) += (vi->Resid)(i,j) * (vi->Weight)(i,j);
+		Vec(galind(i,j)) += (vi->Resid)(i,j) * (vi->OptWeight)(i,j);
 	      }
 	  continue;
 	}
@@ -832,7 +832,7 @@ void SimFit::fillGalGal()
 		{
 		  pkern = &(vi->Kern)  (ikstartis,jk-js);
 		  pres  = &(vi->Resid) (ikstart,jk);
-		  pw    = &(vi->Weight)(ikstart,jk);
+		  pw    = &(vi->OptWeight)(ikstart,jk);
 
 #ifdef DEBUG_FILLMAT
 		  //cout << "   fillGalGal pkern,pres,pw " << *pkern << "," << *pres << "," << *pw << endl;
@@ -898,7 +898,7 @@ void SimFit::fillGalGal()
 	    for (int i=-hx; i<=hx; ++i)
 	      {
 		int ind = galind(i,j);
-		PMat(ind,ind) += (vi->Weight)(i,j);
+		PMat(ind,ind) += (vi->OptWeight)(i,j);
 	      }
 	  continue;
 	}
@@ -939,7 +939,7 @@ void SimFit::fillGalGal()
 		ikmax = min(min(hkx,hx-im),hkx-imn);
 		pkern1 = &( (vi->Kern)  (ikmin,jk));
 		pkern2 = &( (vi->Kern)  (ikmin+imn,jk+jmn));
-		pw     = &( (vi->Weight) (ikmin+im,jk+jm));
+		pw     = &( (vi->OptWeight) (ikmin+im,jk+jm));
 		for (ik=ikmin; ik<=ikmax; ++ik, ++pkern1, ++pkern2, ++pw)  
 		  summat += (*pkern1)*(*pkern2)*(*pw);
 	      }
@@ -996,7 +996,7 @@ void SimFit::fillGalSky()
 	{
 	  for (int j=-hy;  j<=hy; ++j)
 	    {
-	      pw = &(vi->Weight)(-hx,j);
+	      pw = &(vi->OptWeight)(-hx,j);
 	      for (int i=-hx; i<=hx; ++i)
 		{
 		  PMat(galind(i,j),ind) = *pw++;
@@ -1023,7 +1023,7 @@ void SimFit::fillGalSky()
 	      for (int jk=jkstart; jk<=jkend; ++jk)
 		{
 		  pkern = &(vi->Kern)  (ikstartis,jk-js);
-		  pw    = &(vi->Weight)(ikstart,jk);
+		  pw    = &(vi->OptWeight)(ikstart,jk);
 		  for (int ik=ikstart; ik<=ikend; ++ik)
 		    {
 		      summat += (*pkern) * (*pw);
@@ -1062,7 +1062,7 @@ void SimFit::fillSkySky()
       summat = 0.;
       for (int j=-hy; j<=hy; ++j)
 	{
-	  pw   = &(vi->Weight)(-hx,j);
+	  pw   = &(vi->OptWeight)(-hx,j);
 	  pres = &(vi->Resid) (-hx,j);
 	  for (int i=-hx; i<=hx; ++i) 
 	    {
@@ -1124,8 +1124,7 @@ bool SimFit::Update(double Factor)
   if (fit_pos) 
     {
 #ifdef DEBUG
-      cout << "   in SimFit::Update shifting of x  y  " << VignetRef->Star->x << " " << VignetRef->Star-> y << endl
-	   << " dx dy " << Vec[xind]*Factor << " " <<  Vec[yind]*Factor << " (xind,yind)=" << xind << "," << yind <<  endl;
+      cout << "   in SimFit::Update shifting of dx dy " << Vec(xind)*Factor << " " <<  Vec(yind)*Factor << " (xind,yind)=" << xind << "," << yind <<  endl;
 #endif
       if (!(VignetRef->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
 	abort();
@@ -1258,7 +1257,7 @@ bool SimFit::GetCovariance()
   cout << " SimFit::GetCovariance() : starting" << endl;
   
   // someday we should recompute the covariance ala MINOS
-
+  
   int status = cholesky_invert(PMat,"L");
   
   if (status != 0) 
@@ -1272,7 +1271,9 @@ bool SimFit::GetCovariance()
   // it corrects for initially under-estimated (ex: correlated) weights if chi2/dof < 1 
   // or for error in our model if chi2/dof > 1
 
-  double sigscale = chi2 / double(ndata - nparams);
+  //double sigscale = chi2 / double(ndata - nparams);
+  double sigscale = 1;
+  
   int fluxind = 0;
   int skyind  = 0;
   for (SimFitVignetIterator it=begin(); it != end(); ++it)
@@ -1322,62 +1323,17 @@ void SimFit::DoTheFit()
 
 #ifdef DEBUG
   clock_t tstart = clock(); 
-#endif
-  
-  // If position is to be fitted, iterate more (non linear), 
-  // fit data to its mininimum vignet size, and do not fit sky
+#endif 
 
-  const double oldscale = scale;
-
-  if (fit_pos)
-    {
-#ifdef DEBUG
-      cout << " SimFit::DoTheFit(): fit position and resize vignets at min scale" << endl;
-#endif
-      bool oldfit_sky = fit_sky;
-      bool oldfit_gal = fit_gal;
-      fit_sky = false;
-      fit_gal = false;
-      Resize(1);
-//       if (fit_gal) 
-// 	Resize(minscale);
-      
-      if (!IterateAndSolve(30)) return;
-      if (!GetCovariance())     return;
-      fit_sky = oldfit_sky;
-      fit_gal = oldfit_gal;
-    }
-
-  //return;
-
-  // Freeze position, resize the vignets and fit linearly the rest
-  bool oldfit_pos = fit_pos;
-  fit_pos = false;
-  // one has to tell all vignets we don't fit the pos anymore
-  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig)
-    (*itVig)->FitPos = fit_pos;
-  
-  // only do those iteration if you are not at maximum scale, we want to fit the sky
-  // or we did not fit anything yet.
-  if (minscale != oldscale || fit_sky || oldfit_pos)
-    {
-#ifdef DEBUG
-      cout << " SimFit::DoTheFit() : Freeze position and resize vignets at " << endl;
-#endif
-      Resize(oldscale);
-      if (!IterateAndSolve(7)) return;
-      if (!GetCovariance())    return;
-    }
-  
-  fit_pos = oldfit_pos;
-
+  Resize(1);
+  if (!IterateAndSolve(20)) return;
+  if (!GetCovariance())    return;
 
 #ifdef DEBUG
   clock_t tend = clock();
   cout << " SimFit::DoTheFit() : CPU comsumed : " 
        <<  float(tend-tstart) / float(CLOCKS_PER_SEC) << endl;
 #endif
-
 }
 
 void SimFit::write(const string& StarName,const string &DirName, unsigned int whattowrite) 
@@ -1432,7 +1388,7 @@ void SimFit::write(const string& StarName,const string &DirName, unsigned int wh
   // write weights
   if(whattowrite & WriteWeight)
     for (SimFitVignetIterator it=begin(); it != end() ; ++it)
-      (*it)->Weight.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_weight.fits");
+      (*it)->OptWeight.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_weight.fits");
   
   // write kernels
   if(whattowrite & WriteKernel)
@@ -1589,7 +1545,7 @@ DPixel *pkerm, *pkern;
 	    {
 	      pkerm = &(vi->Kern)  (ikstart,jk);
 	      pkern = &(vi->Kern)  (ikstart+imn,jk+jmn);
-	      pw    = &(vi->Weight)(ikstart+im,jk+jm);
+	      pw    = &(vi->OptWeight)(ikstart+im,jk+jm);
 	      for (int ik=ikstart; ik<=ikend; ++ik)
 		{
 		  summat += (*pkerm) * (*pkern) * (*pw); 
