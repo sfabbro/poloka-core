@@ -433,7 +433,8 @@ SimSNWModelStar::MariageToAModelStar(SEStarList const & BellesEtoiles)
 
 
 //static routine for debug, to check if the model star method is sound.
-static string debug="addmodel.debug";
+static string dirdebug = "mc";
+static string debug= dirdebug + "/addmodel.debug";
 // prdebugstate is incremented when sticking a whole list of fake --> corresponds to an image number.
 static int prdebugstate=0;
 static void PrintDebugHead(ofstream & pr)
@@ -461,6 +462,7 @@ static void PrepareDebug()
 {
   if (prdebugstate == 0)
     {
+      MKDir(dirdebug.c_str());
       remove(debug.c_str());
       ofstream pr(debug.c_str());
       PrintDebugHead(pr);
