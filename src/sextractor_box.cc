@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-
+#include <string>
 
 #include "fileutils.h"
 #include "sestar.h"
@@ -128,7 +128,11 @@ Get_PixelSat(float x, float y)
 typedef void (*_SexStarFill)(objstruct* obj, obj2struct *obj2);
   
 typedef void (*_SexImgFill)(float x, float y);
-  
+
+
+
+
+
 static 
 int 
 sex_proc(const AllForSExtractor & data,
@@ -136,6 +140,7 @@ sex_proc(const AllForSExtractor & data,
           double & Fond, double &SigmaFond)
 {
 
+  std::string toRemove;
   memset(&prefs,0,sizeof(prefs));
   prefs.pipe_flag = 0;
   prefs.nimage_name = 1; // 1 seule image pour detection & photometrie
@@ -144,7 +149,8 @@ sex_proc(const AllForSExtractor & data,
   strcpy(prefs.prefs_name, data.SexConfigFileName.c_str());
 
   char filename[256];
-  strcpy(filename,data.FitsFileName.c_str());
+  std::string imageName = data.DecompressIfNeeded(data.FitsFileName, toRemove);
+  strcpy(filename,imageName.c_str());
   prefs.image_name[0] = filename;
 
   readprefs(prefs.prefs_name, NULL, NULL, 0);
@@ -186,7 +192,9 @@ sex_proc(const AllForSExtractor & data,
       if (prefs.wimage_name[0] != 0 )
 	free(prefs.wimage_name[0]);
       prefs.wimage_name[0] = (char *)calloc(MAXCHAR,1);     
-      strcpy(prefs.wimage_name[0],data.FitsWeightName.c_str() );
+      std::string weightName = 
+	data.DecompressIfNeeded(data.FitsWeightName,toRemove);
+      strcpy(prefs.wimage_name[0],weightName.c_str());
       prefs.nwimage_name = 1 ; 
       prefs.weight_type[0]=WEIGHT_FROMWEIGHTMAP;
       prefs.nweight_type=1;
@@ -244,6 +252,9 @@ sex_proc(const AllForSExtractor & data,
 
   Fond = thefield1.backmean;
   SigmaFond= thefield1.backsig ;
+  
+  // cleanup temp files
+  RemoveFiles(toRemove);
 
   return 1;
 } 
@@ -308,6 +319,17 @@ _SEStarListMake(const AllForSExtractor & data,
 
 // encapsulage niveau 1
 
+
+
+std::string ForSExtractor::DecompressIfNeeded(const std::string &InFileName,
+					      std::string &ToRemove) const
+{
+  std::string outFileName =  AddSlash(TempDir)+UniqueName+"."
+    +CutExtension(BaseName(InFileName))+".fits";
+  return DecompressImageIfNeeded(InFileName, outFileName, ToRemove);
+}
+
+
 void
 AllForSExtractor::Print()
 {
@@ -358,6 +380,14 @@ AllForSExtractor::FillFromEnvironnement()
   SexNNWName   = sextr_dir+"/default.nnw";
   SexFilterName   = sextr_dir+"/default.conv" ;
 }
+
+
+
+
+
+
+
+
 
   
 

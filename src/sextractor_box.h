@@ -17,13 +17,16 @@ string FitsMaskName ;
 string FitsWeightName  ;
 string FitsBackName  ;
 string FitsMiniBackName ;
+ string TempDir;
+ string UniqueName;
 double saturation  ;
 bool back_type_manual ; // if true, a constant value for the background is taken.
 double sigma_back ;
 double backmean ;
 public:
- ForSExtractor(){string vide ; FitsMaskName=vide;FitsWeightName=vide;FitsBackName=vide;
- FitsMiniBackName=vide; back_type_manual = false ;sigma_back=-1;backmean=0.;};
+ ForSExtractor(){back_type_manual = false ;sigma_back=-1;backmean=0.;};
+ std::string DecompressIfNeeded(const std::string &InFileName,
+				std::string &ToRemove) const;
  void Print();
 };
 
