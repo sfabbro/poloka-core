@@ -175,7 +175,7 @@ Mat Mat::operator *(const Mat& Right) const
 
 Mat Mat::operator *(const Vect& Right) const
 {
-  return (*this)*(Right.asMat());
+  return (*this)*Mat(Right);
 }
 
 void Mat::operator *=(const Mat& Right)
@@ -366,7 +366,8 @@ Vect::operator double() const
   return (*this)(0);
 }
 
-Mat Vect::asMat() const {
+Vect::operator Mat() const {
+//Mat Vect::asMat() const {
   Mat mat(1,n);
   for(unsigned int i=0;i<n;++i) {
     mat(0,i)=(*this)(i);

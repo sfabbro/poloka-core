@@ -107,7 +107,7 @@ class Vect {
   void operator *=(const double Right);
 
   Mat transposed() const;
-  Mat asMat() const; // do not use an operator cause gives undetermination
+  operator Mat() const;
   operator double() const;
 };
 
