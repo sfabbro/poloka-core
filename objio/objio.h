@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.7 2004/03/02 18:49:13 nrl Exp $
+// $Id: objio.h,v 1.8 2004/03/04 15:55:49 nrl Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/02 18:49:13 $
+// Last modified: $Date: 2004/03/04 15:55:49 $
 // by:            $Author: nrl $
 // 
 #ifndef OBJIO_H
@@ -18,7 +18,7 @@
 #include "toadtypes.h"
 #include "objio_defs.h"
 
-
+#include "countedref.h"
 
 
 template<class IOS> class typemgr;
@@ -40,14 +40,14 @@ public:
   
   template<class T>
   void   write(persister<T,IOS> const& p, const char* name=0) {
-    check_address_(p.obj_);
+    //    check_address_(p.obj_);
     stream_.write_start_object_tag(p.name(), p.version(), p.get_object_addr());
     p.write_members(*this);
     stream_.write_end_object_tag();
   }
   
   void   write(persister_base<IOS> const* p, const char* name=0) {
-    check_address_(p->get_object_addr());
+    //    check_address_(p->get_object_addr());
     stream_.write_start_object_tag(p->name(), p->version(), p->get_object_addr());
     p->write_members(*this);
     stream_.write_end_object_tag();
@@ -130,8 +130,20 @@ public:
     stream_.write_end_collection_tag();
   }
   
-  //  template<class T>
-  //  void         write(CountedRef<T> const&) {}
+  template<class T>
+  void         write(CountedRef<T> const& r, const char* name=0) {
+    T const* pt = &(*r);
+    bool w = check_address_((void const*)(pt)); // did we write this object already ?
+    persister<T,IOS>* b = (persister<T,IOS>*)typemgr<IOS>::getPersister(typeid(*pt).name());
+    b->set_object(pt);
+    stream_.write_start_raw_pointer_tag(name);
+    if(!w) {
+      write((persister_base<IOS>*)b);
+    }
+    else 
+      stream_.write(pt);
+    stream_.write_end_raw_pointer_tag();
+  }
 
   //  template<class T>
   //    void           write(handle<T> const& h) {
