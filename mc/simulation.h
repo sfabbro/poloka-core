@@ -85,6 +85,8 @@ struct DatSim {
     double LimGalMag ;
     // in case of adapted generation: sn mag will be in [host mag +  deltaMagmin, host mag + deltaMagmax] AND in [minMag, maxMag]
     double deltaMagmin, deltaMagmax;
+  bool hasZeroPoint;
+  double zeroPoint;
   
   DatSim() { numberOfFakes = 500; xsize_damier =0 ;ysize_damier=0; delta_x = 100 ; delta_y = 100 ; minMag = 22; maxMag = 26; maxGalMag=26 ;  LimGalMag = 24 ; deltaMagmin=0. ; deltaMagmax=1. ;}
     //! read parameters for simulation in datacards. magnitude are set according filter (default = i)
@@ -99,6 +101,8 @@ struct DatSim {
 //! generate a random position and flux in a galaxy according to datacard specification.
   SimSNStar *RandomSNInGalaxy(SEStar & gal_onref ,double zerop_ref );
 
+  bool HasZeroPoint() const { return hasZeroPoint;}
+  double ZeroPoint() const { return zeroPoint;}
 
     private :
   void LitDataCards(DataCards &, string const & filter = "");
@@ -116,13 +120,22 @@ struct DatSim {
 
 // a changer de place (dans fakestar ? dans sestar ?)
 // des que je serai fixee DH
+
+void 
+PreSelectModelStars(SEStarList const &starList, 
+		    SEStarList &BellesEtoiles, const Image &model);
+
+
+
 bool
 SelectModelStars(ReducedImageList  & imglist, SEStarList const & stlref, 
-		 SEStarList &BellesEtoiles, Image * model);
+		 SEStarList &BellesEtoiles, const Image &model);
 
+#ifdef STORAGE
 void 
 SelectionOfModelStars(SEStarList const &starList,
 		      SEStarList &BellesEtoiles, Image * model);
+#endif
 
 
 //! ForSim regroups all the necessary elements to perform the generation
@@ -195,6 +208,12 @@ public :
   ForSimWModel(ReducedImage const & RefImage, 
 	       SEStarList const & ListForModelStars, 
 	       const ImageGtransfo* tf=NULL);
+
+  ForSimWModel(ReducedImage const & RefImage, 
+	       const SEStarList &ListForModelStars,
+	       const SEStarList &ListForGalaxies,
+	       const ImageGtransfo* tf=NULL);
+
     
   //! this creator does nothing. ForSim can be filled afterwards as 
   //! done in above  creator with Fill method.
