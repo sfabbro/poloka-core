@@ -207,6 +207,7 @@ class KernelFit {
     WorstImageBack = 0;
     m=0;
     b=0;
+    nstamps=0;
   }
   
   ~KernelFit() {
@@ -234,7 +235,7 @@ void SubtractStampFromMAndB(Stamp& AStamp);
 int Solve();
 double StampChi2(Stamp &stamp, double VSky, double InvGain); /* involves a kernel computation and a stamp convolution */
   double chi2;
-  int NStampsUsed() const {return BestImageStamps->size();}
+  int NStampsUsed() const {return nstamps;}
 
 /* computes chi2 contributions of stamps and applies median filtering for outliers removal. iterates until
 the number of stamps involved stabilizes. */
@@ -269,6 +270,9 @@ Image *VarianceConvolve(const Image &Source, int UpdateKern = 100);
   friend ostream& operator << (ostream &stream, const KernelFit &s)
   { s.dump(stream); return stream;}
 #endif
+
+private:
+  int nstamps;
 
 };
 

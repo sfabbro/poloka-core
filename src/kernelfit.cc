@@ -466,10 +466,10 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
 
  /* values of monomials such as (xc**n)*(yc**m), for this stamp  : */
  // for the smooth kernel variation
- for (int i = 0; i  < optParams.KernVar.Nterms(); ++i) 
+ for (unsigned int i = 0; i  < optParams.KernVar.Nterms(); ++i) 
      spatialCoeff[i] = optParams.KernVar.Value(AStamp.xc, AStamp.yc, i);
  //for the background, actually compute monomials for all stamp pixels:
- for (int ib =0; ib < optParams.BackVar.Nterms(); ++ib) 
+ for (unsigned int ib =0; ib < optParams.BackVar.Nterms(); ++ib) 
    {
      DImage &backStamp = backStamps[ib];
      for (int j= 0; j < convolvedSize ; ++j)
@@ -486,9 +486,9 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
 
     /* contributions to the matrix m */
     /* background-background terms */
- for (int ib = 0; ib < optParams.BackVar.Nterms(); ++ib)
+ for (unsigned int ib = 0; ib < optParams.BackVar.Nterms(); ++ib)
    {
-   for (int jb =0; jb<=ib; ++jb)   
+   for (unsigned int jb =0; jb<=ib; ++jb)   
      {
      StampM[BackIndex(ib)*mSize+BackIndex(jb)] += 
        scal_prod(backStamps[ib].begin(), backStamps[jb].begin(), convolvedPix);
@@ -506,10 +506,10 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
      double integral = scal_prod(convolutions[ik].begin(), 
 				 convolutions[jk].begin(),
 				 convolvedPix);
-     for (int is =0; is < optParams.KernVar.Nterms(); ++is)
+     for (unsigned int is =0; is < optParams.KernVar.Nterms(); ++is)
        {
        int im = KernIndex(ik,is);
-       for (int js =0; js < optParams.KernVar.Nterms(); ++js)
+       for (unsigned int js =0; js < optParams.KernVar.Nterms(); ++js)
 	 {
 	 int jm = KernIndex(jk,js);
          StampM[im*mSize+jm] += integral*spatialCoeff[is]*spatialCoeff[js];  // alard eq (3)
@@ -518,10 +518,10 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
      }
 
       /* kernel-background terms */
-   for (int is = 0; is < optParams.KernVar.Nterms(); ++is)
+   for (unsigned int is = 0; is < optParams.KernVar.Nterms(); ++is)
      {
      int im = KernIndex(ik,is);
-     for (int jb=0; jb < optParams.BackVar.Nterms(); ++jb) 
+     for (unsigned int jb=0; jb < optParams.BackVar.Nterms(); ++jb) 
        {
        int jm = BackIndex(jb);
        /* fill only m part for j<=i 
@@ -546,7 +546,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
      }
    
    double bintegral = image_scal_prod(convolutions[ik], worst, WorstImageBack, AStamp.xc - hConvolvedSize, AStamp.yc - hConvolvedSize);
-   for (int is =0; is < optParams.KernVar.Nterms(); ++is)
+   for (unsigned int is =0; is < optParams.KernVar.Nterms(); ++is)
      {
      int im = KernIndex(ik,is);
      StampB[im] += bintegral * spatialCoeff[is]; // alard eq (4)
@@ -554,7 +554,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
    } /* end of for (ik */
 
       /* background terms of b */
- for (int ib=0; ib < optParams.BackVar.Nterms(); ++ib)
+ for (unsigned int ib=0; ib < optParams.BackVar.Nterms(); ++ib)
    {
    StampB[BackIndex(ib)] += 
      image_scal_prod(backStamps[ib], WorstImage, WorstImageBack, 
@@ -787,13 +787,13 @@ double XYPower::Value(const double X, const double Y, const int q) const
 
 void KernelFit::KernCompute(Kernel &Kern, const double X, const double Y) const
 {
-int nKern = Kernels.size();
+unsigned int nKern = Kernels.size();
 double *coeff = new double[nKern];
-for (int i=0; i<nKern; ++i) coeff[i] = 0;
-for (int is =0; is < optParams.KernVar.Nterms(); ++is)
+for (unsigned int i=0; i<nKern; ++i) coeff[i] = 0;
+for (unsigned int is =0; is < optParams.KernVar.Nterms(); ++is)
   {
   double spatialCoeff = optParams.KernVar.Value(X,Y,is);
-  for (int ik=0; ik< nKern; ++ik)
+  for (unsigned int ik=0; ik< nKern; ++ik)
     {  
     coeff[ik] +=  solution[KernIndex(ik, is)]*spatialCoeff;
     }
@@ -843,6 +843,9 @@ for (int i=0; i< convolvedSize; ++i)
   chi2 += res*res/(InvGain*w_value+VSky);
   }
 stamp.chi2 = chi2;
+ if(chi2<0) {
+   cout << "KernelFit::StampChi2 WARNING xc,yc,chi2 = " << xc << "," << yc << "," << chi2 << endl;  
+ } 
 return chi2;
 }
 
@@ -1071,7 +1074,9 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
        StampList(*BestImage, List, optParams.HStampSize, optParams.MaxStamps);
  DeallocateConvolvedStamps();
 
- if (!BestImageStamps->size())
+ nstamps = BestImageStamps->size();
+
+ if (!nstamps)
    {
      cerr << " No Stars to fit the kernel ... : giving up " << endl;
      KernAtCenterSum = 1;
