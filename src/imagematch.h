@@ -24,9 +24,11 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 		const FitsHeader &Head1, const FitsHeader &Head2,
 		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
 
+
 //! From an initial first order guess, fit and refine it
 int RefineGuess(const BaseStarList &List1, const BaseStarList &List2, 
-		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One,
+		const string& image1_name="", const string& image2_name=""); //names are just for dumping results
 
 //! calls MatchGuess, refines the guess with RefineGuess
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 

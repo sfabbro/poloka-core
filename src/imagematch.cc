@@ -217,7 +217,9 @@ static double transfo_diff(const BaseStarList &List, const Gtransfo *T1, const G
 // iterative collect / fit until transfo stabilizes.
 // increase order if transfo looks ok
 int RefineGuess(const BaseStarList &List1, const BaseStarList &List2, 
-		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One)
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One,
+		const string& image1_name, const string& image2_name  // names are just for dumping results (facultative)
+		)
 {
   cout << " RefineGuess : starting guess with "  
     << List1.size() << " " << List2.size() << " bright objects\n";
@@ -244,6 +246,9 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
        << " Chi2/DOF " << curChi2Red << endl;
   cout << " RefineGuess : Start looping \n";
 
+  int bestNused=0;
+  double bestChi2PDF=0.;
+  double bestResid=0.;
   do // loop on transfo order
     {
       prevChi2Red = curChi2Red;
@@ -274,6 +279,9 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 	  One2Two = refinedMatch->Transfo()->Clone();
 	  Two2One = refinedMatch->InverseTransfo();
 	  bestorder = order;
+	  bestChi2PDF = curChi2Red;
+	  bestNused = refinedMatch->Nused();
+	  bestResid = refinedMatch->Residual();
 	}
       //else break;
       minToMatch = usedToCollect->Npar();
@@ -282,7 +290,15 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
     } 
   while (refinedMatch->size() > minToMatch && order <4);
   cout << setprecision(oldprec);
-  cout << " RefineGuess : Kept order " << bestorder << endl;
+  // this dump is usefull to check if everything is ok in the log
+  cout << " RefineGuess_SUMMARY_image1_image2_order_resid_nused_chi2pdf " 
+       << image1_name << " "
+       << image2_name << " "
+       << bestorder << " " 
+       << bestResid << " " 
+       << bestNused << " "
+       << bestChi2PDF << endl;
+  
   delete refinedMatch;
   delete usedToCollect;
   return bestorder;
@@ -353,7 +369,7 @@ bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2,
   // 2 - Refine the initial match with initial full list in framed match
   cout << " ImageListMatch : refining initial guess \n" ;
   
-  RefineGuess(bl1, bl2, One2Two, Two2One);
+  RefineGuess(bl1, bl2, One2Two, Two2One, DbImage1.Name(),DbImage2.Name());
   cout << " ImageListMatch : final refined transfo : \n";
   cout << *One2Two << endl;
 
