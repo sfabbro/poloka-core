@@ -794,7 +794,7 @@ string fileName = TypeFileName();
 FILE *file = fopen(fileName.c_str(),"r");
 if (!file)
   {
-    cerr << "cannot open in write mode " << fileName << endl;
+    cerr << "cannot open in read mode " << fileName << endl;
     return "NoType";
   }
 fscanf(file,"%s",name);
