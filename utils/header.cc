@@ -15,7 +15,7 @@ static void usage()
 {
 cout << " header  [-k <keyname> ... ]  <fitsFile..>" << endl;
 cout << " or \n header -<what> [-k <keyname> ... ] <dbImage..> " << endl;
-exit(1);;
+exit(EXIT_FAILURE);
 }
 
 
@@ -116,7 +116,7 @@ for (int in = 0 ; in < int(names.size()); in++)
       }
     }
   }
-return 1;
+return EXIT_SUCCESS;
 }
 
 
