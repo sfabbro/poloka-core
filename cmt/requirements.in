@@ -1,0 +1,14 @@
+#
+# @configure_input@
+#
+
+package @PACKAGE@
+
+use cfitsio v2r440
+use sex v222
+use lapack v1.1a
+
+macro prefix "@prefix@"
+macro exec_prefix "@exec_prefix@"
+include_dirs "@CMT_NEW_INCLUDES@ @includedir@"
+macro testconfig_linkopts "@CMT_NEW_LDFLAGS@  -L@libdir@ @LIBS@" 
