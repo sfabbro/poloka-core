@@ -142,7 +142,8 @@ C         GO TO 950
       END IF
 C      if (rat)
 C     .     fitrad = sqrt(soft**2+(ratio*(par(1)+par(2)))**2)
-      PEAK = USEPSF(IPSTYP, 0., 0., BRIGHT, PAR, PSF, NPSF, 
+      PEAK = USEPSF(IPSTYP, 0., 0., BRIGHT, PAR, PSF, 
+     .     MAXPSF, MAXPAR, MAXEXP, NPSF,
      .     NPAR, NEXP, NFRAC, 0., 0., DVDXC, DVDYC)
 C
 C Stars will be checked for merger if they are separated by less than
@@ -448,7 +449,9 @@ C
                      IF (DX**2+DYSQ .LT. PSFRSQ) THEN
                         SUBT(IX,IY)=SUBT(IX,IY)-
      .                       MAG(I)*USEPSF(IPSTYP, DX, DY, BRIGHT, 
-     .                       PAR, PSF, NPSF, NPAR, NEXP, NFRAC, 
+     .                       PAR, PSF,
+     .                       MAXPSF, MAXPAR, MAXEXP, NPSF,
+     .                       NPAR, NEXP, NFRAC, 
      .                       DELTAX, DELTAY, DVDXC, DVDYC)
                      ELSE
                         IF (DX .GT. 0.) GO TO 2170
@@ -812,7 +815,8 @@ C (3) is just a crude attempt at making the solution more robust against
 C bad pixels.
 C
       VAL = USEPSF(IPSTYP, FLOAT(IX)-XC(I), FLOAT(IY)-YC(I), BRIGHT, 
-     .     PAR, PSF, NPSF, NPAR, NEXP, NFRAC, (XC(I)-1.)/XPSF-1., 
+     .     PAR, PSF, MAXPSF, MAXPAR, MAXEXP, 
+     .     NPSF, NPAR, NEXP, NFRAC, (XC(I)-1.)/XPSF-1., 
      .     (YC(I)-1.)/YPSF-1., DVDXC, DVDYC)
       IF (NTERM .GT. NSTR) THEN
          I3=(I-ISTAR+1)*3
@@ -1133,7 +1137,8 @@ C
                      DX=FLOAT(K)-XC(I)
                      IF (DX**2+DYSQ .GE. PSFRSQ) GO TO 2195
                      DIFF=MAG(I)*USEPSF(IPSTYP, DX, DY, BRIGHT, PAR, 
-     .                    PSF, NPSF, NPAR, NEXP, NFRAC, DELTAX, DELTAY, 
+     .                    PSF, MAXPSF, MAXPAR, MAXEXP,  
+     .                    NPSF, NPAR, NEXP, NFRAC, DELTAX, DELTAY, 
      .                    DVDXC, DVDYC)
                      DATA(K,J)=DATA(K,J)-DIFF
 C 

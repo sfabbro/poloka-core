@@ -428,7 +428,8 @@ C
       NSTAR = NSTAR+1
       CALL SWAPP (ID, XCEN, YCEN, APMAG, SKY, ISTAR, NSTAR)
       HPSF(NSTAR) = (FMAX-SKY(NSTAR))/
-     .     PROFIL(1, 0., 0., PAR, DFDX, DFDY, TERM, IDERIV)
+     &     PROFIL(1, 0., 0., PAR, MAXPAR, DFDX, DFDY, TERM, IDERIV)
+            
       SATR8D(NSTAR) = SATUR8
       IF (NSTAR .LT. MAXN) GO TO 2000
 C
@@ -534,10 +535,11 @@ C
       SATUR8 = .FALSE.
       DO 3400 ISTAR=1,NSTAR
          IF (HPSF(ISTAR) .LE. 0.) GO TO 3400
-         RDX = AMAX1(PROFIL(IPSTYP,0.,0.5,PAR,DFDX,DFDY,TERM,IDERIV),
-     .               PROFIL(IPSTYP,0.,-0.5,PAR,DFDX,DFDY,TERM,IDERIV),
-     .               PROFIL(IPSTYP,0.5,0.,PAR,DFDX,DFDY,TERM,IDERIV),
-     .               PROFIL(IPSTYP,-0.5,0.,PAR,DFDX,DFDY,TERM,IDERIV))
+         RDX = AMAX1(
+     &        PROFIL(IPSTYP,0.,0.5,PAR,MAXPAR,DFDX,DFDY,TERM,IDERIV),
+     &        PROFIL(IPSTYP,0.,-0.5,PAR,MAXPAR,DFDX,DFDY,TERM,IDERIV),
+     &        PROFIL(IPSTYP,0.5,0.,PAR,MAXPAR,DFDX,DFDY,TERM,IDERIV),
+     &        PROFIL(IPSTYP,-0.5,0.,PAR,MAXPAR,DFDX,DFDY,TERM,IDERIV))
          IF (HPSF(ISTAR)*RDX+SKY(ISTAR) .GT. HIBAD) SATR8D(ISTAR)=.TRUE.
 C
 C The centroids and peak heights are not yet known for saturated
@@ -560,7 +562,7 @@ C
          DO I=LX,MX
             DX = REAL(I) - XCEN(ISTAR)
             PIC(I,J) = PIC(I,J) - HPSF(ISTAR) *
-     .           PROFIL(IPSTYP, DX, DY, PAR, DFDX, DFDY, TERM, IDERIV)
+     . PROFIL(IPSTYP, DX, DY, PAR, MAXPAR, DFDX, DFDY, TERM, IDERIV)
             IF (DX**2 + W .LT. RADSQ) THEN
                RDX = RDX + (PIC(I,J)-SKY(ISTAR))**2
                RDY = RDY + 1.
@@ -570,7 +572,7 @@ C
       DP = DP + RDY                      ! Total number of pixels
       RDX = SQRT(RDX/RDY)                ! Scatter inside fit radius
       PSF(ISTAR,1,1) = RDX/(HPSF(ISTAR)*
-     .     PROFIL(IPSTYP, 0., 0., PAR, DFDX, DFDY, TERM, IDERIV))
+     . PROFIL(IPSTYP, 0., 0., PAR, MAXPAR, DFDX, DFDY, TERM, IDERIV))
  3400 CONTINUE
 C
       DP = SQRT(DP/(DP-REAL(NEXP+3*NSTAR))) ! Degrees of freedom
@@ -662,7 +664,7 @@ C
                IN(I,J) = .TRUE.
                DX = REAL(IDX)/2.
                CON(I,J) = SCALE * 
-     .              PROFIL(IPSTYP, DX, DY, PAR, DFDX, DFDY, V, IDERIV)
+     .       PROFIL(IPSTYP, DX, DY, PAR, MAXPAR, DFDX, DFDY, V, IDERIV)
                IF (K .GE. NPSFSQ) EDGE(I,J) = .TRUE.
             ELSE
                IN(I,J) = .FALSE.
@@ -1134,7 +1136,7 @@ C        PKERR = 0.01*OPT(20)/(PAR(1)*PAR(2)) ! **2
                      IF (PIC(I,J) .LE. HIBAD) THEN
                         DX = REAL(I) - XCEN(ISTAR)
                         RDY = RDX * PROFIL(IPSTYP, 
-     .                       DX, DY, PAR, DFDX, DFDY, TERM, IDERIV)
+     .                DX, DY, PAR, MAXPAR, DFDX, DFDY, TERM, IDERIV)
                         IF (RDY+SKY(ISTAR) .LE. HIBAD) THEN
                            PIC(I,J) = PIC(I,J) - RDY
                         ELSE
@@ -1373,7 +1375,7 @@ C
             DX = REAL(I) - XCEN(ISTAR)
             WT = (DX**2+DYSQ)/RSQ
             IF (WT .LT. 1.) THEN
-               P = PROFIL(IPSTYP, DX, DY, PAR, DHDXC, DHDYC, T, IDERIV)
+        P = PROFIL(IPSTYP, DX, DY, PAR, MAXPAR, DHDXC, DHDYC, T, IDERIV)
                DP = PIC(I,J) - H(ISTAR)*P - SKY(ISTAR)
                DHDXC = H(ISTAR)*DHDXC
                DHDYC = H(ISTAR)*DHDYC
@@ -1407,7 +1409,8 @@ C
       YOLD(ISTAR) = DYN
       YCEN(ISTAR) = YCEN(ISTAR)+DYN/(1.+ABS(DYN)/YCLAMP(ISTAR))
 C
-      PEAK = H(ISTAR) * PROFIL(IPSTYP,0.,0., PAR, DHDXC, DHDYC,T,IDERIV)
+      PEAK = H(ISTAR) * 
+     .     PROFIL(IPSTYP,0.,0., PAR, MAXPAR, DHDXC, DHDYC,T,IDERIV)
       DO J=LY,MY
          DY = REAL(J)-YCEN(ISTAR)
          DYSQ = DY**2
@@ -1416,7 +1419,7 @@ C
             WT = (DX**2+DYSQ)/RSQ
             IF (WT .LT. 1.) THEN
                IDERIV=1
-               P = PROFIL(IPSTYP, DX, DY, PAR, DHDXC, DHDYC, T, IDERIV)
+        P = PROFIL(IPSTYP, DX, DY, PAR, MAXPAR, DHDXC, DHDYC, T, IDERIV)
                IDERIV=0
                DP = PIC(I,J) - H(ISTAR)*P - SKY(ISTAR)
                DO K=1,MPAR
