@@ -88,8 +88,10 @@ SortieSeeing::Print(ostream & s) const
   s  << " Number of stars kept for histo filling      : " << Ngardees << endl  ;
   s  << " Number of stars kept for seeing computation : " 
      << Ncalcul << endl ; 
-  s  << " ** Results ** : " << endl ;
-  s  << " seeing: " << seeing << endl ;
+  s  << "** Results ** : " << endl ;
+  s  << setprecision(5) ;
+  s  << "seeing: " << seeing << endl ;
+  s  << "seeing (histo): " << seeing_histo << endl ;
   s << endl ;
   s.flags(old_flags);
 }
@@ -97,16 +99,14 @@ SortieSeeing::Print(ostream & s) const
 
 // Modification du calcul du SEEING Julien le 5 oct 2000
 
-#include "histo2d.h"
 int
 CalculeSeeingSE(const DatSeeing & dat, SortieSeeing & sortie, 
-		const SEStarList & stlse, SEStarList & stlg, 
-		const double nsigma)
+		const SEStarList & stlse, SEStarList & stlg)
 {
 
  
-  // Just keep stars not saturated, not flagged by sextractor
-  int Ngardees = KeepIt(dat.saturation, stlse, stlg);
+  // Just keep stars not saturated, not flagged by sextractor and not bad
+  int Ngardees = KeepOK(dat.saturation, stlse, stlg);
   int nstars_se = stlg.size();
   int ncutse = int(min(dat.prctage*nstars_se,(float) dat.Nmax)); // prctage% brightest in brithness, at most Nmax.
  stlg.sort(&DecFluxMax);
@@ -126,42 +126,16 @@ CalculeSeeingSE(const DatSeeing & dat, SortieSeeing & sortie,
       stlg.write(nnn);
     }
  
-  // Histogram construction
-  // The grid is adapted to the number of stars
-  int Bin2d = max(min(100,int(ncutse/10)),1);
-  Histo2d histo(Bin2d,0,10,max(Bin2d/2,1),-6,-2); //HC
-  double conv =  (sqrt(2.*log(2.))*2.) ;
-
-
-  // Fill histogram 
-  for (SEStarCIterator it= stlg.begin(); it!=stlg.end(); it++)
-    {
-      const SEStarRef &pstar= *it;
-      double flux = pstar->flux;
-      double fluxmax = pstar->Fluxmax();
-      double fwhm = pstar->Fwhm();
-      double shape = -2.5*log10(flux/fluxmax);
-      histo.Fill(fwhm ,shape, 1 );
-    } 
-  
-
-  //  computation of the mean near the histo max
-  double X, Y;
-  histo.MaxBin(X, Y);
-  double BinX, BinY;
-  histo.BinWidth(BinX, BinY);
-  
-  if ( dat.prlevel > 4)
-    {
-      cout << "Mode en fwhm: " << X << " (Bin: " << BinX 
-	   << "), Mode en mag-mu: " << Y <<  " (Bin: " 
-	   << BinY <<  ")" << endl ;
-      stlg.write("selected.list");
-    }
-
-
-  double moyenne = X + 0.5 * BinX;
-  double sigma = 0.5 * BinX;
+  double mfwhm, bin_fwhm, mshape, bin_shape;
+  HistoStarFinder(stlg, mfwhm, bin_fwhm, mshape, bin_shape);
+ 
+  double conv = (sqrt(2.*log(2.))*2.) ;
+  sortie.seeing_histo = mfwhm/conv ;
+  // DEVRAIT ETRE double moyenne = mfwhm; MAIS COMME IL FAUT RESTER HOMOGENE
+  // AVEC CE QUI A ETE FAIT AVANT ....
+  double moyenne = mfwhm + 0.5 * bin_fwhm ; 
+  double sigma = 0.5 * bin_fwhm ;
+  double nsigma=3 ;
   double deltamoy=1;
   int iter = 0;
   double precision = 0.01 ;
@@ -177,9 +151,11 @@ CalculeSeeingSE(const DatSeeing & dat, SortieSeeing & sortie,
 	  double flux = pstar->flux;
 	  double fluxmax = pstar->Fluxmax();
 	  double fwhm = pstar->Fwhm();
-	  double shape = -2.5*log10(flux/fluxmax);
-	  if ( (fabs(fwhm-moyenne) <nsigma * sigma) &&  
-	       (Y-BinY < shape) && (shape < Y + BinY))
+	  double shape = 0.;
+	  if ( fabs(fluxmax) > 1.e-10 )
+	    shape = -2.5*log10(flux/fluxmax);
+	  if ( (fabs(fwhm-moyenne) <nsigma * sigma) && 
+	       (fabs(shape - mshape) < bin_shape) )
 	    {
 	      ++compteur;
 	      moy += fwhm;
@@ -188,16 +164,23 @@ CalculeSeeingSE(const DatSeeing & dat, SortieSeeing & sortie,
 	    }
 	  else {it = stlg.erase(it);}
 	}
-      moy /= compteur;
-      deltamoy = fabs(moy - moyenne) / moy; 
+      if (compteur > 0 )
+	moy /= compteur;
+      else
+	{
+	  moyenne = 0.; sigma=0;  break;
+	}
+	
+      if (fabs(moy) > 1.e-10)
+	deltamoy = fabs(moy - moyenne) / moy; 
       moyenne = moy;
       sigma = sig/compteur - moyenne * moyenne; 
-      if (sigma>0) sigma = sqrt(sigma); else sigma=0;
+      if (sigma> 1.e-10) sigma = sqrt(sigma); 
+      else {sigma=0;break;}
       if (iter>10) break;
       ++iter;
     }
   while((deltamoy > precision ) || (iter<2));
-
 
   cout << " FWHM = " << moyenne << " +/- " << sigma 
        << " (" << iter << " iterations)" << endl;

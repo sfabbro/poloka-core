@@ -38,6 +38,7 @@ struct SortieSeeing{
   // nbre etoiles gardees pour le calcul
   int Ncalcul ;
   float seeing ;
+  float seeing_histo ;
 
 
   SortieSeeing() ;
@@ -66,7 +67,7 @@ struct SortieSeeing{
 int  
 CalculeSeeingSE(DatSeeing const & dat, SortieSeeing & sortie, 
 		SEStarList const & stlse, 
-		SEStarList & seestar, const double nsigma=3);
+		SEStarList & seestar);
 
 
 #endif
