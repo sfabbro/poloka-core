@@ -2,8 +2,9 @@ EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
 AM_CPPFLAGS = @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@
 AM_YFLAGS = -l -d
-#AM_LDFLAGS = @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@
+AM_LDFLAGS = @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@
 
+#  psf.cc                      psf.h            
 
 
 lib_LTLIBRARIES = libtoads.la
@@ -25,9 +26,6 @@ libtoads_la_SOURCES = \
                               nbconst.h        \
                               countedref.h     \
                               exceptions.h     \
-  psf.cc                      psf.h            \
-  generalfit.cc               generalfit.h     \
-  fct2dfit.cc                 fct2dfit.h       \
   \
   \
                               point.h          \
@@ -94,13 +92,14 @@ libtoads_la_SOURCES = \
   \
   newsub.cc                   newsub.h    \
   night.cc                    night.h     \
-                              nightelement.h \
-  simulation.cc               simulation.h                       
+                              nightelement.h
+
+#  simulation.cc               simulation.h                       
 
 
 
 
-
+# psf.h 
 include_HEADERS = \
 vutils.h         \
 wcsutils.h       \
@@ -118,9 +117,6 @@ nbrandom.h       \
 nbconst.h        \
 countedref.h     \
 exceptions.h     \
-psf.h            \
-generalfit.h     \
-fct2dfit.h       \
  \
  \
 point.h          \
@@ -187,8 +183,9 @@ psfmatch.h  \
  \
 newsub.h    \
 night.h     \
-nightelement.h \
-simulation.h                       
+nightelement.h 
+
+#simulation.h                       
 
 
 
