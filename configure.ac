@@ -28,6 +28,7 @@ AC_PATH_PROG(DOXYGEN,doxygen)
 SWIG_PROG(1.3.20)
 SWIG_ENABLE_CXX
 
+
 CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 
 # Checks for libraries.
@@ -88,6 +89,11 @@ AC_FUNC_STAT
 AC_FUNC_STRTOD
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([floor getcwd memchr memset pow rint setenv sqrt strchr strrchr strspn strstr])
+
+CXXFLAGS="-g"
+CPPFLAGS="-g"
+CFLAGS="-g"
+FFLAGS="-g"
 
 AC_CONFIG_FILES([Makefile
                  bindings/Makefile
