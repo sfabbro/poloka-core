@@ -16,9 +16,11 @@ bin_PROGRAMS = \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
  compute enlargeimage calibrate coordfromimage enlargedead mask2dead \
  mkcat2 seeing mergelists \
- zpfitter
+ zpfitter \
+ calibrationhacker
 
-
+###stretchcolor \
+###stretchcolor_SOURCES = stretchcolor.cc
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
@@ -128,7 +130,7 @@ mask2dead_SOURCES = mask2dead.cc
 seeing_SOURCES = seeing.cc
 mergelists_SOURCES = mergelists.cc
 zpfitter_SOURCES = zpfitter.cc
-
+calibrationhacker_SOURCES = calibrationhacker.cc
 
 ######## auto symbolic link #########
 # if configure is set with option --enable-autoinstall
