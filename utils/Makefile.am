@@ -9,7 +9,7 @@ bin_PROGRAMS = \
  make_catalog make_cosmic make_phot \
  make_dead makefringe \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
- newmake_sub preptoads removeback selection \
+ preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve
 
 
@@ -56,7 +56,6 @@ matchNimages_SOURCES = matchNimages.cc
 matchradec_SOURCES = matchradec.cc
 matchstandard_SOURCES = matchstandard.cc
 matchusno_SOURCES = matchusno.cc
-newmake_sub_SOURCES = newmake_sub.cc
 preptoads_SOURCES = preptoads.cc
 removeback_SOURCES = removeback.cc
 selection_SOURCES = selection.cc
