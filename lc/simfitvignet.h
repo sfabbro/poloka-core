@@ -16,7 +16,7 @@
 //
 
 // uncomment this to use one daophot psf per image, kernels are still used for the galaxy and for the photometric ratio
-//#define ONEPSFPERIMAGE
+#define ONEPSFPERIMAGE
 
 
 class TabulatedPsf : public Kernel {
@@ -201,7 +201,7 @@ public:
   void DumpDebug() const;
 
   //! enable "cout << SimFitVignet << endl"
-  friend ostream& operator << (ostream & stream, const SimFitVignet& myVignet);
+  //friend ostream& operator << (ostream & stream, const SimFitVignet& myVignet);
 };
 
 

@@ -700,14 +700,7 @@ void SimFitVignet::UpdateResid()
    resid_updated = true;
 }
 
-ostream& operator << (ostream& Stream, const SimFitVignet &Vig)
-{
-  Stream << " SimFitVignet: " << endl
-	 << "     Vignet: " << (Vignet) Vig << endl
-	 << "     Psf   : " << Vig.Psf      << endl
-	 << "     Kernel: " << Vig.Kern     << endl;
-  return Stream;
-}
+
 
 void SimFitVignet::DumpDebug() const {  
   cout << "############# SimFitVignet::DumpDebug #############" << endl;
@@ -724,7 +717,10 @@ void SimFitVignet::DumpDebug() const {
   Kern.writeFits("kern_DEBUG.fits");
 }
 
+
+
 double SimFitVignet::Chi2() const {
+  
   double chi2 = 0;
   DPixel *pow=OptWeight.begin(), *pres=Resid.begin();
   for (int i=Nx()*Ny(); i; --i, ++pres)
