@@ -4,7 +4,21 @@
 
 using namespace std;
 
+#define dsinv dsinv_
+#define dfact dfact_
+#define dfinv dfinv_
+#define dfeqn dfeqn_
+#define eisrs1 eisrs1_
 
+// using cernstuff (from cernlib)
+extern "C" 
+{
+  void dsinv(int *N, double *A, int *IDIM, int *IFAIL);
+  void dfact(int *N, double *A, int *idim, double *r, int *ifail, double *Det, int *jfail);
+  void dfinv(int *n, double *A, int *idim, double *r);
+  void dfeqn(int *n, double *a, int *idim, double *r, int *k, double *b);
+  void eisrs1(int *NM,int *N,double *AR,double *WR,double *ZR,int *IERR,double *WORK);
+}
 
 // using lapack 
 extern "C" {
@@ -257,6 +271,12 @@ void Mat::operator *=(const Mat& Right)
   (*this) = res;
 }
 
+Mat & Mat::operator =(const Mat& Right){
+  allocate(Right.SizeX(),Right.SizeY());
+  memcpy(data,Right.Data(),nx*ny*sizeof(double));
+  return (*this);
+}
+
 Mat::operator double() const
 {
   if(nx!=1 || ny !=1) {
@@ -364,7 +384,7 @@ int Mat::readFits(const string &FitsName) {
     }
 
   status = 0;
-  fits_delete_file(fptr, &status);
+  fits_close_file(fptr, &status);
   if (status)
     {
      cerr << " when closing file : " << FitsName ;
@@ -434,6 +454,35 @@ int Mat::writeFits(const string &FitsName) const {
      fits_report_error(stderr, status);
    }
   return status;
+}
+
+void Mat::Symmetrize(const char* UorL) {
+  
+  if(nx!=ny) {
+    cout << "Mat::Symmetrize ERROR nx!=ny nx,ny = " << nx << "," << ny << endl;
+    abort();
+  }
+  
+  
+  for(unsigned int j=0;j<ny;j++)
+    for(unsigned int i=j+1;i<nx;i++)
+      if(UorL[0]=='L') { // x >= y
+	(*this)(j,i)=(*this)(i,j);
+      }else{
+	(*this)(i,j)=(*this)(j,i);
+      }
+} 
+
+int Mat::SymMatInvert() {
+  if(nx!=ny) {
+    cout << "Mat::Symmetrize ERROR nx!=ny nx,ny = " << nx << "," << ny << endl;
+    abort();
+  }
+  double *A = data;
+  int n = nx;
+   int ierr;
+  dsinv(&n,A,&n,&ierr);
+  return (!ierr);
 }
 
 //=================================================================
@@ -564,6 +613,11 @@ double Vect::operator *(const Vect& Right) const
   return res;
 }
 
+Vect & Vect::operator =(const Vect& Right){
+  allocate(Right.Size());
+  memcpy(data,Right.Data(),n*sizeof(double));
+  return (*this);
+}
 
 Mat Vect::transposed() const {
   Mat trans(n,1);

@@ -20,10 +20,10 @@ class Mat;
 // (actually this is not compulsory with dposv (see 'man dposv') but we do it
 // for consistency).
 // You just need to fill half (n*(n+1)/2 parameters) of the matrix
-// if you have filled matrix M parameters for which y>=x (with M(x,y)=...), use UorL="U"
-// else use UorL="L"
+// if you have filled matrix M parameters for which y>=x (with M(x,y)=...), use UorL="L"
+// else use UorL="U"
 // Matrix A is modified in this routine (also B which is at the end the solution X)
-int cholesky_solve(Mat &A, Vect &B, char* UorL = "U");
+int cholesky_solve(Mat &A, Vect &B, char* UorL = "L");
 
 // Inverts matrix A using the factorization done in cholesky_solve
 // Uses lapack dpotri_
@@ -32,7 +32,7 @@ int cholesky_solve(Mat &A, Vect &B, char* UorL = "U");
 // for consistency).
 // This routine must be called after cholesky_solve, make sure the value of UorL
 // is the same as that used with dposv
-int cholesky_invert(Mat &A, char* UorL = "U"); // when cholesky_solve is called first
+int cholesky_invert(Mat &A, char* UorL = "L"); // when cholesky_solve is called first
 
 
 // Mat and Vect classes
@@ -81,11 +81,17 @@ class Mat {
   int readFits(const std::string &FitsName);
   int writeFits(const std::string &FitsName) const;
 
+  void Symmetrize(const char* UorL = "L");
+  
+  // inverts a symetric posdef matrix using DSINV  CERNLIB's routine
+  int SymMatInvert();
+
   // operators
   Mat operator +(const Mat& Right) const;
   Mat operator -(const Mat& Right) const;
   Mat operator *(const Mat& Right) const;
   Mat operator *(const Vect& Right) const;
+  Mat & operator =(const Mat& Right);
   
   void operator +=(const Mat& Right);
   void operator -=(const Mat& Right);
@@ -135,6 +141,8 @@ class Vect {
   // operators
   Vect operator +(const Vect& Right) const;
   Vect operator -(const Vect& Right) const;
+  Vect & operator =(const Vect& Right);
+
   double operator *(const Vect& Right) const; // scalar product
   
   void operator +=(const Vect& Right);
