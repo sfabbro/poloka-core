@@ -1,12 +1,8 @@
 #include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <getopt.h>
 #include <string>
-#include <vector>
-#include "dbimage.h"
 #include "fitsimage.h"
 #include "hbook.h"
+#include "fileutils.h"
 
 #define NWPAWC 100000
 float pawc_[NWPAWC];
@@ -28,22 +24,40 @@ int open_hbook_file(string name)
   return 0;
 }
 
+static void usage(const std::string &Prog)
+{
+  cerr << " usage : " << std::endl 
+	   << Prog << " [-n npixtot] <image> [<hbbokfile>]"
+       << std::endl;
+  exit(1);
+}
+
 
 int
 main(int argc, char **argv)
 {
-  string nomhb;
-  if (argc == 2)
+  std::string nomhb;
+  std::string  imageName;
+  int nPixTot = 50000;
+  for (int i=1; i< argc; ++i)
     {
-      nomhb = "histo.hbk";
+      char * arg = argv[i];
+      if (arg[0] != '-')
+	{
+	  if (imageName == "") { imageName = argv[i]; continue;}
+	  else {nomhb = argv[i]; continue;}
+	}
+      else
+	switch (arg[1])
+	  {
+	  case 'n' : ++i; nPixTot = atoi(argv[i]); break;
+	  default : usage(argv[0]);
+	  }
     }
-  if (argc == 3) nomhb = argv[2];
-  if (argc < 2 || argc > 3)
-    {
-      printf(" syntax : im2tup <image> <hbbokfile> \n");
-      exit(1);
-    }
-  FitsImage img(argv[1]);
+  if (imageName == "") usage(argv[0]);
+  if (nomhb == "") nomhb = SubstituteExtension(imageName, ".hbk");
+
+  FitsImage img(imageName);
   HLIMIT(NWPAWC);
   int Id = 1 ;
   int dim = 3;
@@ -77,22 +91,26 @@ main(int argc, char **argv)
     x[2]=img(i,j);
     HFN(Id,x);
     }*/
+
   int npix =  img.Nx()*img.Ny();
-  int Ntot = 50000 ;
-  int pas = (int) (npix/(1.*Ntot));
-  if( Ntot > npix )
+  int nx = img.Nx();
+  int pas = (int) (npix/(1.*nPixTot));
+  if( nPixTot > npix )
     {
-      Ntot = npix ; 
+      nPixTot = npix ; 
       pas = 1 ;
     }
   cout << "pas " << pas << endl ;
 
   register Pixel *p;
   p = img.begin() ;
-  for ( int i=0;i<Ntot;p += pas, i++)
+  Pixel *start = p;
+  for ( int i=0;i<nPixTot;p += pas, i++)
     {
-      x[0]=0; 
-      x[1]=0; 
+      int jpix=(p-start)/nx;
+      int ipix=(p-start)%nx;
+      x[0]=ipix; 
+      x[1]=jpix; 
       x[2]= *p;
       HFN(Id,x);
     }
