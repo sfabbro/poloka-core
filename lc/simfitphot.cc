@@ -2,12 +2,12 @@
 
 #include <fastfinder.h>
 #include <reducedutils.h>
-
+#include <fstream>
 #include "simfit.h"
 #include "simfitphot.h"
 
 #define FNAME
-//#define DEBUG
+#define DEBUG
 
 static bool IncSeeing(const CountedRef<ReducedImage> one, const CountedRef<ReducedImage> two)
 { return (one->Seeing() < two->Seeing());}
@@ -135,9 +135,29 @@ void SimFitPhot::operator() (LightCurve& Lc)
      zeFit.SetWhatToFit(FitFlux | FitGal | FitPos);    
      zeFit.Load(Lc,true); // keep star (so keep fluxes)
      zeFit.DoTheFit();
+#ifdef DEBUG
+     cout << " ============= SimFitPhot::operator() Robustify  =============" << endl;
+#endif
+     for (SimFitVignetIterator itVig = zeFit.begin(); itVig != zeFit.end(); ++itVig) {
+       (*itVig)->KillOutliers();
+     }
+#ifdef DEBUG
+     cout << " ============= SimFitPhot::operator() refit FitFlux | FitPos | FitGal =============" << endl;
+#endif	
+     zeFit.DoTheFit();
+     
   }else{
     zeFit.Load(Lc);
     zeFit.DoTheFit();   
   }
-  zeFit.write("sn"); // we have to change this
+  string dir = Lc.Ref->name;
+  if(!IsDirectory(dir))
+    MKDir(dir.c_str());
+  zeFit.write("sn",dir);
+  ofstream lstream((string(dir+"/lc.dat")).c_str());
+  Lc.write_short((ostream&)lstream);
+  lstream.close();
 }
+
+
+
