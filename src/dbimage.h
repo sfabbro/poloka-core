@@ -46,12 +46,24 @@ vlt99 : /snovad1/vlt99/1999*
 newstuff : /snovad8/wiyn99
 }
 
+# where to find astrometric catalogs (non-USNO catalogs usually)
 CatalogPath
 {
   /data/my_catalogs
   /data/my_od/catalogs
   /data/catalogs/D*
 }
+
+#what are the image names for the various DbImage derived classes
+# .fits : regular fits image
+# .fz : rice compressed fits image
+# .fits.gz gzip compression
+ImageNames
+{
+  ImageSum {satur.fz}
+  TransformedImage {calibrated.fits satur.fits.gz}
+}
+
 
 \endcode
 */
@@ -107,8 +119,6 @@ private :
 
 protected :
   bool saveEverythingElse; //! // wether we have to write the EverythingElse file in destructor
-  string db_image_tag(const string &a_directory) const;
-  bool is_image(const string& a_directory) const;
 
 public :
 
@@ -121,7 +131,7 @@ public :
   
   DbImage():imageName(""),directory(""), saveEverythingElse(false){};
   //! for images obtained from the above constructor, checks that the image could be located.
-  bool IsValid() const { return is_image(directory);}
+  bool IsValid() const;
 
   //! returns the image name.
   string Name() const {return imageName;}
@@ -134,6 +144,16 @@ public :
   bool operator == (const DbImage &Right) const;
 
 
+
+  //! store on disk the type of this DbImage
+  bool StoreTypeName();
+
+  //! retreive it.
+  string StoredTypeName() const;
+
+
+  virtual const string  TypeName() const { return "DbImage";}
+
   //! returns the FitsImage file name (a file name for the file system). 
   /*!   The Kind argument  can be Raw or FlatFielded. Nothing
     ensures that the file exists. One may use the FileExists routine 
@@ -143,11 +163,7 @@ public :
   //! out of elixir name
   string ElixirName() const;
 
-  //!  same for the ImageBack (background value and rms interpolated map) 
-			    /*! Same remark as above concerning the existence. */
-  string ImageBackName(const DbImageKind Kind) const ;
-
-  //! the name of the fits file containig the flatfield used for flatfielding.
+  //! the name of the fits file containing the flatfield used for flatfielding.
   string FitsFlatName() const;
 
   //! same for bias.
@@ -274,6 +290,9 @@ void DbInit();
 /*! It triggers DbInit if not already done. */
 void DbConfigDump(ostream &stream = cout);
 
+//! provides an example of dbconfig file
+void DbConfigExample();
+
 /* called by image_install.cc ;  this one knows the db structure */
 int InstallImage(const char *a_path, const char *a_file, DbImageKind kind);
 
@@ -301,6 +320,9 @@ extern "C" {
 
 void DbConfigAddImagePath(const char * a_path, const char *a_path_name);
 void DbConfigAddCatalogPath(const char * a_path);
+void DbConfigAddNewImageNames(const char *TypeName,
+			     const char *NewNames);
+
 int  DbConfigFileParse(const char*ConfigFileName);
 
 #ifdef __cplusplus

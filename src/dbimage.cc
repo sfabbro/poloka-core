@@ -22,6 +22,8 @@ typedef list<Path>::iterator       PathIterator;
 typedef list<Path>::const_iterator PathCIterator;
 
 
+#include <map>
+
 class DbConfigFile {
 public :
   DbConfigFile(const char* FileName);
@@ -31,17 +33,33 @@ public :
      (as given in the config file ) */
 
   const Path* GetImagePath(const string &ImageName) const;
-  friend ostream& operator << (ostream& stream, const DbConfigFile & config);
-  void dump(ostream &stream = cout) const { stream << *this;}
+  //  friend ostream& operator << (ostream& stream, const DbConfigFile & config);
+  void dump(ostream &stream = cout) const;
   PathList GetImagePathes(const string &PathName) const;
   string FileName() const { return fileName;};
   string FindCatalog(const string &FileName, const bool Warn) const;
+  string NewImageName(const string &TypeName, const string &DirName, 
+		      const string &BaseName) const;
+
+  void AddNewImageName(const string &TypeName,
+		       const string &BaseName,
+		       const string &NewName);
+
+
 
 private :
   string fileName;
   vector<Path> image_pathes;
   void add_simple_image_path(const string &a_path, const string &a_path_name);
   vector<string> catalog_pathes;
+
+  typedef map<string,string> MapSS;
+  typedef map<string,string>::const_iterator MapSSCIterator;
+  void init_image_names();
+
+  MapSS NewImageNames;
+/* we would need a map with 2 indices : the TypeName ("ReducedImage", "ImageSum"), and the filename ("calibrated", "weight"). To do this in a simple way ,we just address a map with the sum of both strings
+ */
 };
 
 
@@ -70,6 +88,17 @@ void DbConfigAddCatalogPath(const char * a_path)
 DbConfig()->AddCatalogPath(a_path);
 }
 
+void DbConfigAddNewImageNames(const char *TypeName,
+			     const char *NewNames)
+{
+  vector<string> names;
+  DecomposeString(names, NewNames);
+  for (unsigned int i=0; i < names.size(); ++i)
+    {
+      string basename = CutExtension(names[i]);
+      DbConfig()->AddNewImageName(TypeName, basename, names[i]);
+    }
+}
 
 
 	   }  /* end of extern C */
@@ -157,10 +186,12 @@ void DbConfigDump(ostream &stream)
 DbConfig()->dump(stream);
 }
 
+/********************* DbConfigFile ***********************/
 
 DbConfigFile::DbConfigFile(const char *FileName)
 {
-fileName = FileName;
+  fileName = FileName;
+  init_image_names(); 
 }
 
 
@@ -275,14 +306,65 @@ for (unsigned int i = 0; i< image_pathes.size(); ++i)
 return 0;
 }
 
-ostream& operator << (ostream& stream, const DbConfigFile & config)
+void DbConfigFile::dump(ostream& stream) const
 {
-stream << "Db configuration read from :" << config.fileName << endl;
-stream << "Image Pathes : " << endl;
-for (unsigned int i = 0; i < config.image_pathes.size(); i++)
-stream << " symbolic tag : " << config.image_pathes[i].symbolicName << " , actual path : " << config.image_pathes[i].path << endl;
-return stream;
+  stream << "Db configuration read from :" << fileName << endl;
+  // dbimages
+  stream << "#### Image Pathes : " << endl;
+  for (unsigned int i = 0; i < image_pathes.size(); i++)
+    stream << " symbolic tag : " << image_pathes[i].symbolicName 
+	   << " , actual path : " << image_pathes[i].path << endl;
+  // astrometric catalogs
+  if (catalog_pathes.size())
+    {
+      stream << "##### (Reference)Catalog Pathes : " << endl;
+      for (unsigned int i=0; i<catalog_pathes.size(); ++i)
+	stream << "    " << catalog_pathes[i] << endl;
+    }
+      // compression handling
+  cout << "#### ImageNames used when creating new images (compression handling):" << endl;
+  for (  MapSSCIterator i = NewImageNames.begin();
+	 i!= NewImageNames.end(); ++i)
+    stream << i->first << " : " << i->second << endl;
 } 
+
+
+void DbConfigExample()
+{
+  cout  << 
+"# this is a comment
+ImagePath
+{
+# 'here' is where non existing images are created. You'd better define it
+here : .
+cfht99 : /snovad15/cfht99/1999*
+vlt99 : /snovad1/vlt99/1999*
+newstuff : /snovad8/wiyn99
+}
+
+# where to find astrometric catalogs (non-USNO catalogs usually)
+CatalogPath
+{
+  /data/my_catalogs
+  /data/my_od/catalogs
+  /data/catalogs/D*
+}
+
+#what are the image names for the various DbImage derived classes
+# .fits : regular fits image
+# .fz : rice compressed fits image
+# .fits.gz gzip compression
+ImageNames
+{
+#default if not overwritten:
+  { satur.fits.gz }
+#for the ImageSum class
+  ImageSum {satur.fz}
+  TransformedImage {calibrated.fits satur.fits.gz}
+}"
+  << endl;
+}
+
 
 
 string DbConfigFile::FindCatalog(const string &FileName, const bool Warn) const
@@ -306,11 +388,8 @@ string DbConfigFindCatalog(const string &FileName, const bool Warn)
 }
 
 
-/**************************** implementation of DbImage ********************************/
 
-
-
-
+/************** implementation of DbImage *************************/
 
 
 
@@ -330,12 +409,17 @@ DbImage::DbImage(const char *ImageName)
 #define DIR_IS_IMAGE ".dbstuff"
 
 
-string DbImage::db_image_tag(const string &a_directory) const {
+static string db_image_tag(const string &a_directory)  {
   return AddSlash(a_directory) + DIR_IS_IMAGE;
 }
 
-bool DbImage::is_image(const string& a_directory) const {
+static bool is_image(const string& a_directory) {
   return (FileExists(db_image_tag(a_directory)));
+}
+
+bool DbImage::IsValid() const 
+{ 
+  return ((directory != "" ) && is_image(directory));
 }
 
 
@@ -373,10 +457,6 @@ bool DbImage::create(const string &ActualPath) // the actual creator
   string tag =  db_image_tag(dir);
   //cerr << tag << endl;
   fclose(fopen(tag.c_str(), "w"));
-  // get the pointer to the path (which is used at least to tell if the DbImage is OK)
-  
-  //path = DbConfig()->GetImagePath(Name());
-  //if (!path) path = new Path(ActualPath,"adhoc",0);
   
   // check that when retrieved, the image is the one just created
   DbImage db2(Name());
@@ -399,6 +479,8 @@ bool DbImage::create(const string &ActualPath) // the actual creator
 
 bool DbImage::Create(const string &Where)
 {
+  // if it is already there, don't change.
+  if (IsValid()) return true;
   // if Where is a genuine directory :
 if (FileExists(Where)) return create(Where);
 //! if not, check that after shell interpretation, it is unambiguous:
@@ -413,7 +495,7 @@ if (FileExists(Where)) return create(Where);
    {
      cerr << " DbImage::Create : ambiguous tag given : " << Where << " several pathes match using first one ! " << endl;
    }
- return create(path_list.begin()->path);
+ return (create(path_list.begin()->path) && StoreTypeName());
 }
 
 
@@ -430,22 +512,138 @@ bool DbImage::operator == (const DbImage &Right) const
 	  (directory == Right.directory));
 }
 
-static string GzTestedName(string Name)
+
+
+
+
+/* The two following routines have to do with reloading saved 
+   DbImage's and inheriters. with objio, they appear to be
+   useless. But the "type.name" files are used by snlsdb, so
+   they have to be written anyway. 
+*/
+
+#define TYPE_FILE_NAME "type.name"
+
+
+bool DbImage::StoreTypeName()
 {
-  // By default, if nothing, returns gzname
-  string gzname = Name+".gz"; 
-  //  if (FileExists(gzname)) return gzname;
-  if (FileExists(Name)) return Name;
-  else return gzname;
+  string fileName = Dir()+TYPE_FILE_NAME;
+  FILE *file = fopen(fileName.c_str(),"w");
+  if (!file) 
+    {
+      cerr << " could not open " <<  fileName << endl;
+      return false;
+    }
+  fprintf(file,"%s",TypeName().c_str());
+  fclose(file);
+  return true;
+}
+			       
+
+string DbImage::StoredTypeName() const
+{
+  char name[256];
+  string fileName = Dir()+TYPE_FILE_NAME;
+  FILE *file = fopen(fileName.c_str(),"r");
+  if (!file)
+    {
+      cerr << "cannot open in read mode " << fileName << endl;
+      return "NoType";
+    }
+  fscanf(file,"%s",name);
+  fclose(file);
+  return string(name);
 }
 
-static string FzTestedName(string Name)
+
+
+void DbConfigFile::AddNewImageName(const string &TypeName,
+				   const string &BaseName,
+				   const string &NewName)
 {
-  // By default, if nothing, returns fzname
-  string fitsname =   Name+".fits"; 
-  string fzname = Name+".fz"; 
-  if (FileExists(fitsname)) return fitsname;
-  else return fzname;
+  NewImageNames[TypeName+BaseName] = NewName;
+}
+
+
+//defaults, may be overwritten in dbconfig file:
+
+void DbConfigFile::init_image_names()
+{
+  AddNewImageName("","raw","raw.fz");
+  AddNewImageName("","calibrated","calibrated.fz");
+  AddNewImageName("","weight","weight.fz");
+  AddNewImageName("","elixir","elixir.fits");
+  AddNewImageName("","back","back.fits");
+  AddNewImageName("","miniback","miniback.fits");
+
+  AddNewImageName("","dead","dead.fits");
+  AddNewImageName("","flat","flat.fits");
+  AddNewImageName("","dark","dark.fits");
+  AddNewImageName("","fringe","fringe.fits");
+  AddNewImageName("","bias","bias.fits");
+
+  AddNewImageName("","cosmic","cosmic.fits.gz");
+  AddNewImageName("","satellite","satellite.fits.gz");
+  AddNewImageName("","satur","satur.fits.gz");
+
+  // swarp writes in 32 bits, so no Rice compression
+  AddNewImageName("SwarpStack","calibrated","calibrated.fits");
+  AddNewImageName("SwarpStack","weight","weight.fits");
+  //use satur.fz because it enables an efficient subimage extraction
+  AddNewImageName("SwarpStack","satur","satur.fz");
+}
+
+/* returns the filename, from stored instructions, that come
+   from  init_image_names and the parsing of dbconfig
+*/
+string DbConfigFile::NewImageName(const string &TypeName, 
+				  const string &Dir, 
+				  const string &BaseName) const
+{
+  //DEBUG
+#ifdef DEBUG
+  static bool called = false;
+  if (!called)
+    {
+      called = true;
+      cout << " image names contents " << endl;
+      for (  MapSSCIterator i = NewImageNames.begin();
+	     i!= NewImageNames.end(); ++i)
+	cout << i->first << " : " << i->second << endl;
+    }
+#endif
+
+
+
+  MapSSCIterator i = NewImageNames.find(TypeName+BaseName);
+  if (i!= NewImageNames.end()) return Dir+i->second;
+  // no, go to default
+  i = NewImageNames.find(BaseName);
+  if (i!= NewImageNames.end()) return Dir+i->second;
+  return Dir+BaseName+".fits";
+}
+
+/* the routine that provides names for existing or new images.
+   may become a DbImage member function 
+*/
+static string image_name(const string &TypeName, const string &Dir, 
+			 const string &BaseName)
+{
+  string withoutExtension = Dir+BaseName;
+  string fileName = withoutExtension+".fits";
+  if (FileExists(fileName))  return fileName;
+  fileName = withoutExtension+".fits.gz";
+  if (FileExists(fileName))  return fileName;
+  fileName = withoutExtension+".fz";
+  if (FileExists(fileName))  return fileName;
+
+  // the file does not exists yet. so generate its
+  // name according to defaults
+  return DbConfig()->NewImageName(TypeName,Dir,BaseName);
+
+
+  // first, check if there is an entry that corresponds
+  // to this ReducedImage type and this basename.
 }
 
 
@@ -453,15 +651,15 @@ string DbImage::FitsImageName(const DbImageKind Kind) const
 {
   // commented out for "virtual" image installation
   // if (!IsValid()) return string(""); 
-if (Kind == Raw)        return FzTestedName(directory + "raw.fits");
-if (Kind == Elixir)     return ElixirName();
-if (Kind == Calibrated) return FzTestedName(directory + "calibrated");
+if (Kind == Raw)        return image_name(TypeName(), directory, "raw");
+if (Kind == Elixir)     return image_name(TypeName(), directory, "elixir");
+if (Kind == Calibrated) return image_name(TypeName(), directory, "calibrated");
 return "";
 }
 
 string DbImage::ElixirName() const
 {
-  return FzTestedName(directory + "elixir");
+  return image_name(TypeName(), directory, "elixir");
 }
 
 string DbImage::ImageCatalogName(const DbImageCatalogKind Kind) const 
@@ -497,87 +695,68 @@ void DbImage::dump(ostream &stream)  const
   stream << imageName << endl;
 }
 
-string DbImage::ImageBackName(const DbImageKind Kind) const
-{
-return FitsImageName(Kind);  
-/* The code that writes image_backs adds some stuff 
-to the file name to separate the average and rms images */
-}
-
 string DbImage::FitsFlatName() const
 {
-if (!IsValid()) return string("");
-return directory + "flat.fits";
+  return image_name(TypeName(), directory, "flat");
 }
 
 string DbImage::FitsBiasName() const
 {
-if (!IsValid()) return string("");
-return directory + "bias.fits";
+  return image_name(TypeName(), directory, "bias");
 }
 
 string DbImage::FitsDarkName() const
 {
-if (!IsValid()) return string("");
-return directory + "dark.fits";
+  return image_name(TypeName(),directory,"dark");
 }
 
-// the dead.fits files are not gzipped because we don't want to test the existence of the file in this routine as it is used by relative_ln to create the link to dead mask even if the file doesn't exit
+
 string DbImage::FitsDeadName() const
 {
-if (!IsValid()) return string("");
-return directory + "dead.fits";
+  return image_name(TypeName(),directory,"dead");
 }
 
 // bad.fits is readen in input by sextractor which doesn't decompress
 string DbImage::FitsBadName() const
 {
-if (!IsValid()) return string("");
-return directory + "bad.fits";
+  return image_name(TypeName(),directory,"bad");
 }
 
 string DbImage::FitsWeightName() const
 {
-if (!IsValid()) return string("");
-return FzTestedName( directory + "weight");
+  return image_name(TypeName(),directory,"weight");
 }
 
 string DbImage::FitsCosmicName() const
 {
-if (!IsValid()) return string("");
-return GzTestedName(directory + "cosmic.fits");
+  return image_name(TypeName(),directory,"cosmic");
 }
 
 
 string DbImage::FitsSatelliteName() const
 {
-if (!IsValid()) return string("");
-return GzTestedName(directory + "satellite.fits");
+  return image_name(TypeName(),directory,"satellite");
 }
 
 string DbImage::FitsFringeName() const
 {
-if (!IsValid()) return string("");
-return directory + "fringe.fits";
+  return image_name(TypeName(),directory,"fringe");
 }
 
 string DbImage::FitsBackName() const
 {
-if (!IsValid()) {return string("");}
-return directory + "back.fits";
+  return image_name(TypeName(),directory,"back");
 }
 
 string DbImage::FitsMiniBackName() const
 {
-if (!IsValid()) return string("");
-return directory + "miniback.fits";
+  return image_name(TypeName(),directory,"miniback");
 }
 
 
 string DbImage::FitsSaturName() const
 {
-if (!IsValid()) return string("");
-return GzTestedName(directory + "satur.fits");
+  return image_name(TypeName(),directory,"satur");
 }
 
 string DbImage::ImageMatchUsnoName() const
@@ -589,6 +768,7 @@ return directory + "match_usno.dat";
 string DbImage::GetFileName(const char* WhichFile) const
 {
   if (strcmp(WhichFile,"raw")==0)    return FitsImageName(Raw);
+  if (strcmp(WhichFile,"elixir")==0)  return FitsImageName(Elixir);
   if (strcmp(WhichFile,"cal")==0)    return FitsImageName(Calibrated);
   if (strcmp(WhichFile,"flat")==0)   return FitsFlatName();
   if (strcmp(WhichFile,"sat")==0)    return FitsSaturName();
@@ -640,9 +820,6 @@ bool DbImage::writeEverythingElse()
 #endif /* USE_ROOT */
 }
 
-#ifdef USE_ROOT
-ClassImp(DbImage);
-#endif /* USE_ROOT */
 
 /***************************   DbImageList ****************************/
 
