@@ -104,6 +104,8 @@ public:
   //! current half size of the vignet along y
   int Hy() const {return hy;};
   
+  bool IsInside(const Point& point);
+  
 };
 
 //! compute and write the model into a larger FITS image

@@ -88,6 +88,13 @@ void Vignet::Resize(const double &ScaleFactor)
 
 }
 
+bool Vignet::IsInside(const Point& point) {
+  return (point.x >= xstart) 
+    && (point.x < xend)
+    && (point.y >= ystart)
+    && (point.y < yend);
+}
+
 bool Vignet::ShiftCenter(const Point& Shift)
 {
   // check if shift does not go a chaille
