@@ -60,6 +60,7 @@ int make_tuple(const char *AsciiName, char* HbkFileName, int Id)
 FILE *in;
 char **tags;
 int dim;
+int nrec = 0;
 in = fopen(AsciiName,"r");
 if (!in) 
   {
@@ -73,7 +74,8 @@ if (!open_hbook_file(HbkFileName))
     printf( " could not open %s\n",HbkFileName); fclose(in); return 0;
   }
 tuple_book(Id, "toto", tags, dim);
-read_data(in, dim, my_hfn, &Id);
+nrec = read_data(in, dim, my_hfn, &Id);
+ printf(" %d entries written to %s\n", nrec, HbkFileName);
 tuple_end(Id);
 return 1;
 }

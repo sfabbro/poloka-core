@@ -10,7 +10,7 @@ public :
   static VirtualInstrument* Acceptor(const FitsHeader &Head)
   { if (CheckKey(Head,"INSTRUME","WFPC2")) return new HstWfpc2; return NULL;}
   
-  RETURN_A_VALUE(TOADPIXS,0.05);
+  RETURN_A_VALUE(TOADPIXS,0.046);
   
   SIMPLE_TRANSLATOR(TOADEXPO,"EXPTIME");
   RETURN_A_VALUE(TOADRDON,0.72);

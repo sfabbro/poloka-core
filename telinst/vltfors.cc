@@ -148,7 +148,7 @@ public :
 
   Frame TotalIlluRegion(const FitsHeader &Head) const
   {
-    string illu = "[17:2063;1:2048]";
+    string illu = "[17:2063,1:2048]";
     Frame result;
     fits_imregion_to_frame(illu, result);
     return result;
@@ -226,6 +226,7 @@ public :
     int namp = Head.KeyVal("OUTPUTS");
     if (namp != 0) return FitsKey("TOADNAMP",namp);
 
+    return FitsKey("TOADNAMP",1);
     namp = Head.KeyVal("DETOUTPU");
     if (namp != 0) return FitsKey("TOADNAMP",namp);
 
