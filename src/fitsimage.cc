@@ -187,6 +187,12 @@ static std::string Extension(std::string FileName)
 
 FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
 {
+#ifdef DEBUG
+  cout << " > FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode) " 
+       << "FileName = " << FileName
+       << endl;
+#endif
+
   int status = 0;
   fileName = FileName;
   fileModeAtOpen = Mode;
@@ -196,6 +202,7 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
   telInst = NULL;
   writeEnabled = true; // only relevant if mode != RO
  
+
  fits_open_file(&fptr, fileName.c_str(), int(Mode), &status);
  /* there seems to be a bug in cfitsio, when one requests some
     preprocessing before actually accessing the data, e.g. adressing
@@ -213,7 +220,7 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
         {// this is a NULL IMAGE_EXTENSION, we move forward, because we expect
          // to get an actual image.
 	  fits_movrel_hdu(fptr, 1, NULL, &status);
-	  CHECK_STATUS(status," movrel_hdu in FitsHeader::FitsHeader",);
+	  //CHECK_STATUS(status," movrel_hdu in FitsHeader::FitsHeader",);
 	  //	  cout << " moving by 1 HDU since the image is a compressed table " 
 	  //   << endl;
         }
@@ -244,6 +251,10 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
 
 int FitsHeader::create_file()
 {
+#ifdef DEBUG
+  cout << " > FitsHeader::create_file() " << endl;
+#endif
+
  int status = 0;
  fileModeAtOpen = RW;
 
@@ -258,7 +269,7 @@ int FitsHeader::create_file()
    */
    {
      fits_create_file(&fptr, (fileName+"[compress]").c_str(), &status);
-     minimum_header();
+     //minimum_header(); // JG
      compressedImg = true;
 
      // create a dummy compressed image 
@@ -277,6 +288,7 @@ int FitsHeader::create_file()
      fits_create_file(&fptr, fileName.c_str(), &status);
      minimum_header();
    }
+ //Flush(); // JG
  return status;
 }
  
@@ -285,6 +297,10 @@ int FitsHeader::create_file()
 
 void FitsHeader::minimum_header()
 {
+#ifdef DEBUG
+  cout << " > FitsHeader::minimum_header() " << endl;
+#endif
+
   if (compressedImg)
     {
       cerr << " should never come here with a compressed image " << std::endl;
@@ -321,6 +337,11 @@ FitsHeader::FitsHeader(const FitsHeader &Header)
 FitsHeader::FitsHeader(const FitsHeader &Template, 
 		       const string &NewFileName)
 {
+#ifdef DEBUG
+  cout << " > FitsHeader::FitsHeader(const FitsHeader &Template,const string &NewFileName) "
+       << " NewFileName = " << NewFileName
+       << endl;
+#endif
   fileName = NewFileName;
   remove(fileName.c_str());
   compressedImg = false; // will be eventually set by create_file()
@@ -950,6 +971,9 @@ int FitsHeader::read_image(const int xmin, const int ymin,
 			  const int xmax, const int ymax,
 			  float *data)
 {
+#ifdef DEBUG
+  cout << " > FitsHeader::read_image(...) " << endl;
+#endif
   float nullval = 0;
   int anynull;
   int status = 0;
@@ -1041,6 +1065,12 @@ int FitsHeader::read_image(const int xmin, const int ymin,
 
 FitsImage::FitsImage(const string &FileName, const FitsFileMode Mode) : FitsHeader(FileName, Mode) , Image()
 {
+#ifdef DEBUG
+  cout << " > FitsImage::FitsImage(const string &FileName, const FitsFileMode Mode) " 
+       << "FileName = " << FileName 
+       << " Mode = " << Mode 
+       << endl;
+#endif
   written = 0 ;
   if (!IsValid()) return; 
   nx = KeyVal("NAXIS1");
@@ -1121,7 +1151,9 @@ FitsImage::FitsImage(const string &FileName, const FitsHeader &a_fits_header, co
    Image(an_image)
 { 
 #ifdef DEBUG
-  cout << "  FitsImage::FitsImage(string FileName, const FitsHeader &a_fits_header, const Image & an_image" << endl;
+  cout << " > FitsImage::FitsImage(string FileName, const FitsHeader &a_fits_header, const Image & an_image) " 
+       << "FileName = " << FileName
+       << endl;
 #endif
 ModKey("NAXIS1", nx);
 ModKey("NAXIS2", ny);
@@ -1132,7 +1164,9 @@ FitsImage::FitsImage(const string &FileName, const FitsHeader &a_fits_header) :
    FitsHeader(a_fits_header, FileName)
 { 
 #ifdef DEBUG
-  cout << "  FitsImage::FitsImage(string FileName, const FitsHeader &a_fits_header, const Image & an_image" << endl;
+  cout << " > FitsImage::FitsImage(string FileName, const FitsHeader &a_fits_header) " 
+       << "FileName = " << FileName
+       << endl;
 #endif
 allocate(int(KeyVal("NAXIS1")), int (KeyVal("NAXIS2")));
  written = 0 ;
@@ -1141,6 +1175,9 @@ allocate(int(KeyVal("NAXIS1")), int (KeyVal("NAXIS2")));
 FitsImage::FitsImage(const string &FileName, const Image& an_image) :
    FitsHeader(FileName,RW), Image(an_image)
 {
+#ifdef DEBUG
+  cout << " > FitsImage::FitsImage(const string &FileName, const Image& an_image) " << endl;
+#endif
 ModKey("NAXIS1", nx);
 ModKey("NAXIS2", ny);
  written = 0 ;
