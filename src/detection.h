@@ -121,7 +121,7 @@ BaseStarList *Detection2Base(DetectionList *D);
 class Image;
 class ReducedImage;
 
-class DetectionProcess {
+class DetectionProcess { 
   private :
     double seeing; // actual image seeing
   double sigFilter; // sigma of gaussian filetr used for convolution.
@@ -231,6 +231,5 @@ class MatchedDetectionList : public StarList<MatchedDetection>
 typedef MatchedDetectionList::iterator MatchedDetectionIterator;
 typedef MatchedDetectionList::const_iterator MatchedDetectionCIterator;
 
-// make_persister_for CountedRef<Detection>
 
 #endif /*DETECTION__H */
