@@ -48,6 +48,7 @@ public:
   void KernelToWorst(Kernel &Result, const double &x, const double &y) const;
   void BackKernel(Kernel &Diffback,const double &xc, const double &yc);
   bool VarianceConvolve(Image &Variance);
+  bool FitExists() const {return ((fit == NULL)? false : true); }
   void ConvolveBest(ReducedImage &ConvImage);
   bool Subtraction(ReducedImage &RImage, bool KeepConvolvedBest = false);
   bool RefIsBest() const { return ref_is_best;}
