@@ -55,10 +55,10 @@ class Sub {
      needed, in practise by ~Sub 
   */
 
-private :
+  //private :
+protected :
   StringList Ref;
   vector<NewStack> AllNew;
-  StringList AllNewNames() const;
   StringList AllInputImages;
   string ImageNameToExtract;
   bool overwrite;
@@ -79,6 +79,7 @@ private :
   ReducedImageRef GeometricReference;
 
 public :
+  StringList AllNewNames()const ;
   string GlobalNewName() const { return globnewname;}
   string GlobalSubName() const { return globsubname;}
   string& GlobalNewName() { return globnewname;}
