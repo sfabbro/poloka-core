@@ -1,8 +1,10 @@
 // -*- C++ -*-
-// $Id: cppclass.cc,v 1.3 2004/03/06 23:15:42 nrl Exp $
+// $Id: cppclass.cc,v 1.4 2004/03/08 13:20:01 guy Exp $
 // \file cppclass.cc
 // 
 // 
+#include <iostream>
+#include <string>
 #include <algorithm>
 #include "cppclass.h"
 

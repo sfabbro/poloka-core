@@ -1,8 +1,10 @@
 // -*- C++ -*-
-// $Id: cppswigclassreader.cc,v 1.1 2004/03/08 11:47:43 nrl Exp $
+// $Id: cppswigclassreader.cc,v 1.2 2004/03/08 13:20:01 guy Exp $
 // \file cppswigclassreader.cc
 // 
 // 
+#include <iostream>
+#include <string>
 #include <sstream>
 
 #include "cpptype.h"
