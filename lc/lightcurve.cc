@@ -65,38 +65,25 @@ void LightCurve::write_short(ostream& Stream) const
          << "# eflux : \n"
 	 << "# mag : using elixir zero point = " << elixir_zp << "\n"
 	 << "# emag_minus : useful for drawing\n"
-    	 << "# emag_plus : useful for drawing\n";
-  
-  
+    	 << "# emag_plus : useful for drawing\n"
+	 << "# zeropoint : elixir zp\n";
   if (front()->Image()) Stream << "# image : \n";
   Stream << "# end \n";
 
-  Stream << setiosflags(ios::fixed);
+  
+  LightCurvePoint lcp;
   for (LightCurve::const_iterator it = begin(); it != end(); ++it)
     {      
       const Fiducial<PhotStar> *fs = *it;
-      if (fs->Image()) Stream << setw(14) << setprecision(2) << fs->Image()->JulianDate();
-      else Stream << 99999.99;
-      Stream << setw(15) << setprecision(3) << fs->flux
-	     << setw(15) << setprecision(3) << sqrt(fs->varflux);
-      if(fs->flux < 1.e-12) {
-	Stream << setw(15) << setprecision(3) << 99
-	       << setw(15) << setprecision(3) << 0
-	       << setw(15) << setprecision(3) << 0;
-      }else{
-	Stream << setw(15) << setprecision(3) << -2.5*log10(fs->flux)+elixir_zp;
-	if((1.-sqrt(fs->varflux)/fs->flux)<0)
-	  Stream  << setw(15) << setprecision(3) << -99;
-	else
-	  Stream  << setw(15) << setprecision(3) << 2.5*log10(1.-sqrt(fs->varflux)/fs->flux);
-	Stream  << setw(15) << setprecision(3) << 2.5*log10(1.+sqrt(fs->varflux)/fs->flux);
-      }
-      
+      lcp.julianday = fs->Image()->JulianDate();
+      lcp.flux = fs->flux;
+      lcp.eflux = sqrt(fs->varflux);
+      lcp.computemag(elixir_zp);
+      Stream << lcp;
       if (fs->Image()) Stream << "  " << fs->Image()->Name();
       else Stream << " none ";
       Stream << endl;
     }
-
   Stream.flags(oldflags);
 }
 
@@ -109,7 +96,7 @@ void LightCurve::write_xml(const string &filename) const
   double elixir_zp = computeElixirZeroPoint();
   
   // fill a list of LightCurvePoint
-  std::list< CountedRef<LightCurvePoint> > lcpoints;  
+  std::vector< CountedRef<LightCurvePoint> > lcpoints;  
   for (LightCurve::const_iterator it = begin(); it != end(); ++it)
     {      
       const Fiducial<PhotStar> *fs = *it;
@@ -117,18 +104,7 @@ void LightCurve::write_xml(const string &filename) const
       lcp->julianday = fs->Image()->JulianDate();
       lcp->flux = fs->flux;
       lcp->eflux = sqrt(fs->varflux);
-      if(fs->flux < 1.e-12) {
-	lcp->mag = 99;
-	lcp->emag_minus = 0;
-	lcp->emag_plus = 0;
-      }else{
-	lcp->mag = -2.5*log10(fs->flux)+elixir_zp;
-	if((1.-sqrt(fs->varflux)/fs->flux)<0)
-	  lcp->emag_minus = -99;
-	else
-	  lcp->emag_minus = 2.5*log10(1.-sqrt(fs->varflux)/fs->flux);
-	lcp->emag_plus = 2.5*log10(1.+sqrt(fs->varflux)/fs->flux);
-      }
+      lcp-> computemag(elixir_zp);
       lcpoints.push_back(lcp);
     }
   // now write this list in a file
