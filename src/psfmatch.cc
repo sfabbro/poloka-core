@@ -241,6 +241,7 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   cout << "PsfMatch_SUMMARY_best_worst_photomratio_nstamps_chi2/dof " 
        << best->Name() << " "
        << worst->Name() << " "
+       << photomRatio << " "
        << fit->NStampsUsed() << " "
        << fit->chi2 << " "
        << endl;
