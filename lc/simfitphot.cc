@@ -101,16 +101,29 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 void SimFitPhot::operator() (LightCurve& Lc)
 {
   zeFit.Load(Lc);
-
-  switch (Lc.Ref->type)
-    {
-    case 0: zeFit.SetWhatToFit(FitFlux | FitPos | FitGal); break; // sn+galaxy
-    case 1: zeFit.SetWhatToFit(FitFlux | FitPos         ); break; // star
-    case 2: zeFit.SetWhatToFit(                   FitGal); break; // galaxy
-    default: cerr << " SimFitPhot::operator() : Error : unknown star type :" 
-		  << Lc.Ref->type << endl; return;
-    }
-
+  if(Lc.Ref->type == 0) { // sn+galaxy
+    // first fit only the flux, then everything
+#ifdef DEBUG
+    cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
+#endif
+    zeFit.SetWhatToFit(FitFlux);
+    zeFit.DoTheFit();
+#ifdef DEBUG
+    cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
+#endif
+    zeFit.SetWhatToFit(FitFlux | FitPos | FitGal);
+    zeFit.DoTheFit();
+  }else{
+    switch (Lc.Ref->type)
+      {
+	//case 0: zeFit.SetWhatToFit(FitFlux | FitPos | FitGal); break; // sn+galaxy
+      case 1: zeFit.SetWhatToFit(FitFlux | FitPos         ); break; // star
+      case 2: zeFit.SetWhatToFit(                   FitGal); break; // galaxy
+      default: cerr << " SimFitPhot::operator() : Error : unknown star type :" 
+		    << Lc.Ref->type << endl; return;
+      }
+    zeFit.DoTheFit();
+  }
   zeFit.DoTheFit();
   zeFit.write("sn");
 }
