@@ -229,7 +229,39 @@ void StarMatchList::write(ostream & pr) const
 
 
 }
+void StarMatchList::write_wnoheader(ostream & pr) const
+{
 
+  StarMatchCIterator itu= begin();
+  StarMatch starm = *itu ; 
+  GtransfoIdentity identity;
+  if ( itu == end() )
+    {
+      cerr << " Pas d'Ecriture de StarMatchList vide " << endl ;
+      return ;
+    }
+    
+  ios::fmtflags  old_flags =  pr.flags(); 
+  pr  << resetiosflags(ios::scientific) ;
+  pr  << setiosflags(ios::fixed) ;
+  int oldprec = pr.precision();
+  pr<< setprecision(8);
+  for (StarMatchCIterator it= begin(); it!= end(); it++ )
+    {
+      StarMatch starm = *it ;
+      starm.SetDistance(identity);
+
+      (starm.s1)->writen(pr);
+      pr << " " ;
+      (starm.s2)->writen(pr);
+      pr << " " << starm.Distance(identity) ;
+      pr << endl ;
+    }
+  pr.flags(old_flags);
+  pr << setprecision(oldprec);
+
+
+}
 void StarMatchList::write(const Gtransfo  &tf, ostream & pr) const
 {
 

@@ -218,6 +218,9 @@ class StarMatchList : public list<StarMatch> {
     void write(const string &filename) const ;
     void write(ostream & pr=cout ) const ;
 
+  //!: without descriptor for l2tup 
+   void write_wnoheader(ostream & pr=cout ) const ;
+
 
   //! write  StarMatchList with a header which  can be read by l2tup 
   void write(const Gtransfo &tf, const string &filename) const ;
