@@ -24,18 +24,19 @@ int main(int nargs, char **args)
   // if nothing is given
   if (nargs < 3){usage(args[0]);}
   
-  ReducedImage refimage(args[1]);
-  ReducedImage newimage(args[2]);
-  PsfMatch psfmatch(refimage,newimage);
-  psfmatch.FitKernel(false);
+  CountedRef<ReducedImage> refimage = new ReducedImage(args[1]);
+  CountedRef<ReducedImage> newimage = new ReducedImage(args[2]);
+  PsfMatch psfmatch(*refimage,*newimage);
+  psfmatch.FitKernel(true);
   //ReducedImage sub("sub");
   //psfmatch.Subtraction(sub);
-  string outputfilename = newimage.Dir()+"/kernel_from_"+refimage.Name()+".xml";
+  string outputfilename = newimage->Dir()+"/kernel_from_"+refimage->Name()+".xml";
   cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl;
   obj_output<xmlstream> oo(outputfilename);
   oo << *(psfmatch.GetKernelFit());
   oo.close();
   cout << "the end" << endl;
-
+  
+  
   return 0;
 }
