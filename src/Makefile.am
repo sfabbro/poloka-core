@@ -41,7 +41,6 @@ libtoads_la_SOURCES = \
   basestar_dict.cc \
   sestar_dict.cc \
   jimstar_dict.cc \
-  senearstar_dict.cc \
   standardstar_dict.cc \
   starmatch_dict.cc \
   histo1d_dict.cc \
@@ -71,7 +70,6 @@ libtoads_la_SOURCES = \
   basestar.cc                 basestar.h       \
   jimstar.cc                  jimstar.h        \
   nstarmatch.cc               nstarmatch.h     \
-  senearstar.cc               senearstar.h     \
   sestar.cc                   sestar.h         \
   standardstar.cc             standardstar.h   \
   starlist.cc                 starlist.h       \
@@ -151,7 +149,6 @@ point.h          \
 basestar.h       \
 jimstar.h        \
 nstarmatch.h     \
-senearstar.h     \
 sestar.h         \
 standardstar.h   \
 starlist.h       \
@@ -188,10 +185,8 @@ sub.h              \
 imagesum.h         \
 reducedimage.h     \
 subimage.h         \
-transformedimageaddfakes.h \
 transformedimage.h \
 fitstoad.h \
-addfakes.h \
 cluster.h  \
 convolution.h \
 convtemplate.h \
