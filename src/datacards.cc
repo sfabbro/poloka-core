@@ -1,4 +1,4 @@
-// $Id: datacards.cc,v 1.2 2004/08/25 10:17:31 guy Exp $
+// $Id: datacards.cc,v 1.3 2004/10/20 10:43:43 astier Exp $
 //
 // Datacards, acquisition EROS II
 //
@@ -139,9 +139,10 @@ if ( (fip = fopen(fn.c_str(),"r")) == NULL )
   }
 while (fgets(line_buff,511,fip) != NULL)
   {
-  line_buff[strlen(line_buff)-1] = '\0';   /*  LF/CR de la fin */
-  string line(line_buff);
-  AppendCard(line);
+    char *last = line_buff+strlen(line_buff) -1;
+    if (*last == '\n') *last = '\0'; /* CR at end of line : remove it */
+    string line(line_buff);
+    AppendCard(line);
   }
  fclose(fip);
 }
