@@ -11,6 +11,11 @@
 
 #define DEBUG_PsfMatch
 
+static bool DecreasingFluxMax(const SEStar *S1, const SEStar *S2)
+{
+  return (S1->Fluxmax() > S2->Fluxmax());
+}
+
 //both images are supposedly already registered (i.e. aligned)
 PsfMatch::PsfMatch(const ReducedImageRef Ref, const ReducedImageRef New, const PsfMatch *APreviousMatch, bool noswap)
 {
@@ -87,14 +92,14 @@ PsfMatch::~PsfMatch()
 }
 
 // another starlist selection routine
-static bool GoodForFit(const SEStar *Star, const double &SaturLev, const double &Bmin)
+static bool GoodForFit(const SEStar *Star, const double &SaturLev, const double &Bmin, const double& minsignaltonoiseratio)
 {
   return ((Star->FlagBad() == 0 ) && 
 	  ( Star->Flag() < 3 )   && //(keep blended objects) 
 	  ( Star->Fluxmax()+Star->Fond() < SaturLev ) &&
-	  ( Star->B() > Bmin )
-	  )
-      ;
+	  ( Star->B() > Bmin ) &&
+	  ( Star->Flux_aper()/Star->Eflux_aper() > minsignaltonoiseratio)
+	  );
 }
 
 string PsfMatch::NotFilteredStarListName()
@@ -117,23 +122,24 @@ int PsfMatch::FilterStarList(const double MaxDist)
        << " stars " << endl;
   //star list selection
   SEStarList worstStarList(worst->ImageCatalogName());
-  double satfactor = 0.5;//0.95;
+  double satfactor = 0.95;
   double saturLevBest = best->Saturation() * satfactor;
   double saturLevWorst = worst->Saturation() * satfactor;  
   double bfactor = 0.2;
   double bMinBest = best->Seeing() * bfactor;
   double bMinWorst = worst->Seeing()* bfactor;
   double mindist = worst->Seeing()*3;
+  double minsignaltonoiseratio = 10;
   cout << "  cuts satur bmin " << saturLevBest << " " << bMinBest << endl;
   FastFinder worstFinder(*SE2Base(&worstStarList));
   for (SEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); )
     {
       SEStar *sb = *sibest;
       const SEStar *sworst;  
-      if (GoodForFit(sb, saturLevBest, bMinBest)
+      if (GoodForFit(sb, saturLevBest, bMinBest, minsignaltonoiseratio)
 	  && (sworst = (SEStar *) worstFinder.FindClosest(*sb,MaxDist))
 	  && (sb->Distance(*sworst) < MaxDist) // useless?
-	  && GoodForFit(sworst, saturLevWorst, bMinWorst)
+	  && GoodForFit(sworst, saturLevWorst, bMinWorst, minsignaltonoiseratio)
 	  && (intersection.InFrame(*sb))  
 	  && (intersection.MinDistToEdges(*sb) > mindist)) // remove objects close to the edge
 	{
@@ -148,6 +154,7 @@ int PsfMatch::FilterStarList(const double MaxDist)
   
   if (getenv("DUMP_FIT_LIST"))
     bestStarList.write("fitting_objects.list");
+  bestStarList.sort(DecreasingFluxMax);
   SE2Base(&bestStarList)->CopyTo(objectsUsedToFit);
   return objectsUsedToFit.size();
 }
@@ -218,12 +225,8 @@ bool PsfMatch::FitKernel(const bool KeepImages)
       bsl.CopyTo(objectsUsedToFit);
     }
 
-  objectsUsedToFit.sort(DecreasingFlux);
-  //int count=0;
-  // i remove the 50 brightest
-  //for(BaseStarIterator it = objectsUsedToFit.begin(); it != objectsUsedToFit.end() && count < 50 ; ++it, ++count) {
-  //it = objectsUsedToFit.erase(it);
-  //}
+  //objectsUsedToFit.sort(DecreasingFluxMax); // done in FilterStarList
+  
   if(getenv("DUMP_FIT_LIST"))
     objectsUsedToFit.write(best->Name()+worst->Name()+".fit.list");
   cout << " Frame limits for the fit: " << intersection;

@@ -633,7 +633,7 @@ Degrees[0] = 6; Degrees[1] = 4; Degrees[2] = 2;
 //Degrees[0] = 1; Degrees[1] = 4; Degrees[2] = 2;
 HStampSize = 15;
 HKernelSize = 9;
-MaxStamps = 150;
+MaxStamps = 1000;
 KernVar.SetDegree(2); // degree of spatial variations of the kernel 
 BackVar.SetDegree(2); //degree of spatial variations of the background
 SepBackVar.SetDegree(-1); //degree of spatial variations of the background if you want to fit it separately

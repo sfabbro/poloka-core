@@ -505,7 +505,7 @@ bool ImageSum::MakeFits()
       if (weightSlices) 
 	{
 	  string weightName = ri.FitsWeightName();
-	  ri.MakeWeight();
+	  //ri.MakeWeight();
 	  {
 	    /* compute an average image weight for stack attributes 
 	       (seeing...) set in FitsHeaderFill */
