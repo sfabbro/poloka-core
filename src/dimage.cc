@@ -234,10 +234,16 @@ void DImage::readFromImage(const string& FitsFileName, const Window &Rect)
   fits_open_file(&fptr, FitsFileName.c_str(), RO, &status);
   fits_read_subset(fptr, TDOUBLE, lbc, trc, inc, &nulval,  data,
 		   &anynul, &status);
-  fits_close_file(fptr, &status);
   if (status>0)  
     { 
-      cerr << " Vignet::readFromImage(" << FitsFileName << ") : Error: " << endl; 
+      cerr << " Vignet::readFromImage(" << FitsFileName << "):fits_read_subset : Error: " << endl; 
+      fits_report_error(stderr, status); 
+    }
+  fits_close_file(fptr, &status);
+  
+  if (status>0)  
+    { 
+      cerr << " Vignet::readFromImage(" << FitsFileName << "):fits_close_file : Error: " << endl; 
       fits_report_error(stderr, status); 
     }
 }
@@ -359,6 +365,15 @@ Kernel::Kernel(const string &FitsName) : DImage(FitsName)
   maxindex = minindex + Nx()*Ny()-1;
 }
 
+void  Kernel::Allocate(const int Nx, const int Ny,int Init) {
+   DImage::Allocate(Nx,Ny,Init);
+   hSizeX = (Nx-1)/2;
+   hSizeY = (Ny-1)/2;
+   data00 = &(*this)(hSizeX,hSizeY);
+   minindex = begin()-data00; 
+   maxindex = minindex + Nx*Ny-1;
+}
+
 void Kernel::readFits(const string &FitsName)
 {
   FitsHeader head(FitsName);
@@ -374,10 +389,16 @@ void Kernel::readFits(const string &FitsName)
 
 void Kernel::readFromImage(const string& FitsFileName, const Window &Rect)
 {
+  cout << "Kernel::readFromImage Window " 
+       << Rect.xstart << " "
+       << Rect.ystart << " "
+       << Rect.xend << " "
+       << Rect.yend << endl;
+
   FitsHeader head(FitsFileName);
   int nix,niy; head.ImageSizes(nix,niy);
   if ((nix == 0)|| (niy == 0) ) return;
-
+  
   DImage::readFromImage(FitsFileName, Rect); 
   hSizeX = (Nx()-1)/2;
   hSizeY = (Ny()-1)/2;

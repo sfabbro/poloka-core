@@ -8,7 +8,7 @@
 #include "basestar.h"
 //#include "image.h"
 
-#define DIMAGE_BOUNDS_CHECK 0
+#define DIMAGE_BOUNDS_CHECK 1
 
 typedef double DPixel;
 class Image;
@@ -49,7 +49,7 @@ public:
     if (i+j*nx<minindex || i+j*nx>maxindex) 
       {
 	cerr << "CATASTROPHE : DImage out of bounds " 
-	     << i << " " << j <<  " " << nx << " " << ny << endl;
+	     << i << " " << j <<  " " << nx << " " << ny << " " << minindex << " " << maxindex << endl;
       }
 #endif
     return data00[i+j*nx]; /* fortran/FITS convention */
@@ -207,11 +207,9 @@ public:
   void MaxPixel(double &xmax, double &ymax) const;
   void MinPixel(double &xmin, double &ymin) const;
   
-  void Allocate(const int Nx, const int Ny, int Init=1) {
-    DImage::Allocate(Nx,Ny,Init);
-    hSizeX = (Nx-1)/2;
-    hSizeY = (Ny-1)/2;
-  };
+  void Allocate(const int Nx, const int Ny, int Init=1);
+   
+
   friend ostream& operator << (ostream& stream, const Kernel& k);
 };
 
