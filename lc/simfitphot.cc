@@ -112,5 +112,6 @@ void SimFitPhot::operator() (LightCurve& Lc)
     }
 
   zeFit.DoTheFit();
+  zeFit.write("sn");
 }
 
