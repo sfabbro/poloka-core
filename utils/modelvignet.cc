@@ -65,8 +65,12 @@ int main(int argc, char **argv)
   cout << "x y fluxmax = " << x << " " << y << " " << fluxmax << endl;
   
   // update PSF
+  vignet->Resize(hx,hy);
   vignet->Psf.Tabulate(Point(x,y),*(vignet->psf),(const Window&)*vignet);
-    
+  
+  
+  cout << "hx hy = " << hx << " " << hy << endl;
+  
   // write image
   Kernel model = galaxy;
   for(int j=-hy;j<=hy;++j) {
@@ -74,7 +78,8 @@ int main(int argc, char **argv)
 	model(i,j)+=fluxmax*vignet->Psf(i,j);
       }
   }
-  model.writeFits("model.fits");
+  string modelname = lc.Ref->name+"/model_sn.fits";
+  model.writeFits(modelname);
   
 
   return EXIT_SUCCESS;
