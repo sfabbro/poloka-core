@@ -11,8 +11,10 @@ endif
 # get includes necessary to compile this package with the help of cmt
 # get ldflags
 
-# au cas ou
-cmt config > /dev/null
+# copy requirements.in in order to configure this package
+echo "package poloka" >! requirements
+cat requirements.in | grep -v '@' >> requirements
+if ( ! -f version.cmt ) echo "v0r0" >  version.cmt
 
 set packages = `cmt show uses | grep -v "#" | grep -v "CMT" | awk '{printf("%s ",$2);}' `
 
