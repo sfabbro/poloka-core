@@ -79,9 +79,12 @@ void LightCurve::write_short(ostream& Stream) const
 	       << setw(15) << setprecision(3) << 0
 	       << setw(15) << setprecision(3) << 0;
       }else{
-	Stream << setw(15) << setprecision(3) << -2.5*log10(fs->flux)+elixir_zp
-	       << setw(15) << setprecision(3) << 2.5*log10(1.-sqrt(fs->varflux)/fs->flux)
-	       << setw(15) << setprecision(3) << 2.5*log10(1.+sqrt(fs->varflux)/fs->flux);
+	Stream << setw(15) << setprecision(3) << -2.5*log10(fs->flux)+elixir_zp;
+	if((1.-sqrt(fs->varflux)/fs->flux)<0)
+	  Stream  << setw(15) << setprecision(3) << -99;
+	else
+	  Stream  << setw(15) << setprecision(3) << 2.5*log10(1.-sqrt(fs->varflux)/fs->flux);
+	Stream  << setw(15) << setprecision(3) << 2.5*log10(1.+sqrt(fs->varflux)/fs->flux);
       }
       
       if (fs->Image()) Stream << "  " << fs->Image()->Name();
