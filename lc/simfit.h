@@ -135,7 +135,7 @@ public:
   void FillMatAndVec();
 
   //! iterate on solution and solve the system
-  bool IterateAndSolve(int MaxIter=10, double Eps=0.00001);
+  bool IterateAndSolve(int MaxIter=10, double Eps=0.0001);
 
   //! a procedure to fill up the covariance into the Mat and the proper SimFitVignets...
   bool GetCovariance();
@@ -156,7 +156,7 @@ public:
   double Scale() const { return scale; }
 
   //! write galaxy, covariance matrix and lightcurve on disk
-  void write(const string &StarName) const;
+  void write(const string &StarName,const string &DirName=".");
   
   ostream& DumpMatrices(ostream& Stream=cout) const; 
   

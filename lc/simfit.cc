@@ -329,8 +329,9 @@ void SimFit::Resize(const double& ScaleFactor)
     ndata = 0;
 
   for (SimFitVignetCIterator it = begin(); it != end(); ++it) 
-    ndata += (2*(*it)->Hx()+1) * (2*(*it)->Hy()+1);
-
+    ndata += (*it)->NValidPixels();
+    //ndata += (2*(*it)->Hx()+1) * (2*(*it)->Hy()+1);
+  
   resize_vec(Vec, nparams);
   resize_mat(Mat, nparams, nparams);
   resize_mat(MatGal, nfx*nfy,nfx*nfy);
@@ -1529,31 +1530,35 @@ void SimFit::DoTheFit()
 
 }
 
-void SimFit::write(const string& StarName) const
+void SimFit::write(const string& StarName,const string &DirName) 
 {
   cout << " SimFit::write(" << StarName << ")" << endl;
   // dump light curve and vignets
-  ofstream lstream(string("results/lightcurve_"+StarName+".dat").c_str());
+  ofstream lstream(string(DirName+"/lightcurve_"+StarName+".dat").c_str());
+  ofstream vignetstream(string(DirName+"/vignets_"+StarName+".dat").c_str());
   lstream << setiosflags(ios::fixed);
   front()->Star->WriteHeader(lstream);
-  const string name = "results/simfit_vignets_"+StarName+".fits";
-  VignetRef->Galaxy.writeFits("results/galaxy_"+StarName+".fits");
-  for (SimFitVignetCIterator it=begin(); it != end() ; ++it)
-    {
-      const SimFitVignet *vi = *it;
+  const string name = DirName+"/simfit_vignets_"+StarName+".fits";
+  VignetRef->Galaxy.writeFits(DirName+"/galaxy_"+StarName+".fits");
+  for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+    {      
+      SimFitVignet *vi = *it;
+      vi->ClearResidZeroWeight();
       lstream << *vi->Star << endl;
-      vi->Kern.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_kern.fits");
-      vi->Resid.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_resid.fits");
-      vi->Data.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_data.fits");
-      vi->Psf.writeFits("results/"+vi->Image()->Name()+"_"+StarName+"_psf.fits");
-      
+      vignetstream << *vi << endl;
+      vi->Kern.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_kern.fits");
+      vi->Resid.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_resid.fits");
+      vi->Data.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_data.fits");
+      vi->Psf.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_psf.fits");
+      vi->Weight.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_weight.fits");
     }
   lstream.close();
+  vignetstream.close();
 
   // dump covariance matrix
   if (Mat != 0 && Mat != 0) 
     {
-      ofstream cstream(string("results/cov_"+StarName+".dat").c_str());
+      ofstream cstream(string(DirName+"/cov_"+StarName+".dat").c_str());
       cstream << setiosflags(ios::fixed);
       for(int j=fluxstart; j<=fluxend; ++j)
 	{
