@@ -205,7 +205,7 @@ int main(int argc, char **argv)
   doFit.dowrite=false; // don't write anything before all is done
   
   // does everything
-  for_each(lclist.begin(), lclist.end(), doFit);
+  // for_each(lclist.begin(), lclist.end(), doFit);
   
   // now we want to write many many things, let's make a list
   ofstream stream(matchedcatalogname.c_str());
@@ -241,6 +241,10 @@ int main(int argc, char **argv)
   
   
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
+
+    doFit(*ilc);
+
+
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
     //cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
     int count_img=0;
