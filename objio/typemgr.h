@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: typemgr.h,v 1.2 2004/03/01 22:01:44 nrl Exp $
+// $Id: typemgr.h,v 1.3 2004/03/03 18:55:36 guy Exp $
 // 
 // \file typemgr.h
 // 
@@ -24,7 +24,7 @@ public:
   static int    size() { return persisterMap_->size(); }
   
   static persister_base<IOS>*   getPersister(std::string const& obj_rttiname) {
-    std::map<std::string,persister_base<IOS>*>::const_iterator it;
+    typename std::map<std::string,persister_base<IOS>*>::const_iterator it;
     it = persisterMap_->find(obj_rttiname);
     if(it==persisterMap_->end()) return 0;
     return it->second;
@@ -47,7 +47,7 @@ public:
 private:
   static void register_type() {
     std::string rttiname = typeid(T).name();
-    std::map<std::string,persister_base<IOS>*>::const_iterator it;
+    typename std::map<std::string,persister_base<IOS>*>::const_iterator it;
     it = typemgr<IOS>::persisterMap_->find(rttiname);
     if(it==typemgr<IOS>::persisterMap_->end()) 
       (*typemgr<IOS>::persisterMap_)[rttiname] = (persister_base<IOS>*)new persister<T,IOS>;
