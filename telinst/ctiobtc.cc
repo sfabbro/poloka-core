@@ -51,7 +51,7 @@ public:
   {
     string obje =  Head.KeyVal("TITLE");
     RemovePattern(obje," ");
-    if (obje.length() == 0) obje = Head.KeyVal("OBJECT");
+    if (obje.length() == 0) obje = static_cast<string>(Head.KeyVal("OBJECT"));
     return FitsKey("TOADOBJE",obje);
   }
   SIMPLE_TRANSLATOR(TOADCHIP,"AMPID");

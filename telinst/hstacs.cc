@@ -47,7 +47,7 @@ public :
   {
     string filter = Head.KeyVal("FILTER1");
     if (strstr(filter.c_str(),"CLEAR"))
-      filter = Head.KeyVal("FILTER2");
+      filter = static_cast<string>(Head.KeyVal("FILTER2"));
     
     return FitsKey("TOADFILT",filter);
   }  

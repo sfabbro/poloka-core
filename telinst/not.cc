@@ -33,9 +33,9 @@ public:
     // else only the last 'if' will be returned
     string keyval = Head.KeyVal("FILTER");
     if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
-    keyval = Head.KeyVal("AFILTER");
+    keyval = static_cast<string>(Head.KeyVal("AFILTER"));
     if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
-    keyval = Head.KeyVal("BFILTER");
+    keyval = static_cast<string>(Head.KeyVal("BFILTER"));
     if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
     return FitsKey("TOADFILT","undefined");
   }

@@ -22,11 +22,11 @@ public:
     RemovePattern(type, " ");    
     if (type != "") return FitsKey("TOADTYPE",type);
 
-    type = Head.KeyVal("DPRTYPE");
+    type = static_cast<string>(Head.KeyVal("DPRTYPE"));
     RemovePattern(type, " ");    
     if (type != "") return FitsKey("TOADTYPE",type);
     
-    type = Head.KeyVal("HIERARCH ESO DPR TYPE");
+    type = static_cast<string>(Head.KeyVal("HIERARCH ESO DPR TYPE"));
     RemovePattern(type, " ");    
     if (type != "") return FitsKey("TOADTYPE",type);
     return FitsKey("TOADTYPE","");
@@ -35,22 +35,18 @@ public:
   TRANSLATOR_DEC(TOADAIRM)
   {
     
-    string  airmass = Head.KeyVal("AIRMASS");
-    RemovePattern(airmass, " ");
-    
-    if (airmass != "") return FitsKey("TOADAIRM",airmass);
+    double airmass = Head.KeyVal("AIRMASS");
+    if (airmass != 0.) return FitsKey("TOADAIRM",airmass);
 
-    airmass =  Head.KeyVal("AIRMST");
-    
-    if (airmass != "") return FitsKey("TOADAIRM",airmass);
+    airmass =  Head.KeyVal("AIRMST");    
+    if (airmass != 0.) return FitsKey("TOADAIRM",airmass);
 
+    airmass =  Head.KeyVal("HIERARCH ESO TEL AIRM START");    
+    if (airmass != 0.) return FitsKey("TOADAIRM",airmass);
 
-    airmass =  Head.KeyVal("HIERARCH ESO TEL AIRM START");
-    
-    if (airmass != "") return FitsKey("TOADAIRM",airmass);
-
-    return FitsKey("TOADAIRM","");
+    return FitsKey("TOADAIRM",0.);
   }  
+
   TRANSLATOR_DEC(TOADDECL)
   {
     string decl = DecDegToString(Head.KeyVal("DEC"));
@@ -163,22 +159,19 @@ public :
   TRANSLATOR_DEC(TOADPIXS)
   {
     
-    string pixs = Head.KeyVal("PIXSCALE");
-    RemovePattern(pixs, " ");
+    double pixs = Head.KeyVal("PIXSCALE");
+    if (pixs != 0) return FitsKey("TOADPIXS",pixs);
 
-    if (pixs != "") return FitsKey("TOADPIXS",pixs);
+    pixs =  Head.KeyVal("INSPIXSC");    
+    if (pixs != 0) return FitsKey("TOADPIXS",pixs);
 
-    pixs =  Head.KeyVal("INSPIXSC");
-    
-    if (pixs != "") return FitsKey("TOADPIXS",pixs);
+    pixs =  Head.KeyVal("HIERARCH ESO INS PIXSCALE");    
+    if (pixs != 0) return FitsKey("TOADPIXS",pixs);
 
-    pixs =  Head.KeyVal("HIERARCH ESO INS PIXSCALE");
-    
-    if (pixs != "") return FitsKey("TOADPIXS",pixs);
-
-    return FitsKey("TOADFILT","");
+    return FitsKey("TOADPIXS",0);
 
   }
+
   TRANSLATOR_DEC(TOADFILT)
   {
     
@@ -186,15 +179,15 @@ public :
     RemovePattern(band, " ");
 
     if (band != "") return FitsKey("TOADFILT",band);
-    band =  Head.KeyVal("FILT1NAM");
+    band =  static_cast<string>(Head.KeyVal("FILT1NAM"));
 	
     if (band != "") return FitsKey("TOADFILT",band);
 
-    band =  Head.KeyVal("FILTER1");
+    band =  static_cast<string>(Head.KeyVal("FILTER1"));
 	
     if (band != "") return FitsKey("TOADFILT",band);
 
-    band =  Head.KeyVal("HIERARCH ESO INS FILT1 NAME");
+    band =  static_cast<string>(Head.KeyVal("HIERARCH ESO INS FILT1 NAME"));
 
 	
     if (band != "") return FitsKey("TOADFILT",band);
@@ -212,14 +205,14 @@ public :
     RemovePattern(obje, " ");
     if (obje != "") return FitsKey("TOADOBJE",obje); 
 
-    obje =  Head.KeyVal("OBJECT");
+    obje =  static_cast<string>(Head.KeyVal("OBJECT"));
     RemovePattern(obje, " ");
     if (obje != "") return FitsKey("TOADOBJE",obje); 
 
-    obje = Head.KeyVal("ESO OBS TARG NAME");
+    obje = static_cast<string>(Head.KeyVal("ESO OBS TARG NAME"));
     if (obje != "") return(FitsKey("TOADOBJE",obje));
 
-    obje = Head.KeyVal("OBSNAME");
+    obje = static_cast<string>(Head.KeyVal("OBSNAME"));
     if (obje != "") return(FitsKey("TOADOBJE",obje));
 
     return FitsKey("TOADOBJE","");
@@ -230,17 +223,16 @@ public :
   
   TRANSLATOR_DEC(TOADNAMP)
   {
-    string namp = Head.KeyVal("OUTPUTS");
-    RemovePattern(namp, " ");
-    if (namp != "") return FitsKey("TOADNAMP",namp);
+    int namp = Head.KeyVal("OUTPUTS");
+    if (namp != 0) return FitsKey("TOADNAMP",namp);
+
     namp = Head.KeyVal("DETOUTPU");
-    if (namp != "") return FitsKey("TOADNAMP",namp);
+    if (namp != 0) return FitsKey("TOADNAMP",namp);
 
     namp = Head.KeyVal("HIERARCH ESO DET OUTPUTS");
-    if (namp != "") return FitsKey("TOADNAMP",namp);
+    if (namp != 0) return FitsKey("TOADNAMP",namp);
 
-
-    return FitsKey("TOADNAMP","");
+    return FitsKey("TOADNAMP",1);
   }    
   
 };

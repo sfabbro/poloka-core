@@ -31,7 +31,7 @@ public :
       return FitsKey("TOADRDON",RoNoise);
     
     
-    RoNoise = Head.KeyVal("RDNOISE");
+    RoNoise = static_cast<string>(Head.KeyVal("RDNOISE"));
     RoN = atof(RoNoise.c_str());
     if (RoN>0)
       return FitsKey("TOADRDON",RoN);
