@@ -7,6 +7,16 @@ AM_LDFLAGS  = -L../src -L../dao -L../objio -L@libdir@ -ltoadio @XML_LIBS@ CFITSI
 
 lib_LTLIBRARIES = libtoadslc.la
 
+AM_CPPFLAGS += $($<_cppflags)
+optimize_it = -O3
+
+vignet.cc_cppflags = $(optimize_it)
+vignetphot.cc_cppflags = $(optimize_it)
+simfitvignet.cc_cppflags = $(optimize_it)
+simfit.cc_cppflags = $(optimize_it)
+simfitphot.cc_cppflags = $(optimize_it)
+lightcurve.cc_cppflags = $(optimize_it)
+
 libtoadslc_la_SOURCES =  \
 	lightcurvepoint_dict.cc \
 	lightcurvepoint.cc \
