@@ -89,12 +89,6 @@ int main()
   oo << string_short_map;
   //  oo << b;
   //  oo << bb;
-  
-  //  persister<Star>* tps = (persister<Star>*)typemgr::getPersister(typeid(&s).name());
-  persister_base* tps = typemgr::getPersister(typeid(&s).name());
-  std::cout << " name=" << tps->name() << " version=" << tps->version() << endl;
-  oo.write(tps);
-  
   oo.close();
 
   exit(0);
