@@ -6,6 +6,8 @@
 
 #define MATVECT_CHECK_BOUNDS
 
+class Vect;
+
 /* obviously the later class should be borrowed somewhere  */
 class Mat {
   
@@ -43,6 +45,7 @@ class Mat {
   Mat operator +(const Mat& Right) const;
   Mat operator -(const Mat& Right) const;
   Mat operator *(const Mat& Right) const;
+  Mat operator *(const Vect& Right) const;
   
   void operator +=(const Mat& Right);
   void operator -=(const Mat& Right);
@@ -51,6 +54,11 @@ class Mat {
   Mat operator *(const double Right) const;
   friend Mat operator *(const double Left, const Mat &Right);
   void operator *=(const double Right);
+
+  operator double() const;
+  operator Vect() const;
+  Mat transposed() const;
+
 };
 
 class Vect {
@@ -83,6 +91,24 @@ class Vect {
   void dump(std::ostream& Stream) const;
   friend std::ostream& operator << (std::ostream &stream, const Vect &v)
     { v.dump(stream); return stream;}
+
+  // operators
+  Vect operator +(const Vect& Right) const;
+  Vect operator -(const Vect& Right) const;
+  double operator *(const Vect& Right) const; // scalar product
+  
+  void operator +=(const Vect& Right);
+  void operator -=(const Vect& Right);
+  
+  
+
+  Vect operator *(const double Right) const;
+  friend Vect operator *(const double Left, const Vect &Right);
+  void operator *=(const double Right);
+
+  Mat transposed() const;
+  Mat asMat() const; // do not use an operator cause gives undetermination
+  operator double() const;
 };
 
 #endif /*MATVECT__H */

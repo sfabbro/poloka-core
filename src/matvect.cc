@@ -62,13 +62,14 @@ double& Mat::operator () (const unsigned int i, const unsigned int j) {
 
 void Mat::dump(ostream& Stream) const {
     for(unsigned int j=0;j<ny;j++) {
-      Stream << "0.." << nx-1 << "," << j;
+      Stream << "0.." << nx-1 << "," << j << ": ";
       for(unsigned int i=0;i<nx;i++) {
 	Stream << " " << float((*this)(i,j));
       }
       Stream << endl;
     }
   }
+
 
 void Mat::Identity() {
   if(nx!=ny) {
@@ -88,8 +89,13 @@ static bool same_size(const Mat& m1, const Mat& m2)
   return false;
 }
 
-
-
+static bool same_size(const Vect& v1, const Vect& v2)
+{
+  if (v1.Size() == v2.Size()) return true;
+  cout << " vectors have different sizes" << endl;
+  abort(); // we should in fact throw an exception.
+  return false;
+}
 
 Mat Mat::operator +(const Mat& Right) const
 {
@@ -143,9 +149,9 @@ Mat operator *(const double Left, const Mat &Right)
  
 void Mat::operator *=(const double Right)
 {
-  int size = nx*ny;
+  unsigned int size = nx*ny;
   double *a = data;
-  for(int i=0;i<size;++i, ++a)
+  for(unsigned int i=0;i<size;++i, ++a)
     *a *= Right;
 }
 
@@ -167,10 +173,50 @@ Mat Mat::operator *(const Mat& Right) const
   return res;
 }
 
+Mat Mat::operator *(const Vect& Right) const
+{
+  return (*this)*(Right.asMat());
+}
+
 void Mat::operator *=(const Mat& Right)
 {
   Mat res = (*this)*Right;
   (*this) = res;
+}
+
+Mat::operator double() const
+{
+  if(nx!=1 || ny !=1) {
+    cout << "Mat::operator double() error, nx=ny=1 needed, you have nx=" 
+	 << nx <<" ny=" << ny << endl;
+    abort();
+  }
+  return (*this)(0,0);
+}
+
+Mat::operator Vect() const
+{
+  if(nx!=1) {
+    cout << "Mat::operator Vect() error, nx=1 needed, you have nx=" 
+	 << nx << endl;
+    abort();
+  }
+  Vect res(ny);
+  for(unsigned int i=0;i<ny;i++) {
+    res(i) = (*this)(0,i);
+  }
+  return res;
+}
+
+Mat Mat::transposed() const {
+  Mat res(ny,nx);
+  
+  for(unsigned int i=0;i<nx;i++) {
+    for(unsigned int j=0;j<ny;j++) {
+      res(j,i)=(*this)(i,j);
+    }
+  }
+  return res;
 }
 
 //=================================================================
@@ -230,6 +276,101 @@ double& Vect::operator () (const unsigned int i) {
 
 void Vect::dump(ostream& Stream) const {
   for(unsigned int i=0;i<n;i++) {
-    Stream << i << " " << float((*this)(i)) << endl;
+    Stream << i << ":  " << float((*this)(i)) << endl;
   }
 }
+
+Vect Vect::operator *(const double Right) const 
+{
+  Vect res = (*this);
+  res *= Right;
+  return res;
+}
+
+Vect operator *(const double Left, const Vect &Right)
+{
+  Vect res = Right;
+  res *= Left;
+  return res;
+}
+ 
+void Vect::operator *=(const double Right)
+{
+  double *a = data;
+  for(unsigned int i=0;i<n;++i, ++a)
+    *a *= Right;
+}
+
+
+Vect Vect::operator +(const Vect& Right) const
+{
+  same_size(*this,Right);
+  Vect res = (*this);
+  res += Right;
+  return res;
+}
+
+Vect Vect::operator -(const Vect& Right) const
+{
+  same_size(*this,Right);
+  Vect res = (*this);
+  res -= Right;
+  return res;
+}
+
+void Vect::operator +=(const Vect& Right)
+{
+  same_size(*this,Right);
+  double *a = data;
+  const double *b = Right.Data();
+  for(unsigned int i=0;i<n;++i, ++a, ++b)
+    *a += *b;
+}
+
+void Vect::operator -=(const Vect& Right)
+{
+  same_size(*this,Right);
+  double *a = data;
+  const double *b = Right.Data();
+  for(unsigned int i=0;i<n;++i, ++a, ++b)
+    *a -= *b;
+}
+
+double Vect::operator *(const Vect& Right) const
+{
+  same_size(*this,Right);
+  double res = 0;
+  const double *a = data;
+  const double *b = Right.Data();
+  for(unsigned int i=0;i<n;++i, ++a, ++b)
+    res += (*a)*(*b);
+  return res;
+}
+
+
+Mat Vect::transposed() const {
+  Mat trans(n,1);
+  for(unsigned int i=0;i<n;++i) {
+    trans(i,0)=(*this)(i);
+  }
+  return trans;
+}
+
+Vect::operator double() const
+{
+  if(n!=1) {
+    cout << "Vect::operator double() error, n=1 needed, you have n=" 
+	 << n << endl;
+    abort();
+  }
+  return (*this)(0);
+}
+
+Mat Vect::asMat() const {
+  Mat mat(1,n);
+  for(unsigned int i=0;i<n;++i) {
+    mat(0,i)=(*this)(i);
+  }
+  return mat;
+}
+
