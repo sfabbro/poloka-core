@@ -163,8 +163,8 @@ double Vignet::MaxPixResid() const {
   double max = 0;
   for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
     if(*pw>1.e-30) {
-      if(fabs(*pres)>max)
-	max = fabs(*pres);
+      if(fabs(*pres)>fabs(max))
+	max = *pres;
     }
   }
   return max;
@@ -230,6 +230,31 @@ double Vignet::Chi2() const
   for (int i=Nx()*Ny(); i; --i, ++pres)
     chi2 += *pw++ * (*pres) * (*pres);
   
+  if(!(chi2>0)) { // there is a bug here so we save the residuals, dump them and abort
+    cout << "############# Vignet::Chi2 ERROR chi2=" << chi2 << " #############" << endl;
+    cout << " writing resid_DEBUG.fits weight_DEBUG.fits" << endl;    
+    Weight.writeFits("weight_DEBUG.fits");
+    Resid.writeFits("Resid_DEBUG.fits");
+    DPixel *pres; 
+    
+    cout << " resids: " << endl;
+    for (int j=-hy; j<=hy; ++j) {
+      pres = &Resid (-hx,j);
+      for (int i=-hx; i<=hx; ++i, ++pres) {
+	cout << " " << *pres;   
+      }
+      cout << endl;
+    }
+//     cout << " weight: " << endl;
+//     for (int j=-hy; j<=hy; ++j) {
+//       pw = &Weight (-hx,j);
+//       for (int i=-hx; i<=hx; ++i, ++pw) {
+// 	cout << " " << *pw;   
+//       }
+//       cout << endl;
+//     }
+    return -1;
+  }   
   return chi2;
 }
 
