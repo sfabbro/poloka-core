@@ -147,8 +147,30 @@ for (StarCIterator si = begin(); si!= end(); ++si)
    }
  return (Star *) minstar; // violates constness
 }
+template<class Star> Star* StarList<Star>::FindAndRemoveClosest(double X, double Y) 
+{
+double min_dist2 = 1e30;
+const Star *minstar = NULL;
+double dist2;
+ StarIterator si_res;
+for (StarIterator si = begin(); si!= end(); ++si) 
+   { 
+   const Star *s = *si;
+   dist2 = (X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y);
+   if (dist2 < min_dist2) { min_dist2 = dist2; minstar = s;
+   si_res = si ;}
+   }
+ if ( minstar == NULL)
+ return (Star *) minstar; 
+ else
+   {
+     Star * star_res = new Star(*minstar);
+     this->erase(si_res);
+     return (Star *) star_res; // violates constness
+   }
+}
 
-template<class Star>bool StarList<Star>::HasCloseNeighbor(double X, double Y, double maxdist, double mindist) const
+template<class Star>bool StarList<Star>::HasCloseNeighbor(double X, double Y, double maxdist, double mindist, double minflux) const
 {
   double dist2;
   double mindist2 = mindist*mindist;
@@ -157,8 +179,13 @@ template<class Star>bool StarList<Star>::HasCloseNeighbor(double X, double Y, do
     { 
       const Star *s = (*si); 
       dist2 = (X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y);
-      
-      if ((dist2 > mindist2) && (dist2 < maxdist2)) {return true;}
+      bool okflux = true ;
+      if (minflux > 0 )
+	okflux = (s->flux > minflux);
+      if (okflux && (dist2 > mindist2) && (dist2 < maxdist2)) {
+	cerr << "HasCloseNeighbor at dist : " << sqrt(dist2) << " Neighbor: " ;
+	s->dump();
+	return true;}
     }
   return false;
 }  

@@ -117,9 +117,14 @@ typedef typename list<Element>::iterator StarIterator;
   //! same as above. Can be used with any of our star-like stuff.
   Star* FindClosest(const Point &P) const { return FindClosest(P.x, P.y);};
 
+  //! returns the closest Star from a given location. 
+  //! and removes it from the given list.
+  Star* FindAndRemoveClosest(double X, double Y);
+
 #ifndef __CINT__
   //! true if location has a nearby star in a ring between mindist and maxdist
-  bool HasCloseNeighbor(double X, double Y, double maxdist, double mindist=0.1) const;
+  //! if minflux>0, then the condition flux > minflux is required.
+  bool HasCloseNeighbor(double X, double Y, double maxdist, double mindist=0.1,double minflux=-1) const;
 
   //! same as above. Can be used with any of our star-like stuff.
   bool HasCloseNeighbor(const Point &P, double maxdist, double mindist=0.1) const
