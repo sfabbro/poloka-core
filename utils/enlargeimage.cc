@@ -12,7 +12,7 @@ static void usage(const char *progName)
   cerr << "Usage: " << progName << " dbimage2enlarge newdbimage marginx marginy  " << endl;
   cerr << "  add margins of size marginx (left and right) and marginy (top and bottom)" << endl;
   cerr << "  to image dbimage2enlarge and save it in newdbimage"  << endl;
-  exit(-1);
+  exit(EXIT_FAILURE);
 }
 
 int main(int nargs, char **args)
@@ -43,5 +43,5 @@ int main(int nargs, char **args)
   transformed.Execute(DoFits | DoCatalog | DoSatur | DoWeight);
   
   
-  return 0;
+  return EXIT_SUCCESS;
 }
