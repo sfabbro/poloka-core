@@ -16,7 +16,7 @@
 //
 
 // uncomment this to use one daophot psf per image, kernels are still used for the galaxy and for the photometric ratio
-#define ONEPSFPERIMAGE
+//#define ONEPSFPERIMAGE
 
 
 class TabulatedPsf : public Kernel {
