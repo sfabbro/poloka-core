@@ -12,8 +12,12 @@ bin_PROGRAMS = \
  mosaique_int newmake_sub preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad
 
-AM_CPPFLAGS = -I../src -I/home/nrl/Work/frogs/sex/v222/src
-LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff -L/home/nrl/Work/frogs/sex/v222/Linux-i686 -lsex -lwcs -lg2c
+#AM_CPPFLAGS = -I../src -I/home/nrl/Work/frogs/sex/v222/src
+#LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff -L/home/nrl/Work/frogs/sex/v222/Linux-i686 -lsex -lwcs -lg2c
+
+AM_CPPFLAGS = -I../src @SEX_CPPFLAGS@
+LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@ -lg2c
+
 
 header_SOURCES = header.cc
 im2tup_SOURCES = im2tup.cc

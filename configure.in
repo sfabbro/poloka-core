@@ -152,6 +152,42 @@ AC_ARG_WITH(cernlib,
 ]
 )
 
+AC_ARG_WITH(sex,
+[  --with-sex=<sex> sextractor library and header location],
+[  SEXINCLUDEDIR=$withval/src
+   SEXLIBDIR=$withval/Linux-i686
+   CPPFLAGS="-I$SEXINCLUDEDIR $CPPFLAGS"
+   LDFLAGS="-L$SEXLIBDIR -lsex -lwcs $LDFLAGS"
+   AC_CHECK_HEADER(som.h, ,
+                   AC_MSG_ERROR("not found. Aborting."))
+   AC_CHECK_LIB(sex, main,,
+                AC_MSG_ERROR("not found. Aborting."))
+   SEX_CPPFLAGS="-I$SEXINCLUDEDIR"
+   SEX_LDFLAGS="-L$SEXLIBDIR -lsex -lwcs"
+   AC_SUBST(SEX_CPPFLAGS)
+   AC_SUBST(SEX_LDFLAGS)
+],
+[
+if [test x$SEX_SUPPORT = xyes]; then
+   CPPFLAGS_sav="$CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS -I$prefix/include"
+   LDFLAGS_sav="$LDFLAGS"
+   LDFLAGS="$LDFLAGS -L$prefix/lib"
+   if [test -n "$TOADLIBS"]; then
+      CPPFLAGS="$CPPFLAGS -I$TOADLIBS/include"
+      LDFLAGS="$LDFLAGS -L$TOADLIBS/lib"
+   fi
+   AC_CHECK_HEADER(som.h,,
+                   AC_MSG_ERROR("sextractor not found. Aborting."))
+   AC_CHECK_LIB(sex, main,,
+                AC_MSG_ERROR("libsex not found. Aborting."))
+dnl   CPPFLAGS="$CPPFLAGS_sav"
+dnl   LDFLAGS="$LDFLAGS_sav"
+fi
+]
+)
+
+
 AM_CONDITIONAL(BUILD_LIBXML2, test x$LIBXML2_SUPPORT = xyes)
 AM_CONDITIONAL(BUILD_CFITSIO, test x$CFITSIO_SUPPORT = xyes)
 

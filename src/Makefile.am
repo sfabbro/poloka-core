@@ -1,7 +1,8 @@
 EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h
 
 
-AM_CPPFLAGS = -I/home/nrl/Work/frogs/sex/v222/src
+#AM_CPPFLAGS = -I/home/nrl/Work/frogs/sex/v222/src
+AM_CPPFLAGS = @SEX_CPPFLAGS@
 AM_YFLAGS = -l -d
 
 #  simultaneousfit.cc          simultaneousfit.h

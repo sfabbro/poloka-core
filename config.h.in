@@ -78,6 +78,9 @@
 /* Define if you have the cfitsio library (-lcfitsio).  */
 #undef HAVE_LIBCFITSIO
 
+/* Define if you have the sex library (-lsex).  */
+#undef HAVE_LIBSEX
+
 /* Define if you have the xml2 library (-lxml2).  */
 #undef HAVE_LIBXML2
 
