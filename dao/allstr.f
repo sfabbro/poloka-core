@@ -1,7 +1,8 @@
 C
 C#######################################################################
 C
-      SUBROUTINE  ALLSTR  (DATA, NCOL, NROW, SUBT, SIGMA, FITRAD, 
+      SUBROUTINE  ALLSTR  (DATA, NCOL, NROW, MAXSTR, MAXPSF, 
+     .     MAXMAX, MAXPAR, MAXEXP, SUBT, SIGMA, FITRAD, 
      .     WATCH, HALF, IEXP, CENTER, MAXGRP, PERERR, PROERR, 
      .     SKYIN, SKYOUT, ISTAT, PSFFIL, MAGFIL, ALSFIL, SUBPIC, 
      .     GLOBAL_SKY)
@@ -50,8 +51,7 @@ C=======================================================================
 C
       IMPLICIT NONE
       INTEGER MAXSTR, MAXPSF, MAXIT, MAXMAX, MAXPAR, MAXEXP
-      PARAMETER (MAXSTR=150000, MAXPSF=207, MAXIT=200, MAXMAX=100,
-     .     MAXPAR=6, MAXEXP=10)
+      PARAMETER (MAXIT=200)
 C
 C Parameters:
 C
@@ -67,7 +67,7 @@ C        attempted = maximum permissible value of MAXGRP.
 C
       INTEGER NCOL, NROW
       CHARACTER*256 MAGFIL, PSFFIL, ALSFIL, SUBPIC
-      CHARACTER LINE*80, CASE*5
+      CHARACTER LINE*80
       REAL C(3*MAXMAX+1,3*MAXMAX+1), V(3*MAXMAX+1), X(3*MAXMAX+1)
       REAL DATA(NCOL,NROW), SUBT(NCOL,NROW), SIGMA(NCOL,NROW)
       REAL PSF(MAXPSF,MAXPSF,MAXEXP), PAR(MAXPAR)
@@ -91,19 +91,19 @@ C
       REAL SIGSQ, WT, VAL, RHOSQ, DWT, SKYBAR, CHIGRP, SUMRES, GRPWT
       REAL DPOS, DFDSIG, XKWT, DF, DIFF, SHARP, DELTAX, DELTAY, D, DY
       REAL DVDXC, DVDYC, Y, GLOBAL_SKY
-      real ratio,soft
+C      real ratio,soft
       INTEGER I, J, K, L, IFAINT, IDUM, IY, IX, NSTAR, NCONV, NITER
       INTEGER MAXGRP, MINSKY, MAXUNK, LX, LY, ISTAT, INTRVL
       INTEGER IPSTYP, NPSF, NPAR, NEXP, NFRAC, NL, ITSKY
       INTEGER IEXP, IXMIN, IXMAX, IYMIN, IYMAX, MX, MY, NDISAP
       INTEGER I3, J3, LSTAR, NSTR, NTERM, I3M2, ISTAR, N
       LOGICAL CENTER, CLIP, OMIT, REDO
-      logical rat
+C      logical rat
 C
 C      COMMON /FILNAM/ COOFIL, MAGFIL, PSFFIL, PROFIL, GRPFIL
 C
 C      DATA SUMWT /MAXSTR*1./
-      data rat /.true./, soft /1./, ratio /1.4/
+C      data rat /.true./, soft /1./, ratio /1.4/
       character*(80) iformat
 C
 C-----------------------------------------------------------------------
@@ -113,6 +113,7 @@ C
 C Get ready, get set, . . .
 C
 C      if (rat) print*,'ratio =',ratio
+      INTRVL = 0.
       SKYISQ = SKYIN**2
       SKYOSQ = AMIN1(SKYOUT**2, SKYISQ + (MAXSTR-1)/3.1415927)
       SKYOUT = AMIN1(SKYOUT, SQRT(SKYOSQ))
@@ -139,8 +140,8 @@ C      PSFFIL = EXTEND(PSFFIL, CASE('psf'))
 C         PSFFIL = 'GIVE UP'
 C         GO TO 950
       END IF
-      if (rat)
-     .     fitrad = sqrt(soft**2+(ratio*(par(1)+par(2)))**2)
+C      if (rat)
+C     .     fitrad = sqrt(soft**2+(ratio*(par(1)+par(2)))**2)
       PEAK = USEPSF(IPSTYP, 0., 0., BRIGHT, PAR, PSF, NPSF, 
      .     NPAR, NEXP, NFRAC, 0., 0., DVDXC, DVDYC)
 C

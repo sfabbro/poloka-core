@@ -1,5 +1,5 @@
-      SUBROUTINE  FUDGE (F, NEWFIL, NBORD, NPOLY, LX, MX, LY, MY,
-     .                   BRIGHT)
+      SUBROUTINE  FUDGE (F, NEWFIL, NBORD, NPOLY, 
+     .     LX, MX, LY, MY, BRIGHT)
 C
 C=======================================================================
 C
@@ -27,12 +27,12 @@ C
       REAL F(MAXCOL,*)
       REAL C(MTERM,MTERM), V(MTERM), T(MTERM), A(MTERM)
 C
-      REAL AMAX1, AMIN1, BRIGHT
+      REAL BRIGHT
       INTEGER MIN0, MAX0
 C
       CHARACTER*256 NEWFIL
 c      CHARACTER CASE*1
-      REAL X, DX, DY, DYSQ, W
+      REAL DX, DY, DYSQ, W
       INTEGER I, J, K, L, LBX, LBY, MBX, MBY, ISTAT, NBORD, NPOLY
       INTEGER NCOL, NROW, N1, N2, LX, LY, NX, NY, NTERM, MX, MY, M
       INTEGER IRMIN

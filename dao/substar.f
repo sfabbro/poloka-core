@@ -1,4 +1,4 @@
-      SUBROUTINE  SUBSTR  (PAR, MAXPAR, PSF, MAXPSF, MAXEXP, 
+      SUBROUTINE  SUBSTR  (MAXBOX, MAXPSF, MAXPAR, MAXEXC, MAXEXP,
      .     F, NCOL, NROW, WATCH, PSFFIL, PROFIL, LSTFIL, SUBPIC)
 C
 C=======================================================================
@@ -19,7 +19,6 @@ C=======================================================================
 C
       IMPLICIT NONE
       INTEGER MAXBOX, MAXPSF, MAXPAR, MAXEXC, MAXEXP
-      PARAMETER  (MAXBOX=69, MAXEXC=30000)
 C
 C Parameters
 C
@@ -41,7 +40,7 @@ C
 C
       CHARACTER*80 LINE
       CHARACTER*256 SUBPIC, PSFFIL, PROFIL, LSTFIL
-      CHARACTER CASE*5, ANSWER*1
+      CHARACTER ANSWER*1
       REAL LOBAD, X, Y, STRMAG, SKY, DX, DY, DYSQ, SCALE, COL, ROW
       REAL DELTAX, DELTAY, DVDXC, DVDYC, XPSF, YPSF, PSFRAD, DUM
       REAL HIBAD, THRESH, AP1, PHPADU, READNS, FRAD, WATCH, PSFMAG

@@ -1,5 +1,6 @@
-      SUBROUTINE  GROUP (PAR, MAXPAR, PSF, MAXPSF, MAXEXP, MAXSTR, 
-     .     FITRAD, PSFRAD, MAGFIL, PSFFIL, GRPFIL, CRIT, GLOBAL_SKY)
+      SUBROUTINE  GROUP (MAXPSF, MAXPAR, MAXEXP, MAXBOX, MAXSTR,
+     .                   FITRAD, PSFRAD, MAGFIL, PSFFIL, GRPFIL, 
+     .                   CRIT, GLOBAL_SKY) 
 C
 C=======================================================================
 C
@@ -22,7 +23,6 @@ C======================================================================
 C
       IMPLICIT NONE
       INTEGER MAXSTR, MAXPSF, MAXBOX, MAXPAR, MAXEXP
-      PARAMETER  (MAXBOX=69)
 C
 C Parameter
 C

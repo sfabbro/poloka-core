@@ -1,6 +1,6 @@
-      SUBROUTINE  NSTAR  (PAR, MAXPAR, PSF, MAXPSF, MAXEXP, DATA, 
-     .     NCOL, NROW, WATCH, FITRAD, E1, E2, GRPFIL, PSFFIL,
-     .     FITFIL, GLOBAL_SKY)
+      SUBROUTINE  NSTAR  (MAXPSF, MAXPAR, MAXEXP, MAXSTR, 
+     .     DATA, NCOL, NROW, WATCH, FITRAD, E1, E2,
+     .     GRPFIL, PSFFIL, FITFIL, GLOBAL_SKY)
 C
 C=======================================================================
 C
@@ -28,7 +28,6 @@ C=======================================================================
 C
       IMPLICIT NONE
       INTEGER MAXSTR, MAXEXP, MAXPSF, MAXPAR, NCOL, NROW
-      PARAMETER  (MAXSTR=60)
 C
 C Parameters:
 C
@@ -57,7 +56,7 @@ C
       INTEGER MIN0, MAX0
 C
       CHARACTER*80 LINE
-      CHARACTER*256 GRPFIL, MAGFIL, PSFFIL, FITFIL
+      CHARACTER*256 GRPFIL, PSFFIL, FITFIL
 C      CHARACTER CASE*4
       REAL LOBAD, DF, DX, DY, ERR, PSFMAG, BRIGHT, XPSF, YPSF
       REAL SEPCRIT, PSFRAD, RADIUS, THRESH, AP1, PHPADU, RONOIS

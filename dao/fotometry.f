@@ -462,7 +462,7 @@ C (3) the uncertainty of the mean sky brightness (this standard error
 C increases directly with the area of the aperture).
 C
       MAGERR(I)=1.0857*SQRT(ERROR(1)+ERROR(2)+ERROR(3))/SNGL(APMAG(I))
-      IF (I .GT. 1) MAGERR(I) = MAGERR(I) * SQRT(AREA(I)/BTOT(I))
+      IF (I .GT. 1) MAGERR(I) = MAGERR(I) * SQRT(REAL(AREA(I))/BTOT(I))
       MAGERR(I) = AMIN1(9.9999, MAGERR(I))
       APMAG(I)=25.D0-2.5D0*DLOG10(APMAG(I))
       IF (APMAG(I) .GT. 94.999D0) THEN

@@ -40,6 +40,7 @@ C
 C
 C Sort the commands into alphabetical order.
 C
+
       CALL QUICK (RCMD, NCMD, NUMBER)
 C
 C Now type the command names out on the screen.
@@ -55,8 +56,8 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  GETSKY  (D, S, INDEX, MAX, READNS, HIBAD, SKYMN, 
-     .     SKYMED, SKYMOD, SKYSIG, N)
+      SUBROUTINE  GETSKY  (D, S, INDEX, MAX, READNS, HIBAD, 
+     .     SKYMN, SKYMED, SKYMOD, SKYSIG, N)
 C
 C=======================================================================
 C
@@ -508,6 +509,8 @@ C
  1010 D(N)=F(I,J)
  1020 CONTINUE
 C
+C the warning is because we pass F as float array instead of integer
+C being lasy to change it
       CALL QUICK (D, N, F)
 C
       IF (NBOX .LT. NSQUARE) CALL TBLANK

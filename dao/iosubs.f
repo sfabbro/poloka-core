@@ -885,7 +885,7 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  OPTION (OPTFIL, NOPT, LBL, OPT, OMIN,
+      SUBROUTINE  OPTION (OPTFIL, NOPT, LBL, OPT, MAXOPT, OMIN,
      .     OMAX, PROMPT, ISTAT)
 C
 C=======================================================================
@@ -914,7 +914,7 @@ C=======================================================================
 C
       IMPLICIT NONE
       INTEGER MAXOPT, NOPT
-      PARAMETER  (MAXOPT=100)
+C      PARAMETER  (MAXOPT=100)
 C
 C Parameter:
 C

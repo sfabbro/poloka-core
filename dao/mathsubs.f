@@ -1151,14 +1151,15 @@ C
 C#######################################################################
 C
       REAL  FUNCTION  USEPSF (IPSTYP, DX, DY, BRIGHT, PAR, PSF, 
-     .     NPSF, NPAR, NEXP, NFRAC, DELTAX, DELTAY, DVDXC, DVDYC)
+     .     MAXPSF, MAXPAR, MAXEXP, NPSF, NPAR, NEXP, NFRAC, 
+     .     DELTAX, DELTAY, DVDXC, DVDYC)
 C
 C Evaluate the PSF for a point distant DX, DY from the center of a
 C star located at relative frame coordinates DELTAX, DELTAY.
 C
       IMPLICIT NONE
       INTEGER MAXPSF, MAXPAR, MAXEXP
-      PARAMETER (MAXPSF=207, MAXPAR=6, MAXEXP=10)
+C      PARAMETER (MAXPSF=207, MAXPAR=6, MAXEXP=10)
 C
       REAL PAR(*), PSF(MAXPSF,MAXPSF,*), JUNK(MAXEXP)
 C
@@ -1170,7 +1171,7 @@ C
       INTEGER NFRAC, NTERM, NPSF, NEXP, NPAR
 C
       NTERM = NEXP + NFRAC
-      USEPSF = BRIGHT*PROFIL(IPSTYP, DX, DY, PAR, DVDXC, DVDYC, 
+      USEPSF = BRIGHT*PROFIL(IPSTYP, DX, DY, PAR, MAXPAR, DVDXC, DVDYC, 
      .     JUNK, 0)
 c     type*,1,usepsf,bright,dx,dy,(par(k),k=1,5)
       DVDXC = BRIGHT*DVDXC
@@ -1278,7 +1279,7 @@ C
 C
 C#######################################################################
 C
-      REAL  FUNCTION  PROFIL  (IPSTYP, DX, DY, PAR, DHDXC, DHDYC, 
+      REAL  FUNCTION  PROFIL (IPSTYP, DX, DY, PAR, MAXPAR, DHDXC, DHDYC, 
      .     TERM, IDERIV)
 C
 C Compute the value of an ANALYTIC prfile for a point DX,DY distant
@@ -1289,7 +1290,7 @@ C defining the profile.
 C
       IMPLICIT NONE
       INTEGER MAXPAR, MAXPT
-      PARAMETER (MAXPAR=6, MAXPT=4)
+      PARAMETER (MAXPT=4)
 C
       REAL PAR(MAXPAR), TERM(MAXPAR)
       REAL D(MAXPT,MAXPT), W(MAXPT,MAXPT)

@@ -1,5 +1,7 @@
-      SUBROUTINE  GETPSF (PIC, NCOL, NROW, PAR, PSF, OPT, NOPT,
+      SUBROUTINE  GETPSF (PIC, NCOL, NROW, OPT, NOPT,
+     .     MAXBOX, MAXPSF, MAXSTR, MAXN, MAXPAR, MAXEXP,
      .     MAGFIL, STRFIL, PSFFIL, NEIFIL, GLOBAL_SKY)
+
       IMPLICIT NONE
 C
 C=======================================================================
@@ -49,10 +51,8 @@ C change the way PSF operates.  Instead of reading in a subsection
 C for each PSF star one at a time, it will read in the whole image
 C and work in memory.
 C
-      INTEGER MAXBOX, MAXPSF, MAXSTR, MAXN, MAXPAR, MAXEXP, NCOL, NROW
-      INTEGER NOPT
-      PARAMETER  (MAXPAR=6, MAXPSF=207, MAXEXP=10) 
-      PARAMETER  (MAXBOX=69, MAXSTR=64000, MAXN=200) 
+      INTEGER MAXBOX, MAXPSF, MAXSTR, MAXN, MAXPAR, MAXEXP
+      INTEGER NCOL, NROW, NOPT
 C
 C Parameters
 C
@@ -476,7 +476,8 @@ C
 C
          N = NPARAM(I, FWHM, LABEL, PAR, MAXPAR)
          CALL  FITANA  (PIC, NCOL, NROW, HJNK, XJNK, YJNK, SKY, 
-     .       SATR8D, NSTAR, FITRAD, WATCH, I, PAR, N, SIG)
+     .        SATR8D, NSTAR, MAXPAR, MAXBOX, MAXN, FITRAD, WATCH, 
+     .        I, PAR, N, SIG)
 C
 C SIG is the root-mean-square scatter about the best-fitting analytic
 C function averaged over the central disk of radius FITRAD, expressed
@@ -1260,7 +1261,7 @@ C
 C#######################################################################
 C
       SUBROUTINE  FITANA  (PIC, NCOL, NROW, H, XCEN, YCEN, SKY, 
-     .     SATR8D, NSTAR, 
+     .     SATR8D, NSTAR, MAXPAR, MAXBOX, MAXN,
      .    FITRAD, WATCH, IPSTYP, PAR, NPAR, CHI)
 C
 C This subroutine fits the ANALYTIC profile to the selected stars.
@@ -1269,7 +1270,7 @@ C  OFFICIAL DAO VERSION:    1997 March 31
 C
       IMPLICIT NONE
       INTEGER MAXPAR, MAXBOX, MAXN, NCOL, NROW
-      PARAMETER  (MAXPAR=6, MAXBOX=69, MAXN=200)
+C      PARAMETER  (MAXPAR=6, MAXBOX=69, MAXN=200)
       CHARACTER*80 LINE
       REAL PIC(NCOL,NROW)
       REAL H(*), XCEN(*), YCEN(*), SKY(*), CLAMP(MAXPAR), OLD(MAXPAR)
