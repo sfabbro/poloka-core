@@ -206,7 +206,12 @@ public:
   bool IsEmpty() const {return (hSizeX+hSizeY == 0);}
   void MaxPixel(double &xmax, double &ymax) const;
   void MinPixel(double &xmin, double &ymin) const;
-
+  
+  void Allocate(const int Nx, const int Ny, int Init=1) {
+    DImage::Allocate(Nx,Ny,Init);
+    hSizeX = (Nx-1)/2;
+    hSizeY = (Ny-1)/2;
+  };
   friend ostream& operator << (ostream& stream, const Kernel& k);
 };
 
