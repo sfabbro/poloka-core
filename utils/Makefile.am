@@ -12,7 +12,7 @@ bin_PROGRAMS = \
  preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
- fitnight
+ fitnight invertdeadmap
 
 
 ### CPPFLAGS for all programs
@@ -43,7 +43,7 @@ testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
-
+invertdeadmap_SOURCES = invertdeadmap.cc
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
 split_fits_SOURCES = split_fits.cc
