@@ -44,7 +44,8 @@ void usage()
   std::cerr << "   --list,-l             list the persistent struct and classes" << std::endl;
   std::cerr << "   --list-members,-L     list the contents of the persistent objects" << std::endl;
   std::cerr << "   --all,-a              list also the non-persistent classes  " << std::endl;
-  std::cerr << "   --output,-o           output file name                      " << std::endl;
+  std::cerr << "   --generate,-g         generate the persisters               " << std::endl;
+  std::cerr << "   --output,-o           output files base name                " << std::endl;
   std::cerr << "   --swig-output,-s      swig original output file name        " << std::endl;
   std::cerr << "   --xmlschema-output,-x XMLSchema output file name            " << std::endl;
   std::cerr << "   --help,-h             print this message                    " << std::endl;
@@ -124,8 +125,10 @@ main(int argc, char** argv)
   swig_dict_reader dr(tmp_name);
   xmlschema_dict_writer xsdw(xmlSchemaOutputFileName);
   codegen cg(headerName);
-  if(generate_persisters)
+  if(generate_persisters) {
+    outputFileName = outputFileName.substr(0,outputFileName.find_last_of("."));
     cg.openSourceFiles(outputFileName);
+  }
   
   dict d;
   int i,sz=dr.size();
@@ -146,6 +149,9 @@ main(int argc, char** argv)
   
   if(generate_swig_stuff)
     rename(tmp_name.c_str(), swigOutputFileName.c_str());
+  
+  if(generate_persisters)
+    cg.closeSourceFiles();
   
   exit(0);  
 

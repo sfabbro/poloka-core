@@ -154,6 +154,23 @@ define_output_operator(float4)
 define_output_operator(float8)
 define_output_operator(std::string)
 
+template<class IOS, class T>
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, std::list<T> const& l)
+{
+  oo.write(l); return oo;
+}
+
+template<class IOS, class T>
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, std::vector<T> const& v)
+{
+  oo.write(v); return oo;
+}
+
+template<class IOS, class T, class U>
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, std::map<T,U> const& m)
+{
+  oo.write(m); return oo;
+}
 
 
 template<class IOS>
@@ -300,6 +317,27 @@ define_input_operator(uint8)
 define_input_operator(float4)
 define_input_operator(float8)
 define_input_operator(std::string)
+
+
+template<class IOS, class T>
+obj_input<IOS> const& operator>>(obj_input<IOS> const& io, std::list<T>& l)
+{
+  io.read(l); return io;
+}
+
+
+template<class IOS, class T>
+obj_input<IOS> const& operator>>(obj_input<IOS> const& io, std::vector<T>& v)
+{
+  io.read(v); return io;
+}
+
+template<class IOS, class T, class U>
+obj_input<IOS> const& operator>>(obj_input<IOS> const& io, std::map<T,U>& m)
+{
+  io.read(m); return io;
+}
+
 
 
 

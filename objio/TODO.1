@@ -1,0 +1,24 @@
+(*) dictgen2/codegen BUG ---> (Inheritance)
+(*) one header / persister
+(*) work out reasonable makefile rule so that persisters are automatically generated
+(*) << & >> operators for STL types
+( ) set precision automatically for floating point types
+( ) new options to dictgen2, so that *__persister.h files can be stored in a single directory
+( ) makefile rule, so that these files can be installed with the other header files 
+    (maybe just include_HEADERS= *__persister.h may work)
+( ) make sure again that classes without persisters can be written out
+( ) make sure that no persisters are generated for classes without any version number
+( ) generate persisters for templates
+( ) pointers
+( ) dictionaries
+( ) implement constant persisters
+
+( ) clean codegen.[h|cc]
+( ) FITS backend
+( ) TEXT backend
+
+( ) RTTI 
+
+( ) manipulators, to allow or disallow pointers 
+( ) manipulators, to set write depth
+

@@ -63,15 +63,15 @@ private:
 };
 
 
-template<class T>
-class B : public A {
-public:
-  B() {}
-  ~B() {}
-  
-private:
-  T t_;
-};
+//template<class T>
+//class B : public A {
+//public:
+//  B() {}
+//  ~B() {}
+//  
+//private:
+//  T t_;
+//};
 
 
 #endif
