@@ -45,7 +45,7 @@ int main(int nargs, char **args)
     }
 
   if (seeingsort) sort(alls.begin(), alls.end(), IncreasingSeeing);
-  if (datesort) sort(alls.begin(), alls.end(), IncreasingDate);
+  if (datesort) sort(alls.begin(), alls.end(), IncreasingJulianDate);
 
   cout << "---------------------------------------------------------------------------------------------------------" << endl;
   cout << setw(maxs+2) << setiosflags(ios::left)<< "Image" << setiosflags(ios::right);
