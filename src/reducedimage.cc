@@ -20,13 +20,36 @@ void ReducedImage::init()
   actuallyReduced = (DbImage::IsValid() && FileExists(FitsName()) && FileExists(CatalogName()));
 }
 
+ReducedImage::ReducedImage()
+{
+#ifdef DEBUG
+  cout << " > ReducedImage::ReducedImage()" << endl;
+#endif
+  OpenedFitsHeader=0;  
+  OpenedFitsHeader_is_mine=false;
+  OpenedFitsHeader_Mode=RO;
+  actuallyReduced=false;
+}
+
 ReducedImage::ReducedImage(const DbImage &a_DbImage) : DbImage(a_DbImage)
 {
+#ifdef DEBUG
+  cout << " > ReducedImage::ReducedImage(const DbImage &a_DbImage)" << endl;
+#endif
+  OpenedFitsHeader=0;
+  OpenedFitsHeader_is_mine=false;
+  OpenedFitsHeader_Mode=RO;
   init();
 }
 
 ReducedImage::ReducedImage(const string &Name) : DbImage(Name)
 {
+#ifdef DEBUG
+  cout << " > ReducedImage::ReducedImage(const string &Name), Name = " << Name << endl;
+#endif 
+  OpenedFitsHeader=0;
+  OpenedFitsHeader_is_mine=false;
+  OpenedFitsHeader_Mode=RO;
   init();
 } 
 
@@ -42,7 +65,10 @@ ReducedImage *ReducedImage::Clone() const
 		<< " May be class " << storedTypeName 
 		<< " misses a Clone() method?" << std::endl;
     }
-  return new ReducedImage(*this);
+  
+  ReducedImage *rim = new ReducedImage(*this);
+  rim->OpenedFitsHeader_is_mine=false;
+  return rim;
 }
 
 
@@ -65,13 +91,10 @@ bool ReducedImage::MakeFits()
    calculera, l'utilisera, et on le sauvera.
 */
 
-void 
-
 
 #define SATUR_COEFF 0.95
 
-
-ReducedImage::FillSExtractorData(ForSExtractor & data, 
+void ReducedImage::FillSExtractorData(ForSExtractor & data, 
 				 bool  fond_deja_soustrait, bool sauver_fond,
 				 bool use_sigma_header)
 {
@@ -826,108 +849,163 @@ bool  ReducedImage::Execute(const int ToDo)
 
 #define UNDEFINED -1
 
+
+bool ReducedImage::CloseFitsHeader() {
+#ifdef DEBUG
+  cout << " > CloseFitsHeader() of " << Name() << endl;
+  cout << "   OpenedFitsHeader = ";
+  if(OpenedFitsHeader)
+    cout << "yes" << endl;
+  else
+    cout << "no" << endl;
+  cout << "   is_mine = ";
+  if(OpenedFitsHeader_is_mine)
+    cout << "yes" << endl;
+  else
+    cout << "no" << endl;
+#endif
+  if( OpenedFitsHeader && OpenedFitsHeader_is_mine) {
+    delete OpenedFitsHeader;
+    OpenedFitsHeader=0;
+    return true;
+  }
+  OpenedFitsHeader_is_mine = false;
+  OpenedFitsHeader=0;
+  return false;
+}
+
+
+bool ReducedImage::SetFitsHeader(FitsHeader* header,FitsFileMode Mode) {
+  if (!header)
+    return false;
+  if (! header->IsValid())
+    return false;
+  CloseFitsHeader(); // in case header is already opened but that may be a mess
+  OpenedFitsHeader = header;
+  OpenedFitsHeader_is_mine = false;
+  OpenedFitsHeader_Mode = Mode;
+  return true;
+}
+
+FitsHeader* ReducedImage::GetFitsHeader(FitsFileMode Mode) {
+#ifdef DEBUG
+  cout << " > ReducedImage::GetFitsHeader() of " << Name() << endl;
+  cout << "   Mode = ";
+  if(Mode==RW)
+    cout << "RW" << endl;
+  else
+    cout << "RO" << endl;
+  cout << "   OpenedFitsHeader = ";
+  if(OpenedFitsHeader)
+    cout << "yes" << endl;
+  else
+    cout << "no" << endl;
+  cout << "   OpenedFitsHeader_Mode = ";
+  if(OpenedFitsHeader_Mode==RW)
+    cout << "RW" << endl;
+  else
+    cout << "RO" << endl;
+  cout << "   is_mine = ";
+  if(OpenedFitsHeader_is_mine)
+    cout << "yes" << endl;
+  else
+    cout << "no" << endl;
+  
+#endif
+
+  if(OpenedFitsHeader && OpenedFitsHeader->IsValid()) { // there is an OpenedFitsHeader
+    if(Mode==RO)
+      return OpenedFitsHeader; // return it anyway
+    else // RW
+      if(OpenedFitsHeader_Mode==RW)
+	return OpenedFitsHeader; // it is in RW so ok
+      else {
+	// we need to close it and reopen it in RW 
+	CloseFitsHeader();
+      }
+  } else {
+    if(OpenedFitsHeader)
+      cerr << " in  ReducedImage::GetFitsHeader, current OpenedFitsHeader is not valid !!!! " << endl;
+  }
+  
+  // now we need to open the header
+#ifdef DEBUG
+  cout << "   OPENING FILE ... " << endl;
+#endif  
+  string fileName = FitsName();
+  if (! FileExists(fileName))
+    return 0;
+  
+  FitsHeader* header = new FitsHeader(fileName, Mode);
+  if(! header->IsValid()) {
+    delete header;
+    return 0;
+  }
+  OpenedFitsHeader_is_mine = true;
+  OpenedFitsHeader=header;
+  OpenedFitsHeader_Mode = Mode;
+#ifdef DEBUG
+  cout << "   DONE" << endl;
+#endif 
+  return header;
+}
+
 // hidden routines
-
-
 
 void 
 ReducedImage::remove_key(const char *KeyName, const string &RoutineName)
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      FitsHeader header(fileName, RW);
-      if (header.IsValid() && header.HasKey(KeyName) )
-	header.RmKey(KeyName);
-    }
+  FitsHeader* header=GetFitsHeader(RW);
+  if(header && header->HasKey(KeyName))
+    header->RmKey(KeyName);
   else
-    {
-      cerr << " ReducedImage::"<< RoutineName << " : cannot Read key " << KeyName << " for image " << Name() << " file " << fileName << endl;
-    }
+    cerr << " ReducedImage::"<< RoutineName << " : cannot Read key " << KeyName << " for image " << Name() << endl;
 }
 
 
-bool
-ReducedImage::has_key(const char *KeyName, const string &RoutineName) const
+bool ReducedImage::has_key(const char *KeyName, const string &RoutineName) const
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      FitsHeader header(fileName);
-      if (header.IsValid())
-	if ( header.HasKey(KeyName) )
-	  return true;
-	else
-	  return false ;
-    }
-  cerr << " ReducedImage::"<< RoutineName 
-       << " : cannot Read key " << KeyName 
-       << " for image " << Name() << " file " 
-       << fileName << endl;
-    
-  return false ;
+  // this const cast is a trick to keep the function const and call a non-const member function
+  FitsHeader* header = const_cast<ReducedImage*>(this)->GetFitsHeader(RO);
+  return (header && header->HasKey(KeyName));
 }
-
-
-
 
 int ReducedImage::read_int_key(const char *KeyName, const string &RoutineName) const
 {
-  string fileName = FitsName();
-    if (FileExists(fileName))
-    {
-      return int (FitsHeader(fileName).KeyVal(KeyName));
-    }
-  else
-    {
-      cerr << " ReducedImage::"<< RoutineName << " : cannot Read key " << KeyName << " for image " << Name() << " file " << fileName << endl;
-    }
-return UNDEFINED;
+  FitsHeader* header = const_cast<ReducedImage*>(this)->GetFitsHeader(RO);
+  if(header)
+    return int (header->KeyVal(KeyName));
+  cerr << " ReducedImage::"<< RoutineName << " : cannot Read key " << KeyName << " for image " << Name() << endl;
+  return UNDEFINED;
 }
 
 double ReducedImage::read_double_key(const char *KeyName, const string &RoutineName) const
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      return double (FitsHeader(fileName).KeyVal(KeyName));
-    }
-  else
-    {      cerr << " ReducedImage::"<< RoutineName << " : cannot Read key " << KeyName << " for image " << Name() << " file " << fileName << endl;
-    }
-return UNDEFINED;
+  FitsHeader* header = const_cast<ReducedImage*>(this)->GetFitsHeader(RO);
+  if(header)
+    return double (header->KeyVal(KeyName));
+  cerr << " ReducedImage::"<< RoutineName << " : cannot Read key " << KeyName << " for image " << Name() << endl;
+  return UNDEFINED;
 }
-
 
 bool ReducedImage::set_double_key(const double &Value, const char *KeyName, 
                                   const string &RoutineName,
                                   const string Comment)
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      FitsHeader header(fileName, RW);
-      return (header.IsValid() && header.AddOrModKey(KeyName, Value, Comment));
-    }
-  else
-    {
-      cerr << " ReducedImage::" << RoutineName << " : could not write Key " << KeyName << " for file " << fileName << endl;
-      return false;
-    }
+  FitsHeader* header=GetFitsHeader(RW);
+  if(header)
+    return header->AddOrModKey(KeyName, Value, Comment);
+  cerr << " ReducedImage::" << RoutineName << " : could not write Key " << KeyName  << endl;
+  return false;
 }
 
 string ReducedImage::read_string_key(const char *KeyName, const string &RoutineName) const
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      return string(FitsHeader(fileName).KeyVal(KeyName));
-    }
-  else
-    {
-      cerr << " ReducedImage::"<< RoutineName << " : cannot read key " << KeyName << " for image " << Name() << " filename " << fileName << endl;
-    }
-  return "ERROR";
+  FitsHeader* header = const_cast<ReducedImage*>(this)->GetFitsHeader(RO);
+  if(header)
+    return string (header->KeyVal(KeyName));
+  cerr << " ReducedImage::"<< RoutineName << " : cannot Read key " << KeyName << " for image " << Name() << endl;
+  return "UNDEFINED";
 }
 
 
@@ -935,54 +1013,34 @@ bool ReducedImage::set_string_key(const string &Value, const char *KeyName,
                                   const string &RoutineName,
                                   const string Comment)
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      FitsHeader header(fileName, RW);
-      return (header.IsValid() && header.AddOrModKey(KeyName, Value.c_str(), Comment));
-    }
-  else
-    {
-      cerr << " ReducedImage::" << RoutineName << " : could not write Key " 
-	   << KeyName << " for file " << fileName << endl;
-      return false;
-    }
+  FitsHeader* header=GetFitsHeader(RW);
+  if(header)
+    return header->AddOrModKey(KeyName, Value.c_str(), Comment);
+  cerr << " ReducedImage::" << RoutineName << " : could not write Key " 
+	   << KeyName << endl;
+  return false;
 }
 
 bool ReducedImage::set_int_key(const int &Value, const char *KeyName, 
                                   const string &RoutineName,
                                   const string Comment)
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      FitsHeader header(fileName, RW);
-      return (header.IsValid() && header.AddOrModKey(KeyName, Value, Comment));
-    }
-  else
-    {
-      cerr << " ReducedImage::" << RoutineName << " : could not write Key " 
-	   << KeyName << " for file " << fileName << endl;
-      return false;
-    }
+  FitsHeader* header=GetFitsHeader(RW);
+  if(header)
+    return header->AddOrModKey(KeyName, Value, Comment);
+  cerr << " ReducedImage::" << RoutineName << " : could not write Key " << KeyName << endl;
+  return false;
 }
       
 bool ReducedImage::set_bool_key(const bool &Value, const char *KeyName, 
                                   const string &RoutineName,
                                   const string Comment)
 {
-  string fileName = FitsName();
-  if (FileExists(fileName))
-    {
-      FitsHeader header(fileName, RW);
-      return (header.IsValid() && header.AddOrModKey(KeyName, Value, Comment));
-    }
-  else
-    {
-      cerr << " ReducedImage::" << RoutineName << " : could not write Key " 
-	   << KeyName << " for file " << fileName << endl;
-      return false;
-    }
+  FitsHeader* header=GetFitsHeader(RW);
+  if(header)
+    return header->AddOrModKey(KeyName, Value, Comment);
+  cerr << " ReducedImage::" << RoutineName << " : could not write Key " << KeyName << endl;
+  return false;
 }
       
 //**************routines to read/write FitsKeys************
@@ -1134,9 +1192,11 @@ bool ReducedImage::SetBackLevel(const double &Value, const string Comment)
   bool ok_back = set_double_key(Value,"BACKLEV","BackLevel",Comment) ;
   if  ( fabs(Value) < 1.e-10 )
     {
-      FitsHeader head(FitsName(),RW);
-      bool ok_head = head.AddOrModKey("BACK_SUB",true,"Background subtracted");
-      ok_back = ok_back && ok_head;
+      bool ok_head = false;
+      FitsHeader *header = GetFitsHeader(RW);
+      if(header)
+	ok_head = header->AddOrModKey("BACK_SUB",true,"Background subtracted");
+      ok_back &= ok_head;
     }
   return(ok_back);
 }
@@ -1622,6 +1682,8 @@ ReducedImage::~ReducedImage()
   own inheritant of ReducedImage save its private data, you *DO* have to call
   writeEverythingElse in its destructor. This routine is protected against
   multiple calls for the same object. */
+ 
+  CloseFitsHeader(); // close OpenedFitsHeader if exists (and writes if OpenedFitsHeader_Mode=RW)
   writeEverythingElse();
 }
 

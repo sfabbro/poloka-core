@@ -96,14 +96,19 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
 				   const ReducedImage *Source, ReducedImage *Result, 
 				   double DefaultVal) const
 {
+#ifdef DEBUG
+  cout  << " > ImageGtransfo::TransformImage(...) " << endl;
+#endif
+
   /* register the image */
   clock_t tstart = clock();
   Image &transformedImage = Transformed;
   int nx_aligned = int(outputImageSize.Nx());
   int ny_aligned = int(outputImageSize.Ny());
+  
   transformedImage = Original.GtransfoImage(*transfoFromRef, int(nx_aligned),
 					   int(ny_aligned), DefaultVal, 3); 
-
+  
   /* write in the header the frame coordinates */
   Frame frame(dynamic_cast<const FitsHeader&> (Original));
   cout << " Before scaling " << frame;
@@ -116,24 +121,25 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
     LinearApproximation(Frame(transformedImage).Center(), 
 			min(nx_aligned,ny_aligned)).invert();
   frame = frame.ApplyTransfo(lintransfoToRef);
-
+  
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));
   cout << " After scaling  " << frame;
-
+  
   Transformed.AddOrModKey("SCALFACT",scaleFactor,"Scaling factor when transforming");
 
-
+  
   /* The update of the WCS consists in copying the WCS of the geomRef
      in the Transformed image, provided the first one is accurate */
-  ReducedImage geomRef(geomRefName);
-  if (geomRef.IsValid() && geomRef.HasImage())
-    {
-      FitsHeader geomHead(geomRef.FitsName());
-      CopyWCS(geomHead, Transformed);
-    }
-
-
+  {
+    ReducedImage geomRef(geomRefName);
+    if (geomRef.IsValid() && geomRef.HasImage())
+      {
+	FitsHeader geomHead(geomRef.FitsName());
+	CopyWCS(geomHead, Transformed);
+      }
+  }
+  
   // update usable part
   frame.WriteInHeader(Transformed);
 
@@ -145,24 +151,20 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   //  Transformed.AddOrModKey("TOADRASC",ra.c_str(),"Modified RA after transformation");
   // Transformed.AddOrModKey("TOADDECL",dec.c_str(),"Modified DEC after transformation");
   // Transformed.AddOrModKey("TOADEQUI",epoch,"Modified epoch after transformation");
-
+  
   if (Source && Result) 
     {
       // update pixel size *scale
       double pixsize = Source->PixelSize();
       Result->SetPixelSize(pixsize/scaleFactor,"Pixel size scaled after transformation");
-
       double scale2 = scaleFactor*scaleFactor;
       // update background level /scale^2
       double backlev = Source->BackLevel();
       Result->SetBackLevel(backlev/scale2,"Background level after transformation");
-
       // could add at least interpolation error at this stage  
       Result->SetFlatFieldNoise(Source->FlatFieldNoise()/scaleFactor,"Flatfield noise sigma after transformation");
       Result->SetReadoutNoise(Source->ReadoutNoise()/scaleFactor, "Readout noise after transformation");
-\
       Result->SetSigmaBack(Source->SigmaBack()/scaleFactor, "Background fluctuations sigma after transformation");
-      
       // update sky value (!= background if sky subtracted)
       double skylev = Source->OriginalSkyLevel(); 
       Result->SetOriginalSkyLevel(skylev/scale2,"Sky level after transformation");
@@ -172,7 +174,7 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
       Result->SetOriginalSaturation(origsatur/scale2," original saturation after transformation");
       double satur = Source->Saturation();  
       Result->SetSaturation(satur/scale2,"Saturation after transformation");
-
+      
       // update seeing *scale 
       double seeing = Source->Seeing();
       // assume rebinning is equivalent to convolving with a gaussian of 
@@ -348,6 +350,12 @@ TransformedImage::TransformedImage(const string &TransformedName,
 				   const ImageTransfo *Transfo) 
        : ReducedImage(TransformedName)
 {
+#ifdef DEBUG
+  cout << " > TransformedImage::TransformedImage(...) TransformedName = " 
+       << TransformedName
+       << endl;
+#endif
+
   init(Source,Transfo);
   // should we call Create by default here? answer : yes as a trial
   Create("here");
@@ -439,15 +447,20 @@ bool  TransformedImage::MakeCatalog()
 
 bool TransformedImage::MakeFits() 
 {
+#ifdef DEBUG
+  cout << " > TransformedImage::MakeFits() " << endl;
+#endif
   string fileName = FitsName();
   if (FileExists(fileName)) return true;
   cout << " Transforming image "<< source->Name() << endl;
   FitsImage inFits(source->FitsName());
   FitsImage outFits(fileName, (FitsHeader &) inFits);
+  cout << "============================= " << endl;
+  SetFitsHeader(&outFits,RW); // we set to the transformed image, the pointer to this outFits
   double defaultVal = source->BackLevel();
   cout << " Default value for outside frame " << defaultVal << endl;
   transfo->TransformImage(inFits, outFits, source, this, defaultVal);
-  cout << " TransformedImage is produced. Updating parameters. " << endl;
+  cout << " TransformedImage is produced. Updating parameters. " << endl;  
   return true;
 }
 
@@ -558,6 +571,10 @@ TransformedImage::~TransformedImage()
 int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, 
 		ReducedImageList &Aligned, const int ToDo)
 {
+#ifdef DEBUG
+  cout << " > ImagesAlign(...) " << endl;
+#endif
+
   Aligned.clear();
   for (ReducedImageCIterator ri = ToAlign.begin(); ri != ToAlign.end(); ++ri)
     {
@@ -573,6 +590,7 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
       // if we test here about some work already beeing done, this has the consequence that
       // the transformation will not be seeked, and not stored
       ReducedImage *alignedCurrent = new ReducedImage(transformedName);
+
       if (!alignedCurrent->ActuallyReduced())
 	{
 	  ImageGtransfo imTransfo(Reference,*current);
