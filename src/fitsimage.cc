@@ -1306,18 +1306,18 @@ int FitsImage::Write(bool force_bscale)
 
   double bscale = 1. ;
   double bzero = 0. ;
+  Pixel mini,maxi;
+  MinMaxValue(&mini,&maxi);
 
   if (bitpix == 16)
     {
       if (HasKey("KEEPZERO") && bool(KeyVal("KEEPZERO")))
 	{// compute Bscale and BZero so that 0 remain 0 (used for weight maps)
-	  Pixel min,max;
-	  MinMaxValue(&min,&max);
-	  if (max != 0)
+	  if (maxi != 0)
 	    {
 	      double short_max = SHRT_MAX;
 	      double span = short_max;
-	      bscale = max/span;
+	      bscale = maxi/span;
 	      bzero = 0;
 	    }
 	}	
@@ -1325,18 +1325,17 @@ int FitsImage::Write(bool force_bscale)
 	{
 	  /* CFITSIO DOES NOT COMPUTE automatically BSCALE and BZERO 
 	     according to BITPIX in most of the cases */
-	  Pixel min,max;
-	  MinMaxValue(&min,&max);
 	  double short_min =  SHRT_MIN +2 ;
 	  double short_max =  SHRT_MAX -2 ;
 	  double span = short_max -  short_min ;
-	  bscale = (max - min)/span;
-	  bzero = min - bscale * (short_min);
+	  bscale = (maxi - mini)/span;
+	  bzero = mini - bscale * (short_min);
 
 	}
     }
 
   if (bscale == 0) bscale = 1;
+  cout << "Min: " << mini << "  Max: " << maxi << endl ;
   cout << " with BITPIX=" << bitpix << " BSCALE=" << bscale << " BZERO=" << bzero << endl;
   int status = 0;
 
