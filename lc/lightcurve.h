@@ -47,6 +47,9 @@ public:
   //! header for extended write  
   ostream& write_header(ostream &Stream) const;
 
+  //! compute ELIXIR zero point
+  double computeElixirZeroPoint() const;
+
   //! allows extended write of the full Fiducial<PhotStar>
   friend ostream& operator << (ostream& Stream, const LightCurve& Lc);
 };
