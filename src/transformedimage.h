@@ -47,7 +47,7 @@ class ImageTransfo
   virtual ImageTransfo* Clone() const = 0;
 
   //!
-  virtual void dump(ostream &s = cout) = 0;
+  virtual void dump(ostream &s = cout) const = 0;
 
   virtual ~ImageTransfo() {} ;
 
@@ -83,7 +83,7 @@ public:
   string GeomRefName() const { return geomRefName;}
 
   //!
-  virtual void  dump(ostream &s = cout);
+  virtual void  dump(ostream &s = cout)const ;
 
   //! the one that transforms the image and update header.
   void TransformImage(const FitsImage &Source, FitsImage& Transformed, const ReducedImage *Source, ReducedImage *Result, double DefaultVal = 0) const ;
@@ -139,6 +139,9 @@ class TransformedImage : public ReducedImage {
   //! Original (untransformed) image.
   ReducedImage *Source() const;
 
+  //! Geometric reference name (only applicable if ImageTransfo is ImageGtransfo)
+  string GeomRefName()const ;
+
   //! Geometric reference (only applicable if ImageTransfo is ImageGtransfo)
   ReducedImage *GeometricReference();
 
@@ -147,6 +150,10 @@ class TransformedImage : public ReducedImage {
 
   //! Gtransfo from reference to transformed image. Assumes that ImageTransfo is an ImageGtransfo.
   const Gtransfo* FromRef() const;
+
+//! ImageGtransfo from reference to transformed image. Assumes that ImageTransfo is an ImageGtransfo.
+  const  ImageGtransfo* IMAGEGTransfo() const ;
+
 
   virtual void dump(ostream& s = cout) const;
 
@@ -173,11 +180,11 @@ class TransformedImage : public ReducedImage {
 
 #include "imagelist.h"
 //! a handy typedef
-#ifdef STORAGE
+//#ifdef STORAGE why in storage ? (DH)
 typedef ImageList<TransformedImage> TransformedImageList;
 typedef TransformedImageList::iterator       TransformedImageIterator;
 typedef TransformedImageList::const_iterator TransformedImageCIterator;
-#endif
+//#endif
 
 //! To standardize transformed image names
 string TransformedName(const string &ToTransform, const string &Ref);    

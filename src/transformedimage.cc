@@ -80,7 +80,7 @@ bool ImageGtransfo::IsValid() const
   return (transfoFromRef != NULL);
 }
 
-void ImageGtransfo::dump(ostream &s)
+void ImageGtransfo::dump(ostream &s) const
 {
   s << "*** ImageGtransfo ***" << endl; 
   s << " Geom Ref Name : " << GeomRefName() << endl;
@@ -391,12 +391,6 @@ TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
     }
 }
 
-const Gtransfo* TransformedImage::FromRef() const
-{
-  ImageGtransfo *igt = dynamic_cast<ImageGtransfo*>(transfo);
-  if (!igt) return NULL;
-  return igt->FromRef();
-}
 
 
 
@@ -418,16 +412,36 @@ void TransformedImage::dump(ostream& s) const
 }
 
 
+
+const  ImageGtransfo* TransformedImage::IMAGEGTransfo() const
+{
+  ImageGtransfo *igt = dynamic_cast<ImageGtransfo*>(transfo);
+  if (!igt) { cerr << "Dynamic cast failed in TransformedImage::GTransfo " << endl ; return NULL;}
+  return igt;
+}
+
+
+const Gtransfo* TransformedImage::FromRef() const
+{
+  const ImageGtransfo *igt = IMAGEGTransfo();
+  if (!igt) return NULL;
+  return igt->FromRef();
+}
+
+
 ReducedImage *TransformedImage::GeometricReference()
 {
-  ImageGtransfo *it = dynamic_cast<ImageGtransfo*>(transfo);
-  if (!it)
-    {
-      cerr << "TransformedImage::GeometricReference()  not defined for " << Name() << " because ImageTransfo is not an ImageGtransfo " << endl;
-      return NULL;
-    }
-  geomRef = ReducedImageRead(it->GeomRefName());
+  const ImageGtransfo *igt = IMAGEGTransfo();
+  if (!igt) return NULL;
+  geomRef = ReducedImageRead(igt->GeomRefName());
   return geomRef;
+}
+
+string TransformedImage::GeomRefName() const
+{
+  const ImageGtransfo *igt  = IMAGEGTransfo();
+  if (!igt) return NULL;
+  return (igt->GeomRefName());
 }
 
 bool  TransformedImage::MakeCatalog() 
