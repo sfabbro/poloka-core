@@ -476,7 +476,7 @@ void SimFitVignet::BuildKernel()
   if (!Star) return;
   
   // build kernel
-  PsfMatch psfmatch(*(VignetRef->Image()), *rim,NULL,true);
+  PsfMatch psfmatch(VignetRef->Image(), rim,NULL,true);
   {
     const string kernelpath = rim->Dir()+"/kernel_from_"+VignetRef->Image()->Name()+".xml";
     if(FileExists(kernelpath)) 
