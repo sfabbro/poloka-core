@@ -14,7 +14,7 @@ bin_PROGRAMS = \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
- compute enlargeimage calibrate
+ compute enlargeimage calibrate coordfromimage
 
 # extinction readagain_extinction
 
@@ -59,7 +59,7 @@ testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
-
+coordfromimage_SOURCES = coordfromimage.cc
 enlargeimage_SOURCES = enlargeimage.cc
 #readagain_extinction_SOURCES = readagain_extinction.cc
 #extinction_SOURCES = extinction.cc
