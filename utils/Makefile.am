@@ -14,7 +14,7 @@ bin_PROGRAMS = \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
-  essai
+ compute essai
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
@@ -49,6 +49,8 @@ testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
+essai_SOURCES = essai.cc
+compute_SOURCES = compute.cc
 wrapswarp_SOURCES = wrapswarp.cc
 joinlist_SOURCES = joinlist.cc
 vignet4gif_SOURCES = vignet4gif.cc
