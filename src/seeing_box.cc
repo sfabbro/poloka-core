@@ -4,8 +4,6 @@
 #include "fileutils.h"
 #include "sestar.h"
 #include "starlist.h"
-#include "fitsimage.h"
-#include "frame.h"
 
 // Structure pour le calcul du seeing:
 // - selection des etoiles
