@@ -8,10 +8,12 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 
 #include "dict.h"
 #include "cppclass.h"
 
+using namespace std;
 
 class codegen {
 public:

@@ -3,14 +3,8 @@
 // file codegen.cc
 // 
 // 
-#include <stdio.h>
-
-#include <iostream>
-#include <fstream>
 #include <sstream>
-#include <string>
 #include <map>
-
 #include "codegen.h"
 
 using namespace std;
