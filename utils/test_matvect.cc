@@ -35,7 +35,7 @@ int main(int argc, char **argv)
   cout << v2 << endl;
   cout << v1*v1 << endl;
 
-  Mat m4 = v1.asMat();
+  Mat m4 = v1;
   cout << m4 << endl;
   
   Mat m5(3,3);
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
   cout << "==========" << endl;
   cout << double(v1.transposed()*m5*v1) << endl;
   cout << double(v1.transposed()*v1) << endl;
-  cout << v1.asMat()*v1.transposed() << endl;
+  cout << Mat(v1)*v1.transposed() << endl;
   
   return 0;
 }
