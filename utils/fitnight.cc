@@ -173,6 +173,17 @@ int main(int argc, char **argv)
        << noutliers << " " 
        << chi2/ndf << endl;
   
+  // if chi2dof>0 scale all errors
+  double chi2ndf = chi2/ndf;
+  if(chi2ndf>1) {
+    for(unsigned int j= 0; j<FluxPerNightCovMat.SizeY();j++)
+      for(unsigned int i= 0; i<FluxPerNightCovMat.SizeX();i++) {
+	FluxPerNightCovMat(i,j) *= chi2ndf;
+	AtWA(i,j) /= chi2ndf;
+      }
+  }
+  
+  
 
   // save these results in ASCII files
   // ... TODO ...
