@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.19 2004/06/01 16:11:31 guy Exp $
+// $Id: objio.h,v 1.20 2004/08/27 10:13:37 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/06/01 16:11:31 $
+// Last modified: $Date: 2004/08/27 10:13:37 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -433,13 +433,13 @@ public:
   template<class T>
   void         read(CountedRef<T>& r) const {
     void* addr;
-    cout << "about to read the reference tag:" << endl;
+    //cout << "about to read the reference tag:" << endl;
     stream_.read_start_reference_tag(addr);
-    cout << "read CountedRef: addr=" << addr << endl;
+    //cout << "read CountedRef: addr=" << addr << endl;
     T* pt = dynamic_cast<T*>(check_address_(addr));
     if(!pt) {
       pt = read_next_object<T>();
-      cout << " read_next_object pt=" << pt << endl;
+      //cout << " read_next_object pt=" << pt << endl;
       register_address_(addr,pt);
     }
     r = pt;
@@ -471,15 +471,15 @@ private:
   mutable std::map<void const*,RefCount*> addr_;
   
   RefCount* check_address_(void const* file_addr) const {
-    cout << "check_address_: addr=" << file_addr << endl;
+    //cout << "check_address_: addr=" << file_addr << endl;
     std::map<void const*,RefCount*>::iterator it;
     it = addr_.find(file_addr);
     if(it==addr_.end()) {
-      cout << " not found..." << endl;
+      //cout << " not found..." << endl;
       return (RefCount*)0;
     }
     else {
-      cout << " foud: " << it->second << endl;
+      //cout << " foud: " << it->second << endl;
       return it->second;
     }
   }
