@@ -2,13 +2,43 @@
 #define MATVECT__H
 
 #include <iostream>
+#include <string>
 
+class Vect;
+class Mat;
 
 #define MATVECT_CHECK_BOUNDS
 
-class Vect;
+// Routines for solving linear systems + inversion 
+//==================================================================
 
-/* obviously the later class should be borrowed somewhere  */
+
+
+// solving linear system A.X = B 
+// Uses lapack dposv_
+// Matrix A is assumed to be symmetric (you'll get a core dump if it is not
+// (actually this is not compulsory with dposv (see 'man dposv') but we do it
+// for consistency).
+// You just need to fill half (n*(n+1)/2 parameters) of the matrix
+// if you have filled matrix M parameters for which y>=x (with M(x,y)=...), use UorL="U"
+// else use UorL="L"
+// Matrix A is modified in this routine (also B which is at the end the solution X)
+int cholesky_solve(Mat &A, Vect &B, char* UorL = "U");
+
+// Inverts matrix A using the factorization done in cholesky_solve
+// Uses lapack dpotri_
+// Matrix A is assumed to be symmetric (you'll get a core dump if it is not
+// (actually this is not compulsory (see 'man dptri') but we do it
+// for consistency).
+// This routine must be called after cholesky_solve, make sure the value of UorL
+// is the same as that used with dposv
+int cholesky_invert(Mat &A, char* UorL = "U"); // when cholesky_solve is called first
+
+
+// Mat and Vect classes
+//====================================================================
+
+
 class Mat {
   
  private:
@@ -40,6 +70,16 @@ class Mat {
   void dump(std::ostream& Stream) const;
   friend std::ostream& operator << (std::ostream &stream, const Mat &m)
     { m.dump(stream); return stream;}
+  
+  // get a block of this matrix as a new matrix
+  // size (x_max-x_min+1)*(y_max-y_min+1) (both min and max included)
+  // remember  0 <= x < nx ,  0 <= y < ny
+  Mat SubBlock
+    (unsigned int x_min,unsigned int x_max,unsigned int y_min,unsigned int y_max) const;
+
+  // i/o in fits for matrices
+  int readFits(const std::string &FitsName);
+  int writeFits(const std::string &FitsName) const;
 
   // operators
   Mat operator +(const Mat& Right) const;

@@ -1,7 +1,80 @@
 #include <iostream>
 #include <matvect.h>
+#include <fitsio.h>
 
 using namespace std;
+
+
+
+// using lapack 
+extern "C" {
+  void dposv_(char *, int *, int *, double *, int *, double *, int *, int *);
+  void dpotri_(char *, int *, double *, int *, int *);
+};
+
+int cholesky_solve(Mat &A, Vect &B, char* UorL)
+{
+#ifdef FNAME
+  cout << " >  cholesky_solve" << endl;
+#endif  
+
+  if(A.SizeX() != A.SizeY() || A.SizeX()<=0) {
+    cout << "error in matvect.cc, cholesky_solve Matrix A must be symmetric and you have nx,ny = "
+	 << A.SizeX() << "," << A.SizeY() << endl;
+    abort();
+  }
+  if(B.Size() != A.SizeX()) {
+    cout << "error in matvect.cc, cholesky_solve Vector B must have a dimention B.Size()=A.SizeY() and you have B.Size(),A.SizeY() = "
+	 << B.Size() << "," << A.SizeY() << endl;
+    abort();
+  }
+
+  double *a = A.NonConstData();
+  double *b = B.NonConstData();
+  
+  int n = B.Size();
+  int nhrs = 1, info = 0;
+
+  dposv_(UorL, &n, &nhrs, a, &n, b, &n, &info);
+
+  if (info != 0) 
+    cerr << " cholesky_solve(" << a << "," << b << "," << n
+	 << ") : Warning: Cholesky factorization failure . info =" 
+	 << info <<  " (>0 is not pos.def)" << endl;
+
+  return info;
+}
+
+int cholesky_invert(Mat &A, char* UorL)
+{  
+  if(A.SizeX() != A.SizeY() || A.SizeX()<=0) {
+    cout << "error in matvect.cc, cholesky_invert Matrix A must be symmetric and you have nx,ny = "
+	 << A.SizeX() << "," << A.SizeY() << endl;
+    abort();
+  }
+  
+  int info = 0;
+  double *a = A.NonConstData();
+  int n = A.SizeX();
+
+  //  Now invert using the factorization done in dposv_
+
+  dpotri_(UorL, &n, a, &n, &info);
+
+  if (info != 0) 
+    cerr << " cholesky_invert(" << a << "," << n
+	 << ") : Warning: inversion failure . info =" 
+	 << info <<  " (>0 is not pos.def)" << endl;
+
+  return info;
+}
+
+
+
+//==================================================================
+
+
+
 
 Mat::Mat(const unsigned int NX, const unsigned int NY) { 
  data=NULL;
@@ -44,7 +117,7 @@ double Mat::operator () (const unsigned int i, const unsigned int j) const {
     abort();
   }
 #endif
-  return data[i*ny+j];
+  return data[i+j*nx];
 }
 
 double& Mat::operator () (const unsigned int i, const unsigned int j) {
@@ -57,7 +130,7 @@ double& Mat::operator () (const unsigned int i, const unsigned int j) {
     abort();
   }
 #endif
-  return data[i*ny+j];
+  return data[i+j*nx];
 }
 
 void Mat::dump(ostream& Stream) const {
@@ -163,8 +236,8 @@ Mat Mat::operator *(const Mat& Right) const
   }
   Mat res(Right.SizeX(),ny);
   
-  for(unsigned int i=0;i<res.SizeX();++i) {
-    for(unsigned int j=0;j<res.SizeY();++j) {
+  for(unsigned int j=0;j<res.SizeY();++j) {
+    for(unsigned int i=0;i<res.SizeX();++i) {  
       for(unsigned int k=0;k<nx;++k) {
 	res(i,j) += (*this)(k,j)*Right(i,k);
       }
@@ -217,6 +290,150 @@ Mat Mat::transposed() const {
     }
   }
   return res;
+}
+
+Mat Mat::SubBlock
+(unsigned int x_min,unsigned int x_max,unsigned int y_min,unsigned int y_max) const {
+  if( x_min<0 || x_max >= nx || y_min <0 || y_max>= ny ) {
+    cout << "Mat::SubBlockFromIndexes ERROR, trying to get a sub-matrix with indices" << endl;
+    cout << "x_min,x_max,y_min,y_max = "
+	 << x_min << ","
+	 << x_max << ","
+    	 << y_min << ","
+	 << y_max << endl;
+    cout << "nx,ny = "<< nx << "," << ny << endl;
+    abort();
+  }
+  unsigned int nx_new = (x_max-x_min+1);
+  unsigned int ny_new = (y_max-y_min+1);
+  Mat res(nx_new,ny_new);
+  for(unsigned int j=0;j<ny_new;++j)
+    for(unsigned int i=0;i<nx_new;++i)
+      res(i,j) = (*this)(i+x_min,j+y_min);
+  return res;
+}
+
+int Mat::readFits(const string &FitsName) {
+  int status = 0;
+  fitsfile *fptr = 0;
+  fits_open_file(&fptr,FitsName.c_str(),0,&status);
+  if (status)
+   {
+     cerr << " when opening file : " << FitsName ;
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+     return status;
+   }
+  // first get the size of the image/matrix
+  status=0;
+  char value[256];
+  fits_read_key(fptr, TSTRING, "NAXIS1", &value, NULL, &status);
+  if (status)
+    {
+      cerr << " when reading content of : " << FitsName ;
+      cerr << " we got these successive errors:" << endl;
+      fits_report_error(stderr, status);
+      return status;
+    }
+  int n1 = atoi(value);
+  fits_read_key(fptr, TSTRING, "NAXIS2", &value, NULL, &status);
+  if (status)
+    {
+      cerr << " when reading content of : " << FitsName ;
+      cerr << " we got these successive errors:" << endl;
+      fits_report_error(stderr, status);
+      return status;
+    }
+  int n2 = atoi(value);
+  if(n1<=0 || n2<=0) {
+    cout << "Mat::readFits error NAXIS1,NAXIS2 = " << n1 << "," << n2 << endl;
+    return -1;
+  }
+  allocate(n1,n2);
+
+  status = 0;
+  float nullval = 0;
+  int anynull;
+  fits_read_img(fptr, TDOUBLE, 1, nx*ny, &nullval,  data, &anynull, &status);
+  if (status)
+    {
+      cerr << " when reading content of : " << FitsName ;
+      cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+     return status;
+    }
+
+  status = 0;
+  fits_delete_file(fptr, &status);
+  if (status)
+    {
+     cerr << " when closing file : " << FitsName ;
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+   }
+  return status;
+}
+
+
+int Mat::writeFits(const string &FitsName) const {
+  // we cannot use fitsimage cause we want to write it in double precision
+  
+  int status = 0;
+  fitsfile *fptr = 0;
+
+  remove(FitsName.c_str());
+
+  // enum FitsFileMode {RO = 0, RW = 1};
+  fits_create_file(&fptr,FitsName.c_str(),  &status);
+  if (status)
+   {
+     cerr << " when creating file : " << FitsName ;
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+     return status;
+   }
+  // set a minimal header
+  status = 0;
+  long naxes[2];
+  naxes[0]=nx;
+  naxes[1]=ny;
+  fits_write_imghdr(fptr,-64,2,naxes,&status);
+  if (status)
+   {
+     cerr << " when writing minial header  ";
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+     return status;
+   }
+
+  // say to cfitsio to take into account this new BITPIX
+  status = 0;
+  fits_flush_file(fptr,&status);
+  if (status)
+   {
+     cerr << " when flushing  ";
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+     return status;
+   }
+  status = 0;
+  fits_write_img(fptr, TDOUBLE, 1, nx*ny, data, &status);
+  if (status)
+   {
+     cerr << " when writing data ";
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+     return status;
+   }
+  status = 0;
+  fits_close_file(fptr, &status);
+  if (status)
+    {
+     cerr << " when closing file : " << FitsName ;
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, status);
+   }
+  return status;
 }
 
 //=================================================================
