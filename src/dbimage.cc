@@ -331,38 +331,39 @@ void DbConfigFile::dump(ostream& stream) const
 
 void DbConfigExample()
 {
-  cout  << 
-"# this is a comment
-ImagePath
-{
-# 'here' is where non existing images are created. You'd better define it
-here : .
-cfht99 : /snovad15/cfht99/1999*
-vlt99 : /snovad1/vlt99/1999*
-newstuff : /snovad8/wiyn99
-}
-
-# where to find astrometric catalogs (non-USNO catalogs usually)
-CatalogPath
-{
-  /data/my_catalogs
-  /data/my_od/catalogs
-  /data/catalogs/D*
-}
-
-#what are the image names for the various DbImage derived classes
-# .fits : regular fits image
-# .fz : rice compressed fits image
-# .fits.gz gzip compression
-ImageNames
-{
-#default if not overwritten:
-  { satur.fits.gz }
-#for the ImageSum class
-  ImageSum {satur.fz}
-  TransformedImage {calibrated.fits satur.fits.gz}
-}"
-  << endl;
+  cout  
+<< "# this is a comment" << endl
+<< "ImagePath" << endl
+<< "{" << endl
+<< "# 'here' is where non existing images are created. You'd better define it" << endl
+<< "here : ." << endl
+<< "cfht99 : /snovad15/cfht99/1999* ,   /somewhere_else/cfht99/" << endl
+<< "vlt99 : /snovad1/vlt99/1999*" << endl
+<< "newstuff : /snovad8/wiyn99" << endl
+<< "}" << endl
+<< "" << endl
+<< "# where to find astrometric catalogs (non-USNO catalogs usually)" << endl
+<< "CatalogPath" << endl
+<< "{" << endl
+<< "  /data/my_catalogs" << endl
+<< "  /data/my_od/catalogs" << endl
+<< "  /data/catalogs/D*" << endl
+<< "}" << endl
+<< endl
+<< "#what are the image names for the various DbImage derived classes" << endl
+<< "# .fits : regular fits image" << endl
+<< "# .fz : rice compressed fits image" << endl
+<< "# .fits.gz gzip compression" << endl
+<< "# mind the spaces around '{' and '}'" << endl
+<< "ImageNames" << endl
+<< "{" << endl
+<< "#default if not overwritten:" << endl
+<< "  { satur.fits.gz }" << endl
+<< "#for the ImageSum class" << endl
+<< "  ImageSum { satur.fz }" << endl
+<< "  TransformedImage { calibrated.fits satur.fits.gz }" << endl
+ << "}" << endl
+ ;
 }
 
 
