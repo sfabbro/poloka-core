@@ -433,6 +433,12 @@ public :
     if (Warn && result.length() == 0) cout << " no DATE-OBS nor DATE nor DATEOBS " << endl;
     return FitsKey("TOADDATE", result);
   }
+  virtual FitsKey   TOADMMJD(const FitsHeader &Head, const bool Warn) const
+  { 
+    double val = JulianDay(Head)-JulianDay(01,01,2003);
+    return FitsKey("TOADMMJD", val);
+  }
+  
   virtual FitsKey   TOADBAND(const FitsHeader &Head, const bool Warn) const 
      { 
 	 string filt_str = Head.KeyVal("TOADFILT");
@@ -746,6 +752,7 @@ static ToadsKeyRec ToadsKeys[] = {
   {"TOADAIRM", " AIRMass number for this exposure(double)" , "AIRMASS", &VirtualInstrument::TOADAIRM},
   {"TOADUTIM", " Universal TIMe at start of observation (double)", "UT", &VirtualInstrument::TOADUTIM},
   {"TOADDATE", " DATE of observation in day/month/year (string)", "DATE-OBS & DATE", &VirtualInstrument::TOADDATE},
+  {"TOADMMJD", " DATE of observation in days since January first 2003 (double)", "DATE-OBS & DATE", &VirtualInstrument::TOADDATE},
   //{"TOADSCAN", " over/under SCAN region of the ccd [Xstart,Nx;Ystart,Ny](string)","OVERSCAN", &VirtualInstrument::TOADSCAN},
   //{"TOADILLU", " ILLUminated region of the ccd  [Xstart,Nx;Ystart,Ny](string)","NOVAL", &VirtualInstrument::TOADILLU},
   {"TOADBAND", "Short filter BAND (UBVRIJKLGZ) (string)","ToadBand(KeyVal(\"TOADFILT\"))", &VirtualInstrument::TOADBAND},
