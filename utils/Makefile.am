@@ -105,7 +105,7 @@ sum_images_SOURCES = sum_images.cc
 trim_SOURCES = trim.cc
 valid_fits_SOURCES = valid_fits.cc
 
-essai_SOURCES = essai.cc
+
 
 
 ######## auto symbolic link #########
