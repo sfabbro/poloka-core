@@ -11,13 +11,15 @@ bin_PROGRAMS = \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
  preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve \
- split_fits2 rustine_for_fringe
-
+ split_fits2 rustine_for_fringe assign dbls split_fits
 
 
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio -I$(top_srcdir)/dao -I$(top_srcdir)/lc @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
 AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio -L$(top_builddir)/dao -L$(top_srcdir)/lc -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff -L@libdir@  -ltoadslc -ltoadsdao -ltoads -ltoadio -lcernstuff  -llapackstuff @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
+assign_SOURCES = assign.cc
+dbls_SOURCES = dbls.cc
+split_fits_SOURCES = split_fits.cc
 rustine_for_fringe_SOURCES = rustine_for_fringe.cc
 split_fits2_SOURCES = split_fits2.cc
 make_lightcurve_SOURCES = make_lightcurve.cc
