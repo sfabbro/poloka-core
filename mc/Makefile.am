@@ -21,7 +21,8 @@ simulation.cc simulation.h \
 myrdm.cc myrdm.h \
 agaussian.cc agaussian.h \
 mcimage.cc mcimage.h \
-mcsub.cc mcsub.h 
+mcsub.cc mcsub.h \
+addlcfakes.cc
 
 include_HEADERS = \
 agaussian.h \
