@@ -103,7 +103,7 @@ bool Vignet::ShiftCenter(const Point& Shift)
       return false;
     }
   
-  cout << "Vignet::ShiftCenter() : " << Shift  << endl;
+  //cout << "Vignet::ShiftCenter() : " << Shift  << endl;
   
   if (Star)
     {
