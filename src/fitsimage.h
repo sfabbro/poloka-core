@@ -223,6 +223,7 @@ class FitsHeader {
 
   //! flush file buffers.
   int Flush();
+
   bool ReadCard(const std::string &KeyName, string &Card) const;
 
   //! add a whole card, name+value+comment (or modifies an existing one)
@@ -233,10 +234,8 @@ class FitsHeader {
   bool AsciiDump(const std::string &AsciiFileName, const StringList &WhichKeys) const;
 
 
-
   //!
   void ImageSizes(int &Xsize, int &YSize) const;
-
 
   //!
   bool SameImageSizes(const FitsHeader &Other) const;
@@ -271,6 +270,10 @@ class FitsHeader {
 friend ostream& operator << (ostream &stream, const FitsHeader &Header);
   
   VirtualInstrument *TelInst() const;
+
+
+  //! is the image internally compressed?
+  bool CompressedImage() const { return compressedImg;}
 
   //! for a FitsImage opened RW, enables to forbid writing (default behaviour) when destructor is called.
 
@@ -374,13 +377,29 @@ bool SetWriteAsFloat();
 
 
   int Write(bool force_bscale = false);
-  int Write(const double &Bscale, const double &Bzero);
 
 
  private :
    int written ;
 
 };
+
+//! the cfitsio example imcopy, turned into a routine.
+/*! if the out file exists, it is deleted beforehand. If the output
+  file name ends by fz, then a compressed file gets created.
+*/
+int ImageCopy(const std::string &InFileName, std::string OutFileName,
+	      const bool NoCompressionOnOutput = false);
+
+//! returns InFileName if no decompression occured, OutFileName otherwise.
+/*! If decompression occurs, the created file is append to ToRemove */
+std::string DecompressImageIfNeeded(const std::string &InFileName,
+				    const std::string &OutFileName,
+				    std::string &ToRemove);
+
+//! OutFileName is created as either a link on InFileName or a decompressed copy
+bool DecompressOrLinkImage(const std::string &InFileName,
+			   const std::string &OutFileName);
 
 
 #endif /* FITSIMAGE__H */

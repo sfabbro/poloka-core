@@ -178,13 +178,6 @@ FitsHeader::FitsHeader()
 }
 
 
-static std::string Extension(std::string FileName)
-{
-  unsigned int dotpos = FileName.rfind('.');
-  if (dotpos > FileName.size()) return "";
-  return FileName.substr(dotpos+1,FileName.size());
-}
-
 FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
 {
 #ifdef DEBUG
@@ -211,6 +204,7 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
     handled using fileModeAtOpen, rather than trying to hack cfitsio
     internals
  */
+ 
 
   if (status == 0)
     {
@@ -228,6 +222,11 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
       compressedImg = (HasKey("ZIMAGE") && bool(KeyVal("ZIMAGE")));
     }
 
+  /* when reopening RW a file image which was just opened RW
+     cfitsio tries to uncompress the image, and fails. this is 
+     the error 414, which we just ignore
+  */
+  if (status == 414) status = 0;
 
   if (status == 0) return; // the file exists and was opened
  if (Mode == RO) // no need to try to create the file
@@ -258,7 +257,7 @@ int FitsHeader::create_file()
  int status = 0;
  fileModeAtOpen = RW;
 
- if (Extension(fileName) == "fz") 
+ if (FileExtension(fileName) == "fz") 
    /* this is a Toads convention: requesting a file named fz means you 
       want a compressed image. In this source file, compression refers
       to internal compression of the pixel buffer, not external compression
@@ -269,7 +268,8 @@ int FitsHeader::create_file()
    */
    {
      fits_create_file(&fptr, (fileName+"[compress]").c_str(), &status);
-     //minimum_header(); // JG
+     compressedImg = false;
+     minimum_header();
      compressedImg = true;
 
      // create a dummy compressed image 
@@ -288,7 +288,6 @@ int FitsHeader::create_file()
      fits_create_file(&fptr, fileName.c_str(), &status);
      minimum_header();
    }
- //Flush(); // JG
  return status;
 }
  
@@ -411,7 +410,14 @@ FitsHeader::~FitsHeader()
 	 fits_delete_file(fptr,&status);
        }
      else fits_close_file(fptr, &status);
-     CHECK_STATUS(status, " ~FitsHeader "+fileName, )
+     /* When closing a file that contains a compressed image, 
+	cfitsio tries to uncompress it, perhaps with good reasons.
+	This may fail, especially when there is no actual image 
+	on the file yet. We then get error 414, which 
+	seems to be harmless.
+     */
+     if (status != 414) 
+       CHECK_STATUS(status, " ~FitsHeader "+fileName, )
    }
  if (telInst) VirtualInstrumentDestructor(telInst);
 }
@@ -1422,44 +1428,10 @@ int FitsImage::Write(bool force_bscale)
   return (!status);
 } 
 
-int FitsImage::Write(const double &Bscale, const double &Bzero) 
-{
-  if (!writeEnabled) return 0;
-  int status = 0;
-  cout << " Writing " << nx << "x" << ny << " " << fileName << endl;
-  if (FileMode() != RW) return 0;
-  int bitpix = KeyVal("BITPIX");
-  cout << " with BITPIX=" << bitpix << " BSCALE=" << Bscale << " BZERO=" << Bzero << endl;
-  fits_set_bscale(fptr, Bscale, Bzero, &status);
-  //AddOrModKey("BSCALE", Bscale);
-  //AddOrModKey("BZERO" ,Bzero);  
-  ModKey("NAXIS1", nx);
-  ModKey("NAXIS2", ny); 
-
-  string stime = local_time();
-  char * time =  (char *) stime.c_str();
-  AddOrModKey("WRITEDAT", time, " when this file was written"); 
-  /* WRITEDAT used as a tag to find if an image was ever read by this software 
-     (which corrects when reading senseless ADC values) */
-
-/* This "Flush()" is because new values of BSCALE and BZERO are not
-  read (and thus not used for writing) by fits_write_img. The
-  diagnostic is that when reloaded, the image has a different mean and
-  sigma. Still true with v2r440.
- */
-
- Flush();
-
- /* actually write it */
-  fits_write_img(fptr, TFLOAT, 1, nx*ny, data, &status);
-  CHECK_STATUS(status," WriteImage ", );
-  written = 1 ;
-  return (!status);
-} 
-
 FitsImage::~FitsImage()
 {
   // cout << " FitsImage destructor for " << FileName() << " mode : " << FileModeName(file_mode(fptr)) << endl;
+
 
 if (IsValid() && FileMode() == RW)
   {
@@ -1513,6 +1485,219 @@ void FitsImage::Trim(const Frame &Region)
 
  }
 }
+
+
+
+
+
+
+//! copy an image, with possible (de)compression. No bitpix change enabled, because it requires some thinking.
+
+/* This routine is the main of imcopy from cfitsio sources */
+
+
+int ImageCopy(const std::string &InFileName, std::string OutFileName,
+	      const bool NoCompressionOnOutput)
+{
+
+  if (FileExists(OutFileName)) remove(OutFileName.c_str());
+    fitsfile *infptr, *outfptr;   /* FITS file pointers defined in fitsio.h */
+    int status = 0, ii = 1, iteration = 0, single = 0, hdupos;
+    int hdutype, bitpix, bytepix, naxis = 0, nkeys, datatype = 0, anynul;
+    long naxes[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+    long first, totpix = 0, npix;
+    double *array, bscale = 1.0, bzero = 0.0, nulval = 0.;
+    char card[81];
+
+    /* Open the input file and create output file */
+    fits_open_file(&infptr, InFileName.c_str(), READONLY, &status);
+    if (FileExtension(OutFileName) == "fz" && !NoCompressionOnOutput) 
+      OutFileName = OutFileName+"[compress R; 16]";
+    fits_create_file(&outfptr, OutFileName.c_str(), &status);
+
+    if (status != 0) {    
+        fits_report_error(stderr, status);
+        return(status);
+    }
+
+    fits_get_hdu_num(infptr, &hdupos);  /* Get the current HDU position */
+
+    /* Copy only a single HDU if a specific extension was given */ 
+    if (hdupos != 1 || strchr(InFileName.c_str(), '[')) single = 1;
+
+    for (; !status; hdupos++)  /* Main loop through each extension */
+    {
+
+      fits_get_hdu_type(infptr, &hdutype, &status);
+
+      if (hdutype == IMAGE_HDU) {
+
+          /* get image dimensions and total number of pixels in image */
+          for (ii = 0; ii < 9; ii++)
+              naxes[ii] = 1;
+
+          fits_get_img_param(infptr, 9, &bitpix, &naxis, naxes, &status);
+
+          totpix = naxes[0] * naxes[1] * naxes[2] * naxes[3] * naxes[4]
+             * naxes[5] * naxes[6] * naxes[7] * naxes[8];
+      }
+
+      if (hdutype != IMAGE_HDU || naxis == 0 || totpix == 0) { 
+
+          /* just copy tables and null images */
+	if (! (hdutype == IMAGE_HDU && naxis == 0)) // no .. not NULL Images
+	      fits_copy_hdu(infptr, outfptr, 0, &status);
+
+      } else {
+
+          /* Explicitly create new image, to support compression */
+          fits_create_img(outfptr, bitpix, naxis, naxes, &status);
+
+          /* copy all the user keywords (not the structural keywords) */
+          fits_get_hdrspace(infptr, &nkeys, NULL, &status); 
+
+          for (ii = 1; ii <= nkeys; ii++) {
+              fits_read_record(infptr, ii, card, &status);
+              if (fits_get_keyclass(card) > TYP_CMPRS_KEY)
+                  fits_write_record(outfptr, card, &status);
+          }
+
+          switch(bitpix) {
+              case BYTE_IMG:
+                  datatype = TBYTE;
+                  break;
+              case SHORT_IMG:
+                  datatype = TSHORT;
+                  break;
+              case LONG_IMG:
+                  datatype = TLONG;
+                  break;
+              case FLOAT_IMG:
+                  datatype = TFLOAT;
+                  break;
+              case DOUBLE_IMG:
+                  datatype = TDOUBLE;
+                  break;
+          }
+
+          bytepix = abs(bitpix) / 8;
+
+          npix = totpix;
+          iteration = 0;
+
+          /* try to allocate memory for the entire image */
+          /* use double type to force memory alignment */
+          array = (double *) calloc(npix, bytepix);
+
+          /* if allocation failed, divide size by 2 and try again */
+          while (!array && iteration < 10)  {
+              iteration++;
+              npix = npix / 2;
+              array = (double *) calloc(npix, bytepix);
+          }
+
+          if (!array)  {
+              printf("Memory allocation error\n");
+              return(0);
+          }
+
+          /* turn off any scaling so that we copy the raw pixel values */
+          fits_set_bscale(infptr,  bscale, bzero, &status);
+          fits_set_bscale(outfptr, bscale, bzero, &status);
+
+          first = 1;
+          while (totpix > 0 && !status)
+          {
+             /* read all or part of image then write it back to the output file */
+             fits_read_img(infptr, datatype, first, npix, 
+                     &nulval, array, &anynul, &status);
+
+             fits_write_img(outfptr, datatype, first, npix, array, &status);
+             totpix = totpix - npix;
+             first  = first  + npix;
+          }
+          free(array);
+      }
+
+      if (single) break;  /* quit if only copying a single HDU */
+      fits_movrel_hdu(infptr, 1, NULL, &status);  /* try to move to next HDU */
+    }
+
+    if (status == END_OF_FILE)  status = 0; /* Reset after normal error */
+
+    fits_close_file(outfptr,  &status);
+    fits_close_file(infptr, &status);
+
+    /* if error occurred, print out error message */
+    if (status)
+       fits_report_error(stderr, status);
+    return(status);
+}
+
+
+/*
+std::string DecompressImageIfNeeded(const std::string &InFileName,
+				    const std::string &UniqueString,
+				    const std::string &TempDir,
+				    std::string &ToRemove)
+*/
+std::string DecompressImageIfNeeded(const std::string &InFileName,
+				    const std::string &OutFileName,
+				    std::string &ToRemove)
+{// uncompress images for sextractor
+
+  // zipped?
+  if (IsZipped(InFileName))
+    {
+      std::string command = "gunzip -c InfileName > "+OutFileName;
+      ToRemove += " "+OutFileName;
+      //DEBUG
+      cout << "executing " << command << endl;
+      if (0 != system(command.c_str()))
+	{
+	  std::cerr << " could not execute " << std::endl
+		    << command << std::endl;
+	  return "";
+	}
+      else return OutFileName;
+    }
+  else
+    {
+      FitsHeader head(InFileName);
+      if (head.CompressedImage())
+	{
+	  ToRemove += " "+OutFileName;
+	  //DEBUG
+	  cout << "executing ImageCopy(" << InFileName <<','<< OutFileName 
+	       << ')' << std::endl;
+	  if (0 == ImageCopy(InFileName, OutFileName, true))
+	    return OutFileName;
+	  else return "";
+	}
+      else return InFileName;
+    }
+}
+
+
+bool DecompressOrLinkImage(const std::string &InFileName,
+			   const std::string &OutFileName)
+{
+  //if the file exists, nothing is gone work.
+  remove(OutFileName.c_str());
+  // do we have do decompress?
+  std::string dummy;
+  std::string decompImage = DecompressImageIfNeeded(InFileName, OutFileName, 
+						    dummy);
+  if (decompImage == "") return false; // it did not work;
+  if (decompImage == InFileName) // no decompression
+    {
+      return (MakeRelativeLink(InFileName, OutFileName));
+    }
+  return true;
+}
+
+
+
 
 
 
