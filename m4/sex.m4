@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: sex.m4,v 1.5 2004/02/23 12:32:03 nrl Exp $
+# $Id: sex.m4,v 1.6 2004/04/26 09:17:57 nrl Exp $
 # 
 # autoconf macro to check the sextractor installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -42,9 +42,9 @@ AC_DEFUN([CHECK_SEX],[
  if test -n "$sex_headers" ; then
   SEX_CPPFLAGS="-I$sex_headers"
  elif test -n "$SEXHOME" ; then
-  SEX_CPPFLAGS="-I$SEXHOME/src"
+  SEX_CPPFLAGS="-I$SEXHOME/include"
  elif test -n "$FROGSHOME" ; then
-  SEX_CPPFLAGS="-I$FROGSHOME/src"
+  SEX_CPPFLAGS="-I$FROGSHOME/include"
  elif test -n "$prefix" && test "$prefix" != "NONE"; then 
   SEX_CPPFLAGS="-I$prefix/include"
  fi
@@ -73,13 +73,13 @@ AC_DEFUN([CHECK_SEX],[
   ])
 
  if test -n "$sex_libs" ; then
-  SEX_LDFLAGS="-L$sex_libs -lsex -lwcs"
+  SEX_LDFLAGS="-L$sex_libs -lsex -lwcs -lm"
  elif test -n "$SEXHOME" ; then 
-  SEX_LDFLAGS="-L$SEXHOME/Linux-i686 -lsex -lwcs"
+  SEX_LDFLAGS="-L$SEXHOME/lib -lsex -lwcs -lm"
  elif test -n "$FROGSHOME" ; then
-  SEX_LDFLAGS="-L$FROGSHOME/Linux-i686 -lsex -lwcs"
+  SEX_LDFLAGS="-L$FROGSHOME/lib -lsex -lwcs -lm"
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
-  SEX_LDFLAGS="-L$prefix/lib -lsex -lwcs"
+  SEX_LDFLAGS="-L$prefix/lib -lsex -lwcs -lm"
  fi
  
  LDFLAGS="$LDFLAGS $SEX_LDFLAGS"
