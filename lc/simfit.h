@@ -4,6 +4,7 @@
 
 #include "lightcurve.h"
 #include "simfitvignet.h"
+#include "matvect.h"
 
 //!  \file simfit.h
 //!  \brief A class to fit pixels simultaneously from a set of vignets.
@@ -53,10 +54,10 @@ private:
   bool dont_use_vignets_with_star; // this when you want to fit the galaxy only, see 
 
   // vector and matrices for the system Mat*Params=Vec
-  double *Vec;            // vector r.h.s and Params when solved
-  double *Mat;            // matrix l.h.s then covariance matrix when inverted
-  double *MatGal;         // gal-gal matrix part to avoid refilling
-
+  Vect Vec;            // vector r.h.s and Params when solved
+  Mat PMat;            // matrix l.h.s then covariance matrix when inverted
+  Mat MatGal;         // gal-gal matrix part to avoid refilling
+  
   // indices
   int fluxstart, fluxend; // start and end indices for flux parameters in Mat and Vec
   int xind,yind;          // indices for positional parameters in Mat and Vec
@@ -83,36 +84,6 @@ private:
   void fillGalGal();
   void fillGalSky();
   void fillSkySky();
-  
-  //#define CHECK_MAT_BOUNDS // uncomment this to use the 3 following functions when filling matrices
-  
-#ifdef CHECK_MAT_BOUNDS
-  double& fillVec(int i){
-    if(i<0 || i>=nparams) {
-      cout << "fillVec ERROR i,nparams = " << i << "," << nparams << endl;
-      abort();
-    }
-    return Vec[i];
-  };
-  
-  double& fillMat(int i) {
-    if(i<0 || i>=nparams*nparams) {
-      cout << "fillMat ERROR i,nparams*nparams = " << i << "," << nparams*nparams << endl;
-      abort();
-    }
-    return Mat[i];
-  };
-  
-  double& fillMatGal(int i) {
-    int n = nfx*nfy;
-    n*=n;
-    if(i<0 || i>=n) {
-      cout << "fillMatGal ERROR i,pow(nfx*nfy,2) = " << i << "," << n << endl;
-      abort();
-    }
-    return  MatGal[i];
-  }
-#endif 
   
   // compute the chi2 of the current fit
   double computeChi2() const;
