@@ -7,7 +7,8 @@
 #include "objio.h"
 #include "typemgr.h"
 
-//#define DEBUG
+#define FNAME
+#define DEBUG
 
 TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
   : Kernel(Radius), Dx(Radius), Dy(Radius)
@@ -23,6 +24,9 @@ TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const Window& Rec
 
 void TabulatedPsf::Resize(const int Hx, const int Hy)
 {
+#ifdef FNAME
+  cout << " > TabulatedPsf::Resize(const int Hx, const int Hy)" << endl;
+#endif
   if (HSizeX() != Dx.HSizeX() ||
       HSizeY() != Dx.HSizeY() ||
       HSizeX() != Dy.HSizeX() ||
@@ -38,6 +42,10 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
 
 void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)
 {
+#ifdef FNAME
+  cout << " > TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)" << endl;
+#endif
+
   Resize(Radius, Radius);
 
   const int ic = int(Pt.x);
@@ -90,11 +98,17 @@ void TabulatedPsf::Scale(const double& s)
 SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius)
   : Vignet(Rim, Radius), psf(new DaoPsf(*Rim))
 {
+#ifdef FNAME
+  cout << " > SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius)" << endl;
+#endif
 }
 
 SimFitRefVignet::SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius)
   : Vignet(Star, Rim, Radius), psf(new DaoPsf(*Rim)), Psf(*Star, *psf, Radius)
 {
+#ifdef FNAME
+  cout << " > SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius)" << endl;
+#endif
 }
 
 // make sure that psf, vignet and data have proper sizes.
@@ -106,10 +120,10 @@ void SimFitRefVignet::Resize(const int Hx, const int Hy)
       cerr << " SimFitRefVignet::Resize(" << Hx << "," << Hy << ") : impossible \n";
       return;
     } 
-
+  
   // resize Data, Weight, Resid if necessary
   Vignet::Resize(Hx,Hy);
-  Vignet::Allocate(Nx(), Ny());
+  //Vignet::Allocate(Nx(), Ny());
 
   // resize Psf, Psf.Dx, Psf.Dy if necessary
   Psf.Resize(Hx,Hy);
@@ -120,16 +134,24 @@ void SimFitRefVignet::Resize(const int Hx, const int Hy)
 
 void SimFitRefVignet::Load(const PhotStar *Star)
 {
+#ifdef FNAME
+  cout << " > SimFitRefVignet::Load(const PhotStar *Star)" << endl;
+#endif
   if (!Star) return;
   Vignet::Load(Star);
-  makeInitialGalaxy(); 
+  
   if (!psf) psf = new DaoPsf(*rim);
   Psf.Tabulate(*Star, *psf, hx);
+  makeInitialGalaxy(); 
   UpdatePsfResid();
 }
 
 void SimFitRefVignet::makeInitialGalaxy()
 {  
+#ifdef FNAME
+  cout << " > SimFitRefVignet::makeInitialGalaxy()" << endl;
+#endif
+
   // allocate galaxy as biggest vignet possible, so resizing it is easy.
   Galaxy.Allocate(Data.Nx(), Data.Ny(), 1);
 
@@ -145,9 +167,10 @@ void SimFitRefVignet::makeInitialGalaxy()
 
 void SimFitRefVignet::UpdatePsfResid()
 {
+#ifdef FNAME
+  cout << " > SimFitVignet::UpdatePsfResid() : updating residuals with galaxy" << endl;
+#endif
   // re-allocate Resid if too small
-
-  cout << " SimFitRefVignet::UpdatePsfResid() : updating residuals with galaxy" << endl;
 
   DPixel *pdat = Data.begin(), *pres = Resid.begin(), *pgal = Galaxy.begin();
   DPixel *ppsf = Psf.begin(), *ppdx = Psf.Dx.begin(), *ppdy = Psf.Dy.begin();
@@ -171,6 +194,9 @@ SimFitVignet::SimFitVignet(const ReducedImage *Rim)
 SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const SimFitRefVignet& Ref)
   : Vignet(Star, Rim, 0), FitFlux(false)
 {  
+#ifdef FNAME
+  cout << " > SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const SimFitRefVignet& Ref)" << endl;
+#endif
   BuildKernel(Ref.Image());
   UpdatePsfResid(Ref);
 }
@@ -193,6 +219,9 @@ void SimFitVignet::Resize(const int Hx, const int Hy)
 void SimFitVignet::BuildKernel(const ReducedImage* Ref)
 {
 
+#ifdef FNAME
+  cout << " > SimFitVignet::BuildKernel(const ReducedImage* Ref)" << endl;
+#endif
   if (!Star) return;
 
   // build kernel
@@ -315,13 +344,22 @@ void SimFitVignet::UpdatePsfResid(const TabulatedPsf& RefPsf)
 
 void SimFitVignet::UpdateResid(const Kernel &RefGal)
 {
+#ifdef FNAME
+  cout << " > SimFitVignet::UpdateResid(const Kernel &RefGal) : convolving galaxy and updating residuals " << endl;
+#endif
+#ifdef DEBUG
+  cout << " in SimFitVignet::UpdateResid Kern  = " << Kern  << endl;
+  cout << " in SimFitVignet::UpdateResid Data  = " << Data  << endl;
+  cout << " in SimFitVignet::UpdateResid Resid = " << Resid << endl;
+  cout << " in SimFitVignet::UpdateResid Psf   = " << Psf   << endl;
+#endif
 
   double sumg;
   DPixel *pdat, *pres, *ppsf, *pkern, *prgal;
   int hkx = Kern.HSizeX();
   int hky = Kern.HSizeY();
 
-  cout << " SimFitVignet::UpdateResid() : convolving galaxy and updating residuals " << endl;
+  ;
   for (int j=-hy; j<=hy; ++j)
     {
       pdat = &Data  (-hx,j);
@@ -348,10 +386,13 @@ void SimFitVignet::UpdateResid(const Kernel &RefGal)
 // update residuals with existing psf, no galaxy
 void SimFitVignet::UpdateResid()
 {
-
+#ifdef FNAME
+  cout << " > SimFitVignet::UpdateResid() : updating residuals, no galaxy" << endl;
+#endif
+  
   DPixel *pdat = Data.begin(), *pres = Resid.begin(), *ppsf = Psf.begin();
 
-  cout << " SimFitVignet::UpdateResid() : updating residuals, no galaxy" << endl;
+  
 
   for (int i=Nx()*Ny(); i; --i)
     {	

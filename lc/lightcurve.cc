@@ -8,6 +8,8 @@
 #include "lightcurve.h"
 #include "lcio.h"
 
+#define FNAME
+
 // instantiate
 template class Fiducial<PhotStar>;
 
@@ -87,7 +89,9 @@ ostream& operator << (ostream& Stream, const LightCurve& Lc)
 
 LightCurveList::LightCurveList(istream& LcFileStream) 
 {
-
+#ifdef FNAME
+  cout << " > LightCurveList::LightCurveList(istream& LcFileStream)" << endl;
+#endif
   lc_read(LcFileStream, Objects, Images);
   
   RefImage = Objects.front()->Image();

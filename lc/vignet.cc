@@ -1,8 +1,14 @@
 #include <iomanip>
 #include "vignet.h"
 
+#define FNAME
+#define DEBUG
+
 void Vignet::Allocate(const int Nx, const int Ny)
 {
+#ifdef FNAME
+  cout << " > Vignet::Allocate(const int Nx, const int Ny) Nx,Ny = " << Nx << "," << Ny << endl;
+#endif
   Data.Allocate(Nx,Ny);
   Weight.Allocate(Nx,Ny);
   Resid.Allocate(Nx,Ny);
@@ -10,9 +16,11 @@ void Vignet::Allocate(const int Nx, const int Ny)
 
 bool Vignet::Load(const PhotStar *AStar)
 {    
+#ifdef FNAME
+  cout << " > Vignet::Load(const PhotStar *AStar) AStar=" << AStar << endl;
+#endif
 
 #ifdef DEBUG
-  cout << " Vignet::Load(" << AStar<< ");" << endl;
   cout << "   rim->refCount() = " << rim->refCount() << endl;
   cout << "   rim->Name() = " << rim->Name() << endl;
 #endif
@@ -47,9 +55,8 @@ bool Vignet::Load(const PhotStar *AStar)
 
 void Vignet::Resize(const int Hx, const int Hy)
 {
-
-#ifdef DEBUG
-  cout << " Vignet::Resize(" <<  Hx << "," << Hy << "); rim is " << rim->Name() << endl;
+#ifdef FNAME
+  cout << " > Vignet::Resize(const int Hx, const int Hy) Hx,Hy = " << Hx << "," << Hy << endl;
 #endif
 
   if  (Hx < 0 || Hy < 0) 
@@ -57,15 +64,14 @@ void Vignet::Resize(const int Hx, const int Hy)
       cerr << " Vignet::Resize(" << Hx << "," << Hy << ") : Error : impossible \n";
       return;
     } 
-
-  xstart = 
-  hx = Vignet::Hx();
-  hy = Vignet::Hy();
-  Allocate(Nx(), Ny());
+  
+  int nx = 2*Hx+1;
+  int ny = 2*Hy+1;
+  Allocate(nx,ny);
+  Load(Star);
 
 #ifdef DEBUG
-  cout << " in Vignet::Resize Data.HSizeX() = " << Data.HSizeX() << endl;
-  cout << " in Vignet::Resize Data.HSizeY() = " << Data.HSizeY() << endl;
+  cout << " in Vignet::Resize Data.HSizeX(),Data.HSizeY() = " << Data.HSizeX() << "," << Data.HSizeY()<< endl;
 #endif
 
 }
@@ -83,9 +89,8 @@ void Vignet::Resize(const double &ScaleFactor)
       return;
     }
   
-  Resize(int(ceil(ScaleFactor*double(hx))),
-	 int(ceil(ScaleFactor*double(hy))));
-
+ Resize(int(ceil(ScaleFactor*double(hx))),
+	int(ceil(ScaleFactor*double(hy))));
 }
 
 bool Vignet::ShiftCenter(const Point& Shift)

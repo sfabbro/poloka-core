@@ -6,6 +6,8 @@
 #include "simfit.h"
 #include "simfitphot.h"
 
+#define FNAME
+#define DEBUG
 
 static bool IncSeeing(const CountedRef<ReducedImage> one, const CountedRef<ReducedImage> two)
 { return (one->Seeing() < two->Seeing());}
@@ -13,7 +15,9 @@ static bool IncSeeing(const CountedRef<ReducedImage> one, const CountedRef<Reduc
 
 static void init_phot(LightCurveList& Fiducials)
 {  
-
+#ifdef FNAME
+  cout << " > init_phot(LightCurveList& Fiducials)" << endl;
+#endif
   if (Fiducials.size() == 0) 
     {
       cerr << " init_phot() : no objects to initialize! \n";
@@ -73,9 +77,13 @@ static void init_phot(LightCurveList& Fiducials)
 
 SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 {
-
+#ifdef FNAME
+  cout << " > SimFitPhot::SimFitPhot(LightCurveList& Fiducials)" << endl;
+#endif
   init_phot(Fiducials);
-
+#ifdef DEBUG
+  cout << "  zeFit.reserve ... " << endl;
+#endif
   zeFit.reserve(Fiducials.Images.size());
   
   // 4 fwhm maximum size vignets

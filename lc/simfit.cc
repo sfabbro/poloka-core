@@ -7,6 +7,9 @@
 #include "simfitvignet.h"
 #include "simfit.h"
 
+#define FNAME
+#define DEBUG
+
 static void resize_vec(double* &vec, const int n)
 {
   if (vec) delete [] vec;
@@ -77,7 +80,9 @@ void SimFit::SetWhatToFit(const unsigned int ToFit)
 
 void SimFit::FindMinimumScale(const double &WorstSeeing)
 {
-
+#ifdef FNAME
+  cout << " > SimFit::FindMinimumScale(const double &WorstSeeing) WorstSeeing=" << WorstSeeing  << endl;
+#endif
 
   int hmin = max(int(ceil(WorstSeeing*2.3548)), 5);
   int hrefx = VignetRef.Data.HSizeX();
@@ -86,7 +91,6 @@ void SimFit::FindMinimumScale(const double &WorstSeeing)
   int hky = 0;
 
 #ifdef DEBUG
-  cout << " SimFit::FindMinimumScale(" << WorstSeeing << ");" << endl;
   cout << "VignetRef.Data.HSizeX() = " << hrefx << endl;
   cout << "VignetRef.Data.HSizeY() = " << hrefy << endl;
 #endif
@@ -114,6 +118,9 @@ void SimFit::FindMinimumScale(const double &WorstSeeing)
 
 void SimFit::Load(LightCurve& Lc)
 {
+#ifdef FNAME
+  cout << " > SimFit::Load(LightCurve& Lc)" << endl;
+#endif
   
   if (Lc.size() != size()) 
     {
