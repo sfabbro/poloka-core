@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cernlib.m4,v 1.2 2004/02/23 02:00:00 nrl Exp $
+# $Id: cernlib.m4,v 1.3 2004/02/23 10:39:24 nrl Exp $
 # 
 # autoconf macro to check the cernlib installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -20,7 +20,7 @@ AC_DEFUN([CHECK_CERNLIB],[
  if test -n "$cernlib_prefix" ; then
   CERNLIB_LDFLAGS="-L$cernlib_prefix -lpacklib -lnsl -lcrypt -ldl"
  elif test -n "$CERN" ; then
-  CERN_LDFLAGS="-L$CERN/lib -lpacklib -lnsl -lcrypt -ldl"
+  CERN_LDFLAGS="-L$CERN/pro/lib -lpacklib -lnsl -lcrypt -ldl"
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
   CERN_LDFLAGS="-L$prefix/lib -lpacklib -lnsl -lcrypt -ldl"
  fi

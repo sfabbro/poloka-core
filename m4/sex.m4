@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: sex.m4,v 1.3 2004/02/23 02:00:01 nrl Exp $
+# $Id: sex.m4,v 1.4 2004/02/23 10:39:24 nrl Exp $
 # 
 # autoconf macro to check the sextractor installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -40,8 +40,10 @@ AC_DEFUN([CHECK_SEX],[
 
  if test -n "$sex_headers" ; then
   SEX_CPPFLAGS="-I$sex_headers"
+ elif test -n "$SEXHOME" ; then
+  SEX_CPPFLAGS="-I$SEXHOME/src"
  elif test -n "$FROGSHOME" ; then
-  SEX_CPPFLAGS="-I$FROGSHOME/include"
+  SEX_CPPFLAGS="-I$FROGSHOME/src"
  elif test -n "$prefix" && test "$prefix" != "NONE"; then 
   SEX_CPPFLAGS="-I$prefix/include"
  fi
@@ -56,7 +58,7 @@ AC_DEFUN([CHECK_SEX],[
    echo "***                                                                 "
    echo "*** Keep in mind that ./configure looks for sextractor in the following"
    echo "*** standard locations:                                             "
-   echo "***    /, /usr, /usr/local, \$FROGSHOME and <install prefix>        "
+   echo "***    /, /usr, /usr/local, \$SEXHOME, \$FROGSHOME and <install prefix>"
    echo "***                                                                 "
    echo "*** If you choose to install sextractor someplace else, you will have"
    echo "*** to specify its install prefix using one or more of the following"
@@ -71,12 +73,13 @@ AC_DEFUN([CHECK_SEX],[
 
  if test -n "$sex_libs" ; then
   SEX_LDFLAGS="-L$sex_libs -lsex -lwcs"
+ elif test -n "$SEXHOME" ; then 
+  SEX_LDFLAGS="-L$SEXHOME/Linux-i686 -lsex -lwcs"
  elif test -n "$FROGSHOME" ; then
-  SEX_LDFLAGS="-L$FROGSHOME/lib -lsex -lwcs"
+  SEX_LDFLAGS="-L$FROGSHOME/Linux-i686 -lsex -lwcs"
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
   SEX_LDFLAGS="-L$prefix/lib -lsex -lwcs"
  fi
- echo " ---> $SEX_LDFLAGS"
  
  LDFLAGS="$LDFLAGS $SEX_LDFLAGS"
 
@@ -89,7 +92,7 @@ AC_DEFUN([CHECK_SEX],[
 #   echo "***                                                                 "
 #   echo "*** Keep in mind that ./configure looks for sextrator in the following"
 #   echo "*** standard locations:                                             "
-#   echo "***    /, /usr, /usr/local, \$FROGSHOME and <install prefix>        "
+#   echo "***    /, /usr, /usr/local, \$SEXHOME, \$FROGSHOME and <install prefix>"
 #   echo "***                                                                 "
 #   echo "*** If you choose to install sextrator someplace else, you will have"
 #   echo "*** to specify its install prefix using one or more of the following"
@@ -98,7 +101,7 @@ AC_DEFUN([CHECK_SEX],[
 #   echo "***  --with-sex-headers=                                            "
 #   echo "***  --with-sex-libs=                                               "
 #   echo "***                                                                 "
-#   echo "*** Please check your sextrator installation and try again.           "
+#   echo "*** Please check your sextrator installation and try again.         "
 #  AC_MSG_ERROR(aborting.)
 #  ])
 
