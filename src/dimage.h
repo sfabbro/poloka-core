@@ -3,7 +3,7 @@
 #define DIMAGE__H
 
 #include <list>
-#include <string.h>
+#include <string>
 
 #include "persistence.h"
 
@@ -15,6 +15,15 @@
 typedef double DPixel;
 class Image;
 
+//! yet another rectangle/frame/window/subimage class. used in Stamp and Vignet
+struct Window { 
+  Window() : xstart(0), ystart(0), xend(0), yend(0) {}
+  Window(const int Xstart, const int Ystart, 
+	 const int Xend, const int Yend) : xstart(Xstart), ystart(Ystart), xend(Xend), yend(Yend) {}
+  int xstart, ystart, xend, yend; 
+};
+
+ostream& operator << (ostream& stream, const Window& w);
 
 //! a double precision image type.
 class DImage  
@@ -86,6 +95,8 @@ public:
   void writeFits(const string &FitsName) const;
   //! constructor calls read routine
   DImage(const string &FitsName);
+  void readFromImage(const string& FitsFileName, const Window &Rect);
+  void writeInImage (const string& FitsFileName, const Window &Rect) const;
 };
 
 inline DImage operator + (const DImage &a, const DImage &b)
@@ -124,7 +135,7 @@ private:
 public :
   //! center in the source Image
   int xc,yc ;  
-  int xstart, ystart;
+  Window rect;
   //! pixels (in double precision until one changes DPixel definition )
   DImage source;  
   //! will be filled and used to discard outliers from the fit 
@@ -174,6 +185,7 @@ public:
   Kernel();
   Kernel& operator = (const Kernel &Right); 
   void readFits(const string &FitsName);
+  void readFromImage(const string& FitsFileName, const Window &Rect);
   bool IsDirac() const  {return (sum() == *data00);}
   //! half the size in x direction
   int HSizeX() const { return hSizeX;}
@@ -194,8 +206,10 @@ public:
   //! computes x and y first order moments of the kernel (\sigma_x, \sigma_y, \rho_{xy})
   void moments(double &vx, double &vy, double &vxy) const;
   bool IsEmpty() const {return (hSizeX+hSizeY == 0);}
-  void MaxPixel(double &xmax, double &ymax);
-  void MinPixel(double &xmin, double &ymin);
+  void MaxPixel(double &xmax, double &ymax) const;
+  void MinPixel(double &xmin, double &ymin) const;
+
+  friend ostream& operator << (ostream& stream, const Kernel& k);
 };
 
 

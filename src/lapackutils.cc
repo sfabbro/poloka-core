@@ -236,7 +236,7 @@ int SpdSolveAndInvert(LaGenMatDouble& A, LaVectorDouble &b, const bool invert)
   char uplo = 'L';
   integer N = A.size(0), nhrs = 1, info = 0;
   integer lda = A.inc(0) * A.gdim(0);
-  integer ldb = b.inc() * b.gdim(0);
+  integer ldb = b.inc()  * b.gdim(0);
   F77NAME(dposv)(&uplo, &N, &nhrs, &A(0,0), &lda, &b(0), &ldb, &info);
   if (info != 0) 
     {
@@ -251,6 +251,28 @@ int SpdSolveAndInvert(LaGenMatDouble& A, LaVectorDouble &b, const bool invert)
   return info;
 }
 
+
+int SpdSolve(LaGenMatDouble& A, LaVectorDouble &b)
+{  
+  char uplo = 'L';
+  integer N = A.size(0), nhrs = 1, info = 0;
+  integer lda = A.inc(0) * A.gdim(0);
+  integer ldb = b.inc() * b.gdim(0);
+  F77NAME(dposv)(&uplo, &N, &nhrs, &A(0,0), &lda, &b(0), &ldb, &info);
+  if (info != 0) 
+    cerr << " WARNING: Factorization failure . info =" << info <<  " (>0 is not pos.def)" << endl;
+  return info;
+}
+
+int SpdInvert(LaGenMatDouble& A)
+{  
+  char uplo = 'L';
+  integer  N = A.size(0), info = 0;
+  integer lda = A.inc(0) * A.gdim(0);
+  F77NAME(dpotri)(&uplo, &N, &A(0,0), &lda, &info);
+  if (info!=0) cerr << " WARNING: Inversion failure . info = " << info << endl;
+  return info;
+}
 
 
 #ifdef SVD // singular value decomposition to be implemented. 

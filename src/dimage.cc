@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
+#include <fitsio.h>
 
 #include "dimage.h"
 #include "frame.h"
@@ -10,6 +11,12 @@
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
 #endif
+
+ostream& operator << (ostream& stream, const Window& w)
+{
+  stream << "[" << w.xstart << ":" << w.xend << ", " << w.ystart << ":" << w.yend << "]";
+  return stream;
+}
 
 //***********************  DImage ***************************
 DImage::DImage(const int Nx, const int Ny) : data(NULL)
@@ -213,6 +220,44 @@ void DImage::readFits(const string &FitsName)
   for (int i=ny*nx; i ; --i) {*dp = *p ; ++p; ++dp;}
 }
 
+void DImage::readFromImage(const string& FitsFileName, const Window &Rect)
+{
+  double nulval = 0;
+  int    status = 0;
+  int anynul;
+  long lbc[] = {Rect.xstart+1, Rect.ystart+1};
+  long trc[] = {Rect.xend, Rect.yend};
+  long inc[] = {1,1};
+  fitsfile *fptr = 0;
+  fits_open_file(&fptr, FitsFileName.c_str(), RO, &status);
+  fits_read_subset(fptr, TDOUBLE, lbc, trc, inc, &nulval,  data,
+		   &anynul, &status);
+  fits_close_file(fptr, &status);
+  if (status>0)  
+    { 
+      cerr << " Vignet::readFromImage(" << FitsFileName << ") : Error: " << endl; 
+      fits_report_error(stderr, status); 
+    }
+}
+
+void DImage::writeInImage(const string& FitsFileName, const Window &Rect) const
+{
+  int status = 0;
+  fitsfile *fptr = 0;
+  long lbc[] = {Rect.xstart+1,Rect.ystart+1};
+  long trc[] = {Rect.xend,Rect.yend};
+  fits_open_file(&fptr, FitsFileName.c_str(), RW, &status);
+  fits_write_subset(fptr, TFLOAT, lbc, trc, data, &status);
+  fits_close_file(fptr, &status);
+
+  if (status>0)  
+    { 
+      cerr << " Vignet::writeInImage(" << FitsFileName << ") : Error: " << endl; 
+      fits_report_error(stderr, status); 
+    }
+}
+
+
 
 //***********************  Stamp ***************************
 
@@ -225,15 +270,15 @@ Stamp::Stamp(const double Xc, const double Yc, const Image& image, int HStampSiz
   source.Allocate(width, height);
   int xoff = xc - HStampSize; 
   int yoff = yc - HStampSize;
-  xstart = max(0,xc - HStampSize);
-  ystart = max(0,yc - HStampSize);
-  int xend = min(xstart+width,image.Nx());
-  int yend = min(ystart+height, image.Ny());
-  if (width*height != (xstart-xend)*(ystart-yend)) 
+  rect.xstart = max(0,xc - HStampSize);
+  rect.ystart = max(0,yc - HStampSize);
+  rect.xend = min(rect.xstart+width,image.Nx());
+  rect.yend = min(rect.ystart+height, image.Ny());
+  if (width*height != (rect.xstart-rect.xend)*(rect.ystart-rect.yend)) 
     cerr << " we miss pixels for (" << xc << "," << yc << ")" << endl;
-  for (int j=ystart; j <yend; ++j)
+  for (int j=rect.ystart; j <rect.yend; ++j)
     {
-      for (int i= xstart; i< xend; i++)
+      for (int i= rect.xstart; i< rect.xend; i++)
 	{
 	  source(i-xoff,j-yoff) = image(i,j);
 	}
@@ -314,8 +359,9 @@ Kernel::Kernel(const string &FitsName) : DImage(FitsName)
 
 void Kernel::readFits(const string &FitsName)
 {
-  FitsImage im(FitsName);
-  if ((im.Nx() == 0) && (im.Ny() == 0) ) return;
+  FitsHeader head(FitsName);
+  int nix,niy; head.ImageSizes(nix,niy);
+  if ((nix == 0)|| (niy == 0) ) return;
   DImage::readFits(FitsName);
   hSizeX = (Nx()-1)/2;
   hSizeY = (Ny()-1)/2;
@@ -323,6 +369,21 @@ void Kernel::readFits(const string &FitsName)
   minindex = begin()-data00; 
   maxindex = minindex + Nx()*Ny()-1;
 }
+
+void Kernel::readFromImage(const string& FitsFileName, const Window &Rect)
+{
+  FitsHeader head(FitsFileName);
+  int nix,niy; head.ImageSizes(nix,niy);
+  if ((nix == 0)|| (niy == 0) ) return;
+
+  DImage::readFromImage(FitsFileName, Rect); 
+  hSizeX = (Nx()-1)/2;
+  hSizeY = (Ny()-1)/2;
+  data00 = &(*this)(hSizeX,hSizeY);
+  minindex = begin()-data00;
+  maxindex = minindex + Nx()*Ny()-1;
+}
+
 
 void Kernel::dump() const
 {
@@ -412,7 +473,7 @@ Kernel::Kernel(const Kernel& K, int BandX, int BandY)
       (*this)(i,j) = K(i,j);
 
 }
-void Kernel::MaxPixel(double &xmax, double &ymax)
+void Kernel::MaxPixel(double &xmax, double &ymax) const
 {
   double maxval = -1e30;
   for (int j=-hSizeY; j <= hSizeY ; ++j)
@@ -423,7 +484,7 @@ void Kernel::MaxPixel(double &xmax, double &ymax)
       }
 }
 
-void Kernel::MinPixel(double &xmin, double &ymin)
+void Kernel::MinPixel(double &xmin, double &ymin) const
 {
   double minval = 1e30;
   for (int j=-hSizeY; j <= hSizeY ; ++j)
@@ -459,6 +520,12 @@ void Kernel::FillWithGaussian(const double &xc, const double &yc,
 	double y = double(j-yc);
 	(*this)(i,j) = exp(x*x*alphax + y*y*alphay + x*y*alphaxy)*norm;
       }
+}
+
+ostream& operator << (ostream& stream, const Kernel& k)
+{
+  stream << " hSizeX = " << k.hSizeX  << " hSizeY = " << k.hSizeY;
+  return stream;
 }
 
 

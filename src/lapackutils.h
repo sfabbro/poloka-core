@@ -15,6 +15,9 @@ int SpdSolveAndInvert(LaGenMatDouble &A, LaVectorDouble &x, const LaVectorDouble
 //! solve and replace without copying
 int SpdSolveAndInvert(LaGenMatDouble& A, LaVectorDouble &b, const bool invert=true);
 
+int SpdSolve(LaGenMatDouble& A, LaVectorDouble &b);
+int SpdInvert(LaGenMatDouble& A);
+
 //! A += B for matrices
 inline void operator += (LaGenMatDouble &A, const LaGenMatDouble &B);
 

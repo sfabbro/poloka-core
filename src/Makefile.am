@@ -119,7 +119,7 @@ libtoads_la_SOURCES = \
                               convtemplate.h \
   kernelfit.cc                kernelfit.h \
   psfmatch.cc                 psfmatch.h  \
-  \
+  lapackutils.cc	      lapackutils.h \
   newsub.cc                   newsub.h    \
   night.cc                    night.h     \
                               nightelement.h
