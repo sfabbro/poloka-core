@@ -12,14 +12,18 @@
 #define DEBUG_PsfMatch
 
 //both images are supposedly already registered (i.e. aligned)
-PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch)
+PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch, bool nospwap)
 {
   shouldNotDeleteFit = false;
   refName = Ref.Name();
   newName = New.Name();
   if (APreviousMatch) { fit = APreviousMatch->fit; shouldNotDeleteFit = true;}
   else fit = NULL;
-  if(false) { // we don't want to change this
+  if(noswap) {
+    best = &Ref;
+    worst = &New;
+    cout << " PsfMatch between " << Ref.Name() << "(ref=best) and " << New.Name() << " (new)" << endl; 
+  }else {
     ref_is_best = (Ref.Seeing() <= New.Seeing());
     if (ref_is_best)
       {
@@ -31,9 +35,11 @@ PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMa
 	best = &New;
 	worst = &Ref;
       }
+    cout << " PsfMatch between " << Ref.Name() << "(ref) and " << New.Name() << " (new) : " 
+	 << best->Name()  << " is the best one" << endl;
   }
-  cout << " PsfMatch between " << Ref.Name() << "(ref) and " << New.Name() << " (new) : " 
-       << best->Name()  << " is the best one" << endl;
+  
+
   photomRatio=1;
   seeing = worst->Seeing();
   sigmaBack = 0;

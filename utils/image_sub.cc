@@ -41,7 +41,7 @@ int main(int nargs, char **args)
     sub.MakeFits();
     oo <<*(sub.GetKernelFit());
   }else{
-    PsfMatch psfmatch(*refimage,*newimage);
+    PsfMatch psfmatch(*refimage,*newimage,NULL,true);
     psfmatch.FitKernel(true);
     oo << *(psfmatch.GetKernelFit());
   }

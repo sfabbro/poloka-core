@@ -27,7 +27,7 @@ public:
   string NotFilteredStarListName();
 
   //!
-  PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch = NULL);
+  PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch = NULL, bool noswap=false);
   ~PsfMatch();
   PsfMatch(const PsfMatch &Original);
   PsfMatch();
