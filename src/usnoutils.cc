@@ -806,6 +806,18 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 		 << " after removing bad objects" << std::endl;
     }
 
+
+  int ngoodImageObjects = 0;
+  for (SEStarCIterator i = sestarlist.begin(); i !=sestarlist.end(); ++i )
+    {
+      const SEStar &s = **i;
+      if (s.FlagBad() || s.Flag()) continue;
+      ngoodImageObjects++;
+    }
+  cout << "number of image objects with flag=0 and flagbad=0 " 
+       << ngoodImageObjects << endl;
+  
+
   // if requested, remove saturated stars
   if (MatchPrefs.ignoreSatur)
     {
@@ -867,7 +879,11 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   cout << " collected " << nMatches << " matches with tolerance " 
        << MatchPrefs.linMatchCut << " arcsec " << endl;
 
-  if (nMatches < 0.2*usnoList.size())
+  int minMatchCount = int(min(0.2*usnoList.size(), ngoodImageObjects*0.5));
+
+  
+
+  if (nMatches < minMatchCount)
     {
       cout << " refined failed, giving up " << endl;
       return false;
