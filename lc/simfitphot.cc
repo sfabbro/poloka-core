@@ -135,7 +135,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
     cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
 #endif
     zeFit.FitInitialGalaxy(); // first fit inital galaxy
-    //zeFit.write("sn_init0",dir,WriteGalaxy|WriteVignetsInfo|WriteMatrices);
+    zeFit.write("sn_init",dir,WriteGalaxy);
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
 #endif

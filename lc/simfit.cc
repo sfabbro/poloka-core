@@ -1304,6 +1304,15 @@ void SimFit::FitInitialGalaxy() {
 #ifdef FNAME
   cout << " > SimFit::FitInitialGalaxy()" << endl;  
 #endif
+  int nzero=0;
+  for (SimFitVignetIterator it=begin(); it != end(); ++it) {
+    if(!((*it)->FitFlux))
+      nzero ++;
+  }
+  cout << "using " << nzero << " exposures for reference (in FitInitialGalaxy)" << endl;
+  if(nzero==0) {
+    abort();
+  }
   SetWhatToFit(FitGal);
   dont_use_vignets_with_star = true;
   DoTheFit();

@@ -1,5 +1,5 @@
 #include <psfmatch.h>
-
+ 
 #include "simfitvignet.h"
 
 // for kernel persistence
@@ -486,6 +486,7 @@ void SimFitVignet::UpdateResid_psf_gal()
 {
 #ifdef FNAME
   cout << " > SimFitVignet::UpdateResid_psf_gal() : convolving Psf, Galaxy and updating residuals " << endl;
+  cout << "Ref.Galaxy(0,0) = " << VignetRef->Galaxy(0,0) << endl;
 #endif
   
   SimFitRefVignet& Ref = *VignetRef;
