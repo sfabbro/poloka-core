@@ -188,6 +188,9 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
 	worst_kernel = (*itVig)->Kern.HSizeY();
     }
   
+  // 2.3548*sigma = full-width at half-maximum [2.3548 = 2.*sqrt(2*log(2.))]
+  // seeing (from sextractor SESEEING) is sigma in pixel units
+  
   // radius is the size of the reference vignet
   int radius = int(ceil(2.3548*worst_seeing+worst_kernel)); 
   // minscale  = min_radius/radius (min_radius is used for fitting the position)
