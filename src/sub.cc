@@ -572,7 +572,7 @@ int Sub::DoIt()
   for (unsigned i=0; i<AllNew.size(); ++i)
     {
       NewStack &stack = AllNew[i]; 
-      if (stack.newStack == NULL )
+      if (stack.newStack == NULL ) // regular mode, or MC mode in SwarpKind
 	{
 	  cerr << "Processing " << stack.Name() << endl ;
 	  stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
@@ -580,23 +580,31 @@ int Sub::DoIt()
 	}
       else
 	{
-	  // we are in fact in MC mode, and the stack.newStack
-	  // ImageSum Has already been prepared.
-	  // the type should be RegularKind
+	  // MC mode, in RegularKind
 	  cerr <<"Processing  in MC mode " << stack.Name() << endl ;
 	  if (stack.stackType != RegularKind)
 	    cerr <<"Error, bad stackType" << endl ;
-	  (stack.newStack)->Execute(DoFits | DoSatur | DoWeight);
+	  // pas de SExtractor sur MCnewi
+	  (stack.newStack)->Execute(DoFits | DoSatur | DoWeight); 
 	  stack.newStack->FlagDiffractionSpikes(); //util?
 	}
       
+      if ( stack.original_newStack != NULL )
+	{
+	  // le fits du stack new est fait. on recupere le seeing du stack new d'origine
+	  cerr <<"Getting SESEEING value for : " << stack.Name()
+	       << " from : " <<  stack.original_newStack->Name() << endl ;
+	  string comment = "Seeing from " +  stack.original_newStack->Name() ;
+	  stack.newStack->SetSeeing(stack.original_newStack->Seeing(), comment.c_str());
+	}
       if ( stack.original_sub == NULL )
-	{	  
+	{
+	  cerr <<"Building Subtraction " << stack.SubName() << endl ;
 	  stack.sub = new ImageSubtraction(stack.SubName(), RefStack, stack.newStack);
 	}
       else
 	{
-	  cerr << "using a previous PsfMatch to build " << stack.SubName() <<  endl ;
+	  cerr << "using a previous PsfMatch to build Subtraction " << stack.SubName() <<  endl ;
 	  stack.sub = new ImageSubtraction(stack.SubName(), 
 					     RefStack, 
 					     stack.newStack,
@@ -613,8 +621,19 @@ int Sub::DoIt()
     {
       ReducedImageList allAlignedNew(false);
       GetAllComponents(AllNew,allAlignedNew);
-      GlobalNew = new ImageSum(GlobalNewName(),allAlignedNew, RefStack);
-      GlobalNew->Execute(DoFits + DoCatalog);
+      GlobalNew = new ImageSum(GlobalNewName(),allAlignedNew, RefStack);     
+      if (Original_New != NULL )
+	{ 
+	  // on recupere le seeing du stack new d'origine
+	  GlobalNew->Execute(DoFits); // pas de SExtractor sur MCnew.
+	  cerr <<"Getting SESEEING value for : " << GlobalNewName()
+	       << " from : " <<  Original_New->Name() << endl ;
+	  string comment = "Seeing from " + Original_New->Name() ;
+	  GlobalNew->SetSeeing(Original_New->Seeing(), comment.c_str());	  
+	}
+      else
+	 GlobalNew->Execute(DoFits + DoCatalog);
+
       if (Original_Sub == NULL ) // kernel fit wasn't done before
 	GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, GlobalNew);
       else
@@ -684,6 +703,7 @@ void Sub::RunDetection()
 {
   DetectionList detsOnGlobal;
   GlobalSub->RunDetection(detsOnGlobal);
+  cerr << "Numbers of Detection on  " <<  GlobalSubName() << " : " << detsOnGlobal.size() << endl ;
   if (AllNew.size() == 1) return; // no need to redo the same thing
   BaseStarList *positions = Detection2Base(&detsOnGlobal);
   MatchedDetectionList matchedDetections(detsOnGlobal);

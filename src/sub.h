@@ -23,6 +23,7 @@ public :
   string name;
   string Name() const { return name;}
   ReducedImageRef newStack; // will points in fact on an ImageSum.
+  ReducedImageRef original_newStack; 
   ImageSubtractionRef sub; // inherits from the PSFMatch
   ImageSubtractionRef original_sub;
   StackType stackType;
@@ -66,6 +67,7 @@ protected :
   bool onlyOneSub;
   bool detectOnAllSub;
   ReducedImageRef RefStack;
+  ReducedImageRef Original_New;
   ImageSubtractionRef GlobalSub;
   ImageSubtractionRef Original_Sub;
   ReducedImageRef GlobalNew; // en fait une ImageSum en pratique.
