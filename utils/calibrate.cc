@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
     //keep a link between the two of them
     assocs[(RefStar*)rstar] = cstar;
-    //if(count_ok>10)
+    //if(count_ok>0)
     //break;
   }
   
