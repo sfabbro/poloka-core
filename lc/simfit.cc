@@ -16,7 +16,7 @@ static void resize_vec(double* &vec, const int n)
 #ifdef FNAME
   cout << " > resize_vec(double* &vec, const int n), vec= " << vec << " n= " << n << endl; 
 #endif
-  if (vec) delete [] vec;
+  if (vec) delete[] vec;
   vec = new double[n];
 }
 
@@ -40,7 +40,8 @@ static int cholesky_solve(double *a, double *b, int n)
   cout << " >  cholesky_solve" << endl;
 #endif  
   int nhrs = 1, info = 0;
-  dposv_("L", &n, &nhrs, a, &n, b, &n, &info);
+
+  dposv_("U", &n, &nhrs, a, &n, b, &n, &info);
 
   if (info != 0) 
     cerr << " cholesky_solve(" << a << "," << b << "," << n
@@ -54,7 +55,9 @@ static int cholesky_invert(double *a, int n)
 {  
   int info = 0;
 
-  dpotri_("L", &n, a, &n, &info);
+  //  Now invert using the factorization done in dposv_
+
+  dpotri_("U", &n, a, &n, &info);
 
   if (info != 0) 
     cerr << " cholesky_invert(" << a << "," << n
@@ -391,6 +394,7 @@ void SimFit::FillMatAndVec()
 
   if (fit_sky)             fillSkySky();
 
+  /* no need to symmetrize the matrix
 #ifdef DEBUG
   cout << "   in SimFit::FillMatAndVec() : Symmetrizing matrix" << endl;
 #endif
@@ -402,7 +406,7 @@ void SimFit::FillMatAndVec()
 #ifdef DEBUG
   //DumpMatrices();
 #endif
-
+  */
 }
 
 int SimFit::galind(const int i, const int j) const
@@ -1349,10 +1353,6 @@ double SimFit::oneNRIteration(double OldChi2)
 #endif
   FillMatAndVec();
 
-  ofstream mat("mat.dat");
-  DumpMatrices(mat);
-  mat.close();
-
   solved = (cholesky_solve(Mat,Vec,nparams) == 0);
   //#include <vutils.h>
   //solved = MatSolve(Mat,nparams,Vec);
@@ -1443,7 +1443,7 @@ bool SimFit::GetCovariance()
     }
 
   cout << " SimFit::GetCovariance() : starting" << endl;
-
+  
   // someday we should recompute the covariance ala MINOS
 
   int status = cholesky_invert(Mat,nparams);
