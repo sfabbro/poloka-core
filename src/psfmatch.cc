@@ -12,52 +12,61 @@
 #define DEBUG_PsfMatch
 
 //both images are supposedly already registered (i.e. aligned)
-PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch, bool noswap)
+PsfMatch::PsfMatch(const ReducedImageRef Ref, const ReducedImageRef New, const PsfMatch *APreviousMatch, bool noswap)
 {
-  shouldNotDeleteFit = false;
-  refName = Ref.Name();
-  newName = New.Name();
-  if (APreviousMatch) { fit = APreviousMatch->fit; shouldNotDeleteFit = true;}
-  else fit = NULL;
-  if(noswap) {
-    best = &Ref;
-    worst = &New;
-    cout << " PsfMatch between " << Ref.Name() << "(ref=best) and " << New.Name() << " (new)" << endl; 
-  }else {
-    ref_is_best = (Ref.Seeing() <= New.Seeing());
-    if (ref_is_best)
-      {
-	best = &Ref;
-	worst = &New;
-      }
-    else
-      {
-	best = &New;
-	worst = &Ref;
-      }
-    cout << " PsfMatch between " << Ref.Name() << "(ref) and " << New.Name() << " (new) : " 
-	 << best->Name()  << " is the best one" << endl;
-  }
+   refName = Ref->Name();
+  newName = New->Name();
+  if (APreviousMatch) 
+    { 
+      fit = APreviousMatch->fit;
+      if (fit == NULL ) cerr <<"ERREUR in PSFMatch, null pointeur. " << endl ;
+    }
+  if(noswap) 
+    {
+      best = Ref;
+      worst = New;
+      cout << " PsfMatch between " << Ref->Name()
+	   << "(ref=best) and " << New->Name() << " (new)" << endl; 
+    }
+  else 
+    {
+
+      ref_is_best = (Ref->Seeing() <= New->Seeing());
+      if (ref_is_best)
+	{
+	  best = Ref;
+	  worst = New;
+	}
+      else
+	{
+	  best = New;
+	  worst = Ref;
+	}
+      cout << " PsfMatch between " << Ref->Name() << "(ref) and " << New->Name() << " (new) : " 
+	   << best->Name()  << " is the best one" << endl;
+    }
   
 
   photomRatio=1;
   seeing = worst->Seeing();
   sigmaBack = 0;
-  intersection = Ref.UsablePart() * New.UsablePart();
+  intersection = Ref->UsablePart() * New->UsablePart();
 }
 
+#ifdef STORAGE // specialement moche
 PsfMatch::PsfMatch(const PsfMatch &Original)
 {
   memcpy(this, &Original, sizeof(Original));
   //  this->fit = new KernelFit(*Original.fit); just does not work because KernelFit's default copy cannot work;
   shouldNotDeleteFit = true;
 }
+#endif
 
 PsfMatch::PsfMatch() // needed by any IO system
 {
-  fit = NULL;
-  best = (ReducedImage*)NULL;
-  worst = (ReducedImage*)NULL;
+  //fit = NULL; initialise par le constructeur de CountedRef
+  //best = NULL; idem
+  //worst = NULL;idem
 }
 
 PsfMatch::~PsfMatch()
@@ -68,7 +77,7 @@ PsfMatch::~PsfMatch()
       // yes because in most cases PsfMatch allocated them.
       if (fit->WorstImage) delete (fit->WorstImage);
       if (fit->BestImage) delete (fit->BestImage);
-      delete fit; 
+      //delete fit; + necessaire avec KernelFitRef
     }
 }
 
@@ -140,13 +149,14 @@ int PsfMatch::FilterStarList(const double MaxDist)
 
 static double sqr(const double &x) { return x*x;}
 
-static KernelFit* init_and_do_the_fit(const BaseStarList& objectsUsedToFit, 
-				      const ReducedImage *best,
-				      const ReducedImage *worst,
-				      const Image* BestImage = NULL,
-				      const Image* WorstImage = NULL)
+static KernelFitRef 
+init_and_do_the_fit(const BaseStarList& objectsUsedToFit, 
+		    const ReducedImage *best,
+		    const ReducedImage *worst,
+		    const Image* BestImage = NULL,
+		    const Image* WorstImage = NULL)
 {
-  KernelFit *fit = new KernelFit;
+  KernelFitRef fit = new KernelFit;
 
   cout << " Entering KernelFit between " << best->Name() << " and " << worst->Name() << endl;
 
@@ -180,7 +190,8 @@ static KernelFit* init_and_do_the_fit(const BaseStarList& objectsUsedToFit,
     {
       if (BestImage) delete fit->BestImage;
       if (WorstImage) delete fit->WorstImage;
-      delete fit; fit = NULL;
+      //delete fit; fit = NULL;
+      fit = KernelFitRef() ;
     }
   return fit;
 }
@@ -212,10 +223,8 @@ bool PsfMatch::FitKernel(const bool KeepImages)
     objectsUsedToFit.write(best->Name()+worst->Name()+".fit.list");
   cout << " Frame limits for the fit: " << intersection;
 
-  if (fit) delete fit;
-
-  KernelFit *direct_fit = init_and_do_the_fit(objectsUsedToFit,best,worst);
-  fit = direct_fit;
+  KernelFitRef direct_fit = init_and_do_the_fit(objectsUsedToFit,best,worst);
+  fit = direct_fit; // le precedent fit est delete au decrochage
 
   // HERE IS THE CUT FOR THE SWAP OF IMAGES WHEN SEEINGS ARE CLOSE BY
   // I put the cut at 4 which is 3 sigmas from the mean of chi2 distribution
@@ -227,7 +236,7 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   if (false)
     {
       cout << " bad_direct_fit : trying swapped one (best<->worst)" << endl;
-      KernelFit *reversed_fit = 
+      KernelFitRef reversed_fit = 
 	init_and_do_the_fit(objectsUsedToFit,worst, best, 
 			    direct_fit ? direct_fit->WorstImage: NULL,
 			    direct_fit ? direct_fit->BestImage : NULL);
@@ -236,14 +245,16 @@ bool PsfMatch::FitKernel(const bool KeepImages)
 	{
 	  cout << " keeping swapped fit" << endl;
 	  fit = reversed_fit;
-	  delete direct_fit;
+	  //delete direct_fit;
+	  direct_fit = KernelFitRef() ; // ie equiv. to direct_fit = NULL.
 	  swap(worst,best);
 	  ref_is_best = !ref_is_best;
 	}
       else
 	{
 	  cout << " forget the swapped fit, keeping direct one " << endl;
-	  delete reversed_fit;
+	  //delete reversed_fit;
+	  reversed_fit = KernelFitRef()  ;
 	}
     }
 
@@ -289,8 +300,8 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   // free image memory if requested;
   if (!KeepImages)
     {
-      delete fit->WorstImage; fit->WorstImage = NULL;
-      delete fit->BestImage ; fit->BestImage =  NULL;  
+      if (fit->WorstImage) delete fit->WorstImage; fit->WorstImage = NULL;
+      if (fit->BestImage) delete fit->BestImage ; fit->BestImage =  NULL;  
     }
   return true;
 }
@@ -475,8 +486,8 @@ bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
        << zero_point << " propagated to sub. " << endl ;
   RImage.SetZZZeroP(zero_point, "as taken from reference stack");
 
-  delete fit->WorstImage; fit->WorstImage = NULL;
-  delete fit->BestImage ; fit->BestImage =  NULL;
+  if (fit->WorstImage) delete fit->WorstImage; fit->WorstImage = NULL;
+  if (fit->BestImage) delete fit->BestImage ; fit->BestImage =  NULL;
   quali_plots(Ref(), New(), &subImage, RImage.Dir()+"/qual.log");
   return true;
 }
@@ -485,7 +496,9 @@ bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
 void PsfMatch::KernelToWorst(Kernel &Result, const double &x, const double &y) const
 {
   if (!fit) {cerr << " PsfMatch::KernelToWorst : fit does not exist yet" << endl;}
-  Result = Kernel(fit->HKernelSizeX(), fit->HKernelSizeY());
+  int HSizeX = fit->HKernelSizeX(); 
+  int HSizeY = fit->HKernelSizeY();
+  Result = Kernel(HSizeX, HSizeY);
   fit->KernCompute(Result, x, y); 
 }
 
