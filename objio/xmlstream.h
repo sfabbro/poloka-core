@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.7 2004/03/05 12:03:35 nrl Exp $
+// $Id: xmlstream.h,v 1.8 2004/03/07 01:04:01 nrl Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -53,6 +53,8 @@ public:
   inline void     read(float4& v) const;
   inline void     read(float8& v) const;
   inline void     read(std::string&) const;
+  
+  //  inline void     printCurrentNode() const;
   
   template<class T>
   inline void     read(T*&) const;
@@ -272,6 +274,14 @@ void xmlstream::skip() const
   nextClosingTag_();
 }
 
+
+//void xmlstream::printCurrentNode() const
+//{
+//  assert_reader_ok;
+//  xmlChar const* nm = xmlTextReaderConstName(reader_);
+//  std::cout << "xmlstream::printCurrentNode(): "
+//	    << (const char*)nm << endl;
+//}
 
 
 void xmlstream::write_start_object_tag(const std::string& name, unsigned int version)

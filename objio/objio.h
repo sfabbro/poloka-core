@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.11 2004/03/06 23:15:43 nrl Exp $
+// $Id: objio.h,v 1.12 2004/03/07 01:04:00 nrl Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/06 23:15:43 $
+// Last modified: $Date: 2004/03/07 01:04:00 $
 // by:            $Author: nrl $
 // 
 #ifndef OBJIO_H
@@ -239,13 +239,13 @@ obj_output<IOS>& operator<<(obj_output<IOS>& oo, std::map<T,U> const& m)
 template<class IOS, class T>
 obj_output<IOS>& operator<<(obj_output<IOS>& oo, CountedRef<T> const& cr)
 {
-  oo.write(cr,name); return oo;
+  oo.write(cr); return oo;
 }
 
 template<class IOS>
 obj_output<IOS>& operator<<(obj_output<IOS>& oo, RefCount const& cr)
 {
-  oo.write(cr,name); return oo;
+  oo.write(cr); return oo;
 }
 
 
@@ -405,18 +405,22 @@ public:
   template<class T>
   void         read(CountedRef<T>& r) const {
     void* addr;
+    cout << "about to read the reference tag:" << endl;
     stream_.read_start_reference_tag(addr);
-    T* pt = (T*)check_address_(addr);
+    cout << "read CountedRef: addr=" << addr << endl;
+    T* pt = dynamic_cast<T*>(check_address_(addr));
     if(pt) {
       CountedRef<T> tmp(pt);
       r = tmp; // FIXME: nrl: check that a countedref can be copied
     }
     else {
       pt = new T;
-      oi >> *pt;
+      *this >> *pt;
       CountedRef<T> tmp(pt);
       r = tmp;
+      register_address_(addr,pt);
     }
+    stream_.read_end_reference_tag();
   }
   
   
@@ -440,6 +444,32 @@ public:
 
 private:
   IOS stream_;
+  
+  mutable std::map<void const*,RefCount*> addr_;
+  
+  RefCount* check_address_(void const* file_addr) const {
+    cout << "check_address_: addr=" << file_addr << endl;
+    std::map<void const*,RefCount*>::iterator it;
+    it = addr_.find(file_addr);
+    if(it==addr_.end()) {
+      cout << " not found..." << endl;
+      return (RefCount*)0;
+    }
+    else {
+      cout << " foud: " << it->second << endl;
+      return it->second;
+    }
+  }
+  
+  void register_address_(void const* file_addr, RefCount const* addr) const {
+    std::map<void const*,RefCount*>::iterator it;
+    it = addr_.find(file_addr);
+    if(it==addr_.end())
+      addr_[(void const*)file_addr]=const_cast<RefCount*>(addr);
+    else
+	// should never happen. We should throw an exc. here (!)
+	std::cout << "obj_input: addr already registered!" << std::endl;
+  }
 };
 
 

@@ -110,6 +110,21 @@ public:
 };
 
 
+
+
+// define_template_args StarList<T>
+// make_persister_for StarList<Star>
+template<class T>
+class StarList : public std::list<CountedRef<T> > {
+  CLASS_VERSION(StarList,5);
+  #define StarList_is_persistent
+public:
+  StarList() {}
+  StarList(Star const& r) {}
+  ~StarList() {}
+};
+
+
 #endif
 
 
