@@ -92,7 +92,9 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   star->B() = obj->b  ;
   star->Gyr_Angle() = obj->theta   ;
   star->Flag() = obj->flag  ;
-  star->FlagBad() = obj->imanflag[0] ;
+  // imanflag denotes the number of flagged pixels that this object
+  // used. we convert it to a binary flag 0 or 1.
+  if (obj->imanflag[0] != 0)  star->FlagBad() = 1;
   star->Cstar() = obj2->sprob  ;
   star->Xtrunc() = obj->mxtrunc  ;
   star->Ytrunc() = obj->mytrunc  ;
@@ -225,9 +227,14 @@ sex_proc(const AllForSExtractor & data,
   
   prefs.user_ana = StarFill; 
   if ( pmask != NULL)
-    prefs.user_ana2 = MaskFill;  
+    {
+      prefs.user_ana2 = MaskFill;  
+      cout << " We will create satur mask from sextractor pixel lists"<< endl;
+    }
 
+  
   prefs.satur_level = data.saturation ;
+  cout << "saturation provided to sextractor : " << prefs.satur_level  << std::endl;
   // detection level and photometric level in number of sigmas
   // they wiil be converted by SExtractor in photons,
   // using the sigma it will compute.
