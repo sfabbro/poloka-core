@@ -11,6 +11,8 @@ extern long random(void);
 
 #include "image.h"
 
+#include <cmath> 
+
 void RandomSeed()
 {
   struct timeval now;
