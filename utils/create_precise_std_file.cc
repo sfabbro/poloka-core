@@ -16,7 +16,7 @@ int main(int argc, char **argv)
   if (!env_var)
     {
       cerr << " you should define STANDARDFILE env var to run this code " << endl;
-      return NULL;
+      return -1;
     }
   string standardfile(env_var);
 
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
   if (stdstarlist.size()==0)
     {
       cout << "Bad standard file !!!" << endl;
-      return NULL;
+      return -1;
     }
 
   for (StandardStarIterator si = stdstarlist.begin(); si != stdstarlist.end(); ++si)

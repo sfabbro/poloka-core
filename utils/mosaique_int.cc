@@ -1,9 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
-#include <fstream.h>
+#include <fstream>
 #include <getopt.h>
-#include <string.h>
+#include <string>
 
 #include "fileutils.h"
 #include "fitsimage.h"

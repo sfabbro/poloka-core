@@ -1,5 +1,5 @@
 #include <iostream>
-#include <iomanip.h>
+#include <iomanip>
 #include "reducedimage.h"
 #include "fileutils.h"
 #include "fitsimage.h"
@@ -74,6 +74,6 @@ int main(int nargs, char **args)
       cout << "  " << current->Target() << endl;
     }
   cout << setprecision(old); 
-  cout.flags(f);
+  //cout.flags(f);
   return EXIT_SUCCESS;
 }
