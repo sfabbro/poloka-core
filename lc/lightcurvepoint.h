@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <math.h>
+
 
 #include "countedref.h"
 #include "persistence.h"
