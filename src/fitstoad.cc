@@ -569,10 +569,14 @@ Frame VirtualInstrument::TotalIlluRegion(const FitsHeader &Head) const
 
 Frame VirtualInstrument::OverscanRegion(const FitsHeader &Head, const int Iamp) const
 {
-  string keyval = Head.KeyVal("BIASSEC");
-  Frame result;
-  fits_imregion_to_frame(keyval, result);
-  return result;
+  if (Head.HasKey("BIASSEC"))
+    {
+      string keyval = Head.KeyVal("BIASSEC");
+      Frame result;
+      fits_imregion_to_frame(keyval, result);
+      return result;
+    }
+  else return Frame();
 }
 
 double VirtualInstrument::AmpGain(const FitsHeader &Head, const int Iamp) const
