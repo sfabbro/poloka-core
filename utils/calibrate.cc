@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 
     count_total++;
     
-    if(entry->Value("level")<requiredlevel)  continue; // not a star with correct level 
+    if(int(entry->Value("level"))<requiredlevel)  continue; // not a star with correct level 
     mag=entry->Value(mag_key);
     
     count_total_stars++;
