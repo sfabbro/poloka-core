@@ -3,6 +3,7 @@
 
 #include "psfmatch.h"
 #include "fitsimage.h"
+#include "imagesubtraction.h"
 
 // for io
 #include "kernelfit_dict.h"
@@ -24,16 +25,32 @@ int main(int nargs, char **args)
   // if nothing is given
   if (nargs < 3){usage(args[0]);}
   
+  bool makesub = false;
+  
   CountedRef<ReducedImage> refimage = new ReducedImage(args[1]);
   CountedRef<ReducedImage> newimage = new ReducedImage(args[2]);
-  PsfMatch psfmatch(*refimage,*newimage);
-  psfmatch.FitKernel(true);
-  //ReducedImage sub("sub");
-  //psfmatch.Subtraction(sub);
+
+  const KernelFit* kernel=0;  
+  if(makesub) {
+    ImageSubtraction sub("sub",*refimage,*newimage);
+    sub.MakeFits();
+    kernel = sub.GetKernelFit();
+  }else{
+    PsfMatch psfmatch(*refimage,*newimage);
+    psfmatch.FitKernel(true);
+    kernel = psfmatch.GetKernelFit();
+  }
+
+  if(!kernel) {
+    cout << "aie aie aie" << endl;
+    exit(-1);
+  }
+
+  // write kernel in xml file
   string outputfilename = newimage->Dir()+"/kernel_from_"+refimage->Name()+".xml";
   cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl;
   obj_output<xmlstream> oo(outputfilename);
-  oo << *(psfmatch.GetKernelFit());
+  oo << *kernel;
   oo.close();
   cout << "the end" << endl;
   
