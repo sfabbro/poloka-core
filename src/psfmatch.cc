@@ -6,6 +6,7 @@
 #include "kernelfit.h"
 #include "sestar.h"
 #include "fastfinder.h"
+#include "reducedutils.h"
 
 
 #define DEBUG_PsfMatch
@@ -238,10 +239,21 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   photomRatio = fit->KernAtCenterSum;
   if (!ref_is_best) photomRatio = 1.0/photomRatio;
   sigmaBack = sqrt(sqr(best->SigmaBack()*photomRatio) + sqr(worst->SigmaBack()));
-  cout << "PsfMatch_SUMMARY_best_worst_photomratio_nstamps_chi2/dof " 
+  
+  // compute sextractor photom-ratio to check everything was ok
+  double sexRatio = 0;
+  {
+    const SEStarList best_sexCat(best->CatalogName());
+    const SEStarList worst_sexCat(worst->CatalogName());
+    const BaseStarList *best_cat = SE2Base(&best_sexCat);
+    const BaseStarList *worst_cat = SE2Base(&worst_sexCat);
+    sexRatio = MedianPhotomRatio(*worst_cat,*best_cat);
+  }
+  cout << "PsfMatch_SUMMARY_best_worst_kernelphotomratio_sextractorratio_nstamps_chi2/dof " 
        << best->Name() << " "
        << worst->Name() << " "
        << photomRatio << " "
+       << sexRatio << " "
        << fit->NStampsUsed() << " "
        << fit->chi2 << " "
        << endl;
