@@ -5,8 +5,6 @@
 #include <iostream>
 #include "point.h"
 
-#include "persistence.h"
-
 class Gtransfo;
 typedef enum {WholeSizeFrame, ClippedSizeFrame} WhichFrame;
 
@@ -18,7 +16,13 @@ class Image;
 //! rectangle with sides parallel to axes.
 /*! when Frame's are used to define subparts of images, xMin and xMax refer
   to the first and last pixels in the subimage */
+
+#include "persistence.h"
 class Frame {
+  
+  CLASS_VERSION(Frame,1);
+  #define Frame__is__persistent
+
 public:
   //! coordinate of boundary.
   double xMin,xMax,yMin,yMax;
@@ -105,9 +109,6 @@ public:
   
 private:
   void order();
-  
-  CLASS_VERSION(Frame,1);
-  #define Frame__is__persistent
 };
 
 

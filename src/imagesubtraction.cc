@@ -20,37 +20,33 @@ des ref et new (pour pouvoir recharger aisement)
 
 string SubtractedName(const string &RefName, const string &NewName) {return NewName+'-'+RefName;}
 
-ImageSubtraction::ImageSubtraction(const string &Name, const ReducedImage &RefImage, const ReducedImage &NewImage) : ReducedImage(Name), PsfMatch(RefImage, NewImage)
+ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef RefImage,  const ReducedImageRef NewImage) : ReducedImage(Name), PsfMatch(RefImage, NewImage)
 {
   if (!FileExists(Name))
     Create("here");
 }
 
-ImageSubtraction::ImageSubtraction(const string &Name, const ReducedImage &RefImage, const ReducedImage &NewImage, const PsfMatch *AMatch) :
+ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef  RefImage,  const ReducedImageRef NewImage, const PsfMatch *AMatch) :
   ReducedImage(Name), PsfMatch(RefImage,NewImage,AMatch)
 {
   Create("here");
 }
 
-// this is the constructor for an already existing image
-ImageSubtraction::ImageSubtraction(const string &Name) 
-  : ReducedImage(Name), PsfMatch(ReducedImage(Name.substr(Name.find('-')+1,Name.length())),
-				 ReducedImage(Name.substr(0,Name.find('-'))))
-				 
+ImageSubtraction::ImageSubtraction()
 {
-  
-}
+} 
 
-#ifdef STORAGE				 
-ImageSubtraction::ImageSubtraction(const string &Name, const string &NameRef, const string &NameSub) 
-  : ReducedImage(Name), PsfMatch(ReducedImage(NameRef),
-				 ReducedImage(NameSub))
-				 
+
+// this is the constructor for an already existing image
+#ifdef STORAGE
+ImageSubtraction::ImageSubtraction(const string &Name)
 {
-  
+  ReducedImageRef ref = new  ReducedImage(Name.substr(Name.find('-')+1,Name.length()));
+  ReducedImageRef nouv = new  	ReducedImage(Name.substr(0,Name.find('-'))) ;
+  ImageSubtraction(Name,ref,nouv);
 }
-				 
 #endif
+
 
 bool ImageSubtraction::Create(const string &Where)
 {
@@ -103,7 +99,7 @@ bool ImageSubtraction::MakeFits()
 		      " subtracted unweighted background");
       sub.AddOrModKey("BACKMESH", backMesh, 
 		      " mesh size used for back computation " );
-      delete pweight;
+      if (pweight) delete pweight;
       return true;
     }
   cerr << " ERROR : for ImageSubtraction " << Name() << endl

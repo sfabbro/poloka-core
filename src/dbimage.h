@@ -2,11 +2,7 @@
 #ifndef DBIMAGE__H
 #define DBIMAGE__H
 
-#ifndef BISON_PARSER
-#ifndef YYBISON
-#include "persistence.h"
-#endif
-#endif
+
 
 /*! \file dbimage.h
 \brief documentation for the DbImage class and the \ref dbconfig file, and more
@@ -84,15 +80,20 @@ class Path;
 
 
 
-class DbImage 
-{
+#include "countedref.h"
 
-#ifndef BISON_PARSER 
-  CLASS_VERSION(DbImage,1);
-#endif
-#define Dbimage__is__persistent
+#include <persistence.h>
+
+class DbImage : public RefCount
+{
+ 
 
 private :
+
+  CLASS_VERSION(DbImage,1);
+#define Dbimage__is__persistent
+
+
   string imageName;
   string directory;//!
   bool create(const string &ActualPath);
@@ -104,7 +105,7 @@ protected :
 
 public :
 
-  
+ 
   //! a constructor: its argument is a unique image identifier (eg r124280). 
   explicit DbImage(const string &ImageName);
   
@@ -196,9 +197,10 @@ public :
   bool Create(const string &Path);
     
   /* a somehow generic entry for all the above ones */
-  string GetFileName(const char* WhichFile) const;
+  string GetFileName(const char* WhichFile) const; 
 
-  friend ostream& operator <<(ostream &stream, const DbImage &I) { I.dump(stream); return stream;}
+  friend ostream& operator << (ostream &stream, const DbImage &s)
+  { s.dump(stream); return stream;}
 
   void dump(ostream &stream = cout) const;
 
@@ -213,6 +215,10 @@ public :
   bool writeEverythingElse();
 
 };
+
+
+typedef CountedRef<DbImage> DbImageRef;
+
 
 #include <list>
 

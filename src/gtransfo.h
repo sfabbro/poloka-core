@@ -3,8 +3,8 @@
 // \file gtransfo.h
 // \brief Geometrical transformations (of 2D points)
 // 
-// Last modified: $Date: 2004/07/19 13:29:59 $
-// By:            $Author: astier $
+// Last modified: $Date: 2004/07/19 16:47:22 $
+// By:            $Author: hardin $
 // 
 #ifndef GTRANSFO_H
 #define GTRANSFO_H
@@ -14,7 +14,6 @@
 
 #include "point.h"
 #include "countedref.h"
-#include "persister.h"
 
 class StarMatchList;
 class Frame;
@@ -128,6 +127,7 @@ public:
 
 };
 
+typedef CountedRef<Gtransfo> GtransfoRef;
 
 //! allows 'stream << Transfo;' (by calling T.dump(stream)). 
 ostream & operator << (ostream &stream, const Gtransfo & T);
@@ -140,9 +140,14 @@ Gtransfo *GtransfoCompose(const Gtransfo *Left, const Gtransfo *Right);
 
 /*=============================================================*/
 //! A do-nothing transformation. It anyway has dummy routines to mimick a GTransfo
+
+#include "persistence.h"
+
 class GtransfoIdentity : public Gtransfo {
+
   CLASS_VERSION(GtransfoIdentity,1);
   #define GtransfoIdentity__is__persistent
+
 public:
     //! constructor.
     GtransfoIdentity() {}
@@ -187,10 +192,14 @@ class GtransfoCub;
 //! implements the linear transformations (6 real coefficients). 
 class GtransfoLin : public Gtransfo {
   
- public:
+private:
+
   CLASS_VERSION(GtransfoLin,1);
 #define GtransfoLin__is__persistent
   
+  
+ public:
+
   //! the default constructor constructs the do-nothing transformation.
   GtransfoLin() {identity();}
   
@@ -289,6 +298,8 @@ private:
 //! just here to provide a specialized constructor, and fit.
 class GtransfoLinShift : public GtransfoLin
 {
+  
+private:
   CLASS_VERSION(GtransfoLinShift,1);
 #define GtransfoLinShift__is__persistent
 
@@ -304,6 +315,8 @@ public:
 /*=============================================================*/
 //! just here to provide a specialized constructor, and fit.
 class GtransfoLinRot : public GtransfoLin {
+  
+private:
 
   CLASS_VERSION(GtransfoLinRot,1);
 #define GtransfoLinRot__is__persistent
@@ -322,6 +335,8 @@ class GtransfoLinRot : public GtransfoLin {
 
 //! just here to provide specialized constructors. GtransfoLin fit routine.
 class GtransfoLinScale :  public GtransfoLin {
+  
+private:
 
   CLASS_VERSION(GtransfoLinScale,1);
 #define GtransfoLinScale__is__persistent
@@ -347,6 +362,8 @@ class GtransfoLinScale :  public GtransfoLin {
    should not resort to the GtransfoLin ones ! 
 */
 class GtransfoQuad : public GtransfoLin {
+  
+private:
 
   CLASS_VERSION(GtransfoQuad,1);
 #define GtransfoQuad__is__persistent
@@ -456,6 +473,8 @@ struct NamedValue {
 
 //! implements the cubic transformations (20 real coefficients).
 class GtransfoCub : public GtransfoQuad {
+  
+private:
 
   CLASS_VERSION(GtransfoCub,1);
 #define GtransfoCub__is__persistent
@@ -580,11 +599,12 @@ class TanRaDec2Pix; // the inverse of TanPix2RaDec.
 
 //! the transformation that handles pix to sideral transfos (Gnomonic, possibly with polynomial distortions).
 class TanPix2RaDec : public Gtransfo {
+  
+ private:
 
   CLASS_VERSION(TanPix2RaDec,1);
 #define TanPix2RaDec__is__persistent
-  
- private:
+
     GtransfoLin linPix2Tan; // pixels to tangent plane (internally in radians)
     GtransfoQuad *corr;
     double ra0, dec0; // in radians
@@ -663,11 +683,11 @@ class TanPix2RaDec : public Gtransfo {
 
 class TanRaDec2Pix : public Gtransfo 
 {
+ private:
   
   CLASS_VERSION(TanRaDec2Pix,1);
 #define TanRaDec2Pix__is__persistent
 
- private:
     double ra0, dec0; //tangent point (internally in radians)
     double cos0,sin0;
     GtransfoLin linTan2Pix; // tangent plane to pixels (internally in radians)

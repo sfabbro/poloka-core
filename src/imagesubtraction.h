@@ -6,29 +6,39 @@
 #include "fileutils.h"
 #include "detection.h" /* for DetectionList */
 /*! \file */
-
-class KernelFit;
-
+ 
 
 string SubtractedName(const string &RefName, const string &NewName);
     
 //! For subtracting images using the Alard kernel fit technique. A basic assumption: Ref and New are already geometrically aligned.
 
+
+#include "persistence.h"
+
 class ImageSubtraction : public ReducedImage, public PsfMatch {
 
+
   private :
+
+CLASS_VERSION(ImageSubtraction,1);
+#define ImageSubtraction__is__persistent
+
     bool Create(const string &Where);
   
   public :
     //! the constructor takes a copy of both ReducedImage.
-    ImageSubtraction(const string &Name, const ReducedImage &RefImage, const ReducedImage &NewImage);
+    ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage);
 
     //! as above but uses kernel found by other means. used for fakes SN
-    ImageSubtraction(const string &Name, const ReducedImage &RefImage, const ReducedImage &NewImage, const PsfMatch *AMatch);
+    ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage, const PsfMatch *AMatch);
 
+#ifdef STORAGE
     ImageSubtraction(const string &Name);
+#endif
 
     //! Carry out the kernel fit, convolve, and outputs the subtraction image.
+    ImageSubtraction(); // necessary for persistence.
+
     bool MakeFits() ;
 
     //! 
