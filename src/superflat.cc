@@ -1003,7 +1003,7 @@ const int BackDegree)
       return 0;
     }
   XYPower backModel(BackDegree);
-  int nterms = backModel.Nterms;
+  int nterms = backModel.Nterms();
   int msize = nterms+1;
   Mat A(msize,msize);
   Vect B(msize);
