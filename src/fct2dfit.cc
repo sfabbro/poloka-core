@@ -17,6 +17,8 @@
 //#define EXPO tabFExp
 #define MINEXPM (100.)
 
+using namespace std;
+
 //================================================================
 // GeneralFunction 2D pour PSF pixel taille 1x1
 //================================================================

@@ -87,7 +87,7 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
 {
   ios::fmtflags  old_flags =  pr.flags(); 
   pr  << resetiosflags(ios::scientific) ;
-  pr  << setiosflags(0) ;
+  // pr  << setiosflags(0) ;
   pr  << setiosflags(ios::fixed) ;
   int oldprec = pr.precision();
   pr<< setprecision(8);

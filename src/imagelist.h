@@ -8,10 +8,12 @@
 
 #include "countedref.h"
 
-#include "rootstuff.h"
+//#include "rootstuff.h"
 
 
-template <class T> class ImageList : public  vector< CountedRef<T> > 
+template <class T> class ImageList :
+  public  vector<CountedRef<T> >
+  
 #ifdef USE_ROOT
 , public TObject 
 #endif /* USE_ROOT */
