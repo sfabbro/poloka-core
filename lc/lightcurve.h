@@ -44,6 +44,9 @@ public:
   //! writes on a stream a simple output with format JD FLUX DFLUX IMAGE with a header.
   void write_short(ostream &Stream = cout) const;
 
+  //! writes in an xml file the lightcurve result (with LightCurvePoint)
+  void write_xml(const string &filename) const;
+  
   //! header for extended write  
   ostream& write_header(ostream &Stream) const;
 

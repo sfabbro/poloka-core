@@ -9,7 +9,12 @@
 #include "lightcurve.h"
 #include "lcio.h"
 
-#define FNAME
+// for io
+#include "lightcurvepoint.h"
+#include "lightcurvepoint_dict.h"
+#include "objio.h"
+#include "typemgr.h"
+
 
 // instantiate
 template class Fiducial<PhotStar>;
@@ -50,7 +55,7 @@ void LightCurve::push_back(const ReducedImage* Rim)
 
 void LightCurve::write_short(ostream& Stream) const
 {
-
+ 
   double elixir_zp = computeElixirZeroPoint();
 
   ios::fmtflags oldflags = Stream.flags();
@@ -93,6 +98,43 @@ void LightCurve::write_short(ostream& Stream) const
     }
 
   Stream.flags(oldflags);
+}
+
+void LightCurve::write_xml(const string &filename) const
+{
+#ifdef FNAME
+  cout << " > LightCurve::write_xml" << endl;
+#endif
+
+  double elixir_zp = computeElixirZeroPoint();
+  
+  // fill a list of LightCurvePoint
+  std::list< CountedRef<LightCurvePoint> > lcpoints;  
+  for (LightCurve::const_iterator it = begin(); it != end(); ++it)
+    {      
+      const Fiducial<PhotStar> *fs = *it;
+      CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
+      lcp->julianday = fs->Image()->JulianDate();
+      lcp->flux = fs->flux;
+      lcp->eflux = sqrt(fs->varflux);
+      if(fs->flux < 1.e-12) {
+	lcp->mag = 99;
+	lcp->emag_minus = 0;
+	lcp->emag_plus = 0;
+      }else{
+	lcp->mag = -2.5*log10(fs->flux)+elixir_zp;
+	if((1.-sqrt(fs->varflux)/fs->flux)<0)
+	  lcp->emag_minus = -99;
+	else
+	  lcp->emag_minus = 2.5*log10(1.-sqrt(fs->varflux)/fs->flux);
+	lcp->emag_plus = 2.5*log10(1.+sqrt(fs->varflux)/fs->flux);
+      }
+      lcpoints.push_back(lcp);
+    }
+  // now write this list in a file
+  obj_output<xmlstream> oo(filename);
+  oo << lcpoints;
+  oo.close();
 }
 
 

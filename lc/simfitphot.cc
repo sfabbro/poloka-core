@@ -6,8 +6,7 @@
 #include "simfit.h"
 #include "simfitphot.h"
 
-#define FNAME
-#define DEBUG
+
 
 /*
 static bool IncSeeing(const CountedRef<ReducedImage> one, const CountedRef<ReducedImage> two)
@@ -162,7 +161,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
      ofstream lstream((string(dir+"/lc.dat")).c_str());
      Lc.write_short((ostream&)lstream);
      lstream.close();
-  
+     Lc.write_xml((string(dir+"/lc.xml")).c_str());  
   }else{
     zeFit.DoTheFit();
   }
