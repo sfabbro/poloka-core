@@ -52,7 +52,8 @@ private:
   bool fit_pos;           // whether we fit the point source position
   bool use_gal;           // one can use the galaxy model but not fit it
   bool dont_use_vignets_with_star; // this when you want to fit the galaxy only, see 
-
+  bool fatalerror; // internal bool to quit without core dump
+  
   // vector and matrices for the system Mat*Params=Vec
   Vect Vec;            // vector r.h.s and Params when solved
   Mat PMat;            // matrix l.h.s then covariance matrix when inverted
@@ -91,6 +92,9 @@ private:
 
   // perform one Newton-Raphson iteration: fill system and solve, check decreasing of chi2
   double oneNRIteration(double oldchi2);
+
+  // handling of errors
+  void SimFit::FatalError(const char* comment);
 
 public:
 

@@ -14,6 +14,7 @@
 
 SimFit::SimFit()
 {
+  fatalerror = false;
   refill = true;
   fit_flux = fit_gal = true; fit_sky = fit_pos = false ;
   use_gal = true;
@@ -1213,7 +1214,7 @@ bool SimFit::Update(double Factor)
 	   << " -> " << VignetRef->Star->x+Vec(xind)*Factor << "," << VignetRef->Star->y+Vec(yind)*Factor ;
       
       if (!(VignetRef->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
-	cout << "  FATAL ERROR ShiftCenter failure " << endl;
+	FatalError("in Update, ShiftCenter failure");
 	return false;
       }
       VignetRef->UpdatePsfResid();
@@ -1236,7 +1237,7 @@ bool SimFit::Update(double Factor)
       
       // update pos (not really required if not vignetref)
       if ((fit_pos) && !(vi->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
-	cout << "  FATAL ERROR ShiftCenter failure " << endl;
+	FatalError("in Update, ShiftCenter failure");
 	return false;
       }
       
@@ -1261,24 +1262,39 @@ bool SimFit::Update(double Factor)
   return true;
 }
 
+void SimFit::FatalError(const char* comment) {
+  cerr << " Fatal error in SimFit: " << comment << endl;
+  fatalerror=true;
+  // set 0 to all fluxes
+  for (SimFitVignetIterator it=begin(); it != end(); ++it) {
+    SimFitVignet *vi = *it;
+    vi->Star->sky = 0;
+    vi->Star->flux = 0;
+  }
+}
+
+
 double SimFit::oneNRIteration(double OldChi2)
 {
 #ifdef FNAME
   cout << " > SimFit::oneNRIteration(double OldChi2)" << endl;
 #endif
   FillMatAndVec();
-  
-  if (cholesky_solve(PMat,Vec,"L") != 0) {
-    cout << "FATAL ERROR" << endl;
-    PMat.writeFits("DEBUG_pmat.fits");
-    cout << "Vec:" << endl;
-    cout << Vec << endl;
-    cout << "Quit ..." << endl;
-    abort();
+  if(PMat.SizeX()==0) {
+    FatalError("in oneNRIteration, NULL matrix");
+    return -12;
+    // try to exit without abort
   }
 
-  if(!Update(1.)) return -12;
-  
+  if (cholesky_solve(PMat,Vec,"L") != 0) {
+    FatalError("in oneNRIteration, cholesky_solve failure");
+    // PMat.writeFits("DEBUG_pmat.fits");
+    return -12;
+  }
+  Update(1.);
+  if(fatalerror) {
+    return -12;
+  }
   double curChi2 = computeChi2();
   const double minFact = 0.001;
   if (curChi2 > OldChi2) 
@@ -1292,9 +1308,9 @@ double SimFit::oneNRIteration(double OldChi2)
       double fact = 1.;
       while ((curChi2 > OldChi2) && (fact > minFact))
 	{
-	  if(!Update(-fact)) return -12;
+	  Update(-fact); if(fatalerror) return -12;
 	  fact *= 0.9;
-	  if(!Update(fact)) return -12;
+	  Update(-fact); if(fatalerror) return -12;
 	  curChi2 = computeChi2();
 #ifdef DEBUG
 	  cout << " SimFit::oneNRIteration(" 
@@ -1305,7 +1321,7 @@ double SimFit::oneNRIteration(double OldChi2)
       // reducing corrections had no effect
       if (curChi2 > OldChi2)
 	{
-	  if(!Update(-fact)) return -12;
+	  Update(-fact); if(fatalerror) return -12;
 	  curChi2 = computeChi2();
 #ifdef DEBUG
 	  cout << " SimFit::oneNRIteration(" 
@@ -1323,6 +1339,8 @@ bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
 {
   double oldchi2;
   chi2 = computeChi2();
+  if(fatalerror)
+    return false;
   int iter = 0;
   double diff = 1000;
   cout << " > SimFit::IterateAndSolve(" << MaxIter << "," << Eps << ") : initial chi2/dof = " << chi2/(ndata - nparams) << endl;
@@ -1330,10 +1348,8 @@ bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
     {
       oldchi2 = chi2;
       chi2 = oneNRIteration(oldchi2);
-      if(chi2<-10) {
-	cout << "   (in IterateAndSolve) Problem in oneNRIteration = problem in Update cause outside vignet, must quit " << endl;
+      if(fatalerror)
 	return false;
-      }
       diff = fabs(chi2-oldchi2);
       cout << "   Iteration " << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;    
       //cout << "   diff = " << diff << endl;
@@ -1357,8 +1373,9 @@ bool SimFit::GetCovariance()
     {      
       cerr << " SimFit::GetCovariance() : Error: inverting failed. Lapack status=: " 
 	   << status << endl;
+      FatalError(" in GetCovariance, inverting failed");
       return false;
-    }
+    } 
 
   // rescale covariance matrix with estimated global sigma scale factor
   // it corrects for initially under-estimated (ex: correlated) weights if chi2/dof < 1 
@@ -1410,6 +1427,7 @@ void SimFit::FitInitialGalaxy() {
   }
   cout << " > SimFit::FitInitialGalaxy() with " << nzero << " exposures" << endl;  
   if(nzero==0) {
+    FatalError(" in FitInitialGalaxy, nzero=0");
     abort();
   }
   SetWhatToFit(FitGal);
