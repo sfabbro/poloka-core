@@ -367,17 +367,64 @@ return baseStarFormat + " SEStar 5 ";
 
 
 
-
-// test si etoile pas sat
-bool SEStar::IsOK(const double &saturation) const 
+// test si etoile ok
+bool SEStar::IsOK() const 
 {
   return ((FlagBad() == 0 ) &&
 	  ( Flag() == 0 ) &&
-	  ( fabs(Fluxmax()) > 1e-10)  &&
-	  ( fabs(flux) > 1e-10)  &&
+	  ( Fluxmax() > 1e-10)  &&
+	  ( flux > 1e-10) && 
+	  ( Fwhm() > 1.e-5 ) );
+}
+
+// test si etoile ok et pas sat
+bool SEStar::IsOK(double saturation) const 
+{
+  return ( IsOK() &&
 	  ( Fluxmax() + Fond() < saturation ));
 }
 
+
+static int NBad(float x, float y , Image const & image, float demi_cote) 
+{
+  int xstart = int(x - demi_cote + 0.5);
+  int ystart = int(y - demi_cote + 0.5);
+  int xend = min(int(xstart + 2.*demi_cote + 0.5),image.Nx());
+  int yend = min(int(ystart + 2.*demi_cote+0.5),image.Ny());
+  xstart = max(xstart,0);
+  ystart = max(ystart,0);
+  float seuil = 1.e-20 ;
+  int nbad = 0 ;
+  for (int j = ystart; j < yend; ++j)
+    {
+      for (int i = xstart; i < xend; ++i)
+	{
+	  if (image(i,j) <= seuil )
+	    nbad++;
+	}
+    }
+  return(nbad);
+  
+}
+// to be able to eliminate a star for which the stamp is contaminated by a dead column
+bool SEStar::IsOK(Image const & image) const 
+{
+  if ( ! IsOK() )
+    return false ;
+  int nbad = NBad(x,y,image,StampSize());
+  if ( nbad > StampSize() )
+    return false ;
+  else
+    return true ;
+}
+
+// to be able to eliminate a star with too big a neighbour
+
+bool
+SEStar::HasBigCloseNeighbor(BaseStarList const & stl, double dist, double ratio) const
+{
+  return (stl.HasCloseNeighbor(x,y, dist, 0.5, ratio*flux) );
+}
 
 
 
@@ -429,6 +476,7 @@ template class StarList<SEStar>; // because StarListWithRoot<> derives from Star
 
 //! Flag objects near pixels  > 0
 //! OK for images with very few pixels > 0
+//UNUSED ?? (DH)
 int 
 FlagCosmicFromImage(SEStarList & stl, 
 		    Image const & image, const double dist)
@@ -478,7 +526,7 @@ FlagSatFromImage(SEStarList & stl, Image const & image)
   int n=0;
   for (SEStarIterator it= stl.begin(); it!=stl.end(); it++)
     {
-      if ( image(int((*it)->x),int((*it)->y)) > 0 )
+      if ( image(int((*it)->x+0.5),int((*it)->y+0.5)) > 0 )
 	{
 	  (*it)->FlagAsSaturated();n++;
 	}
@@ -486,14 +534,13 @@ FlagSatFromImage(SEStarList & stl, Image const & image)
   return n;
 }
 
-int KeepIt(double saturation ,SEStarList const & stli,SEStarList & temp)
+int KeepOK(double saturation ,SEStarList const & stli,SEStarList & temp)
 {
   int Nok = 0;
   for (SEStarCIterator it= stli.begin(); it!=stli.end(); it++)
     {
       
-      if ( (*it)->IsOK(saturation) && ((*it)->Fwhm() > 1.e-5) 
-	   && ((*it)->flux > 1.e-5) )
+      if ( (*it)->IsOK(saturation) )
 	{
 	  SEStar * starse = new SEStar(**it) ;
 	  temp.push_back(starse); Nok++;
@@ -501,6 +548,19 @@ int KeepIt(double saturation ,SEStarList const & stli,SEStarList & temp)
 
     } 
   return Nok;
+}
+void RemoveNonOKObjects(SEStarList &List)
+{
+  cout << "Nombre d'objects avant nettoyage " << List.size()<<endl;
+  // On degage les objets a probleme
+  for (SEStarIterator it= List.begin(); it != List.end();) 
+    {
+      SEStar *star = *it;
+      if ( !(star->IsOK()) ) 
+	it = List.erase(it);
+      else ++it;
+    }
+  cout << "Nombre d'objects apres nettoyage " << List.size()<<endl;
 }
 
 void 
@@ -517,44 +577,199 @@ SetStarsBackground(SEStarList & stl, double const background)
   cout << nflag << " etoiles flagees. " << endl ;
 }
 
+/*************** Star Finder, Galaxy Finder  *********/
+/* Finder needs a clean list */
 #include "histo2d.h"
-int StarFinder(SEStarList & stlse, SEStarList & PrettyStars, 
-	       double saturation)
+#include "histo1d.h"
+
+static
+void HistoFwhmStarFinder(SEStarList const & stlse,  
+	       double & mfwhm, double  & bin_fwhm)
 {
-  Histo2d histo(100,0,10,50,-10,0); //HC
   
-  SEStarList cutlist;
+  double minfwhm = 1. ;
+  double  maxfwhm = 10. ;
+  int NBin = (int)((maxfwhm -minfwhm)/(1.*bin_fwhm) + 0.5)  ;
+  cerr << "N bin " << NBin << endl ;
+  Histo1d histo(NBin,minfwhm,maxfwhm); //HardCoded
+  
   for (SEStarCIterator it=stlse.begin(); it!=stlse.end(); ++it) 
     { 
-      if (((*it)->Mxx() > 1.e-10) &&
-	  ((*it)->Myy() > 1.e-10) && ( (*it)->IsOK(saturation)) )
+      histo.Fill((*it)->Fwhm() , 1. );
+    }
+
+  // recherche du mode de l'histo
+  histo.MaxBin(mfwhm);
+  cout << "Mode en fwhm: " << mfwhm << " (Bin: " 
+       << histo.BinWidth() << " = " << bin_fwhm << " )"
+       << endl ; 
+  bin_fwhm = histo.BinWidth();
+
+
+  double minfwhm2 = mfwhm - 5*bin_fwhm ;
+  double  maxfwhm2 = mfwhm + 5*bin_fwhm ;
+  double S =0., S2=0. ;
+  int n = 0 ;
+  for (SEStarCIterator it=stlse.begin(); it!=stlse.end(); ++it) 
+    { 
+      double fwhm = (*it)->Fwhm() ;
+      if ( (fwhm > minfwhm2 ) && (fwhm < maxfwhm2 ))
 	{
-	  histo.Fill((*it)->Fwhm() ,-2.5*log10((*it)->flux/(*it)->Fluxmax()), 1 ); 
-	  cutlist.push_back(new SEStar(**it));
+	  S += fwhm ;
+	  S2 += fwhm*fwhm ;
+	  n++;
+	}
+    }
+  double mean = S/(n * 1.);
+  double sigma = S2/(n * 1.) - mean*mean ;
+  sigma = sqrt(sigma);
+  cerr << "Fwhm mean, sigma : " << mean << " " << sigma << endl ;
+
+
+  return ;
+}
+
+static
+void HistoShapeStarFinder(SEStarList const & stlse,  
+	       double & mshape, double & bin_shape)
+{
+  double  minshape = -6. ;
+  double  maxshape = -2. ;
+  int NBin = (int)((maxshape -minshape)/bin_shape + 0.5 )  ;
+  cerr << "N bin " << NBin << endl ;
+  Histo1d histo(NBin,minshape ,maxshape); //HardCoded
+  
+  for (SEStarCIterator it=stlse.begin(); it!=stlse.end(); ++it) 
+    { 
+      double flux = (*it)->flux ;
+      double fluxmax = (*it)->Fluxmax() ;
+      if ( ( flux > 1.e-5 ) && ( fluxmax > 1.e-5 ) )
+	{
+	  double shape = -2.5*log10(flux/fluxmax);
+	  histo.Fill(shape , 1. );
 	}
     }
 
-  // recherche du mod de l'histo
-  double X, Y;
-  histo.MaxBin(X, Y);
-  double BinX, BinY;
-  histo.BinWidth(BinX, BinY);
-  int nsigma = 10;
-  double moyenne = X + 0.5 * BinX;
-  double sigma = 0.5 * BinX;
-  for (SEStarIterator it= cutlist.begin(); it!=cutlist.end(); ++it)
+  // recherche du mode de l'histo
+  histo.MaxBin(mshape);
+  cout << "Mode en shape: " << mshape << " (Bin: " 
+       << histo.BinWidth() << " = " << bin_shape << " )"
+       << endl ; 
+  bin_shape = histo.BinWidth();
+  return ;
+}
+
+ 
+
+
+// The StarFinder needs a clean list. cuts are adaptated to SNLS ref
+void StarFinder(SEStarList const & stlse, SEStarList & PrettyStars)
+{
+  SEStarList stl1;
+  stlse.CopyTo(stl1);
+  stl1.sort(&DecreasingFlux);
+  stl1.CutTail(200);
+  double mfwhm1, bin_fwhm1 = 0.2 ;
+  HistoFwhmStarFinder(stl1, mfwhm1, bin_fwhm1);
+  double mshape1, bin_shape1 = 0.1;
+  HistoShapeStarFinder(stl1, mshape1, bin_shape1);
+
+  // pour info
+  double Mfwhm, Bin_fwhm, Mshape, Bin_shape;
+  HistoStarFinder(stlse, Mfwhm, Bin_fwhm, 
+		     Mshape, Bin_shape)  ;
+
+  double min_fwhm = mfwhm1 - 2. * bin_fwhm1;
+  double max_fwhm = mfwhm1 + 3. * bin_fwhm1;
+
+  // galaxies: shape tres neg, fwhm grande
+  // stars : shape petit (pas tres neg), fwhm petit
+  double min_shape = mshape1  - 2. * bin_shape1;
+  double max_shape = mshape1  + 3.  * bin_shape1 ;
+
+  cerr << "fwhm min, max: " << min_fwhm << " " << max_fwhm << endl ;
+  cerr << "shape min, max: " << min_shape << " " << max_shape << endl ;
+
+  for (SEStarCIterator it= stlse.begin(); it!= stlse.end(); ++it)
     {
-      SEStar *pstar = *it ;
+      const SEStar *pstar = *it ;
       double flux = pstar->flux;
       double fluxmax = pstar->Fluxmax();
       double fwhm = pstar->Fwhm();
       double shape = -2.5*log10(flux/fluxmax);
-      if ( (fabs(fwhm-moyenne) < nsigma * sigma) &&  
-	   (Y-BinY < shape) && (shape < Y + BinY))
+      if ( (fwhm < max_fwhm ) && ( fwhm > min_fwhm ) &&
+	   (shape < max_shape ) && ( shape > min_shape))
 	{
 	  PrettyStars.push_back(new SEStar(*pstar));
 	}
     }
-  
-  return 1;
+
 }
+void GalaxyFinder(SEStarList const & stlse, 
+		  SEStarList & PrettyGal, 
+		  float maglim, float zerop)
+{
+  SEStarList stl1;
+  stlse.CopyTo(stl1);
+  stl1.sort(&DecreasingFlux);
+  stl1.CutTail(200);
+  double mfwhm1, bin_fwhm1 = 0.2 ;
+  HistoFwhmStarFinder(stl1, mfwhm1, bin_fwhm1);
+  double mshape1, bin_shape1 = 0.1;
+  HistoShapeStarFinder(stl1, mshape1, bin_shape1);
+
+  // pour info
+  double Mfwhm, Bin_fwhm, Mshape, Bin_shape;
+  HistoStarFinder(stlse, Mfwhm, Bin_fwhm, 
+		     Mshape, Bin_shape)  ;
+
+  double shape_thresh = mshape1  - 2. * bin_shape1 ;
+  double fwhm_thresh = mfwhm1 + 3. * bin_fwhm1;
+
+  cerr << " fwhm_thresh, shape_thresh: " << fwhm_thresh << " " << shape_thresh << endl ;
+
+  for (SEStarCIterator it= stlse.begin(); it!= stlse.end(); ++it)
+    {
+      const SEStar *pstar = *it ;
+      double flux = pstar->flux;
+      double fluxmax = pstar->Fluxmax();
+      double fwhm = pstar->Fwhm();
+      double shape = -2.5*log10(flux/fluxmax);
+      bool okmag = false ;
+      // objects fainter than maglim are galaxies
+      // anyway
+      if (( maglim > 0) && (zerop > 0))
+	{
+	  double mag =  -2.5*log10(flux) + zerop ;
+	  okmag = (mag > maglim);
+	}
+      if (  (( fwhm  > fwhm_thresh) &&  
+	     ( shape < shape_thresh) ) || okmag )
+	{
+	  PrettyGal.push_back(new SEStar(*pstar));
+	}
+    }
+
+}
+void HistoStarFinder(SEStarList const & stlse,  
+	       double & mfwhm, double & bin_fwhm, 
+	       double & mshape, double & bin_shape)
+{
+  double nstarperbin = 10. ;
+  int NBin = max(min(100,int(stlse.size()/nstarperbin)),1);
+  Histo2d histo(NBin,0,10,max(NBin/2,1),-6,-2); //HC
+  
+  for (SEStarCIterator it=stlse.begin(); it!=stlse.end(); ++it) 
+    { 
+      histo.Fill((*it)->Fwhm() ,-2.5*log10((*it)->flux/(*it)->Fluxmax()), 1 );
+    }
+
+  // recherche du mode de l'histo
+  histo.MaxBin(mfwhm, mshape);
+  histo.BinWidth(bin_fwhm, bin_shape);
+  cout << "Mode en fwhm: " << mfwhm << " (Bin: " << bin_fwhm
+       << "), Mode en mag-mu: " << mshape <<  " (Bin: " 
+       << bin_shape <<  ")" << endl ;
+  return ;
+}
+

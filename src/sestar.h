@@ -238,11 +238,20 @@ public:
  
   static const char *TypeName() { return "SEStar";}
 
+  // as indicated in name. ratio is the ration flux neighbor / flux, above which it qualifies as "big"
 
+  bool HasBigCloseNeighbor(BaseStarList const & stl, double dist, double ratio) const ;
 
-  // n'est pas saturee  ni cosmique/colonne
+  // flag =0, flagbad =0 ....
+  bool IsOK() const;
+  // OK and not staurated according to given saturation level.
+  bool IsOK(double saturation) const;
+  //! to cut a stamp around an object
+  float StampSize() const {return(3.*Fwhm()+0.5);}
+   // OK and Number of bad pixel in StampSize x  StampSize 
+  //! < StampSize (no dead column in local area)
+  bool IsOK(Image const & weight_image) const ;
 
-    bool IsOK(const double &saturation) const;
 
 
 private:
@@ -333,14 +342,21 @@ FlagSatFromImage(SEStarList & stl, Image const & image);
 
 
 //! Select stars with the IsOK(saturation) routine.
-int KeepIt(double saturation ,SEStarList const & stli,SEStarList & temp);
+int KeepOK(double saturation ,SEStarList const & stli,SEStarList & temp);
+//! Remove non OK objects
+void RemoveNonOKObjects(SEStarList &List) ;
 
 //! Do as indicated in name ........
 void 
 SetStarsBackground(SEStarList & stl, double const background);
 
 //! Select Stars in SEStarList
-int StarFinder(SEStarList & stlse, SEStarList & PrettyStars, double saturation=1.e+30);
+void StarFinder(SEStarList const & stlse, SEStarList & PrettyStars);
+void GalaxyFinder(SEStarList const & stlse, 
+		  SEStarList & PrettyGal,float maglim=-1, float zerop=-1 );
+void HistoStarFinder(SEStarList const & stlse,  
+	       double & mfwhm, double & bin_fwhm, 
+	       double & mshape, double & bin_shape ) ;
 
 #endif //SESTAR_SEEN
 
