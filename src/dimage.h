@@ -21,6 +21,16 @@ struct Window {
   int xstart, ystart, xend, yend; 
   int Nx() const { return xend-xstart; }
   int Ny() const { return yend-ystart; }
+  int Hx() const { return (xend-xstart)/2; }
+  int Hy() const { return (yend-ystart)/2; }
+
+  //! return true if point is inside the rectangle
+  bool IsInside(const Point& Pt) const
+  {
+    return (Pt.x > xstart) && (Pt.x < xend) 
+      &&   (Pt.y > ystart) && (Pt.y < yend);
+  }
+
 };
 
 ostream& operator << (ostream& stream, const Window& w);
