@@ -52,7 +52,8 @@ int main(int argc, char **argv)
 	case 'n' : MatchPrefs.writeWCS = false; break;
 	case 'o' : overwrite = true; break;
 	case 'c' : i++;break; // datacards were already read above
-	case 'a' : i++; MatchPrefs.astromCatalogName = argv[i];break;
+	case 'a' : i++; MatchPrefs.astromCatalogName = 
+			  DbConfigFindCatalog(argv[i]);break;
 	default : 
 	  std:: cout << " don't understand " << argv[i] << std::endl;
 	  usage(argv[0]); exit(0);
