@@ -167,20 +167,3 @@ JimStarList* GetSelectedJimStarList(const FitsHeader &header, const Frame &W, co
 
 template class StarList<JimStar>;
 
-#ifdef USE_ROOT
-template class StarListWithRoot<JimStar>;
-ClassImpT(StarListWithRoot,JimStar);
-
-/* comments to drive the Makefile part that runs rootcint
-RUN_ROOTCINT
-
-LINKDEF_CONTENT : #pragma link C++ class JimStar;
-LINKDEF_CONTENT : #pragma link C++ class list<JimStar*>;
-LINKDEF_CONTENT : #pragma link C++ class StarList<JimStar>-;
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream&, const StarList<JimStar>&);
-LINKDEF_CONTENT : #pragma link C++ class StarListWithRoot<JimStar>-;
-LINKDEF_CONTENT : #pragma link C++ class StarList<JimStar>::iterator;
-LINKDEF_CONTENT : #pragma link C++ typedef JimStarIterator;
-*/
-#include "root_dict/jimstardict.cc"
-#endif /* USE_ROOT */
