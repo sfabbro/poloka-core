@@ -7,7 +7,17 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  int nflux = 32;
+  
+  Vect FluxVec;
+  {
+    Mat m;
+    if(m.readFits("vec_sn.fits")!=0)
+      return -1;
+    FluxVec = m;
+  }
+  int nflux = FluxVec.Size();
+
+  
   Mat CovarianceMat;  
   if(CovarianceMat.readFits("pmat_sn.fits")!=0)
     return -1;
@@ -20,20 +30,22 @@ int main(int argc, char **argv)
   //res.writeFits("toto.fits");
   //cout << res.SizeX() << " " << res.SizeY() << endl;
   
-  Vect FluxVec;
-  {
-    Mat m;
-    if(m.readFits("vec_sn.fits")!=0)
-      return -1;
-    FluxVec = m;
-  }
+ 
   Mat A;
   A.readFits("nightmat_sn.fits");
   cout << A << endl;
   
-  //cout << FluxVec << endl;
-  //Mat AtWA = A.transposed()*FluxWeightMat*A;
-  //cout << AtWA << endl;
+  cout << FluxWeightMat.SizeX() << " " << FluxWeightMat.SizeY() << endl;
+  cout << A.SizeX() << " " << A.SizeY() << endl;
+  Mat AtWA = A.transposed()*FluxWeightMat*A;
+  cout << AtWA << endl;
+  Mat AtWA_invert = AtWA; AtWA_invert.SymMatInvert();
+  
+  Vect flux_per_night = (AtWA_invert*(A.transposed()*FluxWeightMat))*FluxVec;
+  cout << "Mean flux per night" << endl;
+  cout << flux_per_night << endl;
+  cout << "Covariance matrix" << endl;
+  cout << AtWA_invert << endl;
   
   return 0;
 }
