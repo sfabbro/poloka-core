@@ -31,7 +31,11 @@ private:
   ReducedImageRef photomAstromReference;
   Frame photomAstromReferenceFrame;
 
-  const string SwarpWorkDir() const { return Dir()+"/swarp_work/";};
+  const std::string SwarpPermDir() const { return Dir()+"/swarp_work/";};
+
+  const std::string SwarpTmpDir();
+
+  std::string tmpDir;
 
   bool Create(const string &Where);
 
@@ -46,7 +50,7 @@ public :
   //     const StackingMethod ASMethod = SUnSet);
 
   SwarpStack(const string &Name);
-  SwarpStack(){};
+  SwarpStack() {};
   //  ReducedImageList Components() const;
 
   bool MakeFits() ;

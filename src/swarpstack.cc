@@ -414,9 +414,23 @@ bool SwarpStack::Create(const string &Where)
       ok1 = (DbImage::Create(Where) 
 	     && SetTypeName("SwarpStack"));
     }
-  if (ok1 && !FileExists(SwarpWorkDir())) MKDir(SwarpWorkDir().c_str());
+  if (ok1 && !FileExists(SwarpPermDir())) MKDir(SwarpPermDir().c_str());
   return true;
 }
+
+const std::string SwarpStack::SwarpTmpDir()
+{
+  if (tmpDir == "")
+    {
+      char *dir = getenv("IMAGE_TMP_DIR");
+      if (dir) tmpDir = AddSlash(string(dir));
+      else tmpDir = SwarpPermDir();
+      cout << " for image " << Name() << ", using " << tmpDir
+	   << " to write temporary images " << endl;
+    }
+  return tmpDir;
+}
+
 
 
 
@@ -441,6 +455,7 @@ static string build_file_name(const std::string &Format, const std::string &ANam
   return link_name;
 }
 
+#ifdef STORAGE
 static bool link_file(const string &Target, const string &DbImageName, 
 		      const string &LinkPattern)
 {
@@ -448,7 +463,7 @@ static bool link_file(const string &Target, const string &DbImageName,
   return MakeRelativeLink(Target.c_str(), 
 			  build_file_name(LinkPattern,DbImageName).c_str());
 }
-
+#endif
 
 bool extract_ascii_head(const std::string &InputHeadName,
 		       const Frame &SubFrame,
@@ -526,8 +541,8 @@ bool SwarpStack::MakeFits()
 		  << " because we don't find it's zero point " << std::endl;
     }
   // clear swarp inputs:
-  my_tcsh_system(("rm -f "+SwarpWorkDir()+"*.image.{,weight.}fits").c_str());
-  // setup links for swarp:
+  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.image.{,weight.}fits").c_str());
+  // setup files for swarp input
   for (ReducedImageIterator i=images.begin(); i!= images.end(); ++i)
     {
       ReducedImage &ri = **i;
@@ -540,12 +555,12 @@ bool SwarpStack::MakeFits()
 		    << std::endl;
 	  continue;
 	}
-      // make symbolic links to input images and weights in SwarpWorkDir
-      std::string imageSwarpName =  build_file_name(SwarpWorkDir()+"%s.image.fits", ri.Name());
+      // make symbolic links to input images and weights in SwarpTmpDir
+      std::string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
       MakeRelativeLink(ri.FitsName(), imageSwarpName);
       fitsList += " "+ri.Name()+".fits";
       MakeRelativeLink(ri.FitsWeightName(), 
-		       build_file_name(SwarpWorkDir()+"%s.image.weight.fits", ri.Name()));
+		       build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name()));
       // compute flux scale factor from ZP
       FitsHeader head(ri.FitsName());
       double fluxScale = 1;
@@ -611,9 +626,13 @@ bool SwarpStack::MakeFits()
   cards.AddKey("DELETE_TMPFILES","N");
   // write them
   string cardsName = "default.images.swarp";
-  cards.write(SwarpWorkDir()+cardsName);
+  // write them in perm dir
+  cards.write(SwarpPermDir()+cardsName);
+  // and make a pseudo copy in TmpDir
+  MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
+  
 
-  string command = "cd "+SwarpWorkDir()+"; swarp -c " 
+  string command = "cd "+SwarpTmpDir()+"; swarp -c " 
     + cardsName + " *.image.fits";
   if (my_tcsh_system(command.c_str())!=0)
     {
@@ -649,7 +668,7 @@ bool SwarpStack::MakeFits()
   SetSaturation(saturation);
 
   // since we got here, swarp succeeded, so cleanup resamp files
-  my_tcsh_system(("rm -f "+SwarpWorkDir()+"*.image.resamp.{,weight.}fits").c_str());
+  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.image.resamp.{,weight.}fits").c_str());
 
   return true;
 }
@@ -676,6 +695,30 @@ bool SwarpStack::MakeWeight()
   else return true;
 }
 
+#ifdef STORAGE
+bool uncompress_or_link(const std::string &InFileName,
+			const std::string &OutFileName,
+			std::string &ToGunzip,
+			std::string &ToDelete)
+{
+  if (IsZipped(InFileName))
+    {
+      MakeRelativeLink(InFileName, OutFileName+".gz");
+      ToGunzip += OutFileName+".gz ";
+      ToDelete += " "+OutFileName;
+      return true;
+    }
+  else if (FileExtension(InFileName) == "fz")
+    {
+      if (ImageCopy(InFileName, OutFileName))
+	ToDelete += " "+OutFileName;
+      else
+	return false;
+    }
+  else return MakeRelativeLink(InFileName, OutFileName);
+}
+#endif
+
 bool SwarpStack::MakeSatur()
 {
   if (HasSatur()) return true;
@@ -686,32 +729,29 @@ bool SwarpStack::MakeSatur()
   if (!HasImage()) MakeFits(); 
 
   // cleanup before start
-  my_tcsh_system(("rm -f "+SwarpWorkDir()+"*.satur.{,weight.}fits").c_str());
+  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.satur.{,weight.}fits").c_str());
 
-  string unzippedFiles;
+  string toRemove;
   for (ReducedImageIterator i=images.begin(); i!= images.end(); ++i)
     {
       ReducedImage &ri = **i;
       std::string inputSatur = ri.FitsSaturName();
-      std::string swarpInput = build_file_name(SwarpWorkDir()+"%s.satur.fits",
+      std::string swarpInput = build_file_name(SwarpTmpDir()+"%s.satur.fits",
 					       ri.Name());
-      std::string swarpHead = build_file_name(SwarpWorkDir()+"%s.satur.head",
+      std::string swarpHead = build_file_name(SwarpTmpDir()+"%s.satur.head",
 					      ri.Name());
-      if (IsCompressed(inputSatur))
+      if (!DecompressOrLinkImage(inputSatur,swarpInput))
 	{
-	  MakeRelativeLink(ri.FitsSaturName(), swarpInput+".gz");
-	  // option -f to gunzip : force event if input is a symlink
-	  my_tcsh_system((" gunzip -f "+swarpInput+".gz").c_str());
-	  unzippedFiles += " "+swarpInput;
+	  std::cerr << " could not prepare " << inputSatur << " for swarp " 
+		    << std::endl;
+	  return false;
 	}
-      else 
-	link_file(ri.FitsSaturName(), ri.Name(), 
-		  swarpInput);
       // extract header of calibrated image
+      toRemove += " "+swarpInput;
       extract_ascii_wcs(ri.FitsName(), swarpHead);
     }
 
-  std::string swarpOutName =  SwarpWorkDir()+"satur32.fits";
+  std::string swarpOutName =  SwarpTmpDir()+"satur32.fits";
   // extract the header of the calibrated.fits
   extract_ascii_wcs(FitsName(), SubstituteExtension(swarpOutName,".head"));
 
@@ -731,8 +771,12 @@ bool SwarpStack::MakeSatur()
   cards.AddKey("RESAMPLING_TYPE","BILINEAR"); // enough for binary masks
 
   string cardsName = "default.satur.swarp";
-  cards.write(SwarpWorkDir()+cardsName);
-  string command = "cd "+SwarpWorkDir()+"; swarp -c " + cardsName 
+  // write them in perm dir
+  cards.write(SwarpPermDir()+cardsName);
+  // and make a pseudo-copy in temp dir
+  MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
+
+  string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName 
     + " *.satur.fits";
   if (my_tcsh_system(command.c_str())!=0)
     {
@@ -757,8 +801,8 @@ bool SwarpStack::MakeSatur()
     } while (inOut.LoadNextSlice()); // read/write
   // remove temporary files
   remove(swarpOutName.c_str());
-  if (unzippedFiles != "") my_tcsh_system((" rm -f "+unzippedFiles).c_str());
-  my_tcsh_system(("rm -f "+SwarpWorkDir()+"*.satur.resamp.{,weight.}fits").c_str());
+  RemoveFiles(toRemove);
+  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.satur.resamp.{,weight.}fits").c_str());
 
   // we are done !
   return true;
