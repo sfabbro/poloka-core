@@ -1,6 +1,7 @@
 #include "simsnstar.h"
 #include "image.h"
 #include "gtransfo.h"
+#include "agaussian.h"
 
 #include <fstream>
 
@@ -171,6 +172,8 @@ void ModelStar::AddToImage(const Image &image, Image & dest,
 
 /* ******************** Simulated SN Star ******************* */
 
+
+
 SimSNStar::SimSNStar()
 : BaseStar(0.,0.,0.)
 {
@@ -236,13 +239,62 @@ SimSNStar*  SimSNStar::read(istream& r, const char *Format)
   return(pstar);
 }
 
+void 
+SimSNStarList::NewFlux(double NewZeroPoint)
+{
+  for (SimSNStarIterator i = begin(); i != end(); ++i)
+    {
+      (*i)->NewFlux(NewZeroPoint) ;
+    }
+}
+
+
+
+void 
+SimSNStarList::AddWGaussianToImage(double sigmax, double sigmay, double rho,
+				   Image & dest, 
+				   const Gtransfo *Transfo,   
+				   Image * psat, 
+				   double satlevel) const 
+{  
+  AGaussian gauss;
+  gauss.sigma_x = sigmax ;
+  gauss.sigma_y = sigmay ;
+  gauss.rho = rho  ;
+  for (SimSNStarCIterator i = begin(); i != end(); ++i)
+    {
+      const SimSNStar *s = *i;
+      // position of SN on image i
+      double Xsn, Ysn ; 
+      Transfo->apply(s->x,s->y,Xsn, Ysn );
+      gauss.xc =  Xsn ;
+      gauss.yc =  Ysn ;
+      gauss.flux = s->flux ;
+      gauss.AddToImage(dest, psat, satlevel);
+    }
+}
+
+// Converter :
+BaseStarList* SimSN2Base(SimSNStarList * This)
+{ return (BaseStarList*) This;} 
+
+const BaseStarList* SimSN2Base(const SimSNStarList * This)
+{ return (BaseStarList*) This;} 
+
+
+#include "starlist.cc" /* since starlist is a template class */
+template class StarList<SimSNStar>;  /* to force instanciation */
+
+
 /*     ************** SimSNWModelStar ************** */
 
 string SimSNWModelStar::WriteHeader_(ostream &pr, const char *i) const
 {
   if (i == NULL) i = "";
   string SimSNFormat =  SimSNStar::WriteHeader_(pr,i);
-  string ModelStarFormat = model_on_ref.WriteHeader_(pr,"mod");
+  string ii = i ;
+  string uu = "mod" + ii ;
+  string ModelStarFormat = model_on_ref.WriteHeader_(pr,uu.c_str());
   return SimSNFormat + ModelStarFormat + " SimSNWModelStar 1 ";
   }
 
@@ -250,6 +302,7 @@ string SimSNWModelStar::WriteHeader_(ostream &pr, const char *i) const
 void SimSNWModelStar::writen(ostream & pr) const
 {
   SimSNStar::writen(pr);
+  pr << " " ;
   model_on_ref.writen(pr);
 }
 
@@ -411,7 +464,16 @@ void DebugModelMethod(const SimSNWModelStar  & sim, const Gtransfo *Transfo)
 
 
 void 
-SimSNWModelStarList::AddWModelToImage(Image &image, 
+SimSNWModelStarList::NewFlux(double NewZeroPoint)
+{
+  for (SimSNWModelStarIterator i = begin(); i != end(); ++i)
+    {
+      (*i)->NewFlux(NewZeroPoint) ;
+    }
+}
+
+void 
+SimSNWModelStarList::AddWModelToImage(const Image &image, Image & dest,  
 				const Gtransfo *Transfo,  
 				Image * psat,
 				double satlevel, bool print_debug) const
@@ -421,7 +483,7 @@ SimSNWModelStarList::AddWModelToImage(Image &image,
     {
       const SimSNWModelStar *s = *i;
       if (print_debug) DebugModelMethod(*s,Transfo);
-      s->AddWModelToImage(image, Transfo, psat, satlevel);
+      s->AddWModelToImage(image, dest, Transfo, psat, satlevel);
     }
   if (print_debug) prdebugstate += 1 ;
 }

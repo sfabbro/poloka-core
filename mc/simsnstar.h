@@ -1,7 +1,7 @@
 // This may look like C code, but it is really -*- C++ -*-
+#ifndef SIMSNSTAR__H
+#define SIMSNSTAR__H
 
-#ifndef FAKESTAR__H
-#define FAKESTAR__H
 
 #include <string>
 
@@ -9,7 +9,6 @@
 
 #include "basestar.h"
 #include "sestar.h"
-#include "starlist.h"
 
 class Image;
 class Gtransfo;
@@ -187,7 +186,18 @@ class SimSNStar : public BaseStar
   std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
   virtual void    read_it(istream& r, const char *Format); 
   static SimSNStar* read(istream& r, const char* Format);
+
+  void NewFlux(double NewZeroPoint){flux = pow(10,(NewZeroPoint - mag_sn)*0.4);}
+
 };
+
+
+
+
+
+
+
+
 
 
 /* a Simulated Supernova, and a model star to add it on an image. */
@@ -228,11 +238,50 @@ class SimSNWModelStar : public SimSNStar
 			double satlevel=-1 ) const {
     model_on_ref.AddToImage(image,image,Transfo, psat, satlevel);}
 
+  void AddWModelToImage(const Image &image, Image & dest, 
+			const Gtransfo *Transfo,   
+			Image * psat = NULL, 
+			double satlevel=-1 ) const {
+    model_on_ref.AddToImage(image,dest,Transfo, psat, satlevel);}
+
 };
+
+
+
+
 
 
 // should be static, but is rightnow used elsewhere for debug.
 int integer_delta(double xsn, double xmodel);
+
+/*** definitions  StarList **********/
+
+#include "starlist.h"
+
+
+class SimSNStarList : public StarList<SimSNStar> 
+{
+  public :
+  void NewFlux(double NewZeroPoint);
+  void AddWGaussianToImage(double sigmax, double sigmay, double rho,
+			   Image & dest, 
+			   const Gtransfo *Transfo,   
+			   Image * psat = NULL, double satlevel=-1) const ;
+
+};
+
+
+typedef SimSNStarList::const_iterator SimSNStarCIterator;
+typedef SimSNStarList::iterator SimSNStarIterator;
+typedef CountedRef<SimSNStar> SimSNStarRef;
+
+#ifndef SWIG
+//! type casting
+BaseStarList* SimSN2Base(SimSNStarList * This);
+const BaseStarList* SimSN2Base(const SimSNStarList * This);
+#endif
+
+
 
 
 class SimSNWModelStarList : public StarList<SimSNWModelStar> 
@@ -245,11 +294,25 @@ class SimSNWModelStarList : public StarList<SimSNWModelStar>
   //! gives the fractional part of the position between  the expected 
   //! sn position on image, computed with the geom. tf., 
   //! and the place where it is stuck. see code.
-  void AddWModelToImage(Image &image, const Gtransfo *Transfo,   
+  void AddWModelToImage(const Image &image, Image & dest, 
+			const Gtransfo *Transfo,   
 			Image * psat = NULL, double satlevel=-1,
 			bool print_debug=true) const ;
+  void AddWModelToImage(Image &image, 
+			const Gtransfo *Transfo,   
+			Image * psat = NULL, double satlevel=-1,
+			bool print_debug=true) const {
+    AddWModelToImage(image,image,Transfo,psat,satlevel,print_debug);}
+
+  void NewFlux(double NewZeroPoint);
 
 };
+
+
+
+typedef SimSNWModelStarList::const_iterator SimSNWModelStarCIterator;
+typedef SimSNWModelStarList::iterator SimSNWModelStarIterator;
+typedef CountedRef<SimSNWModelStar> SimSNWModelStarRef;
 
 
 
@@ -259,10 +322,6 @@ BaseStarList* SimSNWModel2Base(SimSNWModelStarList * This);
 const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This);
 #endif
 
-typedef SimSNWModelStarList::const_iterator SimSNWModelStarCIterator;
-typedef SimSNWModelStarList::iterator SimSNWModelStarIterator;
-typedef CountedRef<SimSNWModelStar> SimSNWModelStarRef;
 
 
-
-#endif /* FAKESTAR__H */
+#endif /* SIMSNSTAR__H */
