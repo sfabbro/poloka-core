@@ -1,8 +1,8 @@
 EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
 
-AM_CPPFLAGS = -Wall -I../objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
-AM_LDFLAGS = -L../objio -L@libdir@ -ltoadio @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/objio -I$(top_srcdir)/cern_stuff @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
+AM_LDFLAGS = -L$(top_srcdir)/objio -L$(top_srcdir)/cern_stuff -L@libdir@ -ltoadio -lcernstuff @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
 
 AM_YFLAGS = -l -d
 
