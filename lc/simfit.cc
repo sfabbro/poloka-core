@@ -1123,9 +1123,9 @@ bool SimFit::Update(double Factor)
   // update the reference position and psf
   if (fit_pos) 
     {
-#ifdef DEBUG
+      //#ifdef DEBUG
       cout << "   in SimFit::Update shifting of dx dy " << Vec(xind)*Factor << " " <<  Vec(yind)*Factor << " (xind,yind)=" << xind << "," << yind <<  endl;
-#endif
+      //#endif
       if (!(VignetRef->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
 	abort();
       }
@@ -1145,7 +1145,7 @@ bool SimFit::Update(double Factor)
       // update pos (not really required if not vignetref)
       if ((fit_pos) && !(vi->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
 	cout << "ShiftCenter failure" << endl;
-	return false;
+	abort();
       }
       // update sky
       if (fit_sky) vi->Star->sky += Vec(skyind++)*Factor;
