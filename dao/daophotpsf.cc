@@ -53,6 +53,10 @@ bool DaoPsf::read(const string &FileName)
 		    table, npsf, nexp, nfrac, 
 		    psfmag, bright, xpsf, ypsf);
 
+#ifdef DEBUG
+  dump();
+#endif 
+
   if (istat == -1)
     {
       cerr << " DaoPsf::read() may have found cheese NaN " << endl;
@@ -78,8 +82,11 @@ void DaoPsf::dump(ostream &Stream) const
   size_t oldp = Stream.precision();
   Stream << " DaoPsf::dump() TYPE=" << Type()
 	 << setiosflags(ios::fixed) << setprecision(3)
-	 << " HWHMX=" << HwhmX() << " HWHMY=" << HwhmY()
+	 << " HWHMX=" << HwhmX() 
+	 << " HWHMY=" << HwhmY()
 	 << " THETAXY=" << ThetaXY() << endl;
+  Stream << " NPAR=" << npar 
+	 << " npsf=" << npsf <<endl; 
   Stream << resetiosflags(ios::fixed) << setprecision(oldp);
   
 }
@@ -95,7 +102,7 @@ string DaoPsf::Type() const
     case 5: return "PENNY1";
     case 6: return "PENNY2";
     }
-  cerr << " DaoPsf::Type() unknown " << endl;
+  cerr << " DaoPsf::Type() " << type << " unknown " << endl;
   return "UNKNOWN";
 }
 

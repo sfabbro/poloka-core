@@ -86,8 +86,8 @@ void MMM(const float *sky, const int *nsky, const float *hibad, const float *rea
 	 float *skymn, float *skymed, float *skymod, float *sigma, float *skew);
 
 /*! read the PSF DAOPHOT file */
-PROTOCCALLSFFUN12(INT,RDPSF,rdpsf,STRING,INT,FLOATV,INT,FLOATV,INT,INT,INT,FLOAT,FLOAT,FLOAT,FLOAT) 
-#define RDPSF(A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12) CCALLSFFUN12(RDPSF,rdpsf,STRING,INT,FLOATV,INT,FLOATV,INT,INT,INT,FLOAT,FLOAT,FLOAT,FLOAT,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12)
+PROTOCCALLSFFUN12(INT,RDPSF,rdpsf,STRING,PINT,FLOATV,PINT,FLOATV,PINT,PINT,PINT,PFLOAT,PFLOAT,PFLOAT,PFLOAT) 
+#define RDPSF(A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12) CCALLSFFUN12(RDPSF,rdpsf,STRING,PINT,FLOATV,PINT,FLOATV,PINT,PINT,PINT,PFLOAT,PFLOAT,PFLOAT,PFLOAT,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12)
 
 /*! returns PSF value on a point distant of (dx,dy) of a star located on (deltax,deltay) */
 #define USEPSF usepsf_

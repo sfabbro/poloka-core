@@ -131,6 +131,9 @@ static size_t filter_chi(SEStarList& Stars, const double& maxchi)
 
 bool IteratePsf(Daophot& DaoSession, SEStarList& Stars)
 {
+#ifdef DEBUG
+  cout << "in IteratePsf " << endl;
+#endif
   size_t nStars = Stars.size();
   if (!nStars) 
     {
@@ -142,8 +145,8 @@ bool IteratePsf(Daophot& DaoSession, SEStarList& Stars)
   unsigned int curIter = 0;
 
   DaoSession.opt[WatchProgress].SetValue(-1);
-  const double maxchi(1000);
-  do
+  const double maxchi(0.1);
+  do 
     {
       nStars = nStarsLeft;
       cout << " IteratePsf() : Iteration #" << curIter << " Nstars #" << nStars << endl;
@@ -189,7 +192,7 @@ void MakeExperimentalPsf(ReducedImage &Rim)
   SEStarList psfStars(Rim.CatalogName());
   psfStars.FluxSort();
   float saturratio = 0.90;
-  float maxcstar=0.3; // <=> disable
+  float maxcstar=0.3; 
   SelectIsolatedStars(psfStars, Rim.UsablePart(), Rim.Saturation()*saturratio, Rim.Seeing(), maxcstar , 1., 0.5);  
   Daophot daoSession(Rim);
   daoSession.opt.write(Rim.Dir()+"/daophot.opt");
@@ -198,7 +201,7 @@ void MakeExperimentalPsf(ReducedImage &Rim)
 
   if (!FileExists(Rim.ImageCatalogName(DaophotAls)))
     {
-#ifdef DEBUG
+#ifdef DEBUG 
       cout << "in MakeExperimentalPsf: write 2 psf stars" << endl;
 #endif
       SelectTwoStars(psfStars);
@@ -227,11 +230,14 @@ void MakeExperimentalPsf(ReducedImage &Rim)
   psfStars.FluxSort();
   daoSession.WriteSEStarList<DaophotAp>(psfStars);
   psfStars.CutTail(200);
-
+  
   daoSession.WriteSEStarList<DaophotLst>(psfStars);
   daoSession.opt[VariablePsf].SetValue(-1);
   IteratePsf(daoSession, psfStars);
 
+#ifdef DEBUG
+  cout << "in MakeExperimentalPsf: Try all profiles with daoSession.Psf()" << endl;
+#endif
   // Try all profiles
   daoSession.opt[VariablePsf].SetValue(DaoPsfVariability(psfStars.size()));
   daoSession.opt[AnalyticPsf].SetValue(-6);
