@@ -1,11 +1,11 @@
 # -*- autoconf -*-
 # 
-# $Id: cernlib.m4,v 1.1 2004/02/23 00:39:37 nrl Exp $
+# $Id: cernlib.m4,v 1.2 2004/02/23 02:00:00 nrl Exp $
 # 
 # autoconf macro to check the cernlib installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
 # 
-AC_DEFUN([AM_CHECK_CERNLIB],[
+AC_DEFUN([CHECK_CERNLIB],[
 
  cernlib_prefix=""
 

@@ -41,9 +41,9 @@ AC_CHECK_LIB([g2c], [main])
 # FIXME: Replace `main' with a function in `-lnsl':
 AC_CHECK_LIB([nsl], [main])
 AM_PATH_XML2(2.6.2)
-AM_CHECK_CFITSIO(2.470)
-AM_CHECK_CERNLIB
-AM_CHECK_SEX
+CHECK_CFITSIO(2.470)
+CHECK_CERNLIB
+CHECK_SEX
 
 
 # Checks for header files.

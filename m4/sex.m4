@@ -1,11 +1,11 @@
 # -*- autoconf -*-
 # 
-# $Id: sex.m4,v 1.2 2004/02/23 01:53:55 nrl Exp $
+# $Id: sex.m4,v 1.3 2004/02/23 02:00:01 nrl Exp $
 # 
 # autoconf macro to check the sextractor installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
 # 
-AC_DEFUN([AM_CHECK_SEX],[
+AC_DEFUN([CHECK_SEX],[
 
  sex_prefix=""
  sex_headers=""
