@@ -670,6 +670,31 @@ StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,c
   return matches;
 }
 
+StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2, const double MaxDist)
+{
+  StarMatchList *matches = new StarMatchList;
+  FastFinder finder(L2);
+  for (BaseStarCIterator si = L1.begin(); si != L1.end(); ++si)
+    {
+      const BaseStarRef &p1 = (*si);
+      const BaseStar *neighbour = finder.FindClosest(*p1,MaxDist);
+      if (!neighbour) continue;
+      double distance =p1->Distance(*neighbour); 
+      if (distance < MaxDist)
+	{
+	  matches->push_back(StarMatch(*p1,*neighbour,*si,neighbour));
+	  // assign the distance, since we have it in hand: 
+	  matches->back().distance = distance;
+	}
+    }
+
+  matches->SetTransfo(new GtransfoIdentity);
+  matches->SetChi2();
+
+  return matches;
+}
+
+
 #ifdef STORAGE
 StarMatchList *ListMatchCollectWU(const BaseStarList &L1, const BaseStarList &L2,const Gtransfo *Guess, const double MaxDist, BaseStarList &unmatches)
 {

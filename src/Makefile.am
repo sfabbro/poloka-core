@@ -1,7 +1,7 @@
 EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
 
-AM_CPPFLAGS = -I../objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@  @CMT_CFLAGS@ 
+AM_CPPFLAGS = -Wall -I../objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@  @CMT_CFLAGS@ 
 AM_LDFLAGS = -L../objio -L@libdir@ -ltoadio @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@
 
 AM_YFLAGS = -l -d
@@ -121,9 +121,8 @@ libtoads_la_SOURCES = \
   kernelfit.cc                kernelfit.h \
   psfmatch.cc                 psfmatch.h  \
   lapackutils.cc	      lapackutils.h \
-  newsub.cc                   newsub.h    \
-  night.cc                    night.h     \
-                              nightelement.h
+  newsub.cc                   newsub.h    
+
 
 #  simulation.cc               simulation.h                       
 

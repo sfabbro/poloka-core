@@ -59,6 +59,10 @@ outlier pairs (more than 3 standard deviations away). */
 
 StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,const Gtransfo *Guess, const double MaxDist);
 
+//! same as before except that the transfo is the identity
+
+StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2, const double MaxDist);
+
 //! searches for a 2 dimentionnal shift using a very crude histogram method.
 GtransfoLin *ListMatchupShift(const BaseStarList &L1, 
 			      const BaseStarList &L2, 

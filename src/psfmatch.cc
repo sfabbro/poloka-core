@@ -209,7 +209,8 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   // it represents 3% of the cases. As it is just a question of CPU
   // we can live with that
 
-  if (!direct_fit || direct_fit->chi2 > 4.)
+  //  if (!direct_fit || direct_fit->chi2 > 4.)
+  if (false)
     {
       cout << " bad_direct_fit : trying swapped one (best<->worst)" << endl;
       KernelFit *reversed_fit = 

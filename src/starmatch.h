@@ -67,6 +67,8 @@ public :
   { return(one.distance < two.distance);}
   friend bool DecreasingDistances(const StarMatch &one, const StarMatch &two) 
   { return(one.distance > two.distance);}
+  friend bool DecPhoRatio(const StarMatch &S1, const StarMatch &S2)
+  { return(S1.s1->flux/S1.s2->flux > S2.s1->flux/S2.s2->flux); }
 #endif
   
   /* comparison that ensures that after a sort, duplicates are next one another */

@@ -4,16 +4,12 @@
 #include "fitsimage.h"
 #include "astroutils.h"
 
-
-#ifndef M_PI
-#define M_PI    3.14159265358979323846  
-#endif
-
 bool IsLeapYear (const int year)
 {
    return year % 400 == 0 || (year % 4 == 0 && year % 100 != 0);
 }
 
+// based on IDL code julianday.pro in astrolib
 long JulianDay(const int day, const int month, const int year) 
 {
   long greg = 15 + 31 * (10 + 12 * 1582);
@@ -68,10 +64,118 @@ double JulianDay(const FitsHeader& Header)
   return JulianDay(day,month,year,hour,minute,second);
 }
 
-double RedJulianDay(const FitsHeader& Header)
+double JulianDay(const string& DateString)
 {
-  return JulianDay(Header) - 2400000.;
+  // compute julian day at noon UT
+  int day,year,month;
+  if (sscanf(DateString.c_str(),"%d/%d/%d",&day, &month, &year) != 3) 
+    {
+      cerr << " JulianDay(" << DateString << ") : Error : can't compute Julian date from string " << endl; 
+      return 0.;
+    }
+
+  return JulianDay(day,month,year);
 }
+
+// see def e.g. in http://tycho.usno.navy.mil/mjd.html
+double ModJulianDay(const FitsHeader& Header)
+{
+  return JulianDay(Header) - 2400000.5;
+}
+
+// directly converted from caldate in jday.sf.net
+void DateFromJulianDay(const double &jd, int& day, int& month, int& year, 
+		       int& hour, int& min, double& sec)
+{
+  long ljd = (long) (jd + 0.5);
+  double frac = jd + 0.5 - (double) ljd + 1.0e-10;
+  long ka = (long) ljd;
+  long ialp;
+  if ( ljd >= 2299161L )
+    {
+      ialp = long( (double(ljd) - 1867216.25 ) / ( 36524.25 ));
+      ka = ljd + 1L + ialp - ( ialp >> 2 );
+    }
+  long kb = ka + 1524L;
+  long kc = long((double(kb) - 122.1 ) / 365.25);
+  long kd = long( double(kc) * 365.25);
+  long ke = long(double( kb - kd ) / 30.6001);
+
+  day = kb - kd - ((long) ( (double) ke * 30.6001 ));
+
+  if ( ke > 13L ) month = ke - 13L;
+  else	month = ke - 1L;
+
+  if ( (month == 2) && (day > 28) )    day = 29;
+  if ( (month == 2) && (day == 29) && (ke == 3L) ) year = kc - 4716L;
+  else if ( month > 2 ) year = kc - 4716L;
+  else year = kc - 4715L;
+
+  double dhour= frac*24.0;
+  hour = long(dhour);
+
+  double dmin = ( dhour - double(hour) ) * 60.0;
+  min = long(dmin);
+  sec  = ( dmin -  double(min) ) * 60.0;
+}
+
+string DateFromJulianDay(const double &jd)
+{
+  double sec;
+  int day,month,year,hour,min;
+  DateFromJulianDay(jd,day,month,year,hour,min,sec);    
+  char datechr[11];
+  sprintf(datechr,"%02d/%02d/%04d",day,month,year);
+  return string(datechr);
+}
+
+
+double JulDate(const int day, const int month, const int year, 
+		 const int hour, const int min, const double sec)
+{
+
+  /* decimal day fraction	*/
+  double frac = (( double)hour/ 24.0)
+    + ((double) min / 1440.0)
+    + (sec / 86400.0);
+
+  /* convert date to format YYYY.MMDDdd	*/
+  double gyr = (double) year
+    + (0.01 * (double) month)
+    + (0.0001 * (double) day)
+    + (0.0001 * frac) + 1.0e-9;
+
+  /* conversion factors */
+  long iy0, im0;
+  if ( month <= 2 )
+    {
+      iy0 = year - 1L;
+      im0 = month + 12;
+    }
+  else
+    {
+      iy0 = year;
+      im0 = month;
+    }
+  long ia = iy0 / 100L;
+  long ib = 2L - ia + (ia >> 2);
+
+  /* calculate julian date	*/
+  long ljd;
+  if ( year <= 0L )
+    ljd = (long) ((365.25 * (double) iy0) - 0.75)
+      + (long) (30.6001 * (im0 + 1L) )
+      + (long) day + 1720994L;
+  else
+    ljd = (long) (365.25 * (double) iy0)
+      + (long) (30.6001 * (double) (im0 + 1L))
+      + (long) day + 1720994L;
+
+  /* on or after 15 October 1582	*/
+  if ( gyr >= 1582.1015 )ljd += ib;
+
+  return (double) ljd + frac + 0.5;
+}	
 
 
 double UtStringToDeci(const string UtString)
@@ -200,68 +304,4 @@ void RaDec2000(const FitsHeader &Header, double &Ra, double &Dec)
     }
   cerr << " cannot precess convert safely ra,dec in " << Header.FileName() << " TOADEQUI : " << equi << endl;
 }
- 
 
-
-
-
-
-#ifdef STORAGE
-SkyWindow::SkyWindow(const FitsHeader& Head)
-{
-  double ra,dec;
-  GetRaDecInDeg(Head,ra,dec);
-  cosdec = cos(dec*M_PI/180.);
-  epoch = Head.KeyVal("TOADEQUI");
-  if (epoch != 2000) 
-    {
-      cerr << "WARNING: Epoch "<< epoch << " is not yet implemented" << endl;
-      return SkyWindow();
-    }
-   int nx = Header.KeyVal("NAXIS1");
-   int ny = Header.KeyVal("NAXIS2");
-   Pix2Deg.apply(0,0,RaMin,DecMin);
-   Pix2Deg.apply(nx-1,ny-1,RaMax,DecMax);
-   RaMin /= cos(DecMin*M_PI/180.);
-   RaMax /= cos(DecMax*M_PI/180.);
-   
-  Frame(ra + minra/cosdec, dec + mindec, ra + maxra/cosdec, dec + maxdec);
-}
-
-SkyWindow SkyWindow::operator * (const SkyWindow &Right) const
-{
-  SkyWindow result = *this;
-  result *= Right;
-  return result;
-}
-
-SkyWindow& SkyWindow::operator *= (const SkyWindow &Right)
-{
-  RaMin = max(RaMin,Right.RaMin);
-  RaMax = min(RaMax,Right.RaMax);
-  DecMin = max(DecMin,Right.DecMin);
-  DecMax = min(DecMax,Right.DecMax);
-  return *this;
-}
-
-double SkyWindow::Area() const
-{
-  return fabs((RaMax - RaMin)*(DecMax - DecMin));
-}
-
-bool SkyWindow::InSkyWindow(const double &ra,const double &dec) const
-{
-  return (( ra<= RaMax) && (dec<=DecMax) && (ra>=RaMin) && (dec>=DecMin));
-}
-
-void SkyWindow::dump(ostream & stream) const
-{
-  stream << "RA center" << RaCent << "(" << RaDegToString(RaCent) << ")  " 
-	 << "DEC center" << DecCent << "(" << DecDegToString(DecCent) << ")" << endl
-	 << "RA min DEC min " 
-	 << RaMin << ' ' << DecMin 
-	 << " RA max DEC max" 
-	 << RaMax << ' ' << DecMax << endl;
-}
-
-#endif

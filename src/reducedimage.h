@@ -352,6 +352,8 @@ Usefull in case of artificially smoothed images
   double Airmass() const;
   bool SetAirmass(const double &Value, const string Comment = "");
 
+  Gtransfo *RaDecToPixels() const;
+  Gtransfo *PixelsToRaDec() const;
  
   //! photometric reference (i.e. image that should have the same flux)
   string PhotomReference() const;
@@ -373,6 +375,9 @@ Usefull in case of artificially smoothed images
 
   //! fitsheader equivalent
   bool SameChipFilterInst(const ReducedImage &Another,const bool Warn = true) const;
+
+  //! returns true if image is same filter, chip, night, instrument
+  bool SameChipFilterInstNight(const ReducedImage &Another,const bool Warn = true) const;
 
   //! check that (Fits) images have the same sizes
   bool SamePhysicalSize(const ReducedImage &OtherImage) const;
@@ -425,8 +430,8 @@ bool IncreasingSeeing(const ReducedImage* one, const ReducedImage* two);
 //! allows to sort a list in increasing pixel scale order
 bool IncreasingResolution(const ReducedImage* one, const ReducedImage* two); 
 
-//! allows to sort a list in increasing date order
-bool IncreasingDate(const ReducedImage* one, const ReducedImage* two);
+//! allows to sort a list in increasing julian date order
+bool IncreasingJulianDate(const ReducedImage* one, const ReducedImage* two);
 
 //! allows to sort a list in decreasing area
 bool DecreasingArea(const ReducedImage* one, const ReducedImage* two);
@@ -450,6 +455,9 @@ public :
 typedef ReducedImageList::iterator       ReducedImageIterator;
 typedef ReducedImageList::const_iterator ReducedImageCIterator;
 
+
+//! the common pixel frame to all images of the list
+Frame CommonFrame(ReducedImageList &RList);
 
 #ifndef SWIG 
 // SWIG does not like pointer to member functions

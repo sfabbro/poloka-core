@@ -19,6 +19,8 @@ struct Window {
   Window(const int Xstart, const int Ystart, 
 	 const int Xend, const int Yend) : xstart(Xstart), ystart(Ystart), xend(Xend), yend(Yend) {}
   int xstart, ystart, xend, yend; 
+  int Nx() const { return xend-xstart; }
+  int Ny() const { return yend-ystart; }
 };
 
 ostream& operator << (ostream& stream, const Window& w);

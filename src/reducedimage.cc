@@ -8,7 +8,7 @@
 #include "fitstoad.h"
 #include "sestar.h"
 #include "cluster.h"
-
+#include "gtransfo.h"
 
 
 /* it seems that a constructor cannot call another constructor:
@@ -1438,6 +1438,11 @@ bool ReducedImage::SameChipFilterInst(const ReducedImage &Other,const bool Warn)
   return FitsHeader(FitsName()).SameChipFilterInst(FitsHeader(Other.FitsName()), Warn);
 }
 
+bool ReducedImage::SameChipFilterInstNight(const ReducedImage &Other,const bool Warn) const
+{
+  return ((SameChipFilterInst(Other, Warn)) && 
+	  (fabs(JulianDate()-Other.JulianDate()) ) < 0.5);
+}
 
 bool ReducedImage::SamePhysicalSize(const ReducedImage &OtherImage) const
 {
@@ -1451,6 +1456,35 @@ double ReducedImage::OverlapArcmin2(const ReducedImage& Other) const
 {
   return Arcmin2Overlap(FitsHeader(FitsName()), FitsHeader(Other.FitsName()));
 }
+
+Gtransfo *ReducedImage::RaDecToPixels() const
+{
+  Gtransfo *pix2radec(0);
+  FitsHeader head(FitsName());
+  if (!WCSFromHeader(head, pix2radec))
+    {
+      cerr << " ReducedImage::RaDecToPixels() did not find the expected WCS in FITS header " 
+	   << FitsName() << endl;
+      return 0;
+    }  
+  Gtransfo *inv =  pix2radec->InverseTransfo(0.01, Frame(head));
+  delete pix2radec;
+  return inv;
+}
+
+Gtransfo *ReducedImage::PixelsToRaDec() const
+{
+  Gtransfo *pix2radec(0);
+  FitsHeader head(FitsName());
+  if (!WCSFromHeader(head, pix2radec))
+    {
+      cerr << " ReducedImage::PixelsToRaDec() did not find the expected WCS in FITS header " 
+	   << FitsName() << endl;
+      return 0;
+    }
+  return pix2radec;
+}
+
 
 void ReducedImage::dump(ostream & s) const 
 {
@@ -1515,15 +1549,6 @@ bool ReducedImage::IsGoodImage() const
       cerr << " Exposure is undefined for " << Name() << endl;
       return false;
     }
-
-#if 0  // a long check
-  SEStarList sexlist(Im.ImageCatalogName());
-  if (sexlist.size() == 0)
-    {
-      cerr << " Catalog " << Im.ImageCatalogName() << " has no stars " << endl;
-      return false;
-    }
-#endif
 
   return true;
 }
@@ -1681,7 +1706,7 @@ bool BoolImageAnd(ReducedImageList &List,
 bool IncreasingSeeing(const ReducedImage* one, const ReducedImage* two)
 { return (one->Seeing() < two->Seeing());}
 
-bool IncreasingDate(const ReducedImage* one, const ReducedImage* two)
+bool IncreasingJulianDate(const ReducedImage* one, const ReducedImage* two)
 { return (one->JulianDate() < two->JulianDate());}
 
 bool IncreasingResolution(const ReducedImage* one, const ReducedImage* two)
@@ -1701,6 +1726,17 @@ bool DecreasingArea(const ReducedImage *one, const ReducedImage *two)
 
 //#include "imagelist.cc"
 //template class ImageList<ReducedImage> ; // to force instanciation 
+
+
+Frame CommonFrame(ReducedImageList &RedList)
+{
+  sort(RedList.begin(), RedList.end(), DecreasingArea);
+  Frame frame_common(RedList.front()->UsablePart());
+  for (ReducedImageCIterator im = RedList.begin(); im != RedList.end(); ++im)
+    frame_common *= Frame((*im)->UsablePart());
+  cout << " Common frame for ReduceImageList: " << frame_common;
+  return frame_common;
+}
 
 
 #ifdef USE_ROOT

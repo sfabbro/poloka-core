@@ -222,6 +222,8 @@ void DImage::readFits(const string &FitsName)
 
 void DImage::readFromImage(const string& FitsFileName, const Window &Rect)
 {
+  Allocate(Rect.Nx(), Rect.Ny());
+
   double nulval = 0;
   int    status = 0;
   int anynul;

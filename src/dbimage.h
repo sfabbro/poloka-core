@@ -3,7 +3,9 @@
 #define DBIMAGE__H
 
 #ifndef BISON_PARSER
+#ifndef YYBISON
 #include "persistence.h"
+#endif
 #endif
 
 /*! \file dbimage.h

@@ -204,7 +204,9 @@ class KernelFit {
     WorstDiffBkgrdSubtracted = NULL;
     convolutions = NULL;
     BestImageBack = 0;
-      WorstImageBack = 0;
+    WorstImageBack = 0;
+    m=0;
+    b=0;
   }
   
   ~KernelFit() {
