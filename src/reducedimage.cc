@@ -1889,84 +1889,35 @@ Frame CommonFrame(ReducedImageList &RedList)
 }
 
 
-#ifdef USE_ROOT
-/*
-RUN_ROOTCINT
-LINKDEF_CONTENT : #pragma link C++ class ReducedImage;
-LINKDEF_CONTENT : #pragma link C++ class vector<ReducedImage*>;
-LINKDEF_CONTENT : #pragma link C++ class ImageList<ReducedImage>-;
-LINKDEF_CONTENT : #pragma link C++ function ReducedImageRead(const char *);
-LINKDEF_CONTENT : #pragma link C++ class string;
-LINKDEF_CONTENT : ostream& operator << (ostream& , const string &);
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream& , const string&);
-
-
-there is a problem with vector<RedducedImage*>::iterator, as well as 
-the trick using a typedef.
-
-
-*/
-
-ClassImp(ReducedImage);
 
 
 
-#include "root_dict/reducedimagedict.cc"
-
-#include <TFile.h>
-#include <TKey.h>
-#endif /* USE_ROOT */
-
-
-
-ReducedImage* ReducedImageRead(const char *Name)
+ReducedImageRef ReducedImageRead(const char *Name)
 {
   return ReducedImageRead(string(Name));
 }
 			  
+#include <objio.h>
+#include <persistence.h>
+#include <typemgr.h>
+#include "reducedimage_dict.h"
 
-ReducedImage* ReducedImageRead(const string &Name)
+ReducedImageRef ReducedImageRead(const string &Name)
 {
-#ifdef USE_ROOT
   DbImage ri(Name);
   if (!ri.IsValid()) 
-    {cerr << Name << " : No such ReducedImage " << endl; return NULL;}
+    {cerr << Name << " : No such ReducedImage " << endl; 
+    return CountedRef<ReducedImage>();}
   string fileName = ri.EverythingElseFileName();
   if (!FileExists(fileName)) 
     { cerr << Name << " : does not have a " << fileName << " file " << endl; 
-    return NULL;
+    return CountedRef<ReducedImage>();
     }
-  TFile tfile(fileName.c_str());
-  TIter nextkey(tfile.GetListOfKeys());
-  TKey *key = (TKey*)nextkey();
-  ReducedImage *p;
-  if (key) 
-    {
-      p = dynamic_cast<ReducedImage*>(key->ReadObj());
-      if (!p) 
-	{
-	  cerr << " cannot find a ReducedImage in " << fileName << endl;
-	  return p;
-	}
-      if (p->Name() != Name) 
-	{
-	  cerr << " something weird happened when reloading DbImage " 
-	       << Name << endl
-	       << " name in the file : " << p->Name() << endl
-	       << " name requested " << Name << endl;
-	}
-      p->init_from_name();
-    }
-  else 
-    {
-      cerr << " could not read : " << fileName << endl;
-    }
-  tfile.Close(); 
-  return p;
-#else
-  cerr << "for image :" << Name << ", ReducedImageRead only works with USE_ROOT  defined " << endl;
-  return NULL;
-#endif
+  ReducedImageRef result;
+  obj_input<xmlstream> oo(fileName);
+  oo >> result;
+  oo.close();
+  return result;
 }
 
   

@@ -42,14 +42,16 @@ using namespace std;
    
 */
 
+#include "persistence.h"
 
-class ReducedImage : public DbImage, public RefCount
+class ReducedImage : public DbImage
 {
 
-CLASS_VERSION(ReducedImage,1);
-#define ReducedImage__is__persistent
 
 private :
+  CLASS_VERSION(ReducedImage,1);
+  #define ReducedImage__is__persistent
+
   // take care if you add any pointer here : 
   // the default copy constructor then has to be written
   bool actuallyReduced;//!
@@ -425,11 +427,14 @@ Usefull in case of artificially smoothed images
   
 };
 
-//! to Reload an already existing ReducedImage
-ReducedImage* ReducedImageRead(const char *Name);
+typedef CountedRef<ReducedImage> ReducedImageRef;
+
 
 //! to Reload an already existing ReducedImage
-ReducedImage* ReducedImageRead(const string &Name);
+ReducedImageRef ReducedImageRead(const char *Name);
+
+//! to Reload an already existing ReducedImage
+ReducedImageRef ReducedImageRead(const string &Name);
 
 //! allows to sort a list in increasing seeing order
 bool IncreasingSeeing(const ReducedImage* one, const ReducedImage* two); 
@@ -482,9 +487,6 @@ bool BoolImageAnd(ReducedImageList &List,
 		 const string OutFitsName);
 
 #endif
-
-typedef CountedRef<ReducedImage> ReducedImageRef;
-
 
 
 #endif /* REDUCEDIMAGE__H */
