@@ -28,22 +28,44 @@ int main(int argc, char **argv)
   PhotStar* star = lc.Ref;
   SimFitRefVignet *vignet = new SimFitRefVignet(star,lc.Ref->Image(),radius);
   
+  // read galaxy
   Kernel galaxy;
-  string galname = lc.Ref->name+"/galaxy_sn.fits";
+  string galname = "galaxy_sn.fits";
   if(!FileExists(galname)) {
     cout << " cannot open " << galname << endl;
     return -12;
   }
-  
   galaxy.readFits(galname);
-  int hx = galaxy.HSizeX();
-  int hy = galaxy.HSizeY();
+
+  // get size of reference data vignet 
+  Kernel refdata;
+  string name = vignet->Image()->Name();
+  string refdataname = "T_"+name+name.substr(0,9)+"_sn_data.fits";
+  if(!FileExists(refdataname)) {
+    cout << " cannot open " << refdataname << endl;
+    return -12;
+  }
+  refdata.readFits(refdataname);
   
+  // load weights in case of vignet on border of frame
+  Kernel weight;
+  string weightdataname = "T_"+name+name.substr(0,9)+"_sn_weight.fits";
+  if(!FileExists(weightdataname)) {
+    cout << " cannot open " << weightdataname << endl;
+    return -12;
+  }
+  weight.readFits(weightdataname);
+
+  
+  int hx = refdata.HSizeX();
+  int hy = refdata.HSizeY();
+  cout << "hx hy = " << hx << " " << hy << endl;
+
 
   // get sn position and max flux
   float x,y,fluxmax;
   {
-    string lcname = lc.Ref->name+"/lightcurve_sn.dat";
+    string lcname = "lightcurve_sn.dat";
     if(!FileExists(lcname)) {
       cout << " cannot open " << lcname << endl;
       return -12;
@@ -68,18 +90,31 @@ int main(int argc, char **argv)
   vignet->Resize(hx,hy);
   vignet->Psf.Tabulate(Point(x,y),*(vignet->psf),(const Window&)*vignet);
   
+  // create an image with and without sn
+  DImage image((2*hx+1)*2+1,(2*hy+1));
   
-  cout << "hx hy = " << hx << " " << hy << endl;
-  
-  // write image
-  Kernel model = galaxy;
+  int dy;
+  float vmax=0;
+  float v;
   for(int j=-hy;j<=hy;++j) {
-      for(int i=-hx;i<=hx;++i) {
-	model(i,j)+=fluxmax*vignet->Psf(i,j);
+    dy = j+hy;
+    for(int i=-hx;i<=hx;++i) {
+      if(true) {
+      //if(weight(i,j)>1.e-10) {
+	image(i+hx,dy)=galaxy(i,j);
+	v = galaxy(i,j) +fluxmax*vignet->Psf(i,j);
+	image(i+hx+(2*hx+1)+1,dy)=v;
+	if(v>vmax)
+	  vmax=v;
       }
+    }
   }
-  string modelname = lc.Ref->name+"/model_sn.fits";
-  model.writeFits(modelname);
+  for(int j=-hy;j<=hy;++j) {
+    image(2*hx+1,hy+j)=vmax;
+  }
+  
+  string modelname = "model_sn.fits";
+  image.writeFits(modelname);
   
 
   return EXIT_SUCCESS;
