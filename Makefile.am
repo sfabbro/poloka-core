@@ -12,3 +12,5 @@ SUBDIRS = objio cern_stuff lapack_stuff telinst src dao lc utils datacards
 bin_SCRIPTS = repack-config
 BUILT_SOURCES = repack-config
 repack-config: repack-config.in
+
+include_HEADERS = config.h
