@@ -41,8 +41,8 @@ int main(int argc, char **argv)
 
   Mat FluxCovarianceMat = CovarianceMat.SubBlock(0,nflux-1,0,nflux-1);
   FluxCovarianceMat.Symmetrize("L");
-      
-  //cout << FluxCovarianceMat << endl;
+  
+
   Mat A;
   if(!fitsingleflux) {
     A.readFits("nightmat_sn.fits");
@@ -52,18 +52,49 @@ int main(int argc, char **argv)
       A(0,i)=1;
   }
   Mat Abis = A; // we save a copy for output 
+  cout << "A before cleaning:"  << endl;
   cout << A << endl;
+
+  cout << "FluxVec before cleaning:"  << endl;
+  cout << FluxVec << endl;
+  
+  cout << "FluxCovarianceMat before cleaning:"  << endl;
+  cout << FluxCovarianceMat << endl;
+  
+
+  // ==== remove points without data ====
+  for(unsigned int i=0; i< FluxVec.Size(); i++) {
+    if(fabs(FluxVec(i))<1.e-30) {
+      cout << "removing " << i << " : ";
+      cout << FluxCovarianceMat.SizeX() << " => ";
+      FluxCovarianceMat = FluxCovarianceMat.WithoutRows(i,i);
+      FluxCovarianceMat = FluxCovarianceMat.WithoutColumns(i,i);
+      cout << FluxCovarianceMat.SizeX() << endl;
+      Mat mFluxVec = FluxVec;
+      FluxVec = mFluxVec.WithoutRows(i,i);
+      A = A.WithoutRows(i,i);
+      i--;
+    }
+  }
+  cout << "FluxVec after cleaning:"  << endl;
+  cout << FluxVec << endl;
+  cout << "A after cleaning:"  << endl;
+  cout << A << endl;
+  cout << "FluxCovarianceMat after cleaning:"  << endl;
+  cout << FluxCovarianceMat << endl;
   
   vector<int> suppressedfluxes;
   Vect flux_per_night;
   Mat AtWA_invert;
+  Mat AtWA;
+  Mat FluxWeightMat;
   while(true) {
   
-    Mat FluxWeightMat = FluxCovarianceMat;
+    FluxWeightMat = FluxCovarianceMat;
     FluxWeightMat.SymMatInvert();
     //cout << "FluxWeightMat" << endl;
     //cout << FluxWeightMat << endl;
-    Mat AtWA = A.transposed()*FluxWeightMat*A;
+    AtWA = A.transposed()*FluxWeightMat*A;
     AtWA_invert = AtWA; AtWA_invert.SymMatInvert();
     flux_per_night = (AtWA_invert*(A.transposed()*FluxWeightMat))*FluxVec;
     cout << "Mean flux per night" << endl;
@@ -118,14 +149,34 @@ int main(int argc, char **argv)
   // save these results in ASCII files
   // ... TODO ...
   {
-    ofstream st("flux_per_expo_covmat.dat");
-    st << FluxCovarianceMat;
-    st.close();
+    {
+      ofstream st("flux_per_expo_covmat.dat");
+      st << FluxCovarianceMat;
+      st.close();
+    }
     FluxCovarianceMat.writeFits("flux_per_expo_covmat.fits");
-    ofstream st2("flux_per_night_covmat.dat");
-    st2 <<  AtWA_invert;
-    st2.close();
+    
+    {
+      ofstream st("flux_per_night_covmat.dat");
+      st <<  AtWA_invert;
+      st.close();
+    }
     AtWA_invert.writeFits("flux_per_night_covmat.fits");
+    
+    {
+      ofstream st("flux_per_expo_weightmat.dat");
+      st << FluxWeightMat;
+      st.close();
+    }
+    FluxWeightMat.writeFits("flux_per_expo_weightmat.fits");
+    
+    {
+      ofstream st("flux_per_night_weightmat.dat");
+      st <<  AtWA;
+      st.close();
+    }
+    AtWA.writeFits("flux_per_night_weightmat.fits");
+    
   }
   
 
@@ -140,21 +191,23 @@ int main(int argc, char **argv)
     // no keep only points with flux!=0 (i.e. fitted points)
     vector< CountedRef<LightCurvePoint> >::iterator it = lcpoints_all.begin();
     for(;it!=lcpoints_all.end();++it) {
-      cout << (*it)->julianday << " " << (*it)->flux;
+      //cout << (*it)->julianday << " " << (*it)->flux;
       if((*it)->flux!=0) {
 	lcpoints.push_back(*it);
       }
-      cout << endl;
+      //cout << endl;
     }
   }
   
-
-  cout << lcpoints.size() << endl;
-  for(unsigned int expo=0;expo<lcpoints.size();++expo) {
-    	cout 
-	     << expo << " " 
-	     << lcpoints[expo]->flux << " " 
-	     << lcpoints[expo]->julianday-2452854.0 << endl;
+  
+  if(false) {
+    cout << lcpoints.size() << endl;
+    for(unsigned int expo=0;expo<lcpoints.size();++expo) {
+      cout 
+	<< expo << " " 
+	<< lcpoints[expo]->flux << " " 
+	<< lcpoints[expo]->julianday-2452854.0 << endl;
+    }
   }
 
   // get zero point 
@@ -163,10 +216,10 @@ int main(int argc, char **argv)
 
 
   ofstream outputlc("lc_per_night.dat");
-  outputlc << "# jd : \n"
+  outputlc << "# mmjd : (days since January 1st, 2003)\n"
 	   << "# flux : \n"  
 	   << "# eflux : \n"
-	   << "# mag : using elixir zero point = " << zp << "\n"
+	   << "# mag : using zeropoint \n"
 	   << "# emag_minus : useful for drawing\n"
 	   << "# emag_plus : useful for drawing\n"
 	   << "# zeropoint : elixir zp\n";
@@ -186,9 +239,9 @@ int main(int argc, char **argv)
     for(unsigned int expo=0;expo<Abis.SizeY();++expo) {
       if(Abis(night,expo)>0.5) {
 	jd += lcpoints[expo]->julianday;
-	cout << night << " " 
-	     << expo << " " 
-	     << lcpoints[expo]->julianday-2452854.0 << endl;
+	//cout << night << " " 
+	//     << expo << " " 
+	//     << lcpoints[expo]->julianday-2452854.0 << endl;
 	nexpo++;
       }
     }
