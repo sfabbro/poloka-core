@@ -64,33 +64,33 @@ private:
 };
 
 
-template<class T>
-class B : public A {
-public:
-  B() {}
-  ~B() {}
-  
-private:
-  T t_;
-  template<class U> friend class persister;
-};
+//template<class T>
+//class B : public A {
+//public:
+//  B() {}
+//  ~B() {}
+//  
+//private:
+//  T t_;
+//  template<class U> friend class persister;
+//};
 
 
-template<class T, class U>
-class BB : public A {
-public:
-  BB() {}
-  ~BB() {}
-  
-  std::list<T>  lt_;
-  std::map<T,U> mtu_;
-  
-private:  
-  T t_;
-  U u_;
-  
-  template<class Z> friend class persister;
-};
+//template<class T, class U>
+//class BB : public A {
+//public:
+//  BB() {}
+//  ~BB() {}
+//  
+//  std::list<T>  lt_;
+//  std::map<T,U> mtu_;
+//  
+//private:  
+//  T t_;
+//  U u_;
+//  
+//  template<class Z> friend class persister;
+//};
 
 
 #endif

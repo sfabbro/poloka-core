@@ -6,8 +6,8 @@ libtoadio_la_CPPFLAGS = @XML_CFLAGS@
 libtoadio_la_LDFLAGS = @XML_LIBS@
 
 
-#%_dict.cc : %.h
-#	./dictgen2 -o $@ $<
+%_dict.cc : %.h
+	./dictgen2 -o $@ $<
 
 include_HEADERS = \
  persister.h dict.h objio.h dictio.h reader.h \

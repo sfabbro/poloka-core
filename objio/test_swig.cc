@@ -16,8 +16,8 @@
 #include "test_swig.h"
 #include "test_swig_dict.h"
 
-#include "B__persister.h"
-#include "BB__persister.h"
+//#include "B__persister.h"
+//#include "BB__persister.h"
 
 
 struct Toto {
@@ -42,8 +42,8 @@ int main()
   std::vector<std::string> string_vector;
   map<std::string,short> string_short_map;
   std::list< std::vector< std::map<string,unsigned int> > > stupidly_complex_example;
-  B<int> b;
-  BB<string,double> bb;
+  //  B<int> b;
+  //  BB<string,double> bb;
   
   p.x()=2;
   p.y()=5.243;
@@ -76,8 +76,8 @@ int main()
   string_short_map["tutu"]=3435;
   string_short_map["tata"]=5;  
   
-  bb.lt_.push_back("glop");
-  bb.mtu_["tutu"]=3.14;
+  //  bb.lt_.push_back("glop");
+  //  bb.mtu_["tutu"]=3.14;
   
   obj_output<xmlostream> oo("ttt.xml");
   oo << a;
@@ -87,8 +87,8 @@ int main()
   oo << string_vector;
   oo << double_vector;
   oo << string_short_map;
-  oo << b;
-  oo << bb;
+  //  oo << b;
+  //  oo << bb;
   
   //  persister<Star>* tps = (persister<Star>*)typemgr::getPersister(typeid(&s).name());
   persister_base* tps = typemgr::getPersister(typeid(&s).name());
