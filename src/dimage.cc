@@ -220,32 +220,77 @@ void DImage::readFits(const string &FitsName)
   for (int i=ny*nx; i ; --i) {*dp = *p ; ++p; ++dp;}
 }
 
-void DImage::readFromImage(const string& FitsFileName, const Window &Rect)
+void DImage::readFromImage(const string& FitsFileName, const Window &Rect, DPixel value_when_outside_fits)
 {
+  cout << "Rect : " << Rect.Nx() << " " <<  Rect.Ny() << endl;
   Allocate(Rect.Nx(), Rect.Ny());
-
-  double nulval = 0;
-  int    status = 0;
-  int anynul;
-  long lbc[] = {Rect.xstart+1, Rect.ystart+1};
-  long trc[] = {Rect.xend, Rect.yend};
-  long inc[] = {1,1};
-  fitsfile *fptr = 0;
-  fits_open_file(&fptr, FitsFileName.c_str(), RO, &status);
-  fits_read_subset(fptr, TDOUBLE, lbc, trc, inc, &nulval,  data,
-		   &anynul, &status);
-  if (status>0)  
-    { 
-      cerr << " Vignet::readFromImage(" << FitsFileName << "):fits_read_subset : Error: " << endl; 
-      fits_report_error(stderr, status); 
-    }
-  fits_close_file(fptr, &status);
   
-  if (status>0)  
-    { 
-      cerr << " Vignet::readFromImage(" << FitsFileName << "):fits_close_file : Error: " << endl; 
-      fits_report_error(stderr, status); 
+  
+
+  // Rect can be outside fitsimage, fill the area ouside fits with value_when_outside_fits
+  // long lbc[] = {Rect.xstart+1, Rect.ystart+1};
+  // long trc[] = {Rect.xend, Rect.yend};
+  
+  
+  int fits_nx = 0;
+  int fits_ny = 0;
+  {
+    FitsHeader head(FitsFileName);
+    fits_nx = head.KeyVal("NAXIS1");
+    fits_ny = head.KeyVal("NAXIS2");
+  }
+  //cout << "Rect: " << Rect.xstart << " " << Rect.ystart << " " << Rect.xend << " " << Rect.yend << endl;
+  //cout << " fits " << fits_nx << " " << fits_ny << endl;
+
+  Window tempRect(max(0,Rect.xstart),max(0,Rect.ystart),min(fits_nx,Rect.xend),min(fits_ny,Rect.yend));
+  //cout << "tempRect: " << tempRect.xstart << " " << tempRect.ystart << " " << tempRect.xend << " " << tempRect.yend << endl;
+  if(Rect.xstart!=tempRect.xstart || Rect.ystart!=tempRect.ystart || Rect.xend!=tempRect.xend || Rect.yend!=tempRect.yend) {
+    //cout << "tempRect " << tempRect.Nx() << " " << tempRect.Ny() << endl;
+    if(tempRect.Nx()<=0 || tempRect.Ny() <= 0) {
+      cout << "ERROR in DImage::readFromImage, no intersection between window and fits image" << endl;
+      abort();
     }
+    
+    DImage tmpimage(tempRect.Nx(),tempRect.Ny());
+    tmpimage.readFromImage(FitsFileName,tempRect);
+    int j1 = tempRect.ystart-Rect.ystart;
+    int j2 = Ny() + tempRect.yend-Rect.yend;
+    int i1 = tempRect.xstart-Rect.xstart;
+    int i2 = Nx() + tempRect.xend-Rect.xend;
+    
+    for(int j=0;j<Ny();j++) {
+      for(int i=0;i<Nx();i++) {
+	if(j>=j1 && j<j2 && i>=i1 && i<i2)
+	  (*this)(i,j)=tmpimage(i-i1,j-j1);
+	else
+	  (*this)(i,j)=value_when_outside_fits;
+      }
+    }
+    
+  }else{
+    double nulval = 0;
+    int    status = 0;
+    int anynul;
+    long inc[] = {1,1};
+    long lbc[] = {Rect.xstart+1, Rect.ystart+1};
+    long trc[] = {Rect.xend, Rect.yend};
+    fitsfile *fptr = 0;
+    fits_open_file(&fptr, FitsFileName.c_str(), RO, &status);
+    fits_read_subset(fptr, TDOUBLE, lbc, trc, inc, &nulval, data,
+		     &anynul, &status);
+    if (status>0)  
+      { 
+	cerr << " Vignet::readFromImage(" << FitsFileName << "):fits_read_subset : Error: " << endl; 
+	fits_report_error(stderr, status); 
+      }
+    fits_close_file(fptr, &status);
+    
+    if (status>0)  
+      { 
+	cerr << " Vignet::readFromImage(" << FitsFileName << "):fits_close_file : Error: " << endl; 
+	fits_report_error(stderr, status); 
+      }
+  }
 }
 
 void DImage::writeInImage(const string& FitsFileName, const Window &Rect) const
@@ -387,7 +432,7 @@ void Kernel::readFits(const string &FitsName)
   maxindex = minindex + Nx()*Ny()-1;
 }
 
-void Kernel::readFromImage(const string& FitsFileName, const Window &Rect)
+void Kernel::readFromImage(const string& FitsFileName, const Window &Rect, DPixel value_when_outside_fits)
 {
 
 #ifdef DEBUG
@@ -398,7 +443,7 @@ void Kernel::readFromImage(const string& FitsFileName, const Window &Rect)
   int nix,niy; head.ImageSizes(nix,niy);
   if ((nix == 0)|| (niy == 0) ) return;
   
-  DImage::readFromImage(FitsFileName, Rect); 
+  DImage::readFromImage(FitsFileName, Rect, value_when_outside_fits); 
   hSizeX = (Nx()-1)/2;
   hSizeY = (Ny()-1)/2;
   data00 = &(*this)(hSizeX,hSizeY);

@@ -30,7 +30,6 @@ struct Window {
     return (Pt.x > xstart) && (Pt.x < xend) 
       &&   (Pt.y > ystart) && (Pt.y < yend);
   }
-
 };
 
 ostream& operator << (ostream& stream, const Window& w);
@@ -60,6 +59,7 @@ public:
       {
 	cerr << "CATASTROPHE : DImage out of bounds " 
 	     << i << " " << j <<  " " << nx << " " << ny << " " << minindex << " " << maxindex << endl;
+	abort();
       }
 #endif
     return data00[i+j*nx]; /* fortran/FITS convention */
@@ -104,7 +104,7 @@ public:
   void writeFits(const string &FitsName) const;
   //! constructor calls read routine
   DImage(const string &FitsName);
-  void readFromImage(const string& FitsFileName, const Window &Rect);
+  void readFromImage(const string& FitsFileName, const Window &Rect,DPixel value_when_outside_fits=0);
   void writeInImage (const string& FitsFileName, const Window &Rect) const;
 };
 
@@ -193,7 +193,7 @@ public:
   Kernel();
   Kernel& operator = (const Kernel &Right); 
   void readFits(const string &FitsName);
-  void readFromImage(const string& FitsFileName, const Window &Rect);
+  void readFromImage(const string& FitsFileName, const Window &Rect,DPixel value_when_outside_fits);
   bool IsDirac() const  {return (sum() == *data00);}
   //! half the size in x direction
   int HSizeX() const { return hSizeX;}
