@@ -107,7 +107,7 @@ void Component::dump(ostream &s) const
   // have to restore Formats from C
   int oldprec = s.precision();
   s << setprecision(6);
-  s << "Component from " << Ri->Name() << ":" << endl
+  s << "Component from " << Ri->Name() << " : " 
    << "backVar =" << backVar 
     << " seeing = " << seeing 
     << " photomratio = " << photomRatio 
@@ -115,12 +115,6 @@ void Component::dump(ostream &s) const
     << " averageweight = " << averageWeight 
     << endl;
   s << setprecision(oldprec);
-#ifdef STORAGE
-  printf("\n"); 
-  printf("backVar = %7.1f seeing = %4.2f photomratio = %6.4f globalweight = %4.2f \naverageweight = %7.1f \n", backVar, seeing, photomRatio,
-	 globalWeight, averageWeight);
-  printf("\n"); 
-#endif
 }
 
 
