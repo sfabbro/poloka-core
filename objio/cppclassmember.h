@@ -1,10 +1,7 @@
 // -*- C++ -*-
-// $Id: cppclassmember.h,v 1.3 2004/03/06 23:15:42 nrl Exp $
 // 
 // \file cppclassmember.h
 // 
-// Last modified: $Date: 2004/03/06 23:15:42 $
-// By:            $Author: nrl $
 // 
 #ifndef CPPCLASSMEMBER_H
 #define CPPCLASSMEMBER_H

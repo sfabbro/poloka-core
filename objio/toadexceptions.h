@@ -1,16 +1,12 @@
 // -*- C++ -*-
 // 
-// $Id: toadexceptions.h,v 1.1 2004/02/20 10:48:43 nrl Exp $
 // 
 // file toadexceptions.h 
 // 
 /*!
   \file toadexceptions.h
   \brief Base classes and macros for toad exceptions
-  
-  Last modified: $Date: 2004/02/20 10:48:43 $
-  By:            $Author: nrl $
-  
+    
  */
 #ifndef TOADEXCEPTIONS_H
 #define TOADEXCEPTIONS_H

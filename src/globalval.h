@@ -2,9 +2,6 @@
 // 
 // \file globalval.h
 // 
-// Last modified: $Date: 2005/01/18 14:10:51 $
-// By:            $Author: guy $
-// 
 
 #ifndef GLOBALVAL__H
 #define GLOBALVAL__H

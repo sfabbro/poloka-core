@@ -1,11 +1,8 @@
 // -*- C++ -*-
-// $Id: cpptype.h,v 1.3 2004/03/06 23:15:43 nrl Exp $
 // 
 // \file cpptype.h Simple class to hold the type of
 // a class member.
 // 
-// Last modified: $Date: 2004/03/06 23:15:43 $
-// By:            $Author: nrl $
 // 
 // POTENTIAL PROBLEMS:
 //   * the CppType does not know whether it is fully instantiated or not...

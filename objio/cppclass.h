@@ -1,10 +1,7 @@
 // -*- C++ -*-
-// $Id: cppclass.h,v 1.5 2004/05/19 08:15:48 guy Exp $
 // 
 // \file cppclass.h
 // 
-// Last modified: $Date: 2004/05/19 08:15:48 $
-// By:            $Author: guy $
 // 
 // POTENTIAL PROBLEMS:
 //  * no way to know how many template args a class has. 

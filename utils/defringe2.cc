@@ -1,11 +1,3 @@
-/* 
- * $Source: /cvs/snovae/toads/poloka/utils/Attic/defringe2.cc,v $
- * $Revision: 1.1 $
- * $Author: nrl $
- * $Date: 2004/02/20 10:48:46 $
- * $Name:  $
- */
-
 #include <iostream>
 #include <vector>
 
@@ -17,7 +9,7 @@
 #include "dbimage.h"
 
 // get cvs version of the code
-#define CVSVERSION "$Revision: 1.1 $"
+#define CVSVERSION "$Revision: 1.2 $"
 
 void DumpHelp(const char *progName) {
   cout     << progName << " removes fringes of a FITS image" << endl

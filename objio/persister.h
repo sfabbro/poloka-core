@@ -1,5 +1,4 @@
 // -*- C++ -*-
-// $Id: persister.h,v 1.6 2004/04/15 11:42:17 guy Exp $
 // 
 // \file persister.h
 // A persister is a handle on an object, which knows
@@ -7,8 +6,6 @@
 // how to write it to an output stream. The stream 
 // is generic and can be implemented many ways.
 // 
-// Last modified: $Date: 2004/04/15 11:42:17 $
-// by:            $Author: guy $
 // 
 #ifndef PERSISTER_H
 #define PERSISTER_H

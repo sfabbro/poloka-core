@@ -1,6 +1,4 @@
 // -*- C++ -*-
-// $Id: cppclass.cc,v 1.4 2004/03/08 13:20:01 guy Exp $
-// \file cppclass.cc
 // 
 // 
 #include <iostream>

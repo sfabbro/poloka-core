@@ -1,10 +1,3 @@
-/* 
- * $Source: /cvs/snovae/toads/poloka/src/Attic/fitsimagearray.cc,v $
- * $Revision: 1.2 $
- * $Author: guy $
- * $Date: 2004/04/29 18:27:01 $
- * $Name:  $
- */
 
 #include <iostream>
 #include <fitsio.h>
@@ -16,7 +9,7 @@
 //#define DEBUG 
 
 // get cvs version of the code
-#define CVSVERSION "$Revision: 1.2 $"
+#define CVSVERSION 0
 
 // ============ STUFF copied in fitsimage =======================
 static string  local_time()

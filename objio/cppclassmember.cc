@@ -1,5 +1,4 @@
 // -*- C++ -*-
-// $Id: cppclassmember.cc,v 1.4 2004/03/08 09:24:02 guy Exp $
 // 
 // \file cppclassmember.cc
 // 

@@ -3,8 +3,6 @@
 // \file gtransfo.h
 // \brief Geometrical transformations (of 2D points)
 // 
-// Last modified: $Date: 2004/07/19 16:47:22 $
-// By:            $Author: hardin $
 // 
 #ifndef GTRANSFO_H
 #define GTRANSFO_H

@@ -1,10 +1,7 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.21 2004/10/21 12:52:03 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/10/21 12:52:03 $
-// by:            $Author: guy $
 // 
 #ifndef OBJIO_H
 #define OBJIO_H

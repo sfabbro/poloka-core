@@ -1,10 +1,3 @@
-/* 
- * $Source: /cvs/snovae/toads/poloka/utils/Attic/fringefinder.cc,v $
- * $Revision: 1.2 $
- * $Author: guy $
- * $Date: 2004/05/04 16:21:52 $
- * $Name:  $
- */
 #include <iostream>
 
 // TOADS
@@ -15,7 +8,7 @@
 
 
 // get cvs version of the code
-#define CVSVERSION "$Revision: 1.2 $"
+#define CVSVERSION "$Revision: 1.3 $"
 
 
 void DumpHelp(const char* programname) {

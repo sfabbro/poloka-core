@@ -1,10 +1,3 @@
-/* 
- * $Source: /cvs/snovae/toads/poloka/src/Attic/fringeutils.cc,v $
- * $Revision: 1.2 $
- * $Author: guy $
- * $Date: 2004/05/03 14:19:07 $
- * $Name:  $
- */
 
 #include <iostream>
 
@@ -19,7 +12,7 @@
 #define VERBOSE 
 
 // get cvs version of the code
-#define CVSVERSION "$Revision: 1.2 $"
+#define CVSVERSION "$Revision: 1.3 $"
 
 
 int FringeUtils::GreatestCommonDivider(int a, int b) {

@@ -1,11 +1,3 @@
-/* 
- * $Source: /cvs/snovae/toads/poloka/utils/Attic/selection.cc,v $
- * $Revision: 1.1 $
- * $Author: nrl $
- * $Date: 2004/02/20 10:48:45 $
- * $Name:  $
- */
-
 #include <vector>
 #include <string>
 

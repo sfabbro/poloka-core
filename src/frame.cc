@@ -1,10 +1,4 @@
 // -*- C++ -*-
-// $Id: frame.cc,v 1.2 2004/04/26 13:30:39 guy Exp $
-// 
-// 
-// 
-// Last Modified: $Date: 2004/04/26 13:30:39 $
-// By:            $Author: guy $
 // 
 #include <iostream>
 

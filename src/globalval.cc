@@ -1,8 +1,6 @@
 // 
 // \file globalval.cc
 // 
-// Last modified: $Date: 2005/01/18 14:10:50 $
-// By:            $Author: guy $
 // 
 #include <iostream>
 #include <sstream>

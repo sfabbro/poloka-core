@@ -18,10 +18,20 @@ using namespace std;
 
 static void usage(const char *pgname)
 {
-  cerr << pgname << " <config_file> <catalog>" << endl ;
+  cerr << pgname << " <dbimage1> <dbimage2> <dbimage3> ... -r <referenceimage> -c <catalog>" << endl ;
+  cerr << "options:"<< endl;
+  cerr << "     -o <catalog> : output catalog name (default is calibration.list)" << endl;
   exit(1);
 }
 
+static string getkey(const string& prefix, const DictFile& catalog) {
+  if(!catalog.HasKey(prefix)) {
+    cerr << "catalog does not not have info about " << prefix << endl;
+    exit(2);
+    return "absent";
+  }
+  return prefix;
+}
 
 class CalibratedStar : public BaseStar {
  public:
@@ -34,22 +44,46 @@ class CalibratedStar : public BaseStar {
 
 int main(int argc, char **argv)
 {
-  if (argc < 3)  {usage(argv[0]);}
+  string referencedbimage = "";
+  string catalogname = "";
+  string matchedcatalogname = "calibration.list";
+  vector<string> dbimages;
+  
+  if (argc < 7)  {usage(argv[0]);}
+  for (int i=1; i<argc; ++i)
+    {
+      char *arg = argv[i];
+      if (arg[0] != '-')
+	{
+	  dbimages.push_back(arg);continue;
+	}
+      switch (arg[1])
+	{
+	case 'r' : referencedbimage = argv[++i]; break;
+	case 'c' : catalogname = argv[++i]; break;
+	case 'o' : matchedcatalogname = argv[++i]; break;
+	default : 
+	  cerr << "unknown option " << arg << endl;
+	  usage(argv[0]);
+	}
+    }
+  
 
-  string config_filename = argv[1];
-  string catalog_name = argv[2];
-  if(!FileExists(config_filename)) {
-    cerr << "cant find " << config_filename  << endl;
+  if(!FileExists(catalogname)) {
+    cerr << "cant find catalog " << catalogname << endl;
     usage(argv[0]);
   }
+  cout << "catalog          = " << catalogname << endl;
+  cout << "referencedbimage = " << referencedbimage << endl;
+  cout << "n. dbimages      = " << dbimages.size() << endl;
   
-  if(!FileExists(catalog_name)) {
-    cerr << "cant find catalog " << catalog_name << endl;
-    usage(argv[0]);
+
+  // put all of this info in a LightCurveList which is the food of the photometric fitter
+  LightCurveList lclist;
+  lclist.RefImage = new ReducedImage(referencedbimage);
+  for (unsigned int im=0;im<dbimages.size();++im) {
+    lclist.Images.push_back(new ReducedImage(dbimages[im]));
   }
-  
-  ifstream str(config_filename.c_str());
-  LightCurveList lclist(str); // read a config file
   
   // we know want to put new objects in the list
   lclist.Objects.clear();
@@ -59,21 +93,21 @@ int main(int argc, char **argv)
   FitsHeader header(lclist.RefImage->FitsName());
   // prepare transfo and frames for stars' selection
   Frame W = lclist.RefImage->UsablePart();
-  W = W.Rescale(0.8); // remove boundaries
+  // W = W.Rescale(1.); // remove boundaries
   Gtransfo* Pix2RaDec=0;
   WCSFromHeader(header, Pix2RaDec);
   Gtransfo *RaDec2Pix = Pix2RaDec->InverseTransfo(0.01,W);
-  Frame radecW = (W.ApplyTransfo(*Pix2RaDec)).Rescale(1.2);
+  Frame radecW = (W.ApplyTransfo(*Pix2RaDec)).Rescale(1.1);
 
-  DictFile catalog(catalog_name);
+  DictFile catalog(catalogname);
   
-  //get the band of this image
+  
+  int requiredlevel=3;
+  // get keys for mag
   string band = header.KeyVal("TOADBAND");
-  if(!catalog.HasKey(band)) {
-    cerr << "catalog does not not have info about band " << band << endl;
-    exit(2);
-  }
-
+  string mag_key=getkey("m"+band,catalog);
+  string error_key=getkey("em"+band,catalog);
+  string nmes_key=getkey("nmes"+band,catalog);
   
   BaseStar star;
   int count_total=0;
@@ -90,27 +124,17 @@ int main(int argc, char **argv)
 
     count_total++;
     
-    // apply a cut on cgal
-    // if(double(entry->Value("cgalcat"))>0.2) continue; // not a nice star (no more cgalcat)
-    
-    // now check mag
-    mag=entry->Value(band);
-    if(mag<10 || mag>30) continue; // crazy mag
-    
-    
-    //mag_med=entry->Value(band+"2");
-    //mag_rms=entry->Value(band+"3");
-    //if(mag_rms<0 || mag_rms>0.05) continue; // cuts validated on color-color plot
-    //if(fabs(mag-mag_med)>0.05) continue;
-    
+    if(entry->Value("level")!=requiredlevel)  continue; // not a star with correct level 
+    mag=entry->Value(mag_key);
     
     count_total_stars++;
     
-    star.x=entry->Value("ra");
-    star.y=entry->Value("dec");
+    star.x=entry->Value("x"); // ra (deg)
+    star.y=entry->Value("y"); // dec (deg)
+    
     // now check if star is in image
     if(!radecW.InFrame(star)) continue; // bye bye
-    // apply transfo to this star
+    // apply transfo to this star (x,y)=pixels
     RaDec2Pix->apply(star,star);
     // check again
     if (!W.InFrame(star)) continue; // bye bye
@@ -129,8 +153,8 @@ int main(int argc, char **argv)
     rstar->band = band[0];
     rstar->x = star.x;
     rstar->y = star.y;
-    rstar->ra = entry->Value("ra");
-    rstar->dec = entry->Value("dec");
+    rstar->ra = entry->Value("x"); // ra (deg)
+    rstar->dec = entry->Value("y"); // dec (deg)
     rstar->jdmin = -1.e30; // always bright
     rstar->jdmax = 1.e30;
     lclist.Objects.push_back(rstar);
@@ -144,13 +168,13 @@ int main(int argc, char **argv)
     
     // we also want to keep calibration info
     CalibratedStar cstar(star);
-    cstar.ra=entry->Value("ra");
-    cstar.dec=entry->Value("dec");
-    cstar.u=entry->Value("u");
-    cstar.g=entry->Value("g");
-    cstar.r=entry->Value("r");
-    cstar.i=entry->Value("i");
-    cstar.z=entry->Value("z");
+    cstar.ra=entry->Value("x");
+    cstar.dec=entry->Value("y");
+    cstar.u=entry->Value("mu");
+    cstar.g=entry->Value("mg");
+    cstar.r=entry->Value("mr");
+    cstar.i=entry->Value("mi");
+    cstar.z=entry->Value("mz");
     cstar.flux=star.flux;
     cstar.id=count_total;
     cstar.x=star.x;
@@ -174,7 +198,7 @@ int main(int argc, char **argv)
   for_each(lclist.begin(), lclist.end(), doFit);
   
   // now we want to write many many things, let's make a list
-  ofstream stream("calibration.list");
+  ofstream stream(matchedcatalogname.c_str());
   stream << "#x :" << endl;
   stream << "#y :" << endl;
   stream << "#flux :" << endl;
@@ -289,7 +313,7 @@ int main(int argc, char **argv)
   }
   
   zp = sumzp/sumweight;
- rms = sqrt(sumzp2/sumweight -zp*zp);
+  rms = sqrt(sumzp2/sumweight -zp*zp);
   fprintf(file,"RESULT_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
 
 
