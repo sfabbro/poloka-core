@@ -271,7 +271,7 @@ StandardColor GetColor (const FitsHeader &header)
   return NONE;
 }
 
-double AirmassTerm (const FitsHeader header)
+static double AirmassTerm (const FitsHeader &header)
 {
 
   string color = header.KeyVal("TOADBAND");
@@ -287,7 +287,7 @@ double AirmassTerm (const FitsHeader header)
 }
 
 
-double ColorTerm (const FitsHeader header)
+static double ColorTerm (const FitsHeader &header)
 {
 
   string color = header.KeyVal("TOADBAND");

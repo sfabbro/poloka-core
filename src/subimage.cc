@@ -86,7 +86,7 @@ bool SubImage::cut_in_fitsimage(string (ReducedImage::*GetFitsFileName)() const,
   FitsImage pseudoSubImage(cfitsio_subimage_name);
   if (!pseudoSubImage.IsValid()) return false;
   
-  FitsHeader head(pseudoSubImage);
+  FitsHeader &head = pseudoSubImage;
   Image &pixels = pseudoSubImage;
 
   // create the output image

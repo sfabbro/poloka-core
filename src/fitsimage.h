@@ -10,14 +10,9 @@ enum FitsFileMode {RO = 0, RW = 1};
 #define FITSIMAGE__H
 
 #include <string>
-
 #include <cstdio>
-#include <cstring>
-
 #include "image.h"
 #include "point.h"
-
-#include <fitsio.h> // NRL:02/2004 was not included. Why ?
 
 /*! \file
    \brief I/O of images/headers in fits format
@@ -34,13 +29,13 @@ useful functionnalities have been wrapped here in C++ classes.
 #define RW 1
 */
 
-class StringList;
 
 
 
 
 class Frame;
-//typedef struct _FITSFILE fitsfile;// the pointer provided by cfitsio.
+class StringList;
+typedef struct _FITSFILE fitsfile;// the pointer provided by cfitsio.
 
 
 //-----------------------------------------------------------------------------------
@@ -132,8 +127,7 @@ class FitsHeader {
 
   FitsHeader();
   //! opens the file, by default in readonly mode. 
-  FitsHeader(const string &FileName, const FitsFileMode Mode = RO, 
-	     bool EmptyFile = false);
+  FitsHeader(const string &FileName, const FitsFileMode Mode = RO);
   
   //! opens a new file and copies a old header into it. 
   FitsHeader(const FitsHeader &a_header, const string & NewFileName);
@@ -154,15 +148,8 @@ class FitsHeader {
      variables.  */
   FitsKey KeyVal(const string &KeyName, const bool Warn = false) const;
 
-//! same above but test the presence of the key, and exit if not present 
-  FitsKey  KeyVal_Secure(const string &KeyName) const ;
-
-//! returns a universal band from a given filter
-  //  string ToadBand(const string &keyval) const;
-
   //!modifies an existing key value and comment. 
-  /*!
-  If comment is NULL the comment is unchanged.*/
+  /*!  If comment is empty the comment is unchanged.*/
   int ModKey(const string &KeyName, const int Value, const string Comment = "") const ;
   //! -
   int ModKey(const string &KeyName, const double Value, const string Comment = "") const ;
@@ -231,21 +218,21 @@ class FitsHeader {
   //! add a HISTORY keyword. 
   /*! It will be split over multiple 
       HISTORY lines if longer than 70 characters. */
-  bool ReadCard(const std::string &KeyName, string &Card) const;
   int AddHistoryLine(const string &HistoryStuff);
 
 
   //! flush file buffers.
+  int Flush();
+  bool ReadCard(const std::string &KeyName, string &Card) const;
+
+  //! add a whole card, name+value+comment (or modifies an existing one)
+  int AddOrModCard(const string &KeyName, const string &Card);
+
 
   //! dumps the keys contained in WhichKeys to an ascii file.
   bool AsciiDump(const std::string &AsciiFileName, const StringList &WhichKeys) const;
 
 
-
-  int Flush();
-
-  //! add a whole card, name+value+comment (or modifies an existing one)
-  int AddOrModCard(const string &KeyName, const string &Card);
 
   //!
   void ImageSizes(int &Xsize, int &YSize) const;
@@ -286,12 +273,12 @@ friend ostream& operator << (ostream &stream, const FitsHeader &Header);
   VirtualInstrument *TelInst() const;
 
   //! for a FitsImage opened RW, enables to forbid writing (default behaviour) when destructor is called.
-  /*! example of use : the flatfielding opens (RW) the flatfielded FitsImage, and 
-      only allow writing on successful flatfielding completion. */
+
+  /*! Example of use : the flatfielding opens (RW) the flatfielded
+    FitsImage, and only allows writing on successful flatfielding
+    completion. */
   void EnableWrite(const bool YesOrNo);
   
-  FitsHeader(const FitsHeader&);
- 
   friend class FitsKey; friend class FitsImage; 
   friend class FitsSlice; friend class FitsOutSlice;
 
@@ -313,11 +300,19 @@ protected:
 
 
 private:
+
+
+  int create_file();
+
+  //! reads the image data. 0,0,nx,ny reads the whole image.
+  int read_image(const int xmin, const int ymin, const int xmax, const int ymax,
+		 float *data);
+
   string fileName;
   fitsfile *fptr; /* internal pointer for cfitsio */
   bool writeEnabled;
-
- VirtualInstrument *telInst; 
+  bool compressedImg;
+  VirtualInstrument *telInst; 
   
   FitsFileMode fileModeAtOpen;
 
@@ -327,7 +322,8 @@ private:
   
 /* disable for the moment the copy, because it provides a way to create a new header without providing a filename*/
 #ifndef SWIG
-FitsHeader& operator=(const FitsHeader &Right);
+  FitsHeader(const FitsHeader &);
+  FitsHeader& operator=(const FitsHeader &Right);
 #endif
 
 };
@@ -348,8 +344,6 @@ class FitsImage : public FitsHeader, public Image {
   //!  opens in (ReadOnly mode by default, use RW to modifiy or create) and loads the pixel data.
 FitsImage(const string &FileName, const FitsFileMode Mode = RO);
 
-   //! constructor to be used starting from an existing FitsHeader 
-FitsImage(const FitsHeader &Header);
 
   //! constructor for a new FitsImage.
   /*! To be used to assemble a FitsImage from a header and an image

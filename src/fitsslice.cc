@@ -42,16 +42,16 @@ int FitsSlice::read_pixels(const int StartRow, int &NRows, Pixel* Where)
 #ifdef DEBUG_SLICES
   cout << " read requested for file : " << FileName() << " from row " << StartRow << " for " << NRows << endl;
 #endif
-  int startPix = StartRow*Nx();
   lastSlice = (StartRow+NRows >= nyTotal);
   int endRow = min(StartRow+NRows, nyTotal);
   NRows = endRow - StartRow; /* to return the actual size of the read chunk */
-  int nPix =  NRows* Nx();
-  int status = 0;
-  int anynull = 0;
-  float nullval = 0;
-  /* fits_read_img uses the fortran like numberring: fits pixel is pixel "1" */
-  fits_read_img(fptr, TFLOAT, startPix+1, nPix, &nullval, Where,  &anynull, &status);
+
+  // /* fits_read_img uses the fortran like numberring: fits pixel is pixel "1" */
+  // fits_read_img(fptr, TFLOAT, startPix+1, nPix, &nullval, Where,  &anynull, &status);
+  /* to accomodate  compressed images (for which fits_read_img does not work properly,
+     use our own reading routine */
+  int status = read_image(0, StartRow, nx, endRow, Where);
+
   CHECK_STATUS(status," FitsSlice::read_pixels", );
   return (!status);
 }
@@ -97,6 +97,24 @@ FitsOutSlice::FitsOutSlice(const string FileName, const FitsHeader &ModelHead,
 			   const int SliceYSize, const int Overlap) 
   : FitsHeader(ModelHead, FileName) , Image(0,0)
 {
+  /* 2 ways to avoid the following crash :
+     - implement the mechanism for writing compressed images in slices
+         this means writing a FitsHeader::write_image that would look like 
+                              FitsHeader::read_image
+        It can be tedious....
+
+     - simpler : add a bool argument to FitsHeader(const FitsHeader &, const string)
+          (with a default value) that enables to forbid compression. It has to be propagated
+          to FitsHeader::create_file();
+  */
+
+  if (compressedImg)
+    {
+      cerr << " the present code does not enable to use FitsOutSlice on compressed images" 
+	   << std::endl
+	   << " for file " << this->FileName() << ". Stopping here " << std::endl;
+      abort();
+    }
   overlap = Overlap;  
   int nx = KeyVal("NAXIS1");
   nyTotal = KeyVal("NAXIS2");
@@ -145,7 +163,7 @@ int FitsOutSlice::write_pixels(const int StartRow, int &NRows, Pixel *Where)
   int nPix =  NRows * Nx();
   int status = 0;
 
-  /* fits_read_img uses the fortran like numberring: fits pixel is pixel "1" */
+  /* fits_write_img uses the fortran like numberring: fits pixel is pixel "1" */
   if (nPix) fits_write_img(fptr, TFLOAT, startPix+1, nPix,  Where, &status);
   CHECK_STATUS(status," FitsOutSlice::write_pixels", );
   return (!status);

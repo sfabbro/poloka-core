@@ -274,6 +274,13 @@ void DImage::readFromImage(const string& FitsFileName, const Window &Rect, DPixe
     long inc[] = {1,1};
     long lbc[] = {Rect.xstart+1, Rect.ystart+1};
     long trc[] = {Rect.xend, Rect.yend};
+    char fitsname[256];
+    sprintf(fitsname ,"%s[%d:%d,%d:%d]",FitsFileName.c_str(),lbc[0],trc[0],lbc[1],trc[1]);
+    cout << string(fitsname) << endl;
+    FitsImage floatImg(fitsname);
+    // promote to double
+    for (int j=0; j < ny; ++j) for (int i=0; i<nx; ++i) (*this)(i,j) = floatImg(i,j);
+#ifdef STORAGE
     fitsfile *fptr = 0;
     fits_open_file(&fptr, FitsFileName.c_str(), RO, &status);
     fits_read_subset(fptr, TDOUBLE, lbc, trc, inc, &nulval, data,
@@ -290,6 +297,7 @@ void DImage::readFromImage(const string& FitsFileName, const Window &Rect, DPixe
 	cerr << " Vignet::readFromImage(" << FitsFileName << "):fits_close_file : Error: " << endl; 
 	fits_report_error(stderr, status); 
       }
+#endif
   }
 }
 
