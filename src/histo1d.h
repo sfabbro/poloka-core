@@ -24,12 +24,18 @@ class Histo1d {
       }
   const float *array() const { return data;}
   int Nx() const { return nx;}
+  int BinAt(double X) const;
+  double BinCenter(int bin) const;
   double Scale() const {return scalex;}
   double Minx() const { return minx;}
   /* returns the contents and set X to the abcissa */
-  double  MaxBin(double &X);
+  double  MaxBin(double &X) const;
   double BinWidth() const { return (1./scalex);}
   void ZeroBins(double Xmin,double Xmax);
+  void dump(ostream &stream) const;
+  friend ostream& operator << (ostream &stream, const Histo1d &h)
+    { h.dump(stream); return stream;}
+  
   ~Histo1d() { delete [] data;}
 };
 

@@ -17,7 +17,7 @@ data = new float[nx];
 memset(data,0,nx*sizeof(float));
 }
 
-double Histo1d::MaxBin(double &X)
+double Histo1d::MaxBin(double &X) const
 {
   float *p ;
   int imax=0;
@@ -41,4 +41,24 @@ void Histo1d::ZeroBins(double Xmin, double Xmax)
       if (bin<0 || bin>=nx) return; 
       data[bin] = 0;
     }
+}
+
+int Histo1d::BinAt(double X) const { 
+  int bin = int(floor((X - minx)*scalex));
+  if (bin<0 || bin>=nx) return -1;
+  return bin;
+} 
+
+double Histo1d::BinCenter(int bin) const{
+  if (bin<0 || bin>=nx) {
+    cerr << "Histo1d::BinCenter ERROR out of range" << endl;
+    return 0;
+  }
+  return (minx + (bin+0.5)/scalex);
+}
+
+void Histo1d::dump(ostream &stream) const {
+  stream << nx << " " << minx << " " << minx+nx/scalex << endl;
+  for(int bin=0;bin<nx;++bin)
+    stream << bin << " " << BinCenter(bin) << " " << data[bin] << endl;
 }
