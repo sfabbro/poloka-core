@@ -292,6 +292,7 @@ Usefull in case of artificially smoothed images
   //! reduced julian date of observation
   double JulianDate() const;
   bool SetJulianDate(const double &Value, const string Comment = "");
+  double ModifiedModifiedJulianDate() const;
 
   //! signal to noise at magnitude 23
   double SignalToNoise23() const;

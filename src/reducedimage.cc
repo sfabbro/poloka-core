@@ -1431,6 +1431,24 @@ double ReducedImage::JulianDate() const
   return UNDEFINED;
 }
 
+double ReducedImage::ModifiedModifiedJulianDate() const
+{
+  string fileName = FitsName();
+  if (FileExists(fileName))
+    {
+      FitsHeader head(FitsName());
+      return ModifiedModifiedJulianDay(head);
+    }
+  else
+    {
+      cerr << " ReducedImage::ModifiedModifiedJulianDate() cannot compute JulianDay for file " 
+	   << fileName << endl;
+    }
+  return UNDEFINED;
+}
+
+
+
 bool ReducedImage::SetJulianDate(const double &Value, const string Comment)
 {
   return set_double_key(Value,"JD","SetJulianDate", Comment);

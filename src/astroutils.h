@@ -27,6 +27,9 @@ double JulianDay(const string& DateString);
 //! compute the modified julian date given a header (jd-2400000.5)
 double ModJulianDay(const FitsHeader& Header);
 
+//! 
+double ModifiedModifiedJulianDay(const FitsHeader& Header);
+
 //! compute date stuff given a julian date
 void DateFromJulianDay(const double &jd, int& day, int& month, int& year, 
 		       int& hour, int& min, double& sec);

@@ -41,6 +41,11 @@ double JulianDay(const int day, const int month, const int year,
   return JulianDay(day,month,year) + ( hour + min/60.0 + second/3600.0) / 24.0;
 }
 
+double ModifiedModifiedJulianDay(const FitsHeader& Header) {
+  return JulianDay(Header)-JulianDay(01,01,2003);
+}
+
+
 double JulianDay(const FitsHeader& Header)
 {
   string toaddate = Header.KeyVal("TOADDATE");
