@@ -12,6 +12,7 @@
 #include <lightcurve.h>
 #include <simfitphot.h>
 #include <map>
+#include <iomanip>
 
 using namespace std;
 
@@ -172,7 +173,12 @@ int main(int argc, char **argv)
   
   // now we want to write many many things, let's make a list
   ofstream stream("calibration.list");
-  stream << "#star :" << endl;
+  stream << "#x :" << endl;
+  stream << "#y :" << endl;
+  stream << "#flux :" << endl;
+  stream << "#error :" << endl;
+  stream << "#sky :" << endl;
+  stream << "#skyerror :" << endl;
   stream << "#ra :" << endl;
   stream << "#dec :" << endl;
   stream << "#u :" << endl;
@@ -181,9 +187,9 @@ int main(int argc, char **argv)
   stream << "#i :" << endl;
   stream << "#z :" << endl;
   stream << "#img :" << endl;
-  stream << "#flux :" << endl;
-  stream << "#error :" << endl;
+  stream << "#star :" << endl;
   stream << "#end" <<endl;
+  stream << setprecision(12);
   // first let's try to compute the ZP
   double weight;
   int count=0;
@@ -200,8 +206,18 @@ int main(int argc, char **argv)
       const Fiducial<PhotStar> *fs = *it;
       if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
 	continue;
-      
-      stream << cstar.id << " ";
+      stream << fs->x << " ";
+      stream << fs->y << " ";
+      stream << fs->flux << " ";
+      if(fs->varflux>0)
+	stream << sqrt(fs->varflux) << " ";
+      else
+	stream << 0 << " ";
+      stream << fs->sky << " ";
+      if(fs->varsky>0)
+	stream << sqrt(fs->varsky) << " ";
+      else
+	stream << 0 << " ";
       stream << cstar.ra << " ";
       stream << cstar.dec << " ";
       stream << cstar.u << " ";
@@ -209,14 +225,9 @@ int main(int argc, char **argv)
       stream << cstar.r << " ";
       stream << cstar.i << " ";
       stream << cstar.z << " ";
-      stream << count_img << " ";
-      stream << fs->flux << " ";
-      if(fs->varflux>0)
-	stream << sqrt(fs->varflux) << " ";
-      else
-	stream << 0 << " ";
+      stream << count_img << " "; 
+      stream << cstar.id << " ";     
       stream << endl;
-      
       
       if(fs->flux<=0) continue;
       dzp = sqrt(fs->varflux)/fs->flux;
