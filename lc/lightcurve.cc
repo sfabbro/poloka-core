@@ -89,15 +89,23 @@ LightCurveList::LightCurveList(istream& LcFileStream)
 {
 
   lc_read(LcFileStream, Objects, Images);
+  
+  RefImage = Objects.front()->Image();
 
   // fill up the light curve
   for (RefStarCIterator it = Objects.begin(); it != Objects.end(); ++it)
     {
       LightCurve lc(*it);
+      // foreach object, link the list of images
+      for (ReducedImageCIterator im=Images.begin(); im != Images.end(); ++im) {
+	PhotStar *fidPhot = new PhotStar(BaseStar((*it)->x, (*it)->y, 0.));
+	lc.push_back(*im, fidPhot); // add one image and one PhotStar
+      }
+      lc.RefImage = RefImage;
       push_back(lc);
     }  
-
-  RefImage = Objects.front()->Image();
+  
+  
 
   cout << " LightCurveList::LightCurveList() : " << size() 
        << " objects " << Images.size() << " images \n";
