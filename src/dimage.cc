@@ -268,14 +268,10 @@ void DImage::readFromImage(const string& FitsFileName, const Window &Rect, DPixe
     }
     
   }else{
-    double nulval = 0;
-    int    status = 0;
-    int anynul;
-    long inc[] = {1,1};
     long lbc[] = {Rect.xstart+1, Rect.ystart+1};
     long trc[] = {Rect.xend, Rect.yend};
     char fitsname[256];
-    sprintf(fitsname ,"%s[%d:%d,%d:%d]",FitsFileName.c_str(),lbc[0],trc[0],lbc[1],trc[1]);
+    sprintf(fitsname ,"%s[%ld:%ld,%ld:%ld]",FitsFileName.c_str(),lbc[0],trc[0],lbc[1],trc[1]);
     cout << string(fitsname) << endl;
     FitsImage floatImg(fitsname);
     // promote to double
