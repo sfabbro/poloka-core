@@ -4,14 +4,14 @@
 #define FNAME
 #define DEBUG
 
-void Vignet::Allocate(const int Nx, const int Ny)
+void Vignet::Allocate()
 {
 #ifdef FNAME
-  cout << " > Vignet::Allocate(const int Nx, const int Ny) Nx,Ny = " << Nx << "," << Ny << endl;
+  cout << " > Vignet::Allocate() Nx,Ny = " << Nx() << "," << Ny() << endl;
 #endif
-  Data.Allocate(Nx,Ny);
-  Weight.Allocate(Nx,Ny);
-  Resid.Allocate(Nx,Ny);
+  Data.Allocate(Nx(),Ny());
+  Weight.Allocate(Nx(),Ny());
+  Resid.Allocate(Nx(),Ny());
 }
 
 bool Vignet::Load(const PhotStar *AStar)
@@ -37,7 +37,7 @@ bool Vignet::Load(const PhotStar *AStar)
   xend   = min(xc+hx+1, rim->XSize());
   yend   = min(yc+hy+1, rim->YSize());
   
-  Allocate(Nx(), Ny());
+  Allocate();
 
   if (!rim->HasImage())
     {
@@ -64,16 +64,19 @@ void Vignet::Resize(const int Hx, const int Hy)
       cerr << " Vignet::Resize(" << Hx << "," << Hy << ") : Error : impossible \n";
       return;
     } 
+  if (!Star) {
+    cerr << " Vignet::Resize : Error no star loaded " << endl;
+  }
   
-  int nx = 2*Hx+1;
-  int ny = 2*Hy+1;
-  Allocate(nx,ny);
+  hx=Hx;
+  hy=Hy;
+  
   Load(Star);
-
+  
 #ifdef DEBUG
-  cout << " in Vignet::Resize Data.HSizeX(),Data.HSizeY() = " << Data.HSizeX() << "," << Data.HSizeY()<< endl;
+  cout << " in Vignet::Resize (2) Data.HSizeX(),Data.HSizeY() = " << Data.HSizeX() << "," << Data.HSizeY()<< endl;
 #endif
-
+  
 }
 
 void Vignet::Resize(const double &ScaleFactor)
