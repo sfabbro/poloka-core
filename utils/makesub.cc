@@ -1,14 +1,16 @@
 #include<iostream>
 
 #include "sub.h"
-
-
+#include "mcsub.h"
+ 
+ 
 static void usage(const char * prog)
 {
   cerr << " usage : " << endl;
-  cerr << prog << ' ' << " [-o] [-S subfile] " << endl
+  cerr << prog << " [-o] [-S subfile] [-M]" << endl
        << "        -o : overwrite existing images (default = false)" << endl
-       << "        -S subfile : to provide a subfile name (default = \"subfile\")" << endl;
+       << "        -S subfile : to provide a subfile name (default = \"subfile\")" 
+       << "        -M : MC mode for efficiency computation" << endl;
   exit(1);
 }
 
@@ -16,6 +18,7 @@ int main(int argc, char **argv)
 {
   string subfile = "subfile";
   bool overwrite = false;
+  bool MCmode = false ;
   for (int i=1; i< argc; i++)
     {
       char *arg = argv[i];
@@ -24,6 +27,7 @@ int main(int argc, char **argv)
 	{
 	case 'h' : usage(argv[0]);
 	case 'o' : overwrite = true;break;
+	case 'M' : MCmode = true;break;
 	case 'S' : i++; if (i >= argc) usage(argv[0]);
 	  subfile = argv[i]; break;
 	default : cerr << " do not understand " << arg << endl; usage(argv[0]);
@@ -36,5 +40,7 @@ int main(int argc, char **argv)
     {
       Sub sub(subfile, overwrite);
       sub.DoIt();
+      if (MCmode)
+	MCProcess(sub);
     }
 } 
