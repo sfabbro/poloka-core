@@ -94,7 +94,7 @@ public:
   void ClearResidZeroWeight();
 
   //! compute and return the chi2 for this vignet
-  double Chi2() const;
+  virtual double Chi2() const;
 
   //! compute and returns mean residual of the vignet
   double MeanResid() const;
