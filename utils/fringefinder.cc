@@ -1,8 +1,8 @@
 /* 
  * $Source: /cvs/snovae/toads/poloka/utils/Attic/fringefinder.cc,v $
- * $Revision: 1.1 $
- * $Author: nrl $
- * $Date: 2004/02/20 10:48:46 $
+ * $Revision: 1.2 $
+ * $Author: guy $
+ * $Date: 2004/05/04 16:21:52 $
  * $Name:  $
  */
 #include <iostream>
@@ -15,17 +15,22 @@
 
 
 // get cvs version of the code
-#define CVSVERSION "$Revision: 1.1 $"
+#define CVSVERSION "$Revision: 1.2 $"
 
 
 void DumpHelp(const char* programname) {
-  cout << " syntax  : " << programname << " <image1> <image2> ...." << endl;
+  cout << " syntax  : " << programname << " -p <image1> <image2> -d <dead1> <dead2>...." << endl;
   cout << " options : " << endl;
   cout << "            -f <fringefilename> : name of fringe pattern (default is fringe.fits)" << endl;
   cout << "            -nvec #             : max number of eigenvectors to write (default is the number of input images)" << endl;
   cout << "            -v                  : verbose" << endl;
   cout << "            --help (-h)         : this help" << endl; 
   cout << endl;
+  cout << " fringefinder will make a PCA on n input images (with flag -p) using optionnally n dead patterns" << endl;
+  cout << " if there are dead patterns, a file fringefilename_dead will be written in addition to the PCA vectors fringefilename" << endl;
+  cout << " this dead image is a OR of all input dead patterns " << endl;
+  //cout << " " << endl;
+  
 }
 
 int main(int argc, char **argv) {
@@ -36,6 +41,7 @@ int main(int argc, char **argv) {
   }
   
   vector<string> filelist;
+  vector<string> deadlist;
   vector<string> fileoklist;
   string fringesname = "fringe.fits";
   
@@ -60,11 +66,52 @@ int main(int argc, char **argv) {
       verbose = true;
       continue;
     }
-    else {
-      string filename = argv[i];
-      filelist.push_back(filename);
+    else if (!strcmp(argv[i],"-p")) {
+      int j = i+1;
+      while(true) {
+	if(j>=argc) {
+	  i=j; // this will end the whole loop
+	  cout << "end of loop" << endl;
+	  break;
+	}
+	if((argv[j][0]=='-')) {
+	  i=j-1;
+	  cout << "an option " << argv[j] << endl;
+	  break; // we continue the main loop
+	}
+	string filename = argv[j];
+	cout << "adding file " << filename << endl;
+	filelist.push_back(filename);
+	j++;
+      }
+      continue;
     }
-  }
+    else if (!strcmp(argv[i],"-d")) {
+      int j = i+1;
+      while(true) {
+	if(j>=argc) {
+	  i=j; // this will end the whole loop
+	  break;
+	}
+	if((argv[j][0]=='-')) {
+	  i=j-1;
+	  cout << "an option " << argv[j] << endl;
+	  break; // we continue the main loop
+	}
+	string filename = argv[j];
+	cout << "adding dead " << filename << endl;
+	deadlist.push_back(filename);
+	j++;
+      }
+      continue;
+    }
+    else{
+      cerr << "unknown parameter sequence" << endl;
+      DumpHelp(argv[0]);
+      exit(1);
+      
+    }
+  } 
   
   int nimages = (int)filelist.size();
   if(nimages<2) {
@@ -73,11 +120,25 @@ int main(int argc, char **argv) {
     exit(1);
   }
   
+
   nvec = min(nvec,nimages);
   
   if(verbose) {
     cout << "Creates a FitsImageArray using the first header for reference" << endl;
   }
+
+  // just dump images
+//   cout << "Input fringe patterns : " << endl;
+//   for(int i=0;i<filelist.size();i++)
+//     cout << filelist[i] << endl;
+//   cout << "dead patterns : " << endl;
+//   for(int i=0;i<deadlist.size();i++)
+//     cout << deadlist[i] << endl;
+//   cout << "Output Fringe file name = " <<  fringesname << endl;
+  
+
+  
+
   // Creates a FitsImageArray using the first header for reference
   // Uses the constructor with FitsHeader in order to keep all information about instrument, filter ...etc
   // Writes the first image in the first HDU
@@ -93,6 +154,43 @@ int main(int argc, char **argv) {
     cout << "(Try " << argv[0] << " --help)" << endl;
     exit(-1);
   }
+
+  // make the dead image
+  string deadname = fringesname+"_dead.gz";
+  Image* deadimage = 0;
+  if(deadlist.size()>0) {
+    cout << "making dead image " << deadname << " = OR of :" << endl;
+    for(unsigned int i=0;i<deadlist.size();i++)
+      cout << deadlist[i] << endl;
+    
+    
+    deadimage = new Image(fringes.Nx(),fringes.Ny());
+    
+    Pixel *pix = deadimage->begin();
+    Pixel *endpix = deadimage->end();
+    
+    for(unsigned int i=0;i<deadlist.size();i++) {
+      FitsImage image(deadlist[i]);
+      if(!image.IsValid()) {
+	cout << "dead image " << deadlist[i] << " is not valid!" << endl;
+	continue;
+      }
+      if(deadimage->Nx()!=image.Nx() || deadimage->Ny()!=image.Ny()) {
+	cout << "dead image size of " << deadlist[i] << " does not match that of first image" << endl;
+	continue;
+      }
+      pix = deadimage->begin();
+      Pixel *inputpix = image.begin();
+      for(;pix!=endpix;++pix,++inputpix) {
+	if(*inputpix>0.5)
+	  *pix=1;
+      }
+    }
+    // writing it as binary
+    FitsImage deadfits(deadname,fringes,*deadimage);
+    deadfits.ModKey("BITPIX",8);
+  }
+
   
   // Checks all of these Keys to add a file
   fringes.SetCriterion(FitsImageArray::FILTER|FitsImageArray::SIZE|FitsImageArray::CHIP);
@@ -148,7 +246,7 @@ int main(int argc, char **argv) {
     cout << "Compute Scalar products Matrix ... " << endl;
   }
   
-  double* spm = FringeUtils::ScalarProductMatrix(fileoklist);
+  double* spm = FringeUtils::ScalarProductMatrix(fileoklist,deadimage);
   
   if(verbose) {
     cout << "Scalar products Matrix :" << endl;
@@ -226,6 +324,12 @@ int main(int argc, char **argv) {
     for(int im=1;im<nimages;im++) {
       vector += FitsImage(fileoklist[im])*(signe*eigenvectors[im+nimages*(nimages-1-ivec)])*scale;
     }
+    // normalize this vector
+    Pixel mean,sigma;
+    vector.SkyLevel(&mean,&sigma);
+    vector -= mean;
+    vector /= sigma;
+    vector *= (*deadimage-1); // set to zero dead pixels
     fringes.Append(vector);
     fringes.AddKey("EIGENVAL",eigenvalues[nimages-1-ivec],"Eigen value of this Eigen vector");  
     sprintf(comment,"fringe%03d",ivec);  
