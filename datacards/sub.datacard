@@ -8,18 +8,22 @@
 #
 ###########     Parameters for fake supernova generation
 #
+#loop on simulation to obtain a good statistic
+@MC_N_LOOP 3
 #choices are:WITH_MODEL, WITH_GAUSSIAN, WITH_DAOPSF  
-@ADDITION_METHOD WITH_DAOPSF
+@ADDITION_METHOD WITH_MODEL
 #choices are: FAKES_RANDOM, FAKES_INHOST, 
 #             FAKES_ADAPTED, FAKES_ONGRID
 @GENERATION_METHOD FAKES_RANDOM
 # number of fake SNe added on the images
-@NUMBER_OF_FAKES 500
+@NUMBER_OF_FAKES 300
 # magnitude range of SNe magnitude (g,r,i filters)
 @MIN_FAKE_MAG_I 22
 @MAX_FAKE_MAG_I 26
 @MIN_FAKE_MAG_R 23
 @MAX_FAKE_MAG_R 27
+MIN_FAKE_MAG_R 22
+MAX_FAKE_MAG_R 23
 @MIN_FAKE_MAG_G 23
 @MAX_FAKE_MAG_G 27
 # in case of a generation adapted to the host flux
@@ -100,7 +104,8 @@
 # DATDET_BACKSIDE 16
 #
 # compatibility factor between S/N on partial subs.
-# i.e.: sig2nois_partial>sig2nois_global/compFactor
+# i.e.: sig2nois_partial * compFactor > sig2nois_global
+# if negative then no cut is applied
 #
 @DATDET_COMPFACTOR 3
 #
