@@ -1,13 +1,13 @@
+#include "daophot.h"
 #include "daophotutils.h"
 
 static void usage(const char *progName)
 {
-  cerr << " " << progName << " [-m] [-psf] [-cat] <DbImages> \n"
+  cerr << " " << progName << " [OPTIONS] <DbImages> \n"
        << "   produces a psf and a fitted catalog with options: \n"
        << "    -psf : produce psf\n"
        << "    -als : produce ALLSTAR catalog\n"
-       << "    -man : produce PSF with manual selection of stars\n"
-       << "    -c   : combine SExtractor and ALLSTAR catalogs \n"
+       << "    -m   : merge ALLSTAR catalog into se.list \n"
        << "    -o   : overwrite\n";
 }
 
@@ -15,11 +15,10 @@ int main(int nargs, char **args)
 {
   if (nargs < 2)  {usage(args[0]);  exit(1);}
 
-  bool overwrite = false;
-  bool manual = false;
+  bool over  = false;
   bool dopsf = false;
   bool doals = false;
-  bool combine = false;
+  bool merge = false;
 
   ReducedImageList toDo;
 
@@ -42,31 +41,34 @@ int main(int nargs, char **args)
 	{
 	  switch (arg[1])
 	    {
-	    case 'o' : overwrite = true; break;
-	    case 'c' : combine = true; break;
+	    case 'o' : over  = true; break;
+	    case 'm' : merge = true; break;
 	    default : usage(args[0]); exit(1);
 	    }
 	  continue;
 	}
       if (strlen(arg)> 2)
 	{
-	  if (strncmp(arg,"-psf",4) == 0) {dopsf = true;continue;}
-	  if (strncmp(arg,"-man",4) == 0) {dopsf = true; manual = true; continue;}
-	  if (strncmp(arg,"-als",4) == 0) {doals = true;continue;}
+	  if (strncmp(arg,"-psf",4) == 0) { dopsf = true; continue; }
+	  if (strncmp(arg,"-als",4) == 0) { doals = true; continue; }
 	  usage(args[0]); exit(1);
 	}      
     }
 
-  if (overwrite && !dopsf && !doals)
+  if (over && !dopsf && !doals)
     {
-      cerr << " DAOPHOT: nothing to overwrite!" << endl;
+      cerr << " " << args[0] << ": nothing to overwrite!" << endl;
       usage(args[0]); exit(1);
     }
 
-  for (ReducedImageIterator it=toDo.begin(); it!=toDo.end(); ++it) 
-    {
-      MakeDaoPsfCat(**it, dopsf, doals, manual, combine, overwrite);
-    }
+
+  if ((dopsf) && (!doals))
+    for (ReducedImageIterator it=toDo.begin(); it!=toDo.end(); ++it) 
+      //MakeDaoPsf(**it, over);
+      MakeExperimentalPsf(**it);
+  else if (doals) 
+    for (ReducedImageIterator it=toDo.begin(); it!=toDo.end(); ++it) 
+      MakeDaoPsfAls(**it, merge, over);
 
   return EXIT_SUCCESS;
 }
