@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: cppclassmember.cc,v 1.2 2004/03/04 17:49:07 nrl Exp $
+// $Id: cppclassmember.cc,v 1.3 2004/03/06 23:15:42 nrl Exp $
 // 
 // \file cppclassmember.cc
 // 
@@ -17,8 +17,16 @@ CppClassMember::CppClassMember(CppType const& decl, std::string const& name)
 {
 }
 
+
+CppClassMember::CppClassMember(const std::string& decl, const std::string& name)
+  : name_(name), type_(decl)
+{
+}
+
+
 void CppClassMember::copy(CppClassMember const& cm)
 {
+  clear();
   name_=cm.name_;
   type_=cm.type_;
 }
@@ -40,4 +48,11 @@ void CppClassMember::print() const
   //    std::cout << "[" << arraySize[i] << "]";
   
   std::cout << std::endl;
+}
+
+
+void CppClassMember::clear()
+{
+  name_="";
+  type_.clear();
 }

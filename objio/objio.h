@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.10 2004/03/04 17:19:55 nrl Exp $
+// $Id: objio.h,v 1.11 2004/03/06 23:15:43 nrl Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/04 17:19:55 $
+// Last modified: $Date: 2004/03/06 23:15:43 $
 // by:            $Author: nrl $
 // 
 #ifndef OBJIO_H
@@ -67,7 +67,7 @@ public:
   // tabs     //    stream_.write(t,sz,*this);
   template<class T>
   void           write(T const* t, unsigned long sz, const char* name=0) {
-    stream_.write_start_collection_tag(sz,name,t);
+    stream_.write_start_collection_tag(sz,name);
     int i;
     for(i=0;i<sz;i++)
       write(*(t+i));

@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: cpptype.cc,v 1.2 2004/03/04 17:49:07 nrl Exp $
+// $Id: cpptype.cc,v 1.3 2004/03/06 23:15:42 nrl Exp $
 // \file cpptype.cc
 // 
 // 
@@ -13,6 +13,7 @@ CppType::CppType()
   : isConst_(false),isStatic_(false),
     isAPointer_(false), // isASTLContainer_(false),
     isAComplexType_(false), isAReference_(false),
+    isTemplate_(false),
     wasInstantiated_(false)
 {
 }
@@ -65,6 +66,7 @@ CppType CppType::instantiate(CppTemplateInstance const& ti) const
       ret.baseTok_[i]=ti.realName(baseTok_[i]);
   }
   
+  
   // OK, now that the substitutions are done,
   // we clean and recompute the type strings
   vector<string> tok;
@@ -98,7 +100,7 @@ CppType CppType::instantiate(CppTemplateInstance const& ti) const
 
 void CppType::copy(CppType const& cppt)
 {
-  clear_();
+  clear();
   
   cppTypeName_=cppt.cppTypeName_;
   symbolicCppTypeName_=symbolicCppTypeName_;
@@ -110,6 +112,7 @@ void CppType::copy(CppType const& cppt)
   isAPointer_=cppt.isAPointer_;
   isAComplexType_=cppt.isAComplexType_;
   isAReference_=cppt.isAReference_;
+  isTemplate_=cppt.isTemplate_;
   wasInstantiated_=cppt.wasInstantiated_;
   std::copy(cppt.templateArgs_.begin(),
 	    cppt.templateArgs_.end(),
@@ -125,11 +128,12 @@ void CppType::copy(CppType const& cppt)
 
 void CppType::readFromCppTypeDecl(string const& cpptype)
 {
-  clear_();
+  clear();
   
   tok_.clear();
   tokenize(cpptype,tok_,",<>()*&[] \t", true);
   cleanTokens_(tok_);
+  
   
   // first pass:
   // analyze the type modifiers
@@ -141,6 +145,7 @@ void CppType::readFromCppTypeDecl(string const& cpptype)
     if(tok_[i]=="&") { isAReference_=true; i++; continue; }
     if(tok_[i]=="static") { isStatic_=true; i++; continue; }
     if(tok_[i]=="[") { isAPointer_=true; i++; continue; } // FIXME: should be isArray_
+    if(tok_[i]=="<") { isTemplate_=true; i++; continue; }
     
     //    if(tok_[i]=="<") {
     //      templateArgs_.push_back(tok_[++i]);
@@ -237,7 +242,7 @@ void CppType::tokenize(string const& str,
 {
   tokens.clear();
   
-  string::size_type str_start=str.find_first_not_of(del);
+  string::size_type str_start=0; // str.find_first_not_of(del); (BUG: if string starts with delimiter...)
   string::size_type str_end=str.find_first_of(del);
   
   while(str_start != string::npos) {
@@ -263,7 +268,7 @@ void CppType::tokenize(string const& str,
 
 
 
-void CppType::clear_()
+void CppType::clear()
 {
   cppTypeName_="";
   symbolicCppTypeName_="";
@@ -275,6 +280,7 @@ void CppType::clear_()
   // isASTLContainer_=false;
   isAComplexType_=false; 
   isAReference_=false;
+  isTemplate_=false;
   wasInstantiated_=false;
   
   templateArgs_.clear();

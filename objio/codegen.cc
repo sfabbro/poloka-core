@@ -3,6 +3,8 @@
 // file codegen.cc
 // 
 // 
+#include <stdio.h>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -78,6 +80,439 @@ void codegen::closeClassHeaderFile()
     class_ofs_h_.close();
   }
 }
+
+
+void codegen::generatePersister(CppClass const& c)
+{
+  std::vector<CppClass> tvec;
+  CppClass fullyDefinedTemplateClass(c);
+  bool ret = checkTemplateInstantiation_(c, fullyDefinedTemplateClass, tvec);
+  if(!ret) {
+    cout << "codegen::generatePersister() ERROR checking the template instantiation"
+	 << endl;
+    return;
+  }
+  
+  if(!c.isTemplate()) {
+    openClassHeaderFile(cleanTypeName(c.cppTypeName()));
+    classPersisterDecl_(c);
+    classPersisterCode_(c);
+  }
+  else {
+    openClassHeaderFile(cleanTypeName(fullyDefinedTemplateClass.cppTypeName()));
+    classPersisterDecl_(fullyDefinedTemplateClass);
+    int i,sz=tvec.size();
+    for(i=0;i<sz;i++)
+      classPersisterCode_(tvec[i]);
+  }
+  //  else {
+  //    dict td = d;
+  //    if(tvec.size()>0)
+  //      td.update(tvec[0]);
+  //    classPersisterDecl_(td);
+  //    int i;
+  //    for(i=0;i<(int)tvec.size();i++) {
+  //      td = d;
+  //      td.instantiate(tvec[i]);
+  //      classPersisterCode_(td);
+  //    }
+  //  }
+  
+  closeClassHeaderFile();
+}
+
+
+
+struct cmdLine {
+  int action;
+  string className;
+};
+
+
+bool codegen::checkTemplateInstantiation_(CppClass const& cppclass,
+					  CppClass& fullyDefinedTemplateClass,
+					  std::vector<CppClass>& classVec)
+{
+  classVec.clear();
+  
+  ifstream ifs;
+  ifs.open(source_header_name_.c_str());
+  if(!ifs.is_open()) {
+      std::cout << "codegen::checkTemplateInstantiation_ ERROR, unable to open "
+		<< source_header_name_ << std::endl;
+      return false;
+  }
+  
+  // reading the source_header and look for lines 
+  // containing key word "make_persister_for"
+  char buff[2048];
+  string sbuff;
+  string kw  = "make_persister_for";
+  string kw2 = "define_template_args";
+  string::size_type pos, pos2;
+  fullyDefinedTemplateClass = cppclass;
+  bool cppClassFullyDefined=false;
+  vector<cmdLine> cmdvec;
+  
+  // loop on lines
+  while( ifs.good() ) {
+    ifs.getline(buff, 2048);
+    sbuff=buff;
+    cmdLine cmd;
+    cmd.action=-1;
+    cmd.className="";
+      
+    // keyword matched ?
+    pos = sbuff.find(kw);
+    if(pos!=string::npos)
+      cmd.action=0;
+    else {
+      pos = sbuff.find(kw2);
+      if(pos!=string::npos)
+	cmd.action=1;
+    }
+    if(cmd.action<0) continue;
+    
+    // class name ?
+    pos2 = sbuff.find(cppclass.cppTypeName());
+    if(pos2==string::npos)
+      continue;
+    
+    // OK, so we apparently matched our classname
+    sbuff.erase(0,pos2);
+    
+    // now, make sure that what we found is equal to our class name
+    string check_class_name = sbuff.substr(0,sbuff.find_first_of("<"));
+    if(check_class_name != cppclass.cppTypeName())
+      continue;
+    
+    // seems that we're dealing with the right class...
+    cmd.className=sbuff;
+    
+    if(cmd.action==1) {
+      CppType t(sbuff);
+      fullyDefinedTemplateClass.defineTemplateArgs(t.templateArgVec());
+      //      fullyDefinedTemplateClass.print(1);
+      cppClassFullyDefined=true;
+    }
+    else 
+      cmdvec.push_back(cmd);
+  }
+  ifs.close();
+  
+  // now, try to instantiate
+  if(cmdvec.size()!=0 && !cppClassFullyDefined) {
+    cout << "codegen::checkTemplateInstantiation_(cppclass=" 
+	 << cppclass.cppTypeName() << ") ERROR request for template instantiations" << endl
+	 << " but template args not defined." << endl 
+	 << "Use the define_template_args directive" << endl;
+    return false;
+  }
+  
+  int i,sz=cmdvec.size();
+  for(i=0;i<sz;i++) {
+    CppClass c = fullyDefinedTemplateClass.instantiate(cmdvec[i].className);
+    //    c.print(1);
+    classVec.push_back(c);
+  }
+  
+  return true;
+}
+
+
+void codegen::classPersisterDecl_(CppClass const& cppclass)
+{
+  if(!cppclass.isPersistent()) { return; }
+  
+  unsigned int i,j;
+  std::string nm;
+  
+  
+  // the includes 
+  std::map<std::string,bool> types_;
+  for(i=0;i<cppclass.size();i++) {
+    std::map<std::string,bool>::iterator it;
+    string ctn=cleanTypeName(cppclass.member(i).type().cppTypeName());
+    it = types_.find(ctn);
+    if(it == types_.end() ) {
+      class_ofs_h_ << "#ifdef " << ctn << "__is__persistent" << std::endl
+		   << "#include \"" << ctn << "__persister.h\"" << std::endl
+		   << "#endif" << std::endl;
+      types_[ctn]=true;
+    }
+  }
+  class_ofs_h_ << std::endl << std::endl;
+  
+  
+  std::string templateSymbolicArgList;
+  // the read and write functions
+  class_ofs_h_ << "template<class IOS" << cleanTemplateArgList(cppclass) << " >" << std::endl
+	       << "void write(obj_output<IOS>& oo,"
+	       << cppclass.cppTypeName() << " const& p, const char* name=0)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << cppclass.cppTypeName() << ", IOS> pp(p);" << std::endl
+	       << "  oo.write(pp);" << std::endl
+	       << "}" << std::endl << std::endl;
+  
+  class_ofs_h_ << "template<class IOS" << cleanTemplateArgList(cppclass) << " >" << std::endl
+	       << "void read(obj_input<IOS> const& oi,"
+	       << cppclass.cppTypeName() << "& p)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << cppclass.cppTypeName() << ",IOS> pp(p);" << std::endl
+	       << "  oi.read(pp);" << std::endl
+	       << "}" << std::endl << std::endl;
+
+  // the << and >> operators
+  class_ofs_h_ << "template<class IOS" << cleanTemplateArgList(cppclass) << " >" << std::endl
+	       << "obj_output<IOS>& operator<<(obj_output<IOS>& oo,"
+	       << cppclass.cppTypeName() << " const& p)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << cppclass.cppTypeName() << ", IOS> pp(p);" << std::endl
+	       << "  oo.write(pp);" << std::endl
+	       << "  return oo;" << std::endl
+	       << "}" << std::endl << std::endl;
+  
+  class_ofs_h_ << "template<class IOS" << cleanTemplateArgList(cppclass) << " >" << std::endl
+	       << "obj_input<IOS> const& operator>>(obj_input<IOS> const& oi,"
+	       << cppclass.cppTypeName() << "& p)" << std::endl
+	       << "{" << std::endl
+	       << "  persister<" << cppclass.cppTypeName() << ",IOS> pp(p);" << std::endl
+	       << "  oi.read(pp);" << std::endl
+	       << "  return oi;" << std::endl
+	       << "}" << std::endl << std::endl;
+  
+  class_ofs_h_ << "template<class IOS" << cleanTemplateArgList(cppclass) << " >" << std::endl
+	       << "class persister<" << cppclass.cppTypeName() << ",IOS> : "
+	       << "public handle<" << cppclass.cppTypeName() << " >, "
+	       << "public persister_base<IOS>  {" << std::endl;
+  
+  class_ofs_h_ << "public:" << std::endl;
+  
+  // constructors & destructor
+  class_ofs_h_ << "  persister<" 
+	       << cppclass.cppTypeName() << ",IOS>() : handle<" 
+	       << cppclass.cppTypeName() << " >() {}" << std::endl;
+  
+  class_ofs_h_ << "  persister<" 
+	       << cppclass.cppTypeName() << ",IOS>("
+	       << cppclass.cppTypeName() << "& obj) : handle<"
+	       << cppclass.cppTypeName() << " >(&obj) {}" << std::endl;
+    
+  class_ofs_h_ << "  persister<" << cppclass.cppTypeName() << ",IOS>("
+	       << cppclass.cppTypeName() << " const & obj) : handle<"
+	       << cppclass.cppTypeName() << " >(const_cast<"
+	       << cppclass.cppTypeName() << "*>(&obj)) {}// I know, that's UGLY." << std::endl;
+  
+  class_ofs_h_ << "  ~persister<" << cppclass.cppTypeName()
+	       << ",IOS>() {}" << std::endl << std::endl;
+  
+  // interface methods
+  
+  // virtual unsigned int version() const { return <version>; }
+  class_ofs_h_ << "  virtual unsigned int version() const { return " 
+	       << cppclass.version() << "; }" << std::endl;
+  
+  // virtual std::string name() const { return (std::string)<name>; }
+  class_ofs_h_ << "  virtual std::string  name()    const { return (std::string)className_; }"
+	       << std::endl;
+  
+  // virtual persister_base<IOS>* clone() const { return new persister<...,IOS>; }
+  class_ofs_h_ << "  virtual persister_base<IOS>* clone() const { return new persister<"
+	       << cppclass.cppTypeName() << ",IOS>; }" << std::endl;
+  
+  // virtual void const*  get_object_addr() const { return (void*)obj_; }
+  class_ofs_h_ << "  virtual void const* get_object_addr() const { return (void*)obj_; }"
+	       << std::endl;
+  
+  // unsigned int size() const { return <size>; }
+  class_ofs_h_ << "  unsigned int size()    const { return " 
+	       << cppclass.size() << ";}" << std::endl;
+  
+  // std::string name(unsigned int i) const { return (std::string)memberNames_[i]; }
+  class_ofs_h_ << "  std::string  name(unsigned int i) const { return (std::string)memberNames_[i]; }" 
+	       << std::endl;
+  
+  // std::string type(unsigned int i) const { return (std::string)memberTypes_[i]; }
+  class_ofs_h_ << "  std::string  type(unsigned int i) const { return (std::string)memberTypes_[i]; }" 
+	       << std::endl << std::endl;
+  
+  // 
+  // now, the private section of the persister
+  // 
+  class_ofs_h_ << "private:" << std::endl;
+  
+  
+  // the read_members() and write_members() methods 
+  class_ofs_h_ << "  virtual void write_members(obj_output<IOS>& oo) const {"
+	       << std::endl;
+  for(i=0;i<cppclass.baseList().size();i++) {
+    nm = cppclass.baseList()[i].type().cppTypeName();
+    class_ofs_h_ << "  write(oo, *((" << nm << "*)obj_)); " << std::endl;
+    //    class_ofs_h_ << "    {persister<" << nm << ",IOS> p(*(" << nm << "*)obj_);"
+    //		 << "write(oo,p);}" << std::endl;
+  }
+  for(i=0;i<cppclass.size();i++)
+    if( cppclass.member(i).type().isPersistent() )
+      class_ofs_h_ << "    write(oo, obj_->" << cppclass.member(i).name()
+		   << ", \"" << cppclass.member(i).name() << "\");" << std::endl;
+  class_ofs_h_ << "}" 
+	       << std::endl << std::endl;
+  
+  class_ofs_h_ << "  virtual void read_members(obj_input<IOS> const& oi) {"
+	       << std::endl;
+  for(i=0;i<cppclass.baseList().size();i++) {
+    nm = cppclass.baseList()[i].type().cppTypeName();
+    class_ofs_h_ << "  read(oi, *((" << nm << "*)obj_));" << endl; 
+    //    class_ofs_h_ << "     {persister<" << nm << ",IOS> p(*(" << nm << "*)obj_);"
+    //		 << "read(oi,p);}" << std::endl;
+  }
+  for(i=0;i<cppclass.size();i++) 
+    if( cppclass.member(i).type().isPersistent() )
+      class_ofs_h_ << "    read(oi, obj_->" << cppclass.member(i).name() << ");" << endl;
+  class_ofs_h_ << "}"
+	       << std::endl << std::endl;
+  
+  // the friends
+  class_ofs_h_ << "  template<class ZZ> friend class obj_input;"  << std::endl
+	       << "  template<class ZZ> friend class obj_output;" 
+	       << std::endl << std::endl;
+  
+  // the class description -- used by the schema evolution mechanism
+  class_ofs_h_ << "  static const char* className_;" << std::endl
+	       << "  static const char* memberNames_[];" << std::endl
+	       << "  static const char* memberTypes_[];" << std::endl;
+  
+  // end of persister<OBJ,IOS>
+  class_ofs_h_ << "};" << std::endl << std::endl;
+  
+  ofs_h_ << "#include \"" << cleanTypeName(cppclass.cppTypeName()) << "__persister.h\"" << std::endl;
+}
+
+
+
+void codegen::classPersisterCode_(CppClass const& cppclass)
+{
+  if(!cppclass.isPersistent()) return;
+  
+  unsigned int i;
+  
+  ofs_cc_ << "const char* persister<" << cppclass.cppTypeName() << " ,xmlstream>::className_ = \""
+	  << cppclass.cppTypeName() << "\";" << std::endl;
+  
+  ofs_cc_ << "const char* persister<" << cppclass.cppTypeName() << " ,xmlstream>::memberNames_[] = {";
+  if(cppclass.size()>0) {
+    ofs_cc_ << "\""  << cppclass.member(0).name()  << "\"";
+    for(i=1;i<cppclass.size();i++)
+      ofs_cc_ << ", \""  << cppclass.member(i).name()  << "\"";
+  }
+  ofs_cc_ << "};" << std::endl;
+  
+  ofs_cc_ << "const char* persister<" << cppclass.cppTypeName() << " ,xmlstream>::memberTypes_[] = {";
+  if(cppclass.size()>0) {
+    unsigned int i;
+    ofs_cc_ << "\""  << cppclass.member(0).type().cppTypeName()  << "\"";
+    for(i=1;i<cppclass.size();i++)
+      ofs_cc_ << ", \""  << cppclass.member(i).type().cppTypeName()  << "\"";
+  }
+  ofs_cc_ << "};" << std::endl;
+  
+  string ctn=cleanTypeName(cppclass.cppTypeName());
+  ofs_cc_ << "type_registrar<" << cppclass.cppTypeName() << ",xmlstream> __" << ctn << counter_++ << "__registration__;"
+	  << std::endl;
+  
+  ofs_cc_ << std::endl;
+}
+
+
+
+string codegen::cleanTypeName(string const& tname)
+{
+  string ret;
+  vector<string> tok;
+  
+  CppType::tokenize(tname, tok, "<>()[],:*&\t ", true);
+  int i,sz=tok.size();
+  for(i=0;i<sz;i++) {
+    if(tok[i]==">" ||
+       tok[i]=="<" ||
+       tok[i]=="(" || 
+       tok[i]==")" ||
+       tok[i]=="[" || 
+       tok[i]=="]" ||
+       tok[i]=="*" ||
+       tok[i]=="&" ||
+       tok[i]==":" ||
+       tok[i]=="," ) {
+      ret = ret + "_";
+      continue;
+    }
+    ret = ret + tok[i];
+  }
+  return ret;
+}
+
+
+
+
+string codegen::cleanTemplateArgList(CppClass const& c)
+{
+  string ret;
+  int i,sz=c.nTemplateArgs();
+  
+  //  if(sz>0) ret = ", class " + ret + c.templateArg(0);
+  for(i=0;i<sz;i++)
+    ret = ret + ", typename " + c.templateArg(i);
+  
+  return ret;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void codegen::generatePersister(dict const& d)
@@ -193,8 +628,9 @@ int codegen::readOneTemplateInstantiation_(std::string const& classname,std::str
 // find recusively templates in string sbuff, and save them
 // return position of >
 
-int codegen::findRecursivelyTemplateInstantiation_(std::string & sbuff, std::string const& className, std::vector<templateInstantiation>& tvec) {
-  
+int codegen::findRecursivelyTemplateInstantiation_(std::string & sbuff, 
+						   std::string const& className, 
+						   std::vector<templateInstantiation>& tvec) {
   int size = sbuff.size();
   
   int newbegin = sbuff.find("<");
@@ -233,7 +669,9 @@ int codegen::findRecursivelyTemplateInstantiation_(std::string & sbuff, std::str
 
 void codegen::checkTemplateInstantiation_(std::string const& className, std::vector<templateInstantiation>& tvec)
 {
-  //std::cout << std::endl << "codegen::checkTemplateInstantiation_ looking for " << className << " ..." << std::endl;
+  //  std::cout << "codegen::checkTemplateInstantiation_ looking for " 
+  //	    << className << " ..." << std::endl;
+  
   tvec.clear();
   ifstream ifs;
   ifs.open(source_header_name_.c_str());
@@ -267,83 +705,6 @@ void codegen::checkTemplateInstantiation_(std::string const& className, std::vec
     findRecursivelyTemplateInstantiation_(sbuff,className,tvec);
   }
 }
-
-
-/* use checkTemplateInstantiation_ instead
-   void codegen::checkConfigFile_(std::string const& className, std::vector<templateInstantiation>& tvec)
-   {
-   tvec.clear();
-   ifstream ifs;
-  
-   // config file ? 
-   if(config_file_name_!="") {
-   ifs.open(config_file_name_.c_str());
-   if(!ifs.is_open()) {
-   std::cout << "codegen::checkConfigFile_ ERROR, unable to open "
-   << config_file_name_ << std::endl;
-   return;
-   }
-   }
-   else {
-   std::string alt_config_file_name = 
-   source_header_name_.substr(0, source_header_name_.find_last_of("."));
-   alt_config_file_name = alt_config_file_name + ".dg2";
-   ifs.open(alt_config_file_name.c_str());
-   if(!ifs.is_open()) {
-   return;
-   }
-   }
-   
-  // reading the config file
-  char buff[1024];
-  while( ifs.good() ) {
-  ifs.getline(buff, 1024);
-  templateInstantiation ti;
-  bool ret = ti.readFromConfigFile(buff);
-  if(ret && (ti.name()==className)) tvec.push_back(ti);
-  }
-  
-  ifs.close();
-  }
-*/
-
-//bool codegen::parseCommandLine_(std::string const& buff, std::string const& rqst_className, TemplateInst_& ti)
-//{
-//  stringstream sstrm(buff.c_str());
-//  std::string command, className;
-//  std::vector<std::string> templateArgs_;
-//  sstrm >> command >> className;
-//  if( !sstrm.good() ||
-//      (command!="register") || 
-//      (className!=rqst_className) ) return false;
-//  
-//  // parse the template arguments
-//  while(sstrm.good()) {
-//    std::string nm,symt,realt;
-//    std::string::size_type pos;
-//    sstrm >> nm;
-//    pos=nm.find_first_of("=");
-//    symt = nm.substr(0,pos);
-//    realt = nm.substr(pos+1,std::string::npos);
-//    
-//    if(symt=="" || realt=="") 
-//      std::cout << "codegen::parseCommandLine_ ERROR parsing args"
-//		<< std::endl;
-//    return false;
-//    ti.symbolicTypes_.push_back(symt);
-//    ti.realTypes_.push_back(realt);
-//  }
-//
-//  int i;
-//  ti.fullName_ = className + "<";
-//  if(ti.realTypes_.size()>0) 
-//    ti.fullName_ = ti.fullName_ + ti.realTypes_[0];
-//  for(i=0;i<(int)ti.realTypes_.size();i++)
-//    ti.fullName_ = ti.fullName_ + ",";
-//  ti.fullName_ = ti.fullName_ + ">";
-//  
-//  return true;
-//}
 
 
 void codegen::classPersisterDecl_(dict const& dict_)
@@ -549,76 +910,3 @@ void codegen::classPersisterCode_(dict const& dict_)
   ofs_cc_ << std::endl;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ifdef GARBAGE
-  //  << "void write_members(obj_output<IOS>& oo) const {" << std::endl;
-  
-  
-  unsigned int i;
-  std::string nm;
-  // first, we write the base classes
-  for(i=0;i<(int)dict_.baseList().size();i++) {
-    nm = dict_.baseList()[i];
-    class_ofs_h_ << "{persister<" << nm << "> p(*("
-		 << nm << "*)obj_);" 
-		 << "oo.write(p);}" << std::endl;
-  }
-  for(i=0;i<dict_.size();i++) 
-    if(dict_.member(i).isPersistent)
-      class_ofs_h_ << "oo.write(obj_->"  << dict_.member(i).name  
-		   << ", \""  << dict_.member(i).name  
-		   << "\"" << ");" << std::endl;
-  
-  class_ofs_h_ << "}" << std::endl
-	       << std::endl
-	       << "template<class IOS>"
-	       << "void read_members(obj_input<IOS> const& oi) {" << std::endl;
-  
-  for(i=0;i<(int)dict_.baseList().size();i++) {
-    nm = dict_.baseList()[i];
-    class_ofs_h_ << "{persister<" << nm << "> p(*("
-		 << nm << "*)obj_);" 
-		 << "oi.read(p);}" << std::endl;
-  }
-  for(i=0;i<dict_.size();i++)
-    if(dict_.member(i).isPersistent)
-      class_ofs_h_ << "oi.read(obj_->"  << dict_.member(i).name  
-		   << ");" << std::endl;
-  
-  class_ofs_h_ << "}" << std::endl
-	       << std::endl
-	       << "template<class T> friend class obj_input;" << std::endl
-	       << "template<class T> friend class obj_output;" << std::endl
-	       << std::endl
-	       << "static const char* memberNames_[];" << std::endl
-	       << "static const char* memberTypes_[];" << std::endl
-	       << "};" << std::endl
-	       << std::endl
-	       << "template<class IOS>" << std::endl
-	       << "obj_output<IOS>& operator<<(obj_output<IOS>& oo, " << dict_.name() << " const& p)" << std::endl
-	       << "{" << std::endl
-	       << "persister<" << dict_.name() << "> pp(p);" << std::endl
-	       << "oo.write(pp);" << std::endl
-	       << "return oo;" << std::endl
-	       << "}" << std::endl
-	       << std::endl
-	       << "template<class IOS>" << std::endl
-	       << "obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, " << dict_.name() << "& p)" << std::endl
-	       << "{" << std::endl
-	       << "persister<" << dict_.name() << " > pp(p);" << std::endl
-	       << "oi.read(pp);" << std::endl
-	       << "return oi;" << std::endl
-	       << "};" << std::endl;
-#endif

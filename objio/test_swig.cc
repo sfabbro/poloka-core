@@ -11,6 +11,8 @@
 #include <string>
 #include <sstream>
 
+#include "countedref.h"
+
 #include "persistence.h"
 #include "typemgr.h"
 #include "test_swig.h"
@@ -37,6 +39,9 @@ int main()
   map<std::string,short> string_short_map;
   std::list< std::vector< std::map<string,unsigned int> > > stupidly_complex_example;
   
+  CountedRef<Point> cr(new Point);
+  CountedRef<Point> cr2(new Star);
+  
   B<int> b;
   BB<string,string> bb;
   
@@ -50,7 +55,7 @@ int main()
   s.y()=55.555;
   s.flux()=1234567;
   
-  for(i=0;i<20;i++) {
+  for(i=0;i<200;i++) {
     Star s_tmp;
     s_tmp.id()=i;
     s_tmp.x() = i;
@@ -59,13 +64,13 @@ int main()
     ls.push_back(s_tmp);
   }
   
-  for(i=0;i<10;i++) {
+  for(i=0;i<100;i++) {
     std::stringstream sstrm;
     sstrm << "toto = " << i;
     string_vector.push_back(sstrm.str());
   }
   
-  for(i=0;i<10;i++) 
+  for(i=0;i<100;i++) 
     double_vector.push_back(sin(i));
   
   string_short_map["toto"]=2;
@@ -87,12 +92,15 @@ int main()
   oo << string_short_map;
   oo << b;
   oo << bb;
-  oo << tutu;
+  write(oo,tutu);
   
   Point* ppp = &s;
   oo.write(ppp);
   ppp = &p;
   oo.write(ppp);
+  
+  oo.write(cr);
+  oo.write(cr2);
   
   oo.close();
 

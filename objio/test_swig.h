@@ -9,6 +9,7 @@
 
 #include<string>
 
+#include "countedref.h"
 #include "persistence.h"
 
 
@@ -18,10 +19,13 @@ struct C {};
 
 struct AA : public A, public C {
   CLASS_VERSION(AA,1);
+  #define AA_is_persistent
 };
 
 
-class Point {
+class Point : public RefCount {
+  CLASS_VERSION(Point,1);
+  #define Point_is_persistent
 public:
   Point() : x_(0), y_(0) {}
   virtual ~Point() {}
@@ -36,12 +40,12 @@ public:
 protected:
   float8 x_;
   float8 y_;
-  
-  CLASS_VERSION(Point,1);
 };
 
 
 class Star : public Point {
+  CLASS_VERSION(Star,1);
+  #define Star_is_persistent
 public:
   Star() : Point(), id_(0), flux_(0) {}
   virtual ~Star() {}
@@ -55,27 +59,33 @@ public:
 private:
   uint4 id_;
   float8 flux_;
-  CLASS_VERSION(Star,1);
 };
 
 
-
+// define_template_args B<T>
+// make_persister_for   B<int>
 template<class T>
 class B : public A {
+  CLASS_VERSION(B,1);
+  #define B_is_persistent
 public:
   B() {}
   virtual ~B() {}
   
 private:
   T t_;
-  
-  static const unsigned short __version__=1;
-  template<class U,class V> friend class persister;
 };
 
 
+// define_template_args BB<T,U>
+// make_persister_for BB<string,string>
+// make_persister_for BB<string,double>
+// make_persister_for BB<double,float>
+// make_persister_for BB<double,double>
 template<class T, class U>
 class BB : public A {
+  CLASS_VERSION(BB,2);
+  #define BB_is_persistent
 public:
   BB() {}
   virtual ~BB() {}
@@ -86,21 +96,17 @@ public:
 private:  
   T t_;
   U u_;
-  
-  static const unsigned short __version__=1;
-  template<class Z,class ZZ> friend class persister;
 };
 
 
 
 class Tutu {
+  CLASS_VERSION(Tutu,7);
+  #define Tutu_is_persistent
 public:
   double toto;
-  double glop[220];
+  double glop[220][22][55];
   float  gloups[20];
-  
-  static const unsigned short __version__=1;
-  template<class Z,class ZZ> friend class persister;
 };
 
 

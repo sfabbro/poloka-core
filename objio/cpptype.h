@@ -1,15 +1,14 @@
 // -*- C++ -*-
-// $Id: cpptype.h,v 1.2 2004/03/04 17:49:07 nrl Exp $
+// $Id: cpptype.h,v 1.3 2004/03/06 23:15:43 nrl Exp $
 // 
 // \file cpptype.h Simple class to hold the type of
 // a class member.
 // 
-// Last modified: $Date: 2004/03/04 17:49:07 $
+// Last modified: $Date: 2004/03/06 23:15:43 $
 // By:            $Author: nrl $
 // 
 // POTENTIAL PROBLEMS:
 //   * the CppType does not know whether it is fully instantiated or not...
-// 
 #ifndef CPPTYPE_H
 #define CPPTYPE_H
 
@@ -26,7 +25,7 @@ public:
   CppType(std::string const& decl) { readFromCppTypeDecl(decl); }
   ~CppType();
   
-  //! the full name (StarList<T>, double or Image)
+  //! the type name. For example: Point, Star, StarList<T>. 
   std::string        cppTypeName() const { return cppTypeName_; }
   
   //! the symbolic name (if the class is a template)
@@ -44,8 +43,11 @@ public:
   //! return the class template argument number i
   std::string        templateArg(int i) const { return templateArgs_[i]; }
   
+  //! return the class template arg vec
+  std::vector<std::string>  templateArgVec() const { return templateArgs_; }
+  
   //! true if the class is a template classa
-  bool               isTemplate() const { return templateArgs_.size()!=0; }
+  bool               isTemplate() const { return isTemplate_; /* return templateArgs_.size()!=0; */ }
   
   //! true if the template is instantiated (StarList<SEStar>)
   bool               wasInstantiated() const { return wasInstantiated_; }
@@ -96,6 +98,9 @@ public:
   static std::string  reformatTypeString(std::string const&);
   static std::string  buildCleanTypeString(std::vector<std::string> const&);
   
+  void                clear();
+  
+  
 protected:
   std::string cppTypeName_;
   std::string symbolicCppTypeName_;
@@ -108,14 +113,13 @@ protected:
   //  bool isASTLContainer_;
   bool isAComplexType_; // remove this?
   bool isAReference_;
+  bool isTemplate_;
   bool wasInstantiated_; // means, the instantiate() function was called...
   
-  std::vector<std::string> templateArgs_;      // all the template args
-  //  std::vector<std::string> classTemplateArgs_; // the class template args
+  std::vector<std::string> templateArgs_;  // all the template args
   std::vector<std::string> tok_;
   std::vector<std::string> baseTok_;
   
-  void clear_();
   static void  cleanTokens_(std::vector<std::string>&);
 };
 

@@ -1,194 +1,145 @@
-// -*- C++ -*-
-//
-//
-//
-//
-char* (persister<Star>::* getter_)();
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+$Id: README,v 1.2 2004/03/06 23:15:41 nrl Exp $
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-template<class T, class OIS>
-void streamer::read(obj_input<OIS> const& oi)
-{
-  unsigned int i;
-  persister<T>::setter_ s;
-  for(i=0;i<sz_;i++) {
-    s = set_[i];
-    oi.read(p.(*s)(),type[i]);
-  }
-}
+objio is an attempt to design a lightweight C++ object persistency
+system. The persistency code is automatically generated (currently
+using swig -- http://www.swig.org). The system should be able to
+support automatic schema evolution. The primary output format is
+currently XML, although additional file format should be added in the
+future.
 
-// The characters:
-
-// The Object we want to write and read.
-class Star;
-
-// The Persister -- external object, since we want
-// the toolkit to be as little invasive as possible.
-// NOTE however that persister<Star> must be a friend of Star
-class persister<Star>;
-
-// The object input and object output interfaces
-// Two simple template interfaces. They define
-// how an object can export and recover its persistent
-// data members. They're just interfaces and do not
-// actually know how to read and write data.
-// Their template method just call methods of another
-// class which does the actual work.
-class object_input;
-class object_output;
+In what follows we present a brief overview of the the objio internal
+structure. Section (I) will present the objio classes, section (II)
+will present how to use the current version of objio. Section (III)
+will present the current limitations of the system and our plans to
+overcome them.
 
 
-// the reader holds a description of the serialized data
-// can read and write it. The reader is needed to recover
-// data written by older version of a same class.
-class reader;
+(I) The objio classes:
+-=-=-=-=-=-=-=-=-=-=-=
 
-// Now, we can play with our objects:
-
-// writing and reading a Star
-template<class IOS>
-void persister<Star>::write(obj_output&) const;
-// or better
-template<class IOS>
-void const_persister<Star>::write(obj_output&) const;
-
-
-// for example
-Star st;q
-obj_output<XMLStream> oo;
-const_persister<Star> p(&st);
-oo.write(p);
-
-obj_intput<XMLStream> oi;
-persister<Star> pp(&st);
-oi.read(pp);
+ 1) Persisters:
+ --------------
+ see persister.h 
+ 
+ A persister<T> derives from handle<T> A handle<T> is a
+ smart pointer to an object of type T, which knows whether
+ it owns or not the object it points to. A persister<T>
+ is nothing more than a smart pointer to an object of
+ type T.
+ 
+ If T is tagged as "persistant", a persister<T> is a little more than
+ a smart pointer: it also knows precisely the internal structure of the
+ object it points to. real persisters are template specialization of 
+ the type persister<T>. They are generated automatically for the 
+ C++ header files using the program dictgen.
 
 
-// The functions
-template<class T, class OIS>
-void obj_output<OIS>::write(persister<T> const&);
-// and
-template<class T, class OIS>
-void obj_input<OIS>::read(persister<T>&) const;
-// just know how to tag the beginning of an object
-// and how to call the persister function which
-// goes though the object and exports its data values.
+ 2) obj_input and obj_output:
+ ----------------------------
+ see objio.h
 
-// Here is the code:
-template<class T, class OIS>
-void obj_output<OIS>::write(persister<T> const& p)
-{
-  stream_.start_writing_object(p);
-  p.write_obj_members(*this);
-  stream_.end_writing_object(p);
-}
+ obj_output and obj_input present a uniform interface to the
+ persisters. These classes' methods allow to read and write
+ atomic types (float,double,char etc...), persisters, and 
+ STL containers.
+ 
+ obj_input and obj_output do not read and write the object themselves.
+ They just redirect the calls to a streamer object, which does
+ actually the work. The default streamer is called xmlstream and knows how
+ to write atomic types and STL containers in XML. But it can be replaced by
+ an other streamer.
+ 
+ We chose to define obj_input and obj_output as template classes of the 
+ streamer type:
+   template<class IOS> class obj_input;
+ we think it 
+ 
+ 
+ 3) xmlstream and other backends:
+ --------------------------------
+ see xmlstream.h
+ 
+ 
+
+ 4) The dictgen program:
+ -----------------------
+ see dictgen.*
+     cpptype.*
+     cppclassmember.*
+     cppclass.*
+     cppswigclassreader.*
+     codegen.cc
+
+ and $ dictgen --help
+ 
+ The dictgen program reads a header file and generate persisters for all
+ the classes defined in this header file and marked as "persistent".
+ dictgen generates several output files:
+    - <header_file_name>_dict.h   which contains mostly #include statements
+    - <header_file_name>_dict.cc  which contains static definitions and code 
+                                  to register the persisters.
+    - <class_name>__persister.h   which contains the definition of the persister
+                                  generated for the class of name <class_name>.
 
 
-// the code for the reader is a bit more complicated
-// since we have to deal with the version changes
-template<class T, class OIS>
-void obj_input<OIS>::read(persister<T>& p) const
-{
-  unsigned int version;
-  stream_.start_reading_object(p, version);
-  if( version == p.version() )
-    p.read_obj_members(*this);
-  else {
-    // retrieve the reader
-    reader_base* reader = get_reader(p,version);
-    reader->read_obj_members(*this,p);
-  }
-  stream_.end_reading_object(p);
-}
+(II) How to use objio
+-=-=-=-=-=-=-=-=-=-=-
 
 
 
-template<class O, class OIS>
-class base_reader {
+(III) Where we stand now: current limitations and the road ahead
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+objio currently suffers from a few limitations. Most of them
+are related to swig:
+ 
+  - templates classes are not correctly parsed. We have to 
+    help dictgen using the // define_template_args directive
+  - the dependencies are not correcty handled. For example 
+    if a persistent class Foo has a member of type Bar
+    (or inherits from Bar), and if Bar was not defined in 
+    the same file, we cannot automatically make sure that 
+    persisters where generated for class Bar.
+  - the XML generated by swig is difficult to parse, and we
+    have no guarantee that it won't evolve in the future.
+  - the XML generated by swig is sometimes invalid ("<" in 
+    element attributes, for example), and we are lucky that 
+    libxml2 is rather tolerant.
+  - most of the objio directives could be added as commentaries.
+    swig does not know how to parse commentaries.
+
+
+Therefore, we should think about writing our own parser. It should
+stay rather simple (even simple than the parser used by doxygen).  The
+only thing it should be able to do is to parse commentary directives
+and class/class-member/typedef/enums declarations. The input of this
+parser would just be the output of the C++ preprocessor (which would
+have done all the includes). And we would be able to deal nicely with:
+the templates and the dependencies. We would be able to easily issue
+directives to dictgen. It would even be possible to analyse the code and
+generate persisters for all the needed template instantiations.
+
+To make a class persistent, we would write do something like:
+
+//$$                                  << start dictgen block
+// PersistentClass: Foo               << class Foo is persistent
+// Version: 5                         << current version
+// Transient: i j k                   << do not write out these members
+// Instantiate: Foo<int> Foo<double>  << persisters for these instantiations
+//$$
+template<class T>
+class Foo {
+  PERSISTENT_CLASS;                   << "template class<T> class persister;"
 public:
-  virtual void read(obj_input<OIS> const&, O&)=0;
+  Foo();
+  ~Foo();
+ 
+  T&  bar() { return t_; }
+
+private:
+  T t_;
+  int i,j,k;
 };
-
-
-template<class O, class OIS, class T, class D>
-class simple_type_reader {
-public:
-  simple_type_reader(T O::*) {}
-  ~simple_type_reader() {}
-  virtual void reader(obj_input<OIS> const&, O&);
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
-
-// More about readers
-// a reader is a class able to read an object description
-// and to link it with the symbols exported by a persister
-// it is also able to read the object's
-// There are several reader types. The most generic one is:
-class generic_reader : public base_reader;
-
-template<class T, class OIS>
-void generic_reader::read_obj_members(obj_input<T> const& oi, persister<T>& p) c
-onst
-{
-   list<base_reader*>::const_iterator it;
-   for(it=l.begin();it!=l.end();it++)
-     it->read(oi, (p.*(it->setter)()));
-}
-
-
-
-// a reader is a class which knows how to read
-class base_reader;
-class generic_reader : public base_reader;
-template<class T, class D> class simple_type_reader : public base_reader;
-
-// a generic reader manages a tree of readers.
-// here's the code
-class base_reader {};
-
-
-template<class T, class D>
-class simple_type_reader : public base_reader {
-public:
-
-  template<class OIS>
-  inline void   read(obj_input<OIS> const& oi, D& v) {
-    T myvar;
-    oi.read(myvar);
-    v = (D)myvar;
-  }
-
-};
-
-
-
-// specialization for the pointer types
-
-// specialization for the STL types
 

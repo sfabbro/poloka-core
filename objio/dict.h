@@ -2,6 +2,22 @@
 // 
 // file dict.h
 // 
+// The dict class is used to describe the structure
+// of the persistent parts of a C++ class. A dict can 
+// be read by the dict_reader classes such as swig_dict_reader.
+// 
+// NOTE: this class is no more than a quick and dirty trick and should
+// be rewritten cleanly in a near future. We should implement a
+// CppType class, to manage cleanly the C++ type specifications and
+// the template instantiation mechanism. A PersistentMember would then
+// be a {CppType,CppName} struct, and a dict would just be a class like:
+// 
+// Dict {
+//  list<string>     templateArgs;
+//  string           name();
+//  unsigned int     version();
+//  PersistentMember m[];
+// };
 // 
 #ifndef DICT_H
 #define DICT_H
@@ -21,15 +37,18 @@ public:
     member_t();
     ~member_t() { clear(); }
     
-    std::string name;
-    std::string type;
-    std::vector<unsigned int> arraySize;
-    bool        isPointer;
-    bool        isStatic;
-    bool        isTemplate;
-    bool        complexType;
-    bool        isPersistent;
-    bool        isReference;
+    std::string name;           // the member name (ex. x, y, flux)
+    std::string type;           // the full type name (ex. double*, float**, Star[], std::vector<T>)
+    std::string baseType;       // the base type (double,float,Star)
+    
+    std::vector<unsigned int> arraySize; // useless (arrays are not persistent. use STL types instead)
+    
+    bool        isPointer;      // true if pointer type (raw pointer members are not persistent!)
+    bool        isStatic;       // true if static member (static members are not persistent!)
+    bool        isTemplate;     // useless ?
+    bool        complexType;    // useless ?
+    bool        isReference;    // true if member is a reference. (references are not persistent!)
+    bool        isPersistent;   // true if the member is persistent
     
     void        print() const;
     void        update();

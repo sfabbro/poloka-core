@@ -14,15 +14,12 @@
 
 using namespace std;
 
-//struct swig_type {
-//  std::string type;
-//  std::string cpp_type;
-//  bool isPointer;
-//  bool isStatic;
-//  bool isFunction;
-//  bool isTemplate;
-//};
+
 dict::member_t process_swig_type(std::string const& type);
+void tokenize(std::string const& type, 
+	      std::vector<std::string>& tokens,
+	      std::string const& del=".");
+void swig2cpp(std::string& type, dict::member_t& d);
 
 
 
@@ -36,6 +33,7 @@ swig_dict_reader::swig_dict_reader(std::string const& filename)
   res_ = xmlXPathEvalExpression((xmlChar*)"/top/include/include/class|/top/include/include/template",  ctx_);
   sz_ = res_->nodesetval->nodeNr;
 }
+
 
 
 swig_dict_reader::~swig_dict_reader()
@@ -128,6 +126,9 @@ void swig_dict_reader::read_header_(std::string& name, unsigned int& version,
 }
 
 
+// read the list of classes we are inheriting from. 
+// swig gives us the full type specification, as it appears in the C++ code.
+// we have to parse it a little to fill out a dict::member structure.
 void swig_dict_reader::read_baselist_(std::vector<std::string>& bl) const
 {
   assert(doc_ && ptr_ && ctx_);
@@ -148,11 +149,14 @@ void swig_dict_reader::read_baselist_(std::vector<std::string>& bl) const
     bl.push_back((const char*)nm);
     xmlFree(nm);
   }
-    
-  
 }
 
 
+// read the list of persistent members.
+// swig encodes the type its own way.
+// again, we have to parse the type in order to fill out 
+// a dict::member structure. Remember that if the type is a raw pointer,
+// a reference or an array, it won't be marked as persistent (!)
 void swig_dict_reader::read_memberList_(std::vector<dict::member_t>& ml) const
 {
   assert(doc_ && ptr_ && ctx_);
@@ -239,9 +243,12 @@ void swig_dict_reader::read_memberList_(std::vector<dict::member_t>& ml) const
 
 
 
+// small utility function to split a string.
+// into tokens --like strtok() but safer and easier to use.
+// It is used to parse the type specifications.
 void tokenize(std::string const& type, 
 	      std::vector<std::string>& tokens,
-	      std::string const& del=".")
+	      std::string const& del)
 {
   tokens.clear();
   
@@ -256,6 +263,8 @@ void tokenize(std::string const& type,
 }
 
 
+
+// convert swig type encoding into C++ type encoding.
 void swig2cpp(std::string& type, dict::member_t& d)
 {
   // get rid of the ()s
@@ -339,38 +348,38 @@ dict::member_t process_swig_type(std::string const& type)
 //    xmlXPathFreeObject(obj2);
 
 
-void clean_str(std::vector<std::string>& tokens)
-{
-  
-  std::string del = "()";
-  std::vector<std::string>::iterator it;
-  std::string::size_type pos;
-  
-  for(it=tokens.begin();it!=tokens.end();it++) {
-    pos = 0;
-    while(pos!=std::string::npos) {
-      pos = it->find("q(", pos);
-      if(pos!=std::string::npos)
-	it->erase(pos, pos+2);
-    }
+//void clean_str(std::vector<std::string>& tokens)
+//{
+//  
+//  std::string del = "()";
+//  std::vector<std::string>::iterator it;
+//  std::string::size_type pos;
+//  
+//  for(it=tokens.begin();it!=tokens.end();it++) {
+//    pos = 0;
+//    while(pos!=std::string::npos) {
+//      pos = it->find("q(", pos);
+//      if(pos!=std::string::npos)
+//	it->erase(pos, pos+2);
+//    }
     
-    //    pos = 0;
-    //    while(pos!=std::string::npos) {
-    //      pos = it->find("a(", pos);
-    //      it->erase(pos,pos+1);
-    //      it->replace(pos,1,"[");
-    //      pos = it->find(")", pos);
-    //      it->replace(pos,1);
-    //    }
+//    pos = 0;
+//    while(pos!=std::string::npos) {
+//      pos = it->find("a(", pos);
+//      it->erase(pos,pos+1);
+//      it->replace(pos,1,"[");
+//      pos = it->find(")", pos);
+//      it->replace(pos,1);
+//    }
     
-    pos = 0;
-    while(pos!=std::string::npos) {
-      pos = it->find_first_of(del);
-      if(pos!=std::string::npos) 
-	it->erase(pos,1);
-    }
-  }
-}
+//    pos = 0;
+//    while(pos!=std::string::npos) {
+//      pos = it->find_first_of(del);
+//      if(pos!=std::string::npos) 
+//	it->erase(pos,1);
+//    }
+//  }
+//}
 
 
 

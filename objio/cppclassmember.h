@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: cppclassmember.h,v 1.2 2004/03/04 17:49:06 nrl Exp $
+// $Id: cppclassmember.h,v 1.3 2004/03/06 23:15:42 nrl Exp $
 // 
 // \file cppclassmember.h
 // 
-// Last modified: $Date: 2004/03/04 17:49:06 $
+// Last modified: $Date: 2004/03/06 23:15:42 $
 // By:            $Author: nrl $
 // 
 #ifndef CPPCLASSMEMBER_H
@@ -18,6 +18,7 @@ class CppClassMember {
 public:
   CppClassMember();
   CppClassMember(CppType const& decl, std::string const& name);
+  CppClassMember(const std::string& decl, const std::string& name);
   ~CppClassMember() {}
   
   std::string const& name() const { return name_; }
@@ -30,6 +31,7 @@ public:
   
   void               print() const;
   
+  void               clear();
 private:
   std::string name_;
   CppType     type_;

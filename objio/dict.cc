@@ -45,7 +45,7 @@ bool dict::operator==(dict const& d) const
   unsigned int i;  
   
   for(i=0;i<baseList_.size();i++) 
-    if( baseList_[i]!=d.baseList_[i] ) 
+    if( !(baseList_[i]==d.baseList_[i]) ) 
       return false;
   
   for(i=0;i<size();i++) 

@@ -29,6 +29,7 @@ private:
   
   
   virtual void next_() const { if(iptr_>=sz_) return; iptr_++; }
+  
   virtual void read_header_(std::string&, unsigned int&, std::string&,
 			    bool&, bool&) const;
   virtual void read_baselist_(std::vector<std::string>&) const;

@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: cppclass.cc,v 1.2 2004/03/04 17:49:07 nrl Exp $
+// $Id: cppclass.cc,v 1.3 2004/03/06 23:15:42 nrl Exp $
 // \file cppclass.cc
 // 
 // 
@@ -9,9 +9,11 @@
 using namespace std;
 
 
-CppClass::CppClass(std::string const& kind, std::string const& classname, int version)
+CppClass::CppClass(std::string const& kind, std::string const& classname, int version,
+		   bool isTemplate)
   : CppType(classname), version_(version), kind_(kind)
 {
+  isTemplate_=isTemplate;
 }
 
 
@@ -23,11 +25,21 @@ CppClass::~CppClass()
 CppClass CppClass::instantiate(std::string const& str) const
 {
   CppClass ret(kind_,cppTypeName_,version_);
+  if( !isTemplate() ) {
+    cout << "CppClass::instantiate: class is not template !"
+	 << endl;
+    ret = *this;
+    return ret;
+  }
   
   // build the CppTemplateInstance
   CppTemplateInstance ti = readFromHeaderSpec(str);
+  if(ti.size()==0) {
+    ret = *this;
+    return ret;
+  }
   
-  // instantiate the type itself REDO THIS !
+  // instantiate the type itself
   CppType t = CppType::instantiate(ti);
   ret.CppType::copy(t);
   
@@ -46,7 +58,6 @@ CppClass CppClass::instantiate(std::string const& str) const
     ret.memberList_.push_back(m);
   }
   
-  
   return ret;
 }
 
@@ -55,6 +66,7 @@ void CppClass::copy(CppClass const& cp)
 {
   clear_();
   
+  CppType::copy((CppType const&)cp);
   version_ = cp.version_;
   kind_ = cp.kind_;
   std::copy(cp.baseList_.begin(),cp.baseList_.end(),
@@ -83,9 +95,14 @@ CppTemplateInstance CppClass::readFromHeaderSpec(string const& str) const
   CppType t(str);
   
   if(t.nTemplateArgs()!=nTemplateArgs()) {
-    cout << "warning ! something nasty going on!" << endl;
+    cout << "CppClass::readFromHeaderSpec(" << str << "): ERROR "
+	 << "template argument mismatch:"  << endl
+	 << " class: " << nTemplateArgs() << " template args != "
+	 << t.nTemplateArgs()
+	 << endl;
     return ret;
   }
+  
 
   // now, build the CppTemplateInstance
   int i,sz=t.nTemplateArgs();
@@ -108,6 +125,41 @@ void CppClass::addBaseClass(CppClassMember const& b)
 }
 
 
+void CppClass::defineTemplateArgs(std::vector<std::string> const& args)
+{
+  if(args.size()==0) return;
+  if(!isTemplate_) {
+    cout << "CppClass::defineTemplateArgs() class is not template!" 
+	 << endl;
+    return;
+  }
+  templateArgs_.clear();
+  std::copy(args.begin(), args.end(),
+	    std::back_inserter(templateArgs_));
+  
+  int i,sz=args.size();
+  if(sz>0) {
+    tok_.push_back("<");
+    baseTok_.push_back("<");
+    tok_.push_back(args[0]);
+    baseTok_.push_back(args[0]);
+  }
+  for(i=1;i<sz;i++) {
+    tok_.push_back(",");
+    baseTok_.push_back(",");
+    tok_.push_back(args[i]);
+    baseTok_.push_back(args[i]);
+  }
+  if(sz>0) {
+    tok_.push_back(">");
+    baseTok_.push_back(">");
+  }
+  
+  cppTypeName_ = buildTypeString(tok_);
+  symbolicCppTypeName_ = buildTypeString(baseTok_);
+}
+
+
 void CppClass::print(int verbosity) const
 {
   if( isTemplate() && !wasInstantiated_ )
@@ -127,7 +179,15 @@ void CppClass::print(int verbosity) const
       std::cout << baseList_[i].type().cppTypeName() << " ";
     std::cout << "}";
   }
-  std::cout << std::endl;
+  
+  if( isTemplate() ) {
+    std::cout << "  < ";
+    sz=templateArgs_.size();
+    for(i=0;i<sz;i++)
+      std::cout << templateArgs_[i] << " ";
+    std::cout << ">";
+  }
+  std::cout << std::endl;  
   
   if(verbosity>0) {
     sz=memberList_.size();

@@ -1,23 +1,23 @@
 // -*- C++ -*-
-// $Id: test_cppstuff.cc,v 1.1 2004/03/04 17:50:04 nrl Exp $
+// $Id: test_cppstuff.cc,v 1.2 2004/03/06 23:15:43 nrl Exp $
 // 
 // \file test_cppstuff.cc
 // 
 #include "cpptype.h"
 #include "cppclass.h"
-
+#include "cppswigclassreader.h"
 
 
 int main()
 {
   CppClass cl("class", "toto<T,U>", 2);
-  CppClassMember m1(CppType("double"), "toto");
-  CppClassMember m2(CppType("double"), "titi");
-  CppClassMember m3(CppType("vector<string>"), "titi");
-  CppClassMember m4(CppType("vector<string>[12]"), "titi");
-  CppClassMember m5(CppType("list<vector<T> >"), "glop");
-  CppClassMember m6(CppType("T"), "tshah_");
-  CppClassMember m7(CppType("U"), "tshuh_");
+  CppClassMember m1("double", "toto");
+  CppClassMember m2("double", "titi");
+  CppClassMember m3("vector<string>", "titi");
+  CppClassMember m4("vector<string>[12]", "titi");
+  CppClassMember m5("list<vector<T> >", "glop");
+  CppClassMember m6("T", "tshah_");
+  CppClassMember m7("U", "tshuh_");
   
   cl.addMember(m1);
   cl.addMember(m2);
@@ -30,5 +30,21 @@ int main()
   
   CppClass cl2 = cl.instantiate("toto<vector<map<int,double> >, int >");
   cl2.print(1);
+  
+  CppSwigClassReader reader("sw.xml");
+  int i;
+  for(i=0;i<7;i++) {
+    CppClass c1 = reader.read();
+    c1.print(1);
+    if(i==6) {
+      vector<string> v;
+      v.push_back("T"); v.push_back("U");
+      c1.defineTemplateArgs(v);
+      CppClass cc = c1.instantiate("BB<int,double>");
+      cc.print(1);
+    }
+  }
+  
+  
 }
 

@@ -10,6 +10,7 @@
 #include <fstream>
 
 #include "dict.h"
+#include "cppclass.h"
 
 
 class codegen {
@@ -25,38 +26,33 @@ public:
   void  closeClassHeaderFile();
   
   void  generatePersister(dict const&);
+  void  generatePersister(CppClass const&);
+  
+  static std::string cleanTypeName(std::string const&);
+  static std::string cleanTemplateArgList(CppClass const&);
   
 private:
+
+  void  classPersisterDecl_(CppClass const&);
+  void  classPersisterCode_(CppClass const&);
   
-  //  // this struct just tells us how to instantiate a template
-  //  struct TemplateInst_ {
-  //    std::vector<std::string> symbolicTypes_;
-  //    std::vector<std::string> realTypes_;
-  //    std::string fullName_;
-  //    
-  //    std::string    concatenateSymbolicTypes() const;
-  //    std::string    concatenateRealTypes() const;
-  //    
-  //    void           copy(TemplateInst_ const& ti) {
-  //      std::copy(ti.symbolicTypes_.begin(), ti.symbolicTypes_.end(), std::back_inserter(symbolicTypes_));
-  //      std::copy(ti.realTypes_.begin(), ti.realTypes_.end(), std::back_inserter(realTypes_));
-  //      fullName_ = ti.fullName_;
-  //    }
-  //    TemplateInst_& operator=(TemplateInst_ const& ti) { copy(ti); return *this; }
-  //  };
-  
-  //  bool  parseCommandLine_(std::string const& buff, std::string const& rqst_className, TemplateInst_& ti);
- 
   void  classPersisterDecl_(dict const&);
   void  classPersisterCode_(dict const&);
-
+  
+  bool checkTemplateInstantiation_(CppClass const&,
+				   CppClass& checkedClass,
+				   std::vector<CppClass>& classVec);
   
   int findNextCket(std::string const& buffer,int after);
   int findNextComaOutsideBracket(std::string const& buffer,int after);
-  int findRecursivelyTemplateInstantiation_(std::string & sbuff,std::string const& className, std::vector<templateInstantiation>& tvec);
-  int readOneTemplateInstantiation_(std::string const& classname,std::string & content, std::vector<templateInstantiation>& tvec);
-  void  checkTemplateInstantiation_(std::string const& className_,std::vector<templateInstantiation>&);
-  
+  int findRecursivelyTemplateInstantiation_(std::string & sbuff,
+					    std::string const& className,
+					    std::vector<templateInstantiation>& tvec);
+  int readOneTemplateInstantiation_(std::string const& classname,
+				    std::string & content,
+				    std::vector<templateInstantiation>& tvec);
+  void  checkTemplateInstantiation_(std::string const& className_,
+				    std::vector<templateInstantiation>&);
   
   int  counter_;
   std::string   source_header_name_;
@@ -64,8 +60,6 @@ private:
   std::ofstream ofs_h_;
   std::ofstream ofs_cc_;
   std::ofstream class_ofs_h_;
-  
-  //  std::vector<std::string> dependencies_;
 };
 
 
