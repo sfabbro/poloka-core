@@ -115,6 +115,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
       zeFit.SetWhatToFit(FitFlux);
       zeFit.UseGalaxyModel(true);
       zeFit.DoTheFit();
+      zeFit.write("sn_init"); // we have to change this
 #ifdef DEBUG
       cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
