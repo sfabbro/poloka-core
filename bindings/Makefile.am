@@ -7,7 +7,7 @@ SWIG=swig
 # PERL_INCLUDES=-I/usr/lib/perl/5.8.0/CORE -I../toadbase
 PYTHON_INCLUDES=-I/usr/include/python2.2 -I../src
 AM_CPPFLAGS=-I/usr/include/python2.2 -I../src
-LDFLAGS=-L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@ -lg2c
+AM_LDFLAGS=-L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@ -lg2c
 
 lib_LTLIBRARIES = librepack_python.la
 librepack_python_la_SOURCES = repack_python_wrap.cxx

@@ -16,7 +16,7 @@ bin_PROGRAMS = \
 #LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff -L/home/nrl/Work/frogs/sex/v222/Linux-i686 -lsex -lwcs -lg2c
 
 AM_CPPFLAGS = -I../src @SEX_CPPFLAGS@
-LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@ -lg2c
+AM_LDFLAGS = -L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@ -lg2c
 
 
 header_SOURCES = header.cc
