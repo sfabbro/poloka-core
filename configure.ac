@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
  
-PACKAGE=repack2
+PACKAGE=poloka
 VERSION=0.1.0
 
 AC_PREREQ(2.57)
