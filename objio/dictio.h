@@ -36,16 +36,16 @@ public:
     stream_.end_dict();
   }
   
-  virtual void   write(int1 v,   const char* name) { stream_.write_member(name, "int1"); }
-  virtual void   write(uint1 v,  const char* name) { stream_.write_member(name, "uint1"); }
-  virtual void   write(int2 v,   const char* name) { stream_.write_member(name, "int2"); }
-  virtual void   write(uint2 v,  const char* name) { stream_.write_member(name, "uint2"); }
-  virtual void   write(int4 v,   const char* name) { stream_.write_member(name, "int4"); }
-  virtual void   write(uint4 v,  const char* name) { stream_.write_member(name, "uint4"); }
-  virtual void   write(int8 v,   const char* name) { stream_.write_member(name, "int8"); }
-  virtual void   write(uint8 v,  const char* name) { stream_.write_member(name, "uint8"); }
-  virtual void   write(float4 v, const char* name) { stream_.write_member(name, "float4"); }
-  virtual void   write(float8 v, const char* name) { stream_.write_member(name, "float8"); }  
+  virtual void   write(int8_t v,   const char* name) { stream_.write_member(name, "int8_t"); }
+  virtual void   write(uint8_t v,  const char* name) { stream_.write_member(name, "uint8_t"); }
+  virtual void   write(int16_t v,   const char* name) { stream_.write_member(name, "int16_t"); }
+  virtual void   write(uint16_t v,  const char* name) { stream_.write_member(name, "uint16_t"); }
+  virtual void   write(int32_t v,   const char* name) { stream_.write_member(name, "int32_t"); }
+  virtual void   write(uint32_t v,  const char* name) { stream_.write_member(name, "uint32_t"); }
+  virtual void   write(int64_t v,   const char* name) { stream_.write_member(name, "int64_t"); }
+  virtual void   write(uint64_t v,  const char* name) { stream_.write_member(name, "uint64_t"); }
+  virtual void   write(float v, const char* name) { stream_.write_member(name, "float"); }
+  virtual void   write(double v, const char* name) { stream_.write_member(name, "double"); }  
   virtual void   write(std::string const& v, const char* name) { stream_.write_member(name, "string"); }
   
   template<class T>

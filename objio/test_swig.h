@@ -38,8 +38,8 @@ public:
   void     print() const { std::cout << "Point: x=" << x_ << " y=" << y_ << std::endl; }  
   
 protected:
-  float8 x_;
-  float8 y_;
+  double x_;
+  double y_;
 };
 
 
@@ -57,8 +57,8 @@ public:
   
   void     print() const { std::cout << "Star: x=" << x_ << " y=" << y_ << " flux=" << flux_ << " id=" << id_ << std::endl; }
 private:
-  uint4 id_;
-  float8 flux_;
+  uint32_t id_;
+  double flux_;
 };
 
 

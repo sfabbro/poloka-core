@@ -1,12 +1,13 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.10 2004/04/15 11:35:13 guy Exp $
+// $Id: xmlstream.h,v 1.11 2004/10/21 12:52:04 guy Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
 #define XMLSTREAM_H
 
 #include <assert.h>
+#include <stdint.h>
 
 #include <iostream>
 #include <list>
@@ -17,7 +18,7 @@
 #include <libxml/xmlwriter.h>
 
 #include "xmlexceptions.h"
-#include "toadtypes.h"
+
 
 
 
@@ -42,16 +43,16 @@ public:
   inline void     read_start_collection_tag(unsigned int&) const;
   inline void     read_end_collection_tag() const;
   
-  inline void     read(int1& v) const;
-  inline void     read(uint1& v) const;
-  inline void     read(int2& v) const;
-  inline void     read(uint2& v) const;
-  inline void     read(int4& v) const;
-  inline void     read(uint4& v) const;
-  inline void     read(int8& v) const;
-  inline void     read(uint8& v) const;
-  inline void     read(float4& v) const;
-  inline void     read(float8& v) const;
+  inline void     read(int8_t& v) const;
+  inline void     read(uint8_t& v) const;
+  inline void     read(int16_t& v) const;
+  inline void     read(uint16_t& v) const;
+  inline void     read(int32_t& v) const;
+  inline void     read(uint32_t& v) const;
+  inline void     read(int64_t& v) const;
+  inline void     read(uint64_t& v) const;
+  inline void     read(float& v) const;
+  inline void     read(double& v) const;
   inline void     read(std::string&) const;
   
   //  inline void     printCurrentNode() const;
@@ -75,16 +76,16 @@ public:
   inline void     write_start_collection_tag(unsigned int size, const char* name=0);
   inline void     write_end_collection_tag();
   
-  inline void     write(int1 v, const char* name=0);
-  inline void     write(uint1 v, const char* name=0);
-  inline void     write(int2 v, const char* name=0);
-  inline void     write(uint2 v, const char* name=0);
-  inline void     write(int4 v, const char* name=0);
-  inline void     write(uint4 v, const char* name=0);
-  inline void     write(int8 v, const char* name=0);
-  inline void     write(uint8 v, const char* name=0);
-  inline void     write(float4 v, const char* name=0);
-  inline void     write(float8 v, const char* name=0);
+  inline void     write(int8_t v, const char* name=0);
+  inline void     write(uint8_t v, const char* name=0);
+  inline void     write(int16_t v, const char* name=0);
+  inline void     write(uint16_t v, const char* name=0);
+  inline void     write(int32_t v, const char* name=0);
+  inline void     write(uint32_t v, const char* name=0);
+  inline void     write(int64_t v, const char* name=0);
+  inline void     write(uint64_t v, const char* name=0);
+  inline void     write(float v, const char* name=0);
+  inline void     write(double v, const char* name=0);
   inline void     write(const std::string& v, const char* name=0);
   
   template<class T>
@@ -258,16 +259,16 @@ void xmlstream::read(type_& v) const                    \
   xmlFree(value);                                       \
 }                                                       \
 
-simple_type_read_def(int1,   i1,  atoi)
-simple_type_read_def(uint1,  u1,  atoi)
-simple_type_read_def(int2,   i2,  atoi)
-simple_type_read_def(uint2,  u2,  atoi)
-simple_type_read_def(int4,   i4,  atoi)
-simple_type_read_def(uint4,  u4,  atoi)
-simple_type_read_def(int8,   i8,  atol)
-simple_type_read_def(uint8,  u8,  atol)
-simple_type_read_def(float4, f4,  atof)
-simple_type_read_def(float8, f8,  atof)
+simple_type_read_def(int8_t,   i1,  atoi)
+simple_type_read_def(uint8_t,  u1,  atoi)
+simple_type_read_def(int16_t,   i2,  atoi)
+simple_type_read_def(uint16_t,  u2,  atoi)
+simple_type_read_def(int32_t,   i4,  atoi)
+simple_type_read_def(uint32_t,  u4,  atoi)
+simple_type_read_def(int64_t,   i8,  atol)
+simple_type_read_def(uint64_t,  u8,  atol)
+simple_type_read_def(float, f4,  atof)
+simple_type_read_def(double, f8,  atof)
 simple_type_read_def(std::string, string,)
 
 void xmlstream::skip() const
@@ -385,16 +386,16 @@ void xmlstream::write(type v, const char* name)                              \
 }                                                                            \
 
 
-simple_type_write_def(int1,   i1, %d)
-simple_type_write_def(uint1,  u1, %u)
-simple_type_write_def(int2,   i2, %d)
-simple_type_write_def(uint2,  u2, %u)
-simple_type_write_def(int4,   i4, %d)
-simple_type_write_def(uint4,  u4, %u)
-simple_type_write_def(int8,   i8, %ld)
-simple_type_write_def(uint8,  u8, %lu)
-simple_type_write_def(float4, f4, %.6E)
-simple_type_write_def(float8, f8, %.12E)
+simple_type_write_def(int8_t,   i1, %d)
+simple_type_write_def(uint8_t,  u1, %u)
+simple_type_write_def(int16_t,   i2, %d)
+simple_type_write_def(uint16_t,  u2, %u)
+simple_type_write_def(int32_t,   i4, %d)
+simple_type_write_def(uint32_t,  u4, %u)
+simple_type_write_def(int64_t,   i8, %ld)
+simple_type_write_def(uint64_t,  u8, %lu)
+simple_type_write_def(float, f4, %.6E)
+simple_type_write_def(double, f8, %.12E)
 
 void xmlstream::write(std::string const& v, const char* name)
 {

@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.20 2004/08/27 10:13:37 guy Exp $
+// $Id: objio.h,v 1.21 2004/10/21 12:52:03 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/08/27 10:13:37 $
+// Last modified: $Date: 2004/10/21 12:52:03 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -15,7 +15,7 @@
 #include <list>
 #include <map>
 
-#include "toadtypes.h"
+#include <stdint.h>
 #include "objio_defs.h"
 
 #include "countedref.h"
@@ -52,16 +52,16 @@ public:
     stream_.write_end_object_tag();
   }
   
-  virtual void   write(int1 const& v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint1 const& v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(int2 const& v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint2 const& v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(int4 const& v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint4 const& v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(int8 const& v,   const char* name=0) { stream_.write(v, name); }
-  virtual void   write(uint8 const& v,  const char* name=0) { stream_.write(v, name); }
-  virtual void   write(float4 const& v, const char* name=0) { stream_.write(v, name); }
-  virtual void   write(float8 const& v, const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int8_t const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint8_t const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int16_t const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint16_t const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int32_t const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint32_t const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int64_t const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint64_t const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(float  const& v, const char* name=0) { stream_.write(v, name); }
+  virtual void   write(double const& v, const char* name=0) { stream_.write(v, name); }
   virtual void   write(const std::string& v, const char* name=0) { stream_.write(v, name); }
   
   
@@ -185,16 +185,16 @@ obj_output<IOS>& operator<<(obj_output<IOS>& oo, type const& v)   \
   oo.write(v); return oo;                                  \
 }                                                          \
 
-define_output_operator(int1)
-define_output_operator(uint1)
-define_output_operator(int2)
-define_output_operator(uint2)
-define_output_operator(int4)
-define_output_operator(uint4)
-define_output_operator(int8)
-define_output_operator(uint8)
-define_output_operator(float4)
-define_output_operator(float8)
+define_output_operator(int8_t)
+define_output_operator(uint8_t)
+define_output_operator(int16_t)
+define_output_operator(uint16_t)
+define_output_operator(int32_t)
+define_output_operator(uint32_t)
+define_output_operator(int64_t)
+define_output_operator(uint64_t)
+define_output_operator(float)
+define_output_operator(double)
 define_output_operator(std::string)
 
 
@@ -205,16 +205,16 @@ void write(obj_output<IOS>& oo, type const& v, const char* name=0) \
   oo.write(v,name);                                        \
 }                                                          \
 
-define_output_function(int1)
-define_output_function(uint1)
-define_output_function(int2)
-define_output_function(uint2)
-define_output_function(int4)
-define_output_function(uint4)
-define_output_function(int8)
-define_output_function(uint8)
-define_output_function(float4)
-define_output_function(float8)
+define_output_function(int8_t)
+define_output_function(uint8_t)
+define_output_function(int16_t)
+define_output_function(uint16_t)
+define_output_function(int32_t)
+define_output_function(uint32_t)
+define_output_function(int64_t)
+define_output_function(uint64_t)
+define_output_function(float)
+define_output_function(double)
 define_output_function(std::string)
 
 
@@ -326,16 +326,16 @@ public:
     stream_.read_end_object_tag();
   }
 
-  virtual void read(int1& v)   const { stream_.read(v); }
-  virtual void read(uint1& v)  const { stream_.read(v); }
-  virtual void read(int2& v)   const { stream_.read(v); }
-  virtual void read(uint2& v)  const { stream_.read(v); }
-  virtual void read(int4& v)   const { stream_.read(v); }
-  virtual void read(uint4& v)  const { stream_.read(v); }
-  virtual void read(int8& v)   const { stream_.read(v); }
-  virtual void read(uint8& v)  const { stream_.read(v); }
-  virtual void read(float4& v) const { stream_.read(v); }
-  virtual void read(float8& v) const { stream_.read(v); }
+  virtual void read(int8_t& v)   const { stream_.read(v); }
+  virtual void read(uint8_t& v)  const { stream_.read(v); }
+  virtual void read(int16_t& v)   const { stream_.read(v); }
+  virtual void read(uint16_t& v)  const { stream_.read(v); }
+  virtual void read(int32_t& v)   const { stream_.read(v); }
+  virtual void read(uint32_t& v)  const { stream_.read(v); }
+  virtual void read(int64_t& v)   const { stream_.read(v); }
+  virtual void read(uint64_t& v)  const { stream_.read(v); }
+  virtual void read(float& v) const { stream_.read(v); }
+  virtual void read(double& v) const { stream_.read(v); }
   virtual void read(std::string& v) const { stream_.read(v); }
 
   virtual void skip() const { stream_.skip(); }
@@ -503,16 +503,16 @@ obj_input<IOS> const& operator>>(obj_input<IOS> const& oo, type& v) \
   oo.read(v); return oo;                                   \
 }                                                          \
  
-define_input_operator(int1)
-define_input_operator(uint1)
-define_input_operator(int2)
-define_input_operator(uint2)
-define_input_operator(int4)
-define_input_operator(uint4)
-define_input_operator(int8)
-define_input_operator(uint8)
-define_input_operator(float4)
-define_input_operator(float8)
+define_input_operator(int8_t)
+define_input_operator(uint8_t)
+define_input_operator(int16_t)
+define_input_operator(uint16_t)
+define_input_operator(int32_t)
+define_input_operator(uint32_t)
+define_input_operator(int64_t)
+define_input_operator(uint64_t)
+define_input_operator(float)
+define_input_operator(double)
 define_input_operator(std::string)
 
 
@@ -523,16 +523,16 @@ void read(obj_input<IOS> const& oo, type& v)               \
   oo.read(v);                                              \
 }                                                          \
 
-define_input_function(int1)
-define_input_function(uint1)
-define_input_function(int2)
-define_input_function(uint2)
-define_input_function(int4)
-define_input_function(uint4)
-define_input_function(int8)
-define_input_function(uint8)
-define_input_function(float4)
-define_input_function(float8)
+define_input_function(int8_t)
+define_input_function(uint8_t)
+define_input_function(int16_t)
+define_input_function(uint16_t)
+define_input_function(int32_t)
+define_input_function(uint32_t)
+define_input_function(int64_t)
+define_input_function(uint64_t)
+define_input_function(float)
+define_input_function(double)
 define_input_function(std::string)
 
 
