@@ -10,13 +10,29 @@ AM_YFLAGS = -l -d
 	../objio/dictgen -o $@ $<
 
 
+AM_CPPFLAGS += $($<_cppflags)
+optimize_it = -O3
 
 
 
+kernelfit.cc_cppflags = $(optimize_it)
+image.cc_cppflags = $(optimize_it)
+dimage.cc_cppflags = $(optimize_it)
+listmatch.cc_cppflags = $(optimize_it)
+imagesubtraction.cc_cppflags =  $(optimize_it)
+convolution.cc_cppflags =  $(optimize_it)
+vutils.cc_cppflags =      $(optimize_it)
+imagesum.cc_cppflags =  $(optimize_it)
+fastfinder.cc_cppflags =  $(optimize_it)
+fringeutils.cc_cppflags =    $(optimize_it)
+histo2d.cc_cppflags = $(optimize_it)
+histo4d.cc_cppflags = $(optimize_it)
+gtransfo.cc_cppflags = $(optimize_it)
+detection.cc_cppflags = $(optimize_it)
+matvec.cc_cppflags = $(optimize_it)
 
 lib_LTLIBRARIES = libtoads.la
 libtoads_la_SOURCES = \
- \
   dbimage_dict.cc \
   reducedimage_dict.cc \
   frame_dict.cc \
@@ -24,19 +40,17 @@ libtoads_la_SOURCES = \
   starlist_dict.cc \
   basestar_dict.cc \
   sestar_dict.cc \
-  candidatestar_dict.cc \
   jimstar_dict.cc \
-  rollingstar_dict.cc \
   senearstar_dict.cc \
   standardstar_dict.cc \
   starmatch_dict.cc \
-  yquemstar_dict.cc \
   histo1d_dict.cc \
   histo2d_dict.cc \
   histo4d_dict.cc \
   detection_dict.cc \
   gtransfo_dict.cc \
   kernelfit_dict.cc \
+ \
   matvect.cc                  matvect.h \
   vutils.cc                   vutils.h         \
   wcscon.c                    wcscon.h         \
@@ -51,25 +65,18 @@ libtoads_la_SOURCES = \
   histo2d.cc                  histo2d.h        \
   histo4d.cc                  histo4d.h        \
   stringlist.cc               stringlist.h     \
-  nbrandom.c                  nbrandom.h       \
-                              nbconst.h        \
                               countedref.h     \
-                              exceptions.h     \
   \
   \
                               point.h          \
   basestar.cc                 basestar.h       \
-  candidatestar.cc            candidatestar.h  \
-  candstar.cc                 candstar.h       \
   jimstar.cc                  jimstar.h        \
   nstarmatch.cc               nstarmatch.h     \
-  rollingstar.cc              rollingstar.h    \
   senearstar.cc               senearstar.h     \
   sestar.cc                   sestar.h         \
   standardstar.cc             standardstar.h   \
   starlist.cc                 starlist.h       \
   starmatch.cc                starmatch.h      \
-  yquemstar.cc                yquemstar.h      \
   listmatch.cc                listmatch.h      \
   fastfinder.cc               fastfinder.h     \
   usnoutils.cc                usnoutils.h      \
@@ -90,7 +97,6 @@ libtoads_la_SOURCES = \
   image.cc                    image.h            \
   dimage.cc                   dimage.h           \
   detection.cc                detection.h        \
-  dodetection.cc              dodetection.h      \
   allreducedimage.cc          allreducedimage.h  \
   dbimage.cc                  dbimage.h          \
   dbfileParse.y                          \
@@ -107,10 +113,8 @@ libtoads_la_SOURCES = \
   imagesum.cc                 imagesum.h         \
   reducedimage.cc             reducedimage.h     \
   subimage.cc                 subimage.h         \
-  transformedimageaddfakes.cc transformedimageaddfakes.h \
   transformedimage.cc         transformedimage.h \
   fitstoad.cc                 fitstoad.h \
-  addfakes.cc                 addfakes.h \
   cluster.cc                  cluster.h  \
   convolution.cc              convolution.h \
                               convtemplate.h \
@@ -119,6 +123,13 @@ libtoads_la_SOURCES = \
   swarpstack.cc		      swarpstack.h \
   dicstar.cc                  dicstar.h
 
+
+
+#  imagesum_dict.cc \
+#  imagesubtraction_dict.cc \
+#  subimage_dict.cc \
+#  swarpstack_dict.cc \
+#  transformedimage_dict.cc 
 
 include_HEADERS = \
 dicstar.h \
@@ -134,32 +145,21 @@ histo1d.h        \
 histo2d.h        \
 histo4d.h        \
 stringlist.h     \
-nbrandom.h       \
-nbconst.h        \
 countedref.h     \
-exceptions.h     \
- \
- \
 point.h          \
 basestar.h       \
-candidatestar.h  \
-candstar.h       \
 jimstar.h        \
 nstarmatch.h     \
-rollingstar.h    \
 senearstar.h     \
 sestar.h         \
 standardstar.h   \
 starlist.h       \
 starmatch.h      \
-yquemstar.h      \
 listmatch.h      \
 fastfinder.h     \
 usnoutils.h      \
- \
 gtransfo.h       \
 gtransfocomposition.h \
- \
 align_box.h      \
 quali_box.h      \
 seeing_box.h     \
@@ -168,7 +168,6 @@ astroutils.h     \
 fringeutils.h    \
 reducedutils.h   \
 superflat.h      \
-		 \
 frame.h            \
 image.h            \
 dimage.h           \
@@ -176,8 +175,6 @@ detection.h        \
 dodetection.h      \
 allreducedimage.h  \
 dbimage.h          \
-           \
-           \
 fitsimage.h        \
 fitsset.h          \
 fitsslice.h        \
