@@ -695,8 +695,12 @@ bool FitsHeader::CopyKey(const std::string &KeyName, FitsHeader &To) const
   sprintf(keyName, "%s", KeyName.c_str());
   // copy everything verbatim (name ,value, comment)
   fits_read_card(fptr, keyName, card, &status);
-  fits_write_record(To.fptr, card, &status);
-  CHECK_STATUS(status,"CopyKey", );
+  if(status==0) {
+    fits_delete_key(To.fptr, keyName, &status);
+    status=0;
+    fits_write_record(To.fptr, card, &status);
+    //CHECK_STATUS(status,"CopyKey", );
+  }
   return (status == 0);
 }
 
