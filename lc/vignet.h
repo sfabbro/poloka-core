@@ -86,12 +86,29 @@ public:
   //! inspired from http://nedwww.ipac.caltech.edu/level5/Stetson/frames.html
   void RobustifyWeight(const double& alpha=3., const double& beta=6.);
   
+  //! set weights of pixels above or below nsigma*sigma to 0
+  //! some kind of robustification
+  void KillOutliers(const double& nsigma=5);
+  
+  //! set to zero resid pixels with null weight
+  void ClearResidZeroWeight();
+
   //! compute and return the chi2 for this vignet
   double Chi2() const;
 
   //! compute and returns mean residual of the vignet
   double MeanResid() const;
+ 
+   //! compute and returns sigma of residual of the vignet
+  double SigmaResid() const;
+ 
+  //! compute and returns the most postivie or negative pixel value of the residual of the vignet
+  double MaxPixResid() const;
   
+  //! return the number of valid pixels
+  int NValidPixels() const;
+  
+ 
   //! insert data into a file
   void writeInImage(const string& FitsFileName) const;
 

@@ -114,6 +114,95 @@ bool Vignet::ShiftCenter(const Point& Shift)
   return true;
 }
 
+void Vignet::ClearResidZeroWeight() {
+  if (Resid.IsEmpty() || Weight.IsEmpty()) return;
+  DPixel *pw, *pres;
+  pw=Weight.begin();
+  pres=Resid.begin();
+  for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
+    if(*pw<1.e-30)
+      *pres=0;
+  }
+}
+
+double Vignet::SigmaResid() const {
+  if (Resid.IsEmpty() || Weight.IsEmpty()) return 0;
+  DPixel *pw, *pres;
+  pw=Weight.begin();
+  pres=Resid.begin();
+  double sw = 0;
+  double sf = 0;
+  double sf2 = 0;
+  for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
+    sw += *pw;
+    sf += *pw * (*pres);
+    sf2 += *pw * (*pres) * (*pres);
+  }
+  if(sw<1.e-30)
+    return 0;
+  return sqrt(sf2/sw-pow(sf/sw,2));
+}
+
+int  Vignet::NValidPixels() const {
+  if (Resid.IsEmpty() || Weight.IsEmpty()) return 0;
+  DPixel *pw = Weight.begin();
+  int nok = 0;
+  for (int i=0; i< Nx()*Ny(); ++i , ++pw) {
+    if(*pw>1e-30)
+      nok++;
+  }
+  return nok;
+}
+
+
+double Vignet::MaxPixResid() const {
+  if (Resid.IsEmpty() || Weight.IsEmpty()) return 0;
+  DPixel *pw, *pres;
+  pw=Weight.begin();
+  pres=Resid.begin();
+  double max = 0;
+  for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
+    if(*pw>1.e-30) {
+      if(fabs(*pres)>max)
+	max = fabs(*pres);
+    }
+  }
+  return max;
+}
+
+
+
+void Vignet::KillOutliers(const double& nsigma) {
+ 
+  if (Resid.IsEmpty() || Weight.IsEmpty()) return;
+  cout << " > Vignet::KillOutliers with nsigma = " << nsigma << endl;
+  DPixel *pw, *pres;
+  
+  double sw = 0;
+  double sf = 0;
+  double sf2 = 0;
+  pw=Weight.begin();
+  pres=Resid.begin();
+  for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
+    sw += *pw;
+    sf += *pw * (*pres);
+    sf2 += *pw * (*pres) * (*pres);
+  }
+  double mean = sf/sw;
+  double sigma = sqrt(sf2/sw-mean*mean);
+  double thres = nsigma*sigma;
+  pw=Weight.begin();
+  pres=Resid.begin();
+  int nbad = 0;
+  for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
+    if (fabs(*pres-mean)>thres) {
+      *pw = 0;
+      nbad ++;
+    }
+  }
+  cout << "   in Vignet::KillOutliers, nbad,mean,sigma = " << nbad << ","  << mean << ","  << sigma << endl;
+}
+
 void Vignet::RobustifyWeight(const double& alpha, const double& beta)
 {
   if (Resid.IsEmpty() || Weight.IsEmpty()) return;
@@ -159,6 +248,7 @@ double Vignet::MeanResid() const
 
   return 0.;
 }
+
   
 void Vignet::writeInImage(const string& FitsFileName) const 
 { 
@@ -179,10 +269,14 @@ ostream& operator << (ostream & stream, const Vignet& Vig)
 	 << " hy = " << Vig.hy
 	 << " rect = " << (Window) Vig << endl;
   
-  if (!Vig.Resid.IsEmpty())
+  if (!Vig.Resid.IsEmpty()) {
     stream << " Resid chi2 = " << Vig.Chi2() 
-	   << " mean resid = " << Vig.MeanResid() << endl;
-    
+	   << " mean resid = " << Vig.MeanResid()
+	   << " sigma resid = " << Vig.SigmaResid()
+	   << " max pix resid = " << Vig.MaxPixResid()
+	   << " valid pixels = " << Vig.NValidPixels()
+	   << endl;
+  }
   if (Vig.rim)  stream << " Image " << Vig.rim->Name() << endl;
   if (Vig.Star) stream << " Star " << *Vig.Star << endl;
   
