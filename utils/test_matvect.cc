@@ -47,6 +47,18 @@ int main(int argc, char **argv)
   cout << double(v1.transposed()*m5*v1) << endl;
   cout << double(v1.transposed()*v1) << endl;
   cout << Mat(v1)*v1.transposed() << endl;
+
+  Mat m6(10,10);
+  for(unsigned int i=0;i<m6.SizeX();++i)
+    m6(i,0) = i;
+  cout << m6 << endl;
+  m6.writeFits("mat.fits");
+  Mat m7;
+  m7.readFits("mat.fits");
+  cout << m7 << endl;
+
+  Mat m8 = m6.SubBlock(2,8,0,3);
+  cout << m8 << endl;
   
   return 0;
 }
