@@ -1,13 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
-#include <iomanip.h>
-#include <fstream.h>
-#include <getopt.h>
-#include <string.h>
-#include <vector.h>
 
-#include "dodetection.h"
 #include "fitsimage.h"
 #include "hbook.h"
 
@@ -57,16 +49,16 @@ main(int argc, char **argv)
 
  HLIMIT(NWPAWC);
  int Id = 1 ;
- int dim = 8;
+ int dim = 4;
  char **tags = (char**) calloc(MAXVAR,sizeof(char*));
  tags[0] = "x" ;
  tags[1] = "y" ;
  tags[2] = "f1" ;
  tags[3] = "f2" ;
- tags[4] = "fond" ;
- tags[5] = "floc" ;
- tags[6] = "flux" ;
- tags[7] = "area" ;
+ //tags[4] = "fond" ;
+ //tags[5] = "floc" ;
+ //tags[6] = "flux" ;
+ //tags[7] = "area" ;
  
  if (!open_hbook_file(nomhb))
    {
@@ -82,7 +74,6 @@ main(int argc, char **argv)
  char toptop[50]="TOPDIR";
  HBOOKN(Id,title,dim,toptop,60000,ttags);
 
- double rad_flux = 2.5* 1.7 ;
 
  // A CHANGER AVEC DIM !!!!
  float x[8];
@@ -91,19 +82,8 @@ main(int argc, char **argv)
      {
        x[0]=i;
        x[1]=j;
-       double rad1 = 6.*rad_flux/2.5 ; 
-       double rad2 = 8.*rad_flux/2.5 ; 
-       //double ffd = FondLocal( img1 , i, j, rad1, rad2, 0.15, 0.15);
-       int area;
-       double fluxloc = Flux_Aperture(img1, i, j,rad_flux ,0,area );
-       double flux0 = Flux_Aperture(img1, i, j,rad_flux ,0.,area );
        x[2]=img1(i,j);
        x[3]=img2(i,j);
-       x[4]= 0;
-       x[5]= fluxloc;
-       //x[6]= flux0;
-       x[6]= 0;
-       x[7]= area;
        HFN(Id,x);
      }
 
