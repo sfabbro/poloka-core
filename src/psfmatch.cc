@@ -6,6 +6,8 @@
 #include "sestar.h"
 #include "fastfinder.h"
 
+#define DEBUG_PsfMatch
+
 //both images are supposedly already registered (i.e. aligned)
 PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch)
 {
@@ -329,6 +331,10 @@ void PsfMatch::ConvolveBest(ReducedImage &ConvImage)
   if (FileExists(worstpsfname)) 
     MakeRelativeLink(worstpsfname.c_str(), ConvImage.ImagePsfName().c_str());
 
+#ifdef DEBUG_PsfMatch
+  cout << "In convolvebest:  Update values " << endl;
+#endif
+  
   // Update values
   ConvImage.SetSeeing(seeing);
   ConvImage.SetBackLevel(photomRatio*best->BackLevel());
@@ -340,9 +346,22 @@ void PsfMatch::ConvolveBest(ReducedImage &ConvImage)
   ConvImage.SetOriginalSkyLevel(photomRatio*best->OriginalSkyLevel());
   ConvImage.SetOriginalSaturation(photomRatio*best->OriginalSaturation());
 
+#ifdef DEBUG_PsfMatch
+  cout << "In convolvebest:  weights: ConvImage.FitsWeightName = " << ConvImage.FitsWeightName() << endl;
+  cout << "In convolvebest:  weights: best->FitsWeightName = " << best->FitsWeightName() << endl; 
+#endif
   FitsImage weight(ConvImage.FitsWeightName(), FitsHeader(best->FitsWeightName()));
+#ifdef DEBUG_PsfMatch
+  cout << "In convolvebest: VarianceConvolve" << endl;
+#endif
   VarianceConvolve(weight);
+#ifdef DEBUG_PsfMatch
+  cout << "In convolvebest: MakeCatalog" << endl;
+#endif
   ConvImage.MakeCatalog();
+#ifdef DEBUG_PsfMatch
+  cout << " convolvebest done" << endl;
+#endif
 }
 
 bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
@@ -444,4 +463,10 @@ void PsfMatch::BackKernel(Kernel &Diffback,const double &xc,const double &yc)
   int hy = Diffback.HSizeY();
   for (int i=-hx; i<=hx; ++i)
     for (int j=-hy; j<=hy; ++j) Diffback(i,j) = fit->BackValue(ic+i,jc+j);
+}
+
+
+void PsfMatch::SetKernelFit(KernelFit *kernel) {
+  fit = kernel;
+  fit->KernelsFill(); // refill kernels (not fully persistent)
 }

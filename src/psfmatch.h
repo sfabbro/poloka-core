@@ -50,6 +50,8 @@ public:
   ReducedImage* New() { return ((ref_is_best)? worst : best); }
   ReducedImage* Best() { return best;}
   ReducedImage* Worst() { return worst;}
+  KernelFit const* GetKernelFit() const {return fit;}
+  void SetKernelFit(KernelFit *kernel);
 };
 
 #endif //PSFMATCH__H

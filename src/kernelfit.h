@@ -72,11 +72,21 @@ struct XYPower  /* to handle and compute things like x**n*y**m */
   XYPower() { SetDegree(0);};
   XYPower(int Degree) { SetDegree(Degree);};
   void SetDegree(const int Degree);
-
   ~XYPower() {};
 
+  void dump(std::ostream &stream = std::cout) const{
+    stream << "XYPower Xdeg ";
+    for(unsigned int i=0;i<Xdeg.size() ;++i)
+      stream << Xdeg[i] << " ";
+     stream << "Ydeg ";
+    for(unsigned int i=0;i<Ydeg.size() ;++i)
+       stream << Ydeg[i] << " ";    
+  }
+#ifndef SWIG
+  friend ostream& operator << (ostream &stream, const XYPower &s)
+  { s.dump(stream); return stream;}
+#endif
 };
-
 
 class OptParams {
   CLASS_VERSION(OptParams,1);
@@ -110,7 +120,16 @@ public :
   int StampSize() const { return 2*HStampSize+1;}
   /* DOCF returns the size of the convolved stamps */
   int   ConvolvedSize() const { return 2*(HStampSize - HKernelSize) + 1;}
-
+  void dump(std::ostream &stream = std::cout) const {
+    stream << "OptParams " << endl;
+    stream << " KernVar " <<  KernVar << endl;
+    stream << " BackVar " <<  BackVar << endl;
+    stream << " SepBackVar " <<  SepBackVar << endl;
+  }
+#ifndef SWIG
+  friend ostream& operator << (ostream &stream, const OptParams &s)
+  { s.dump(stream); return stream;}
+#endif 
 };
 
 
@@ -157,8 +176,8 @@ class KernelFit {
   int HKernelSizeY() { return optParams.HKernelSize;}
 
   int mSize; /* the size of the matrix m */
-  vector<double> m; //! /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */; 
-  vector<double> b; //! /* the normal equations (i.e. grad(chi2) = 0) right hand side */ 
+  double *m;  /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */ // we don't save it  
+  double *b;  /* the normal equations (i.e. grad(chi2) = 0) right hand side */ // we don't save it 
   vector<double> solution; //[mSize]/* the weights of various kernels */
   vector<double> diffbackground; //! /* the differential background coefficient when fitted separately */
 
@@ -205,7 +224,8 @@ void DeallocateConvolvedStamps();
 //! sums least square matrix and vector for all stamps
 void ComputeMAndB();
 //! computes least square matrix and vector for one stamp
-  void OneStampMAndB(const Stamp &Astamp, vector<double> &StampM, vector<double> &StampB);
+  //void OneStampMAndB(const Stamp &Astamp, vector<double> &StampM, vector<double> &StampB);
+  void OneStampMAndB(const Stamp &Astamp, double* StampM, double* StampB);
 //! subtract a stamp of the least square matrix and vector
 void SubtractStampFromMAndB(Stamp& AStamp); 
 //! actually solves the system by calling linear algebra efficient routines
@@ -228,6 +248,25 @@ void KernCompute(Kernel &Result, const double X, const double Y) const;
 void BestImageConvolve(int UpdateKernStep = 100);
 
 Image *VarianceConvolve(const Image &Source, int UpdateKern = 100);
+
+
+  void dump(std::ostream &stream = std::cout) const{
+    stream << "KernelFit ";
+    stream << optParams << std::endl;
+    stream << "solution ";
+    for(unsigned int i=0;i<solution.size() ;++i)
+      stream << solution[i] << " ";
+    stream << endl;
+    stream << "diffbackground ";
+    for(unsigned int i=0;i<diffbackground.size() ;++i)
+      stream << diffbackground[i] << " ";
+    stream << endl;
+  }
+  
+#ifndef SWIG
+  friend ostream& operator << (ostream &stream, const KernelFit &s)
+  { s.dump(stream); return stream;}
+#endif
 
 };
 

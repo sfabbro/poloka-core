@@ -56,7 +56,7 @@ int KernelFit::FitDifferentialBackground(const double NSig)
    
   if (optParams.SepBackVar.Degree == -1) return 0;
 
-  unsigned int nterms = optParams.SepBackVar.Nterms();
+  int nterms = optParams.SepBackVar.Nterms();
 
   diffbackground.resize(nterms);
   WorstDiffBkgrdSubtracted = new Image(WorstImage->Nx(),WorstImage->Ny()); 
@@ -332,10 +332,15 @@ Kern(0,0) = 1.0;
 
 
 
-void alloc_m_and_b(vector<double>  &m, vector<double> &b, int mSize)
+void alloc_m_and_b(double* &m, double* &b, int mSize)
 {
-  m.resize(mSize*mSize);
-  b.resize(mSize*mSize);
+if (m) delete [] m;
+m = new double[mSize*mSize]; 
+memset(m,0,sizeof(double)*mSize*mSize);
+
+if (b) delete [] b;
+b = new double[mSize]; 
+memset(b,0,sizeof(double)*mSize);
 }
 
 void KernelFit::KernelsFill()
@@ -433,7 +438,7 @@ if (convolutions)
 }
 
 
-void KernelFit::OneStampMAndB(const Stamp &AStamp, vector<double> &StampM, vector<double> &StampB)
+void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *StampB)
 {
   int oldprec = cout.precision();
  cout << setprecision(10);
@@ -476,8 +481,8 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, vector<double> &StampM, vecto
        }
    }
 
- StampM.resize(mSize*mSize);
- StampB.resize(mSize);
+ memset(StampM, 0, mSize*mSize*sizeof(double));
+ memset(StampB, 0, mSize*sizeof(double));
 
     /* contributions to the matrix m */
     /* background-background terms */
@@ -568,12 +573,15 @@ for (int i=0; i<mSize; ++i) for (int j=i+1; j<mSize; ++j) StampM[i*mSize+j] = St
 
 void KernelFit::SubtractStampFromMAndB(Stamp& AStamp)
 {
- vector<double> mStamp;
- vector<double> bStamp;
+ double *mStamp = NULL;
+ double *bStamp = NULL;
  alloc_m_and_b(mStamp, bStamp, mSize);
  OneStampMAndB(AStamp, mStamp, bStamp);
  for (int i = mSize*mSize-1; i>=0; --i) m[i] -= mStamp[i];
  for (int i = mSize-1; i>=0; --i) b[i] -= bStamp[i];
+
+ delete [] mStamp,
+ delete [] bStamp;
 }
 
 
@@ -586,8 +594,8 @@ void KernelFit::ComputeMAndB()
 
 alloc_m_and_b(m,b,mSize);
 
- vector<double> mStamp;
- vector<double> bStamp;
+double *mStamp = NULL;
+double *bStamp = NULL;
 alloc_m_and_b(mStamp, bStamp, mSize);
 
 
@@ -616,6 +624,8 @@ for (StampIterator si = BestImageStamps->begin(); si != BestImageStamps->end(); 
 #endif
 
 
+delete [] mStamp;
+delete [] bStamp;
 } 
 
 
@@ -643,7 +653,7 @@ OptParams::OptParams()
 NGauss = 3;
 Sigmas.resize(NGauss);
 Degrees.resize(NGauss);
-Sigmas[0] = 0.7; Sigmas[1] = 1.5; Sigmas[2] = 2.;
+ Sigmas[0] = 0.7; Sigmas[1] = 1.5; Sigmas[2] = 2.;
 Degrees[0] = 6; Degrees[1] = 4; Degrees[2] = 2;
 //Degrees[0] = 1; Degrees[1] = 4; Degrees[2] = 2;
 HStampSize = 15;
@@ -751,18 +761,18 @@ void OptParams::OptimizeSpatialVariations(const int NumberOfStars)
 
 void XYPower::SetDegree(const int DegreeValue)
 {
-  Degree = DegreeValue;
-  int N_terms = (Degree+1)*(Degree+2)/2;
-  Xdeg.resize(N_terms);
-  Ydeg.resize(N_terms);
-  int q = 0;
-  for (int xdeg=0; xdeg <=Degree; ++xdeg)
-    for (int ydeg = 0; ydeg <= Degree - xdeg; ++ydeg)
-      {
-	Xdeg[q] = xdeg;
-	Ydeg[q] = ydeg;
-	++q;
-      }
+Degree = DegreeValue;
+int Nterms = (Degree+1)*(Degree+2)/2;
+Xdeg.resize(Nterms);
+Ydeg.resize(Nterms);
+int q = 0;
+for (int xdeg=0; xdeg <=Degree; ++xdeg)
+  for (int ydeg = 0; ydeg <= Degree - xdeg; ++ydeg)
+    {
+    Xdeg[q] = xdeg;
+    Ydeg[q] = ydeg;
+    ++q;
+    }
 }
 
 
@@ -777,34 +787,34 @@ double XYPower::Value(const double X, const double Y, const int q) const
 
 void KernelFit::KernCompute(Kernel &Kern, const double X, const double Y) const
 {
-  int nKern = Kernels.size();
-  double *coeff = new double[nKern];
-  for (int i=0; i<nKern; ++i) coeff[i] = 0;
-  for (int is =0; is < optParams.KernVar.Nterms(); ++is)
-    {
-      double spatialCoeff = optParams.KernVar.Value(X,Y,is);
-      for (int ik=0; ik< nKern; ++ik)
+int nKern = Kernels.size();
+double *coeff = new double[nKern];
+for (int i=0; i<nKern; ++i) coeff[i] = 0;
+for (int is =0; is < optParams.KernVar.Nterms(); ++is)
+  {
+  double spatialCoeff = optParams.KernVar.Value(X,Y,is);
+  for (int ik=0; ik< nKern; ++ik)
     {  
-      coeff[ik] +=  solution[KernIndex(ik, is)]*spatialCoeff;
+    coeff[ik] +=  solution[KernIndex(ik, is)]*spatialCoeff;
     }
-    }
-  KernLinComb(Kern, Kernels, coeff);
-  delete [] coeff;
+  }
+KernLinComb(Kern, Kernels, coeff);
+delete [] coeff;
 }
 
 static void mean_median_sigma(double *values, const int nval, double &mean,  double &median, double &sigma)
 {
-  mean =0;
-  sigma =0;
-  median = DArrayMedian(values, nval);
-  for (int i=0; i<nval-1 ; ++i)
-    {
-      mean += values[i];
-      sigma += values[i]*values[i];
-    }
-  mean /= double(nval);
-  sigma = sigma/double(nval) - mean*mean;
-  if (sigma>0)  sigma = sqrt(sigma); else sigma = 0;
+mean =0;
+sigma =0;
+median = DArrayMedian(values, nval);
+for (int i=0; i<nval-1 ; ++i)
+  {
+  mean += values[i];
+  sigma += values[i]*values[i];
+  }
+mean /= double(nval);
+sigma = sigma/double(nval) - mean*mean;
+if (sigma>0)  sigma = sqrt(sigma); else sigma = 0;
 }
 
 double KernelFit::StampChi2(Stamp &stamp, double VSky, double InvGain)
@@ -917,7 +927,7 @@ int KernelFit::Solve()
  ios::fmtflags  old_flags = cout.flags(); 
  cout << resetiosflags(ios::fixed) ;
  cout << setiosflags(ios::scientific) ;
-if (solution.size()==0) solution.resize(mSize);
+ if (solution.size()!=mSize) solution.resize(mSize);
 
 #ifdef CONST_INTEGRAL /* i.e. the integral of the kernel (photometric ratio) is constant over the image */
 // use Lagrange multipliers technique
@@ -925,20 +935,11 @@ if (solution.size()==0) solution.resize(mSize);
 int nKern = Kernels.size();
 int nc = optParams.KernVar.Nterms() -1; // number of constraints
 int totSize = mSize + nc;
-
-//double *mprime = new double [totSize*totSize];
-//memset(mprime,0,sizeof(double)*totSize*totSize);
-//double *bprime = new double [totSize];
-//memset(bprime,0,sizeof(double)*totSize);
-//memcpy(bprime,b,sizeof(double)*mSize);
- 
- vector<double> mprime;
- vector<double> bprime;
- mprime.resize(totSize*totSize);
- bprime = b;
- bprime.resize(totSize);
- 
-
+double *mprime = new double [totSize*totSize];
+memset(mprime,0,sizeof(double)*totSize*totSize);
+double *bprime = new double [totSize];
+memset(bprime,0,sizeof(double)*totSize);
+memcpy(bprime,b,sizeof(double)*mSize);
 for (int i=0; i<mSize; ++i)
   for (int j=0; j<mSize; ++j)
     {
@@ -955,27 +956,35 @@ for (int ik=0; ik < nKern; ++ik)
     }
   }
 // have to use a lin eq. solver that accomodates non posdef matrices : mprime is NOT posdef.
-int inversion=MatSolve(&mprime[0],totSize,&bprime[0]);
+int inversion=MatSolve(mprime,totSize,bprime);
 cout << " inversion " << inversion << endl;
 if (inversion)
   {
-    solution = bprime;
+    solution.resize(mSize);
+    for(unsigned int i=0; i<mSize;i++) {
+      solution[i]=bprime[i];
+    }
+    //memcpy(solution,bprime,sizeof(double)*mSize);
+    delete [] mprime;
+    delete [] bprime;
   }
 
 #else /* NO CONSTRAINT on the variations of kernel integral */
 /* operate on a copy, to preserve m */
-
- vector<double> mprime;
- vector<double> bprime;
- mprime = m;
- bprime = b;
- 
-
+double *mprime = new double[mSize*mSize];
+double *bprime = new double[mSize];
+memcpy(mprime, m, mSize*mSize*sizeof(double));
+memcpy(bprime,b, mSize*sizeof(double));
 int inversion = MatSolve(mprime, mSize, bprime);
  cout << " inversion " << inversion << endl;
 if (inversion)
   {
-    solution = bprime;
+    solution.resize(mSize);
+    for(unsigned int i=0; i<mSize;i++) {
+      solution[i]=bprime[i];
+    }
+    delete [] mprime;
+    delete [] bprime;
   }
 #endif
 
@@ -990,11 +999,11 @@ KernCompute(kernel_at_center, BestImage->Nx()/2, BestImage->Ny()/2);
 
  KernAtCenterSum = kernel_at_center.sum();
  cout << " Kernel integral ( = photometric ratio) " << KernAtCenterSum  << endl;
- if (optParams.BackVar.Nterms()>0) 
+ if (optParams.BackVar.Nterms()) 
    {
      cout << setprecision(10);
      cout << " differential background " << endl;
-     for (unsigned int ib=0; ib< optParams.BackVar.Nterms(); ++ib) cout << solution[BackIndex(ib)] << " " ;
+     for (int ib=0; ib< optParams.BackVar.Nterms(); ++ib) cout << solution[BackIndex(ib)] << " " ;
      cout << endl;
    }
 
@@ -1013,7 +1022,7 @@ double KernelFit::BackValue(const double&x, const double &y) const
   if (optParams.BackVar.Nterms()==0)
     {
       val= diffbackground[0]; /* the constant in the polynomial .. */
-      for (unsigned int ib=1; ib < optParams.SepBackVar.Nterms(); ++ib)
+      for (int ib=1; ib < optParams.SepBackVar.Nterms(); ++ib)
 	{
 	  val += diffbackground[ib]*optParams.SepBackVar.Value(x,y,ib);
 	}
@@ -1021,7 +1030,7 @@ double KernelFit::BackValue(const double&x, const double &y) const
   else
     {
       val= solution[BackIndex(0)]; /* the constant in the polynomial .. */
-      for (unsigned int ib=1; ib < optParams.BackVar.Nterms(); ++ib)
+      for (int ib=1; ib < optParams.BackVar.Nterms(); ++ib)
 	{
 	  val += solution[BackIndex(ib)]*optParams.BackVar.Value(x,y,ib);
 	}
