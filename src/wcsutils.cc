@@ -491,7 +491,7 @@ void WCSKeyList(const FitsHeader &Head, StringList &KeyNames)
 }
 
 
-#define DEBUG
+//#define DEBUG
 
 bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader)
 {
