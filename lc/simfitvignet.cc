@@ -54,24 +54,30 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius
   DPixel *ppsf = begin();
   DPixel *ppdx = Dx.begin();
   DPixel *ppdy = Dy.begin();
+  
 
-#ifdef DEBUG
   double integrale = 0;
-#endif
 
   for (int j=-hSizeY; j<=hSizeY; ++j) 
     for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf, ++ppdx, ++ppdy) 
       {
 	*ppsf = Dao.Value(ic+i,jc+j, Pt, *ppdx, *ppdy);
-#ifdef DEBUG
 	integrale += *ppsf;
-#endif
       }
-
-#ifdef DEBUG
-  cout << "   in TabulatedPsf::Tabulate, integrale = " << integrale << endl;
-#endif
-
+  
+  // normalization
+  double norme = 1./integrale;
+  ppsf = begin();
+  ppdx = Dx.begin();
+  ppdy = Dy.begin();
+  
+  for (int j=-hSizeY; j<=hSizeY; ++j) 
+    for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf, ++ppdx, ++ppdy) 
+      {
+	*ppsf *= norme;
+	*ppdx *= norme;
+	*ppdy *= norme;
+      }
 }
 
 void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
