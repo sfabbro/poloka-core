@@ -51,7 +51,6 @@ NEW1
 NEW2
 504613o09
 504614o09
-#ADDFAKES
 ONE SUBTRACTION
 #FIXGEO
 502809o09
@@ -120,23 +119,19 @@ static string first_word(const char *line, const char *seps = " \t")
  
 
 
-
-static double sqr(double x){return(x*x);}
-
 // Read the subfile. If you change the syntax here, update the example just above.
 Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : overwrite(Overwrite)
 {
-  // Boolean for the simulation
-  //  FakeList = NULL;
-
-  AssociateGal = false;
+  
   onlyDet = OnlyDet;
   detectOnAllSub = false;
-  AddFakes = false;
   FixRef = false;
   StringList ToExtract;
   ImageNameToExtract = "";
   onlyOneSub = false;
+  
+  globnewname = "new";
+  globsubname = "sub" ;
 
   
   FILE *file = fopen(FileName.c_str(),"r");
@@ -182,11 +177,6 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 	{ onlyOneSub = true; continue;}
       if (strstr(line,"DETECT ON ALL SUB"))
 	{ detectOnAllSub = true; continue;}
-      if (strstr(line,"ADDFAKES")) 
-	{ AddFakes = true; cout << "ADDFAKES " << AddFakes << endl; continue;}
-
-      if (strstr(line,"ASSOCIATEGAL"))
-	{ AssociateGal = true; continue;}
       if (strstr(line,"FIXGEO"))// dont put REF in that name!!
 	{
 	  inNew = false ; inRef = false; inFixRef = true;
@@ -322,9 +312,9 @@ int Sub::CheckNewNames()
   if (AllNew.size() == 1) return 1;
   for (unsigned i=0; i< AllNew.size(); ++i)
     {
-      if (AllNew[i].Name() == "new")
+      if (AllNew[i].Name() == GlobalNewName())
 	{
-	  cerr << " \"new\" is a reserved name for the global new image" 
+	  cerr << " \"" << GlobalNewName()<< "\" is a reserved name for the global new image" 
 	       << endl;
 	  return 0;
 	}
@@ -349,7 +339,29 @@ int Sub::CheckNewNames()
   return 1;
 }
 	  
+static 
+void GetAllComponents(vector<NewStack>  & allnew,
+			ReducedImageList & allAlignedNew  )
+{
 
+  for (unsigned i=0; i< allnew.size(); ++i)
+    {
+      ReducedImage* stack = allnew[i].newStack; // stack new_i
+      ImageSum *sum = dynamic_cast<ImageSum *>(stack);
+      if (sum) // this is an actual sum
+	{
+	  ReducedImageList sumComponents = sum->Components();
+	  for (ReducedImageIterator c = sumComponents.begin(); 
+	       c != sumComponents.end(); ++c)
+	    allAlignedNew.push_back(*c);
+	}
+      else // the geom ref should be a single image
+	{
+	      allAlignedNew.push_back(stack);
+	}
+    }
+  return ;
+}  
 
 void Sub::RemoveImage(const string &BannedName)
 {
@@ -370,6 +382,8 @@ StringList Sub::AllNewNames() const
   return res;
 }
 	     
+// replace image name Original by Substitution in the
+// StringList associated to AllNew[i], for all i. and Ref
 
 void Sub::SubstituteName(const string &Original, 
 			 const string &Substitution)
@@ -543,60 +557,71 @@ int Sub::DoIt()
   // The dead is not used anymore (the dead are clipped)
   int toDo = DoFits | DoCatalog | DoSatur | DoWeight;
   cerr << "Processing ref stack " << endl ;
-  RefStack = DoOneStack(Ref, "ref", toDo);
+
+  if (RefStack ==  NULL) // RefStack isn't alreadt provided.
+    {
+      RefStack = DoOneStack(Ref, "ref", toDo);
+    }
   if (!RefStack)
     {
       cerr << " ERROR: No RefStack, stop here " << endl;
       return 0;
-    }
+    } 
+  //building the stack new_i and the associated sub_i.
+  // detection on sub_i
+  // aligning in the process the components on ref geom
+ 
   for (unsigned i=0; i<AllNew.size(); ++i)
     {
-      NewStack &stack = AllNew[i];
+      NewStack &stack = AllNew[i]; 
       cerr << "Processing " << stack.Name() << endl ;
       stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
       stack.newStack->FlagDiffractionSpikes();
       
-      // build the subtraction name
-      string newName = stack.Name();
-      RemovePattern(newName, "new");
-      string subName = "sub"+newName;
-      stack.sub = new ImageSubtraction(subName, RefStack, stack.newStack);
+      if ( stack.original_sub == NULL )
+	{	  
+	  stack.sub = new ImageSubtraction(stack.SubName(), RefStack, stack.newStack);
+	}
+      else
+	{
+	  cerr << "using a previous PsfMatch to build " << stack.SubName() <<  endl ;
+	  stack.sub = new ImageSubtraction(stack.SubName(), 
+					     RefStack, 
+					     stack.newStack,
+					     stack.original_sub);
+	}
+      
       stack.sub->Execute(DoFits+DoWeight);
       if (detectOnAllSub) stack.sub->MakeCatalog();
     }
-  // several new stacks
+  // building the new stack = stack of all new_i components
+  // components already aligned
+  // the associated sub and detection.
   if (AllNew.size() > 1)
     {
       ReducedImageList allAlignedNew(false);
-      for (unsigned i=0; i< AllNew.size(); ++i)
-	{
-	  ReducedImage *stack = AllNew[i].newStack;
-	  ImageSum *sum = dynamic_cast<ImageSum *>(stack);
-	  if (sum) // this is an actual sum
-	    {
-	      ReducedImageList sumComponents = sum->Components();
-	      for (ReducedImageIterator c = sumComponents.begin(); 
-		   c != sumComponents.end(); ++c)
-		allAlignedNew.push_back(*c);
-	    }
-	  else // it should a single image that is the geomref
-	    {
-	      allAlignedNew.push_back(stack);
-	    }
-	}
-      GlobalNew = new ImageSum("new",allAlignedNew, RefStack);
+      GetAllComponents(AllNew,allAlignedNew);
+      GlobalNew = new ImageSum(GlobalNewName(),allAlignedNew, RefStack);
       GlobalNew->Execute(DoFits + DoCatalog);
-      GlobalSub = new ImageSubtraction("sub", RefStack, GlobalNew);
+      if (Original_Sub == NULL ) // kernel fit wasn't done before
+	GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, GlobalNew);
+      else
+	{
+	  cerr << "Using a previous PsfMatch to build " 
+	       << GlobalSubName() <<  endl ; 
+	  GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, 
+					   GlobalNew, Original_Sub);
+	}	  
       GlobalSub->Execute(DoFits+DoWeight);
     }
   else // only one subtraction
     {
       // we only have one new/sub
       GlobalSub = AllNew[0].sub;
-      if (GlobalSub->Name() != "sub")
-	RenameDbImage(*GlobalSub,"sub");
-      if (AllNew[0].newStack->Name() != "new")
-	RenameDbImage(*AllNew[0].newStack, "new");
+      if (GlobalSub->Name() != GlobalSubName())
+	RenameDbImage(*GlobalSub,GlobalSubName());
+      if (AllNew[0].newStack->Name() != GlobalNewName())
+	RenameDbImage(*AllNew[0].newStack, GlobalNewName());
     }
   RunDetection();
   return 1;
