@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cfitsio.m4,v 1.5 2004/02/23 12:59:47 nrl Exp $
+# $Id: cfitsio.m4,v 1.6 2004/02/23 13:14:11 guy Exp $
 # 
 # autoconf macro to check the cfitsio installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -25,7 +25,7 @@ AC_DEFUN([CHECK_CFITSIO],[
 
  AC_ARG_WITH(cfitsio-lib,
   [  --with-cfitsio-lib=<prefix>     prefix where the cfitsio lib is installed],
-  [  cfitsio_lib=$withval],
+  [  cfitsio_libs=$withval],
   )
  
 
