@@ -11,11 +11,17 @@
 DicStar::DicStar()
   : BaseStar(0.,0.,0.) {
   Set_to_Zero();
+  firstkeys.push_back("x");
+  firstkeys.push_back("y");
+  firstkeys.push_back("flux");  
 }
 
 DicStar::DicStar(double xx, double yy, double ff)
   : BaseStar(xx,yy,ff) {
   Set_to_Zero();
+  firstkeys.push_back("x");
+  firstkeys.push_back("y");
+  firstkeys.push_back("flux");
 }
 
 DicStar::DicStar(const std::vector<string>& firstKeys, const std::vector<string>& newkeys)
