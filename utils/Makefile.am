@@ -8,11 +8,12 @@ bin_PROGRAMS = \
  image_stats image_sub image_sum lbl2toads maglimeval \
  make_catalog make_cosmic make_phot \
  make_dead makefringe \
+ joinlist \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
  preptoads removeback selection \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
- fitnight invertdeadmap install_image
+ fitnight invertdeadmap install_image vignet4gif modelvignet
 
 
 ### CPPFLAGS for all programs
@@ -34,6 +35,11 @@ fitnight_SOURCES = fitnight.cc
 fitnight_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
 fitnight_LDFLAGS =  -ltoadslc -ltoadsdao
 
+modelvignet_SOURCES = modelvignet.cc
+modelvignet_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
+modelvignet_LDFLAGS =  -ltoadslc -ltoadsdao
+
+
 ### Programs depending on dao
 make_daophot_SOURCES = make_daophot.cc
 make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
@@ -43,6 +49,8 @@ testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
+joinlist_SOURCES = joinlist.cc
+vignet4gif_SOURCES = vignet4gif.cc
 install_image_SOURCES = install_image.cc
 invertdeadmap_SOURCES = invertdeadmap.cc
 assign_SOURCES = assign.cc
