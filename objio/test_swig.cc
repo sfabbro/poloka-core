@@ -80,7 +80,7 @@ int main()
   }
   
   for(i=0;i<10;i++) 
-    double_vector.push_back(sin(i));
+    double_vector.push_back(sin((float)i));
   
   string_short_map["toto"]=2;
   string_short_map["titi"]=-2383;
