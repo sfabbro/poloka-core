@@ -69,7 +69,7 @@ DatDet::DatDet(const string &DatacardsFileName)
       if (cards.HasKey("DATDET_BACKRINGMAX"))
 	nbackSideMax = cards.IParam("DATDET_BACKRINGMAX");
       if (cards.HasKey("DATDET_COMPFACTOR"))
-	compFactor = cards.IParam("DATDET_COMPFACTOR");
+	compFactor = cards.DParam("DATDET_COMPFACTOR");
     }
   else
     {
@@ -384,106 +384,7 @@ void DetectionProcess::ImagesConvolve()
   
 }
 
-#ifdef STORAGE
 
-this routine is wrong from the very beginning. It computes
-
-flux        sum(psf * image)
--------- as -----------------
-sig_flux    sum(psf^2 / weights)
-
-the right formula documents the above routine
-
-
-void DetectionProcess::ImagesConvolve()
-{
-    // convolve image with approximate PSF.
-  imagecv = new Image(image->Nx(), image->Ny());
-  Image kernel = ConvoleGauss1D1D(*image, sigFilter, sigFilter, 
-				  /*prec = */ 1.e-3, *imagecv);
-
-  print_stat(*image, "image at the beginning");
-  print_stat(*imagecv, "imagecv just convolved");
-  /* if we want to read the flux of a point like object in the
-     convolved image, we have to divide it by the integral of the 
-     squared kernel */
-
-  double S2 = kernel.SumSquaredPixels();
-  *imagecv *= (1/S2);
-  print_stat(*imagecv, "imagecv just normalized");
-
-  // Check
-  cout << "check : 1/S2 " << 1/S2 << " theoretical : " 
-       << 4.*M_PI*sigFilter*sigFilter << endl ;
-
-  // Variance. we do not need to keep the convolved variance map.
-  Image weightcv;
-  { /* take a copy of the image to delete the FitsImage (and close the file)
-       immediately after reading */
-
-    FitsImage w(weightName);
-    weightcv = w;
-  }
-  print_stat(weightcv , "weights just read in");
-  double epsilon = 1e-25;
-  weightcv += epsilon;
-  Pixel *pend = weightcv.end();
-  for (Pixel *p = weightcv.begin(); p < pend; ++p) (*p) = 1./(*p);
-  print_stat(weightcv , " variance");
-  //weightcv is now a variance
-  Image kernvar = ConvoleGauss1D1D(weightcv, sigFilter/sqrt(2.), 
-				    sigFilter/sqrt(2.), 
-				    1.e-3);
-
-  print_stat(weightcv , " variance after conv");
-
-  /* nothing tells me that kernvar == kern*kern. In fact I am sure that 
-     it does not hold. Renormalize variancecv accordingly: */
-  double fact = S2/kernvar.SumPixels();
-
-  // now account for the "renormalization" of imagecv
-  fact *= (1./sqr(S2));
-  weightcv *= fact;
-  print_stat(weightcv , " variance after conv+norm");
-
-  // get back to weight
-  Pixel threshold = 100*epsilon;
-  for (Pixel *p = weightcv.begin(); p < pend; ++p) 
-    {
-      if (*p == 0) continue;
-      (*p) = 1./(*p);
-      if (*p < threshold) *p = 0;
-    }
-  print_stat(weightcv , " back to weights ");
-
-  //compute noise
-   cvImageNormalizedSig = ImageAndWeightError(*imagecv, weightcv);
-  // should be around 1....
-  cout << "normalizedSig of convolved image " <<  cvImageNormalizedSig << endl;
-  // write it somewhere for later use
-  SaveNormalizedSig();
-
-  // normalize imagecv : imagecv *= sqrt(weightcv);
-  weightcv.ApplyFun(sqrt);
-  *imagecv *= weightcv;
-
-  // write image for studies
-  if (getenv ("SAVECV")) { FitsImage toto("savecv.fits",*imagecv);}
-
-  // compute the frame in which the convolution was actually computed.
-  Frame imFrame(*imagecv);
-  int xMarginSize = max(kernel.Nx(), kernvar.Nx())/2;
-  int yMarginSize = max(kernel.Ny(), kernvar.Ny())/2;
-  imFrame.CutMargin(xMarginSize, yMarginSize);
-
-  Pixel mean, sig;
-  imagecv->SkyLevel(imFrame, &mean, &sig);
-  cvImageNormalizedMean = mean;
-  cout << " compute the mean and sigma of img*sqrt(weight) : "  
-       << mean << ' ' << sig << endl;
-
-}
-#endif
 
 #define NORMALIZED_SIG_KEY "NORMSIG"
 
@@ -569,7 +470,8 @@ void DetectionProcess::DetectionPosition(Detection &Det) const
 	    }
 	}
     }
-  Det.flux = s/SumWi ; // very bizarre
+  if (fabs(SumWi) > 1.e-20)
+    Det.flux = s/SumWi ; // very bizarre
   Det.distBad = (Det.distBad == dist_bad_init)? -1 : sqrt(Det.distBad);
   if (s != 0) 
     {
@@ -691,9 +593,12 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
       Det.varYY = varYY/sqr(flux);
       Det.varXY = varXY/sqr(flux);
     }
-  Det.Mxx() = SumSigx / S - sqr(sx/S);
-  Det.Myy() = SumSigy / S - sqr(sy/S);
-  Det.Mxy() = SumSigxy / S - sx*sy/sqr(S);
+  if ( fabs(S) > 1.e-20 )
+    {
+      Det.Mxx() = SumSigx / S - sqr(sx/S);
+      Det.Myy() = SumSigy / S - sqr(sy/S);
+      Det.Mxy() = SumSigxy / S - sx*sy/sqr(S);
+    }
   Det.aperFlux = (aperFluxDeno >0)? area*aperFlux/aperFluxDeno : 0;
   Det.Area() = area;
 }
@@ -1072,7 +977,7 @@ void Detection::writen(ostream &s) const
 {
   ios::fmtflags  old_flags =  s.flags();
   BaseStar::writen(s);
-  s  << eFlux << ' '
+  s  << eFlux << ' ' //27
     << sig2Noise << ' ' 
     << aperFlux << ' ' 
     << sig2NoiseCv << ' ' 
@@ -1081,7 +986,7 @@ void Detection::writen(ostream &s) const
     << area << ' ' 
     << nBad << ' ' 
     << distBad << ' ' 
-    << mxx << ' ' << myy << ' ' << mxy << ' ';
+     << mxx << ' ' << myy << ' ' << mxy << ' '; // 13 14 15
   int prec = s.precision();
   s << setprecision(10);
   s << ra << ' ' << dec << ' ';
@@ -1133,6 +1038,7 @@ MatchedDetection* MatchedDetection::read(istream& r, const char* Format)
   MatchedDetection *result = new MatchedDetection(*d);
   delete d;
   unsigned count;
+  cout << result->x << " " <<result->y << endl ;
   r >> count;
   for (unsigned k=0; k<count ; ++k)
     {
@@ -1153,9 +1059,12 @@ void MatchedDetection::writen(ostream &s) const
 
 bool MatchedDetection::CompatibleSig2Noise(const double &Fact) const
 {
+  if (Fact < 0 ) return true ;
   for (unsigned k=0; k<others.size(); ++k)
+    {
       if (Fact*others[k]->Sig2Noise() < Sig2Noise())
 	  return false;
+    }
   return true;
 }
 
@@ -1197,6 +1106,7 @@ bool MatchedDetectionList::OneToOneAssoc(const string &ImageName,
 void MatchedDetectionList::ApplyCuts()
 {
   DatDet datdet(DefaultDatacards());
+  cout << "On MatchedDetectionList (" << size() << ") :" <<  endl;
   cout << " appliying compatibility cut on partial subs : "
        <<" factor =" << datdet.compFactor << endl;
   for (MatchedDetectionIterator i = begin(); i != end(); )
@@ -1206,6 +1116,8 @@ void MatchedDetectionList::ApplyCuts()
 	  i = erase(i);
 	else ++i;
     }
+  
+  cout << "New size of MatchedDetectionList : " << size() <<  endl;
 }  
 
 
