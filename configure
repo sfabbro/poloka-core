@@ -19621,8 +19621,68 @@ CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 # Checks for libraries.
 
 
-  # Extract the first word of "python python2.1 python2.0 python1.6 python1.5", so it can be a program name with args.
-set dummy python python2.1 python2.0 python1.6 python1.5; ac_word=$2
+
+
+        if test -n "$PYTHON"; then
+      # If the user set $PYTHON, use it and don't search something else.
+      echo "$as_me:$LINENO: checking whether $PYTHON version >= 2.0.0" >&5
+echo $ECHO_N "checking whether $PYTHON version >= 2.0.0... $ECHO_C" >&6
+      prog="import sys, string
+# split strings by '.' and convert to numeric.  Append some zeros
+# because we need at least 4 digits for the hex conversion.
+minver = map(int, string.split('2.0.0', '.')) + [0, 0, 0]
+minverhex = 0
+for i in xrange(0, 4): minverhex = (minverhex << 8) + minver[i]
+sys.exit(sys.hexversion < minverhex)"
+  if { echo "$as_me:$LINENO: $PYTHON -c "$prog"" >&5
+   ($PYTHON -c "$prog") >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }; then
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+else
+  { { echo "$as_me:$LINENO: error: too old" >&5
+echo "$as_me: error: too old" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+    else
+      # Otherwise, try each interpreter until we find one that satisfies
+      # VERSION.
+      echo "$as_me:$LINENO: checking for a Python interpreter with version >= 2.0.0" >&5
+echo $ECHO_N "checking for a Python interpreter with version >= 2.0.0... $ECHO_C" >&6
+if test "${am_cv_pathless_PYTHON+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+	for am_cv_pathless_PYTHON in python python2 python2.4 python2.3 python2.2 python2.1 python2.0 python1.6 python1.5 none; do
+	  test "$am_cv_pathless_PYTHON" = none && break
+	  prog="import sys, string
+# split strings by '.' and convert to numeric.  Append some zeros
+# because we need at least 4 digits for the hex conversion.
+minver = map(int, string.split('2.0.0', '.')) + [0, 0, 0]
+minverhex = 0
+for i in xrange(0, 4): minverhex = (minverhex << 8) + minver[i]
+sys.exit(sys.hexversion < minverhex)"
+  if { echo "$as_me:$LINENO: $am_cv_pathless_PYTHON -c "$prog"" >&5
+   ($am_cv_pathless_PYTHON -c "$prog") >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }; then
+  break
+fi
+
+	done
+fi
+echo "$as_me:$LINENO: result: $am_cv_pathless_PYTHON" >&5
+echo "${ECHO_T}$am_cv_pathless_PYTHON" >&6
+      # Set $PYTHON to the absolute path of $am_cv_pathless_PYTHON.
+      if test "$am_cv_pathless_PYTHON" = none; then
+	PYTHON=:
+      else
+        # Extract the first word of "$am_cv_pathless_PYTHON", so it can be a program name with args.
+set dummy $am_cv_pathless_PYTHON; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
 if test "${ac_cv_path_PYTHON+set}" = set; then
@@ -19660,72 +19720,88 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
-
-
-    echo "$as_me:$LINENO: checking if Python version >= 2.0.0" >&5
-echo $ECHO_N "checking if Python version >= 2.0.0... $ECHO_C" >&6
-        prog="
-import sys, string
-minver = '2.0.0'
-pyver = string.split(sys.version)[0]  # first word is version string
-# split strings by '.' and convert to numeric
-minver = map(string.atoi, string.split(minver, '.'))
-pyver = map(string.atoi, string.split(pyver, '.'))
-# we can now do comparisons on the two lists:
-if pyver >= minver:
-	sys.exit(0)
-else:
-	sys.exit(1)"
-        if $PYTHON -c "$prog" 1>&5 2>&5
-    then
-      echo "$as_me:$LINENO: result: okay" >&5
-echo "${ECHO_T}okay" >&6
-    else
-      { { echo "$as_me:$LINENO: error: too old" >&5
-echo "$as_me: error: too old" >&2;}
-   { (exit 1); exit 1; }; }
+      fi
+      am_display_PYTHON=$am_cv_pathless_PYTHON
     fi
 
 
-  echo "$as_me:$LINENO: checking local Python configuration" >&5
-echo $ECHO_N "checking local Python configuration... $ECHO_C" >&6
+  if test "$PYTHON" = :; then
+      { { echo "$as_me:$LINENO: error: no suitable Python interpreter found" >&5
+echo "$as_me: error: no suitable Python interpreter found" >&2;}
+   { (exit 1); exit 1; }; }
+  else
 
 
-
-    PYTHON_VERSION=`$PYTHON -c "import sys; print sys.version[:3]"`
-
+  echo "$as_me:$LINENO: checking for $am_display_PYTHON version" >&5
+echo $ECHO_N "checking for $am_display_PYTHON version... $ECHO_C" >&6
+if test "${am_cv_python_version+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_version=`$PYTHON -c "import sys; print sys.version[:3]"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_version" >&5
+echo "${ECHO_T}$am_cv_python_version" >&6
+  PYTHON_VERSION=$am_cv_python_version
 
 
 
   PYTHON_PREFIX='${prefix}'
 
-
   PYTHON_EXEC_PREFIX='${exec_prefix}'
 
 
 
-  PYTHON_PLATFORM=`$PYTHON -c "import sys; print sys.platform"`
+  echo "$as_me:$LINENO: checking for $am_display_PYTHON platform" >&5
+echo $ECHO_N "checking for $am_display_PYTHON platform... $ECHO_C" >&6
+if test "${am_cv_python_platform+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_platform=`$PYTHON -c "import sys; print sys.platform"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_platform" >&5
+echo "${ECHO_T}$am_cv_python_platform" >&6
+  PYTHON_PLATFORM=$am_cv_python_platform
 
 
 
 
-
-  pythondir=$PYTHON_PREFIX"/lib/python"$PYTHON_VERSION/site-packages
+                echo "$as_me:$LINENO: checking for $am_display_PYTHON script directory" >&5
+echo $ECHO_N "checking for $am_display_PYTHON script directory... $ECHO_C" >&6
+if test "${am_cv_python_pythondir+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,prefix='$PYTHON_PREFIX')" 2>/dev/null ||
+     echo "$PYTHON_PREFIX/lib/python$PYTHON_VERSION/site-packages"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_pythondir" >&5
+echo "${ECHO_T}$am_cv_python_pythondir" >&6
+  pythondir=$am_cv_python_pythondir
 
 
 
   pkgpythondir=\${pythondir}/$PACKAGE
 
 
-
-  pyexecdir=$PYTHON_EXEC_PREFIX"/lib/python"$PYTHON_VERSION/site-packages
+            echo "$as_me:$LINENO: checking for $am_display_PYTHON extension module directory" >&5
+echo $ECHO_N "checking for $am_display_PYTHON extension module directory... $ECHO_C" >&6
+if test "${am_cv_python_pyexecdir+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_pyexecdir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1,0,prefix='$PYTHON_EXEC_PREFIX')" 2>/dev/null ||
+     echo "${PYTHON_EXEC_PREFIX}/lib/python${PYTHON_VERSION}/site-packages"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_pyexecdir" >&5
+echo "${ECHO_T}$am_cv_python_pyexecdir" >&6
+  pyexecdir=$am_cv_python_pyexecdir
 
 
 
   pkgpyexecdir=\${pyexecdir}/$PACKAGE
 
-  echo "$as_me:$LINENO: result: looks good" >&5
-echo "${ECHO_T}looks good" >&6
+
+
+  fi
+
 
 # FIXME: Replace `main' with a function in `-lcrypt':
 
@@ -20406,8 +20482,8 @@ echo "$as_me: error: $CMT_PACKAGE_NOT_FOUND" >&2;}
 fi
 
 # get includes and use_linkopts from cmt
-CMT_CFLAGS="`cd cmt; cmt-config.csh --cflags`"
-CMT_LDFLAGS="`cd cmt; cmt-config.csh --ldflags | sed 's/-Wl,-rpath/-R/g'`"
+CMT_CFLAGS="`cd cmt; ./cmt-config.csh --cflags`"
+CMT_LDFLAGS="`cd cmt; ./cmt-config.csh --ldflags | sed 's/-Wl,-rpath/-R/g'`"
 
 # save these values for usage in Makefile.am
 
