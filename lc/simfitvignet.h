@@ -183,6 +183,9 @@ public:
 
   //! use Vignet::Chi2 with additionnal debugging info
   double Chi2() const;
+  
+  //! write a lot of stuff, to use in case of problem 
+  void DumpDebug() const;
 
   //! enable "cout << SimFitVignet << endl"
   friend ostream& operator << (ostream & stream, const SimFitVignet& myVignet);

@@ -1517,11 +1517,11 @@ void SimFit::DoTheFit()
       bool oldfit_sky = fit_sky;
       bool oldfit_gal = fit_gal;
       fit_sky = false;
-      fit_gal = false;	
-      if (fit_gal) 
-	Resize(minscale);
-      else
-	Resize(1);
+      fit_gal = false;
+      Resize(1);
+//       if (fit_gal) 
+// 	Resize(minscale);
+      
       if (!IterateAndSolve(30)) return;
       if (!GetCovariance())     return;
       fit_sky = oldfit_sky;

@@ -232,27 +232,6 @@ double Vignet::Chi2() const
   
   if(!(chi2>0)) { // there is a bug here so we save the residuals, dump them and abort
     cout << "############# Vignet::Chi2 ERROR chi2=" << chi2 << " #############" << endl;
-    cout << " writing resid_DEBUG.fits weight_DEBUG.fits" << endl;    
-    Weight.writeFits("weight_DEBUG.fits");
-    Resid.writeFits("Resid_DEBUG.fits");
-    DPixel *pres; 
-    
-    cout << " resids: " << endl;
-    for (int j=-hy; j<=hy; ++j) {
-      pres = &Resid (-hx,j);
-      for (int i=-hx; i<=hx; ++i, ++pres) {
-	cout << " " << *pres;   
-      }
-      cout << endl;
-    }
-//     cout << " weight: " << endl;
-//     for (int j=-hy; j<=hy; ++j) {
-//       pw = &Weight (-hx,j);
-//       for (int i=-hx; i<=hx; ++i, ++pw) {
-// 	cout << " " << *pw;   
-//       }
-//       cout << endl;
-//     }
     return -1;
   }   
   return chi2;

@@ -27,6 +27,17 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
 #ifdef FNAME
   cout << " > TabulatedPsf::Resize(const int Hx, const int Hy)" << endl;
 #endif
+
+ cout << "before Hx Hy HSizeX() HSizeY() Nx() Ny() hSizeX hSizeY " 
+       << Hx << " "
+       << Hy << " "
+       << HSizeX() << " "
+       << HSizeY() << " "
+       << Nx() << " "
+       << Ny() << " "
+       << hSizeX << " "
+       << hSizeY << endl;
+
   if (HSizeX() != Dx.HSizeX() ||
       HSizeY() != Dx.HSizeY() ||
       HSizeX() != Dy.HSizeX() ||
@@ -36,8 +47,17 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
     {
       Allocate(2*Hx+1, 2*Hy+1);
       Dx.Allocate(Nx(), Ny());
-      Dy.Allocate(Nx(), Ny());     
+      Dy.Allocate(Nx(), Ny());
     }
+  cout << "after Hx Hy HSizeX() HSizeY() Nx() Ny() hSizeX hSizeY " 
+       << Hx << " "
+       << Hy << " "
+       << HSizeX() << " "
+       << HSizeY() << " "
+       << Nx() << " "
+       << Ny() << " "
+       << hSizeX << " "
+       << hSizeY << endl;
 }
 
 void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)
@@ -65,6 +85,13 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius
 	integrale += *ppsf;
       }
   
+  if(!(integrale>0.5)) {
+    cout << "Very strange psf integral in TabulatedPsf::Tabulate (1) : " << integrale << endl;
+    cout << "better quit (first write psf as fits)" << endl;
+    writeFits("psf_DEBUG.fits");
+    abort();
+  }
+
   // normalization
   double norme = 1./integrale;
   ppsf = begin();
@@ -88,21 +115,35 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Re
   DPixel *ppdx = Dx.begin();
   DPixel *ppdy = Dy.begin();
 
-#ifdef DEBUG
   double integrale = 0;
-#endif
 
   for (int j=Rect.ystart; j<Rect.yend; ++j)
     for (int i=Rect.xstart; i<Rect.xend; ++i, ++ppsf, ++ppdx, ++ppdy) 
       {
 	*ppsf = Dao.Value(i,j, Pt, *ppdx, *ppdy);
-#ifdef DEBUG
 	integrale += *ppsf;
-#endif
       }
-#ifdef DEBUG
-  cout << "   in TabulatedPsf::Tabulate, integrale = " << integrale << endl;
-#endif
+
+  if(!(integrale>0.5)) {
+    cout << "Very strange psf integral in TabulatedPsf::Tabulate (2) : " << integrale << endl;
+    cout << "better quit (first write psf as fits)" << endl;
+    writeFits("psf_DEBUG.fits");
+    abort();
+  }
+
+  // normalization
+  double norme = 1./integrale;
+  ppsf = begin();
+  ppdx = Dx.begin();
+  ppdy = Dy.begin();
+  
+  for (int j=-hSizeY; j<=hSizeY; ++j) 
+    for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf, ++ppdx, ++ppdy) 
+      {
+	*ppsf *= norme;
+	*ppdx *= norme;
+	*ppdy *= norme;
+      }
 }
 
 void TabulatedPsf::Scale(const double& s)
@@ -165,11 +206,11 @@ void SimFitRefVignet::Resize(const int Hx, const int Hy)
   Vignet::Resize(Hx,Hy);
   
   // resize Psf, Psf.Dx, Psf.Dy if necessary
-  //Psf.Resize(Hx,Hy);
   Psf.Tabulate(*Star,*psf,Hx);
 
   // resize Galaxy 
-  makeInitialGalaxy();
+  if(Galaxy.Nx()!=Data.Nx() || Galaxy.Ny()!=Data.Ny())
+    makeInitialGalaxy();
 }
 
 void SimFitRefVignet::Load(const PhotStar *Star)
@@ -439,11 +480,9 @@ void SimFitVignet::UpdateResid_psf_gal()
 		}
 	    }
 	  
-	  if( (!(sump>0)) && (!(sump<0))) {
+	  if( (!(sump>0)) && (!(sump<=0))) {
 	    cout << "ERROR nan with sump in UpdateResid_psf_gal" << sump << endl;
-	    cout << "Ref.Psf Kern 0 0 = " 
-		 << Ref.Psf(0,0) << " " 
-		 << Kern(0,0) << endl;
+	    DumpDebug();
 	    abort();
 	  }
 
@@ -585,17 +624,29 @@ ostream& operator << (ostream& Stream, const SimFitVignet &Vig)
   return Stream;
 }
 
+void SimFitVignet::DumpDebug() const {  
+  cout << "############# SimFitVignet::DumpDebug #############" << endl;
+  cout << " star flux = " << Star->flux << endl; 
+  cout << " galaxy(0,0) = " << VignetRef->Galaxy(0,0) << endl;
+  cout << " Data(0,0) = " << Data(0,0) << endl;
+  cout << " Psf(0,0) = " << Psf(0,0) << endl;
+  cout << " writing *_DEBUG.fits" << endl;
+  Weight.writeFits("weight_DEBUG.fits");
+  Resid.writeFits("resid_DEBUG.fits");
+  Data.writeFits("data_DEBUG.fits");
+  Psf.writeFits("psf_DEBUG.fits");
+  VignetRef->Psf.writeFits("refpsf_DEBUG.fits");
+  Kern.writeFits("kern_DEBUG.fits");
+}
 double SimFitVignet::Chi2() const {
   double chi2 = Vignet::Chi2();
   if(chi2>=0)
     return chi2;
-
+  
   // now debug 
-  cout << " star flux = " << Star->flux << endl;
-  cout << " galaxy(0,0) = " << VignetRef->Galaxy(0,0) << endl;
-  cout << " Data(0,0) = " << Data(0,0) << endl;
-  cout << " Psf(0,0) = " << Psf(0,0) << endl;
-  cout << " quit ..." << endl;
+  cout << "############# SimFitVignet::Chi2 ERROR chi2=" << chi2 << " #############" << endl;
+  DumpDebug();
+  cout << " now I quit ..." << endl;
   abort();
 }
  
