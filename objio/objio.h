@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.17 2004/03/17 15:18:02 guy Exp $
+// $Id: objio.h,v 1.18 2004/04/15 11:42:17 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/17 15:18:02 $
+// Last modified: $Date: 2004/04/15 11:42:17 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -31,7 +31,7 @@ template<class IOS>
 class obj_output { //: public obj_output_base {
 public:
   obj_output(const std::string& name) : stream_(name,OBJIO_WRITE,0) {}
-  ~obj_output() { }
+  virtual ~obj_output() { }
 
   void         open(std::string const& filename, int compression=0) const {
     stream_.open(filename,OBJIO_WRITE,compression);
@@ -304,7 +304,7 @@ template<class IOS>
 class obj_input { //: public obj_input_base {
 public:
   obj_input(const std::string& name) : stream_(name,OBJIO_READ,0) {}
-  ~obj_input() {}
+  virtual ~obj_input() {}
   
   void         open(std::string const& filename) {
     stream_.open(filename,OBJIO_READ,0);

@@ -307,7 +307,7 @@ void codegen::classPersisterDecl_(CppClass const& cppclass)
 	       << cppclass.cppTypeName() << " >(const_cast<"
 	       << cppclass.cppTypeName() << "*>(&obj)) {}// I know, that's UGLY." << std::endl;
   
-  class_ofs_h_ << "  ~persister<" << cppclass.cppTypeName()
+  class_ofs_h_ << "  virtual ~persister<" << cppclass.cppTypeName()
 	       << ",IOS>() {}" << std::endl << std::endl;
   
   // interface methods
@@ -834,7 +834,7 @@ void codegen::classPersisterDecl_(dict const& dict_)
 	       << dict_.fullSymbolicName() << " >(const_cast<"
 	       << dict_.fullSymbolicName() << "*>(&obj)) {}// I know, that's UGLY." << std::endl;
   
-  class_ofs_h_ << "  ~persister<" << dict_.fullSymbolicName() 
+  class_ofs_h_ << "  virtual ~persister<" << dict_.fullSymbolicName() 
 	       << ",IOS>() {}" << std::endl << std::endl;
   
   // interface methods

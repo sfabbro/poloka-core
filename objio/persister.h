@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: persister.h,v 1.5 2004/04/15 11:35:12 guy Exp $
+// $Id: persister.h,v 1.6 2004/04/15 11:42:17 guy Exp $
 // 
 // \file persister.h
 // A persister is a handle on an object, which knows
@@ -7,7 +7,7 @@
 // how to write it to an output stream. The stream 
 // is generic and can be implemented many ways.
 // 
-// Last modified: $Date: 2004/04/15 11:35:12 $
+// Last modified: $Date: 2004/04/15 11:42:17 $
 // by:            $Author: guy $
 // 
 #ifndef PERSISTER_H
@@ -93,7 +93,7 @@ public:
   persister(T& obj) : handle<T>(&obj) {}
   persister(T const & obj) : handle<T>(const_cast<T*>(&obj)) {}// I know, that's UGLY.
   persister(persister<T,IOS> const& p) : handle<T>(p.obj_) {}
-  ~persister() {}
+  virtual ~persister() {}
   
   unsigned int         version() const { return 0; }
   std::string          name() const { return (std::string)"non persistent member"; }
