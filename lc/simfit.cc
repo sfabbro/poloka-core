@@ -42,21 +42,19 @@ void SimFit::SetWhatToFit(unsigned int ToFit)
   dont_use_vignets_with_star = false;
 
   int count=0;
+  cout << "What to fit: fit_flux " << fit_flux 
+       << " fit_pos " << fit_pos 
+       << " fit_gal " << fit_gal 
+       << " fit_sky " << fit_sky << endl;
+  cout << "What to fit for each vignet (id FitPos UseGal FitSky FitFlux): " << endl;
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
     (*itVig)->FitPos = fit_pos && (*itVig)->CanFitPos;
     (*itVig)->UseGal = use_gal;
     (*itVig)->FitSky = fit_sky && (*itVig)->CanFitSky;
     (*itVig)->FitFlux = fit_flux && (*itVig)->CanFitFlux;
-    cout << count << " vignet whattofit: " 
-	 << (*itVig)->FitPos << " "
-	 << (*itVig)->UseGal << " "
-	 << (*itVig)->FitSky << " "
-	 << (*itVig)->FitFlux << endl;
+    printf("%03d %d %d %d %d\n",count,(*itVig)->FitPos,(*itVig)->UseGal,(*itVig)->FitSky,(*itVig)->FitFlux);
     count++;
   }
-  
-  cout << " SimFit::SetWhatToFit(" << ToFit << ") : fit_flux " << fit_flux << " fit_pos " << fit_pos 
-       << " fit_gal " << fit_gal << " fit_sky " << fit_sky << endl;
 }
 
 void SimFit::FindMinimumScale(double WorstSeeing)
@@ -201,15 +199,19 @@ void SimFit::Resize(const double& ScaleFactor)
   if(fabs(ScaleFactor-1)>0.01) {
     if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
       {
+#ifdef DEBUG
 	cerr << " SimFit::Resize(" << ScaleFactor 
 	     << ") : Warning: nothing to fit, not resizing. " << endl;
+#endif
 	return;
       }
     
-    cout << " SimFit::Resize(" << ScaleFactor << "): old scale = " << scale; 
     scale = max(ScaleFactor, minscale);
-    cout << " new scale = " << scale << endl;
 
+#ifdef DEBUG    
+    cout << " SimFit::Resize(" << ScaleFactor << "): old scale = " << scale;   
+    cout << " new scale = " << scale << endl;
+#endif
   
     // resize vignets
     
@@ -277,14 +279,14 @@ void SimFit::Resize(const double& ScaleFactor)
   
   nparams = (fluxend-fluxstart+1) + (yind-fluxend) + (galend-yind) + (skyend-galend);
 
-  //#ifdef DEBUG
+#ifdef DEBUG
   cout << " SimFit::Resize(" << ScaleFactor << ") : indices: \n" 
        << "   fluxstart " << fluxstart  << "   fluxend " << fluxend << endl
        << "   xind " << xind << "   yind " << yind << endl
        << "   galstart " << galstart  << " galend " << galend << endl
        << "   skystart " << skystart << " skyend " << skyend << endl
        << "   nparams = " << nparams << endl;
-  //#endif
+#endif
 
   ndata = 0;
   
@@ -348,11 +350,13 @@ void SimFit::FillMatAndVec()
 
   // no need to symmetrize the matrix
 
+#ifdef DEBUG  
   if(PMat.SizeX()<20 && PMat.SizeY()<20) {
     cout << "===== PMat =====" << endl;
     cout << PMat << endl;
     cout << "===== PMat =====" << endl;
   }
+#endif
 }
 
 int SimFit::galind(const int i, const int j) const
@@ -1195,12 +1199,16 @@ bool SimFit::Update(double Factor)
       for (int i=-hfx; i<=hfx; ++i)
 	VignetRef->Galaxy(i,j) += Vec(galind(i,j))*Factor;
 
+  
+ 
+
   // update the reference position and psf
   if (fit_pos) 
     {
-      //#ifdef DEBUG
-      cout << "   in SimFit::Update shifting of dx dy " << Vec(xind)*Factor << " " <<  Vec(yind)*Factor << " (xind,yind)=" << xind << "," << yind <<  endl;
-      //#endif
+      cout << "   Shift Position of "  
+	   << Vec(xind)*Factor << "," <<  Vec(yind)*Factor 
+	   << " -> " << VignetRef->Star->x+Vec(xind)*Factor << "," << VignetRef->Star->y+Vec(yind)*Factor ;
+      
       if (!(VignetRef->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
 	abort();
       }
@@ -1210,34 +1218,41 @@ bool SimFit::Update(double Factor)
   // update all vignets
   int fluxind = fluxstart;
   int skyind  = skystart;
-  int start = 1;
-  
+
+  float maxflux = -10000; // just for printing
   for (SimFitVignetIterator it=begin(); it != end(); ++it)
     {
       SimFitVignet *vi = *it;
       
-      if(start && (vi->CanFitFlux)) {
-	cout << "      in SimFit::Update DUMP : " << vi->Star->flux << " " << vi->Star->x << " " << vi->Star->y << endl;
-	start=0;
-      }
       
       // update flux
       if ((fit_flux) && (vi->FitFlux)) {
 	vi->Star->flux += Vec(fluxind++)*Factor;
       }
- 
+      
       // update pos (not really required if not vignetref)
       if ((fit_pos) && !(vi->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
-	cout << "ShiftCenter failure" << endl;
+	cout << "FATAL ERROR ShiftCenter failure " << endl;
 	abort();
       }
+      
       // update sky
       if (fit_sky && (vi->FitSky)) vi->Star->sky += Vec(skyind++)*Factor;
+      
+      if(fit_flux && vi->CanFitFlux && maxflux < vi->Star->flux) // just for printing
+	maxflux=vi->Star->flux; // just for printing
       
       // update residuals and convolved psf
       vi->ModifiedResid();
       vi->Update();
     }
+  if(maxflux>-10000) {
+    cout << "   Max Flux " << maxflux << endl;
+  }else{
+    if(fit_pos)
+      cout << endl;
+  }
+
 
   return true;
 }
@@ -1250,6 +1265,7 @@ double SimFit::oneNRIteration(double OldChi2)
   FillMatAndVec();
   
   if (cholesky_solve(PMat,Vec,"L") != 0) {
+    cout << "FATAL ERROR" << endl;
     PMat.writeFits("DEBUG_pmat.fits");
     cout << "Vec:" << endl;
     cout << Vec << endl;
@@ -1300,39 +1316,29 @@ double SimFit::oneNRIteration(double OldChi2)
 
 bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
 {
-#ifdef FNAME
-  cout << " > SimFit::IterateAndSolve(const int MaxIter, double Eps): " << MaxIter << " " << Eps << "  Start : \n"
-       << (*this) << endl;
-#endif
   double oldchi2;
   chi2 = computeChi2();
   int iter = 0;
   double diff = 1000;
+  cout << " > SimFit::IterateAndSolve(" << MaxIter << "," << Eps << ") : initial chi2/dof = " << chi2/(ndata - nparams) << endl;
   do
     {
-      cout << "   in SimFit::IterateAndSolve(" << MaxIter << ") : Iteration # " 
-	   << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;
       oldchi2 = chi2;
       chi2 = oneNRIteration(oldchi2);
       diff = fabs(chi2-oldchi2);
-      cout << "   diff = " << diff << endl;
+      cout << "   Iteration " << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;    
+      //cout << "   diff = " << diff << endl;
     }while ((iter++ < MaxIter) && (diff>Eps));
   
-  cout << "   in SimFit::IterateAndSolve() : Iteration # " 
-       << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;
- 
-
-  cout << "   SimFit::IterateAndSolve(): Finish : \n"
-       << (*this) << endl;
-
+  cout << "   SimFit::IterateAndSolve(): Done" << endl;
   return true;
-}
+} 
 
 bool SimFit::GetCovariance()
 {
-#ifdef FNAME
+  //#ifdef FNAME
   cout << " > SimFit::GetCovariance()" << endl;
-#endif
+  //#endif
   
   // someday we should recompute the covariance ala MINOS
   
@@ -1380,14 +1386,14 @@ bool SimFit::GetCovariance()
 
 void SimFit::FitInitialGalaxy() {
 #ifdef FNAME
-  cout << " > SimFit::FitInitialGalaxy()" << endl;  
+  cout << " > SimFit::FitInitialGalaxy()" << endl;
 #endif
   int nzero=0;
   for (SimFitVignetIterator it=begin(); it != end(); ++it) {
-    if(!((*it)->FitFlux))
+    if(!((*it)->CanFitFlux))
       nzero ++;
   }
-  cout << "using " << nzero << " exposures for reference (in FitInitialGalaxy)" << endl;
+  cout << " > SimFit::FitInitialGalaxy() with " << nzero << " exposures" << endl;  
   if(nzero==0) {
     abort();
   }
@@ -1398,7 +1404,7 @@ void SimFit::FitInitialGalaxy() {
 }
 
 
-void SimFit::DoTheFit(int MaxIter)
+void SimFit::DoTheFit(int MaxIter, double epsilon)
 {
 #ifdef FNAME
   cout << " > SimFit::DoTheFit() : Starting" << endl;  
@@ -1414,7 +1420,7 @@ void SimFit::DoTheFit(int MaxIter)
 #endif 
 
   Resize(1);
-  if (!IterateAndSolve(MaxIter)) return;
+  if (!IterateAndSolve(MaxIter,epsilon)) return;
   if (!GetCovariance())    return;
 
 #ifdef DEBUG

@@ -121,7 +121,7 @@ public:
   void FillMatAndVec();
 
   //! iterate on solution and solve the system
-  bool IterateAndSolve(int MaxIter=10, double Eps=0.005);
+  bool IterateAndSolve(int MaxIter=10, double Eps=0.01);
 
   //! a procedure to fill up the covariance into the Mat and the proper SimFitVignets...
   bool GetCovariance();
@@ -130,7 +130,7 @@ public:
   bool Update(double Factor=1.);
 
   //! fill, fit and shit: do everything
-  void DoTheFit(int MaxIter=10);
+  void DoTheFit(int MaxIter=10, double epsilon=0.01);
 
   //! returns the chi2 of the current fit
   double Chi2() const { return chi2; }
