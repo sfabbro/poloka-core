@@ -1,6 +1,7 @@
 #ifndef COUNTEDREF__H
 #define COUNTEDREF__H
 
+#include <stdlib.h>
 #include <iostream>
 
 
