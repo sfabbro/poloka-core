@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.5 2004/03/02 12:40:16 nrl Exp $
+// $Id: xmlstream.h,v 1.6 2004/03/04 16:34:04 nrl Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -57,26 +57,30 @@ public:
   inline void     skip() const;
   
   
-  inline void     write_start_object_tag(std::string const& name, unsigned int version, void const* addr=0);
+  inline void     write_start_object_tag(std::string const& name, unsigned int version);
   inline void     write_end_object_tag();
   
+  // FIXME: nrl 03/2004 : Get rid of this!
   inline void     write_start_raw_pointer_tag(const char* name, void const* addr=0);
   inline void     write_end_raw_pointer_tag();
   
-  inline void     write_start_collection_tag(unsigned int size, const char* name=0, void const* addr=0);
+  inline void     write_start_reference_tag(const char* name, void const* addr=0);
+  inline void     write_end_reference_tag();
+  
+  inline void     write_start_collection_tag(unsigned int size, const char* name=0);
   inline void     write_end_collection_tag();
   
-  inline void     write(int1 v, const char* name=0,   void const* addr=0);
-  inline void     write(uint1 v, const char* name=0,  void const* addr=0);
-  inline void     write(int2 v, const char* name=0,   void const* addr=0);
-  inline void     write(uint2 v, const char* name=0,  void const* addr=0);
-  inline void     write(int4 v, const char* name=0,   void const* addr=0);
-  inline void     write(uint4 v, const char* name=0,  void const* addr=0);
-  inline void     write(int8 v, const char* name=0,   void const* addr=0);
-  inline void     write(uint8 v, const char* name=0,  void const* addr=0);
-  inline void     write(float4 v, const char* name=0, void const* addr=0);
-  inline void     write(float8 v, const char* name=0, void const* addr=0);
-  inline void     write(const std::string& v, const char* name=0, void const* addr=0);
+  inline void     write(int1 v, const char* name=0);
+  inline void     write(uint1 v, const char* name=0);
+  inline void     write(int2 v, const char* name=0);
+  inline void     write(uint2 v, const char* name=0);
+  inline void     write(int4 v, const char* name=0);
+  inline void     write(uint4 v, const char* name=0);
+  inline void     write(int8 v, const char* name=0);
+  inline void     write(uint8 v, const char* name=0);
+  inline void     write(float4 v, const char* name=0);
+  inline void     write(float8 v, const char* name=0);
+  inline void     write(const std::string& v, const char* name=0);
   
   template<class T>
   inline void     write(T const*, const char* name=0);
@@ -246,7 +250,7 @@ void xmlstream::skip() const
 
 
 
-void xmlstream::write_start_object_tag(const std::string& name, unsigned int version, void const* addr)
+void xmlstream::write_start_object_tag(const std::string& name, unsigned int version)
 {
   assert_writer_ok;
   
@@ -255,8 +259,8 @@ void xmlstream::write_start_object_tag(const std::string& name, unsigned int ver
 				    "%s", (xmlChar*)name.c_str());
   xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"version",
 				    "%d", version);
-  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
-					     "%lu", addr);
+  //  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+  //					     "%lu", addr);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
@@ -288,14 +292,33 @@ void xmlstream::write_end_raw_pointer_tag()
 }
 
 
-void xmlstream::write_start_collection_tag(unsigned int sz, const char* name, void const* addr)
+void xmlstream::write_start_reference_tag(const char* name, void const* addr)
+{
+  assert_writer_ok;
+  xmlTextWriterStartElement(writer_, (xmlChar*)"reference");
+  if(name) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"name", "%s", name);
+  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+					     "%lu", addr);
+  xmlTextWriterWriteFormatString(writer_, "\n");
+}
+
+
+void xmlstream::write_end_reference_tag()
+{
+  assert_writer_ok;
+  xmlTextWriterEndElement(writer_);
+  xmlTextWriterWriteFormatString(writer_, "\n");
+}
+
+
+void xmlstream::write_start_collection_tag(unsigned int sz, const char* name)
 {
   assert_writer_ok;
   xmlTextWriterStartElement(writer_, (xmlChar*)"collection");
   xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"size", "%u", sz);
   if(name) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"name", "%s", name);
-  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
-					     "%lu", addr);
+  //  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+  //					     "%lu", addr);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
@@ -309,7 +332,7 @@ void xmlstream::write_end_collection_tag()
 
 
 #define simple_type_write_def(type, typname, format)                         \
-void xmlstream::write(type v, const char* name, void const* addr)            \
+void xmlstream::write(type v, const char* name)                              \
 {                                                                            \
    assert_writer_ok;                                                         \
    if(name==0) {                                                             \
@@ -320,11 +343,12 @@ void xmlstream::write(type v, const char* name, void const* addr)            \
    }                                                                         \
    xmlTextWriterWriteAttribute(writer_, (xmlChar*)"xsi:type", (xmlChar*)#typname);  \
    xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"v",#format,v);      \
-   if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",     \
-                                              "%lu", addr);                  \
    xmlTextWriterEndElement(writer_);                                         \
    xmlTextWriterWriteFormatString(writer_, "\n");                            \
 }                                                                            \
+
+//   if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",     \
+//                                              "%lu", addr);                  \
 
 simple_type_write_def(int1,   i1, %d)
 simple_type_write_def(uint1,  u1, %u)
@@ -337,7 +361,7 @@ simple_type_write_def(uint8,  u8, %lu)
 simple_type_write_def(float4, f4, %.6E)
 simple_type_write_def(float8, f8, %.12E)
 
-void xmlstream::write(std::string const& v, const char* name, void const* addr)
+void xmlstream::write(std::string const& v, const char* name)
 {
   assert_writer_ok;
   if(name==0) {
@@ -348,12 +372,12 @@ void xmlstream::write(std::string const& v, const char* name, void const* addr)
   }
   xmlTextWriterWriteAttribute(writer_, (xmlChar*)"xsi:type", (xmlChar*)"string");
   xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"v","%s",v.c_str());
-  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
-					     "%lu", addr);
   xmlTextWriterEndElement(writer_);
   xmlTextWriterWriteFormatString(writer_, "\n");
 }
 
+//  if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",
+//					     "%lu", addr);
 
 template<class T>
 inline void xmlstream::write(T const* t, const char* name)

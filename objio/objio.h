@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.8 2004/03/04 15:55:49 nrl Exp $
+// $Id: objio.h,v 1.9 2004/03/04 16:34:04 nrl Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/04 15:55:49 $
+// Last modified: $Date: 2004/03/04 16:34:04 $
 // by:            $Author: nrl $
 // 
 #ifndef OBJIO_H
@@ -40,30 +40,28 @@ public:
   
   template<class T>
   void   write(persister<T,IOS> const& p, const char* name=0) {
-    //    check_address_(p.obj_);
-    stream_.write_start_object_tag(p.name(), p.version(), p.get_object_addr());
+    stream_.write_start_object_tag(p.name(), p.version());
     p.write_members(*this);
     stream_.write_end_object_tag();
   }
   
   void   write(persister_base<IOS> const* p, const char* name=0) {
-    //    check_address_(p->get_object_addr());
-    stream_.write_start_object_tag(p->name(), p->version(), p->get_object_addr());
+    stream_.write_start_object_tag(p->name(), p->version());
     p->write_members(*this);
     stream_.write_end_object_tag();
   }
   
-  virtual void   write(int1 const& v,   const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(uint1 const& v,  const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(int2 const& v,   const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(uint2 const& v,  const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(int4 const& v,   const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(uint4 const& v,  const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(int8 const& v,   const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(uint8 const& v,  const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(float4 const& v, const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(float8 const& v, const char* name=0) { stream_.write(v, name, &v); }
-  virtual void   write(const std::string& v, const char* name=0) { stream_.write(v, name, &v); }
+  virtual void   write(int1 const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint1 const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int2 const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint2 const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int4 const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint4 const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(int8 const& v,   const char* name=0) { stream_.write(v, name); }
+  virtual void   write(uint8 const& v,  const char* name=0) { stream_.write(v, name); }
+  virtual void   write(float4 const& v, const char* name=0) { stream_.write(v, name); }
+  virtual void   write(float8 const& v, const char* name=0) { stream_.write(v, name); }
+  virtual void   write(const std::string& v, const char* name=0) { stream_.write(v, name); }
   
   
   // tabs     //    stream_.write(t,sz,*this);
@@ -93,7 +91,7 @@ public:
   
   template<class T>
   void           write(std::list<T> const& l, const char* name=0) {
-    stream_.write_start_collection_tag(l.size(), name,&l);
+    stream_.write_start_collection_tag(l.size(), name);
     typename std::list<T>::const_iterator it;
     for(it=l.begin();it!=l.end();it++)
       *this << *it;
@@ -102,7 +100,7 @@ public:
 
   template<class T>
   void           write(std::vector<T> const& v, const char* name=0) {
-    stream_.write_start_collection_tag(v.size(), name,&v);
+    stream_.write_start_collection_tag(v.size(), name);
     typename std::vector<T>::const_iterator it;
     for(it=v.begin();it!=v.end();it++) {
       *this << *it;
@@ -112,7 +110,7 @@ public:
 
   template<class T, class U>
   void           write(std::map<T,U> const& m, const char* name=0) {
-    stream_.write_start_collection_tag(m.size(), name,&m);
+    stream_.write_start_collection_tag(m.size(), name);
     typename std::map<T,U>::const_iterator it;
     for(it=m.begin();it!=m.end();it++)
       // this time, we must use write().
@@ -124,7 +122,7 @@ public:
   
   template<class T, class U>
   void           write(std::pair<T,U> const& p, const char* name=0) {
-    stream_.write_start_collection_tag(2, name,&p);
+    stream_.write_start_collection_tag(2, name);
     *this << p.first;
     *this << p.second;
     stream_.write_end_collection_tag();
@@ -136,15 +134,20 @@ public:
     bool w = check_address_((void const*)(pt)); // did we write this object already ?
     persister<T,IOS>* b = (persister<T,IOS>*)typemgr<IOS>::getPersister(typeid(*pt).name());
     b->set_object(pt);
-    stream_.write_start_raw_pointer_tag(name);
+    stream_.write_start_reference_tag(name, b->get_object_addr());
     if(!w) {
       write((persister_base<IOS>*)b);
     }
     else 
       stream_.write(pt);
-    stream_.write_end_raw_pointer_tag();
+    stream_.write_end_reference_tag();
   }
-
+  
+  void         write(RefCount const& cr, const char* name=0) {
+    stream_.write_start_object_tag("RefCount",0);
+    stream_.write_end_object_tag();
+  }
+  
   //  template<class T>
   //    void           write(handle<T> const& h) {
   //    stream_.write(h,*this);
@@ -154,11 +157,6 @@ public:
   //    stream_.write_streamer(s);
   //  }
   
-  // 
-  // dictionaries
-  // 
-  
-
 private:
   IOS stream_;
   mutable std::map<void const*,bool> addr_;
@@ -238,6 +236,18 @@ obj_output<IOS>& operator<<(obj_output<IOS>& oo, std::map<T,U> const& m)
   oo.write(m); return oo;
 }
 
+template<class IOS, class T>
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, CountedRef<T> const& cr)
+{
+  oo.write(cr,name); return oo;
+}
+
+template<class IOS>
+obj_output<IOS>& operator<<(obj_output<IOS>& oo, RefCount const& cr)
+{
+  oo.write(cr,name); return oo;
+}
+
 
 template<class IOS, class T>
 void write(obj_output<IOS>& oo, T const* p, unsigned long sz, const char* name=0)
@@ -275,8 +285,17 @@ void write(obj_output<IOS>& oo, std::map<T,U> const& m, const char* name=0)
   oo.write(m,name);
 }
 
+template<class IOS, class T>
+void write(obj_output<IOS>& oo, CountedRef<T> const& cr, const char* name=0)
+{
+  oo.write(cr,name);
+}
 
-
+template<class IOS>
+void write(obj_output<IOS>& oo, RefCount const& cr, const char* name=0)
+{
+  oo.write(cr,name);
+}
 
 ///////////////////////// OBJ_INPUT /////////////////////////
 
