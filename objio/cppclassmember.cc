@@ -1,9 +1,14 @@
 // -*- C++ -*-
-// $Id: cppclassmember.cc,v 1.3 2004/03/06 23:15:42 nrl Exp $
+// $Id: cppclassmember.cc,v 1.4 2004/03/08 09:24:02 guy Exp $
 // 
 // \file cppclassmember.cc
 // 
+
+#include <iostream>
+#include <algorithm>
 #include "cppclassmember.h"
+
+using namespace std;
 
 
 CppClassMember::CppClassMember()
