@@ -1,6 +1,6 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-
+ 
 PACKAGE=repack2
 VERSION=0.1.0
 
@@ -75,7 +75,7 @@ AC_ARG_ENABLE(cernlib,
 [AC_HELP_STRING([--disable-cernlib],[Do not use cernlib, programs such as l2tup will no be compiled ])],
 [cernlib=false],
 [ cernlib=true ; CHECK_CERNLIB ])
-AM_CONDITIONAL(CERNLIB, test x$cernlib = xtrue)
+AM_CONDITIONAL(USECERNLIB, test x$cernlib = xtrue)
 
 # Checks for header files.
 AC_HEADER_DIRENT
