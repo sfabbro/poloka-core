@@ -801,6 +801,7 @@ dx = a_point.x - dx; dy = a_point.y - dy;
 
 GtransfoQuad::GtransfoQuad(const GtransfoLin & Lin)
 {
+  identity();
   const GtransfoCub *c = dynamic_cast<const GtransfoCub *>(&Lin);
   if (c) {*this = *c; return;}
   const GtransfoQuad *q = dynamic_cast<const GtransfoQuad *>(&Lin);
