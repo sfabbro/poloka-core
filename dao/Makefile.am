@@ -1,7 +1,8 @@
 
 AM_CPPFLAGS = -Wall -I../src -I../objio @XML_CFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
-AM_FFLAGS   = -Wall -pedantic -W -O3 -funroll-loops
-AM_LDFLAGS  = -L../src -ltoads -L../objio -L@libdir@ -ltoadio @XML_LIBS@ @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ 
+#AM_FFLAGS   = -Wall -pedantic -W  -O3 -funroll-loops
+AM_FFLAGS   = -Wall -pedantic -ansi -W
+AM_LDFLAGS  = -L../src -ltoads -L../objio -L@libdir@ -ltoadio -lg2c @XML_LIBS@ @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ 
 
 
 lib_LTLIBRARIES = libtoadsdao.la

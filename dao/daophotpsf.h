@@ -64,6 +64,15 @@ public:
   double Value(const int i, const int j, const double &Xc, const double &Yc, 
 	       double &DpDx, double &DpDy) const;
 
+  //! compute the psf value in a pixel (i,j) from a point Pt and its derivatives
+  double Value(const int i, const int j, const Point &Pt, double &DpDx, double &DpDy) const;
+
+  //! compute the psf value in a pixel (i,j) from a point (Xc,Yc)
+  double Value(const int i, const int j, const double &Xc, const double &Yc) const;
+
+  //! compute the psf value in a pixel (i,j) from a Point 
+  double Value(const int i, const int j, const Point &Pt) const;
+
   //! read a daophot psf style file
   bool read(const string &FileName);
 

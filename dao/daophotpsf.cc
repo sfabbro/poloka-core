@@ -129,50 +129,20 @@ double DaoPsf::Value(const int i, const int j, const double &Xc, const double &Y
   return val*scale;
 }
 
-/*
-//! fit only one SEStar with a DaoPsf
-void PeakFit(SEStar &Star, const DaoPsf& psf) const;
+double DaoPsf::Value(const int i, const int j, const Point &Pt,
+		     double &DpDx, double &DpDy) const
 {
-  float x      = Star.x - DAOPHOT_TOADS_SHIFT;
-  float y      = Star.y - DAOPHOT_TOADS_SHIFT;
-  float deltax = (x-1)/psf->xpsf -1 ;
-  float deltay = (y-1)/psf->ypsf -1 ;
-  float scale  = Star.flux;
-  float sky    = Star.Fond();
-  float perr   = opt[PercError].Value()*0.01;
-  float pkerr  = opt[ProfError].Value()*0.01;
-  float radius = min(opt[PsfRadius].Value(), float(((psf->npsf-1.)/2. - 1.)/2.) );
-  int lx       = max(1, int(x-radius)+1);
-  int ly       = max(1, int(y-radius)+1);
-  int nx       = min(SIZE.ncol, int(x-radius)+1) - lx +1;
-  int ny       = min(SIZE.nrow, int(y-radius)+1) - ly +1;
-  x += -lx+1;
-  y += -ly+1;
- 
-  const int maxbox = 69; // box of the litte vignette around the star
-  float *f = new float[maxbox*maxbox];
-
-  int status, niter;
-  float errmag, chi, sharp;
-
-  RDARAY("DATA", &lx, &ly, &nx, &ny, &maxbox, f, &status);
-
-  PKFIT(f, &nx, &ny, &maxbox, &x, &y, &scale, &sky, &radius, 
-	&lowbad, &opt[AduHighDatum].Value(), &opt[Gain].Value(), &opt[ReadNoise].Value(), &perr, &pkerr, 
-	&psf->bright, &psf->type, psf->param, 
-	&psf->MAXPAR, &psf->npar, psf->table, 
-	&psf->MAXPSF, &psf->MAXEXP, &psf->npsf, &psf->nexp, 
-	&psf->nfrac, &deltax, &deltay, &errmag, &chi, 
-	&sharp, &niter, &global_sky);
-
-  delete [] f;
-
-  Star.x       = x + DAOPHOT_TOADS_SHIFT;
-  Star.y       = y + DAOPHOT_TOADS_SHIFT;
-  Star.flux    = scale;
-  Star.EFlux() = errmag;
-  Star.Chi()   = chi;
-  Star.Sharp() = sharp;
-  Star.Iter()  = niter;
+  return Value(i,j,Pt.x,Pt.y,DpDx,DpDy);
 }
-*/
+
+double DaoPsf::Value(const int i, const int j, const double &Xc, const double &Yc) const
+{
+  // derivatives relatively to x and y
+  double dpdx, dpdy;  
+  return Value(i,j,Xc,Yc,dpdx,dpdy);
+}
+
+double DaoPsf::Value(const int i, const int j, const Point &Pt) const
+{
+  return Value(i,j,Pt.x,Pt.y);
+}

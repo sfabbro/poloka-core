@@ -171,12 +171,13 @@ void MakeDaoPsf(ReducedImage &Rim, const bool Redo)
 void MakeExperimentalPsf(ReducedImage &Rim)
 {
 
-  cout << " MakeDaoPsf() : Building PSF" << endl;
+  cout << " MakeExperimentalPsf() : Building PSF" << endl;
 
   SEStarList psfStars(Rim.CatalogName());
   psfStars.FluxSort();
   SelectIsolatedStars(psfStars, Rim.UsablePart(), Rim.Saturation()*0.95, Rim.Seeing(), 0.3, 1., 0.5);  
   Daophot daoSession(Rim);
+  daoSession.opt.write(Rim.Dir()+"/daophot.opt");
   daoSession.WriteSEStarList<DaophotAp>(psfStars);
   daoSession.Attach(Rim.FitsName());
 
@@ -235,6 +236,7 @@ void MakeDaoPsfAls(ReducedImage &Rim, const bool Merge, const bool Redo)
       SEStarList sex(Rim.CatalogName());
       write_dao<DaophotAp>(Rim, sex);
       Daophot daoSession(Rim);
+      daoSession.Attach(Rim.FitsName());
       if (dopsf) 
 	{
 	  SEStarList psfStars(Rim.CatalogName());
@@ -274,7 +276,7 @@ bool UpdateSeeingFromDaoPsf(ReducedImage &Rim)
       return false;
     }
     
-  // compute seeing a la delphine
+  // compute seeing
   double sigmaX = psf.HwhmX() * 0.8493218;
   double sigmaY = psf.HwhmY() * 0.8493218;
   double thetaXY = psf.ThetaXY();

@@ -118,6 +118,7 @@ public:
     read_dao_starlist<filetype>(daostream, Stars);
     // cout << " Daophot::ReadSEStarList() : Read " << Stars.size() << " stars in " << filename << endl;
   }
+
 };
 
 
