@@ -961,9 +961,9 @@ string flatName = Image.GetFileName(WhichInfo);
 if (flatName.length() == 0)
   {
     cerr << " AssignInfo received " << WhichInfo << " as an info name" << endl;
-    return 0;
+    return EXIT_FAILURE;
   }
-
+ 
  if (FileExists(flatName)) unlink(flatName.c_str()); 
 
  // string link_value = RelativeLink(StandardPath(FlatFitsFileName).c_str(), flatName.c_str());
@@ -973,10 +973,10 @@ if (flatName.length() == 0)
 #if 0
 string command = "ln -fs " + link_value + " " + flatName;
  cout << " debug " << command << endl;
-if (system(command.c_str()) == 0) return 1;
+if (system(command.c_str()) == 0) return EXIT_SUCCESS;
 #endif
 
-return 0;
+return EXIT_SUCCESS;
 }
 
 

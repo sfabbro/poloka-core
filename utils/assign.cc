@@ -49,7 +49,7 @@ int FlatList::addEntry(const string filename)
   if (!FileExists(filename))
     {
       cerr << " Can not find file " << filename << " " << endl;
-      return 0;
+      return EXIT_FAILURE;
     }
   Flat flat(filename);
   Flat *p = locate(flat.chip, flat.filter);
@@ -57,11 +57,10 @@ int FlatList::addEntry(const string filename)
     {
       cerr << " files " << filename << " and " << p->filename 
 	   << " have the same filter and chip " << endl;
-	exit(-1);
-      return 0;
+      exit(EXIT_FAILURE);
     }
   push_back(flat);
-  return 1;
+  return EXIT_SUCCESS;
 }
 
 int process_one_image(const DbImage& dbimage, FlatList flatlist, char *WhichInfo)
@@ -69,7 +68,7 @@ int process_one_image(const DbImage& dbimage, FlatList flatlist, char *WhichInfo
   if (!dbimage.IsValid())
     {
       cerr << " cannot find image " << dbimage.Name() << " " << endl;
-      return 0;
+      return EXIT_FAILURE;
     }
 
   string image_file = dbimage.FitsImageName(Raw);
@@ -80,14 +79,14 @@ int process_one_image(const DbImage& dbimage, FlatList flatlist, char *WhichInfo
   if (!header.IsValid())
     {
       cerr << " could not find an image file for DbImage " << dbimage.Name() << endl;
-      return 0;
+      return EXIT_FAILURE;
     }
 
   if (!header.HasKey("TOADCHIP"))
     {
       cerr << " file " << dbimage.Name() 
 	   << " does not have a TOADCHIP Key in its header: nothing done " << endl;
-      return 0;
+      return EXIT_FAILURE;
     }
 
   const int chip = header.KeyVal("TOADCHIP");
@@ -98,7 +97,7 @@ int process_one_image(const DbImage& dbimage, FlatList flatlist, char *WhichInfo
     {
       cerr << " file " << dbimage.Name() 
 	   << " does not have a TOADBAND Key in its header: nothing done " << endl;
-      return 0;
+      return EXIT_FAILURE;
     }
 
   const string filter = header.KeyVal("TOADBAND");
@@ -111,7 +110,7 @@ int process_one_image(const DbImage& dbimage, FlatList flatlist, char *WhichInfo
   if (!flat)
     {
       cerr << " NO " << WhichInfo << " found for image " << dbimage.Name() << endl;
-      return 0;
+      return EXIT_FAILURE;
     }
   return AssignInfo(dbimage, flat->filename, WhichInfo);
 }
@@ -128,27 +127,27 @@ int process_one_image(const DbImage& dbimage, IntStringMap &FlatMap, char *Which
 if (!dbimage.IsValid())
   {
     cerr << " cannot find image " << dbimage.Name() << " " << endl;
-    return 0;
+    return EXIT_FAILURE;
   }
 const char *image_raw_file = dbimage.FitsImageName(Raw).c_str(); 
 FitsHeader header(image_raw_file);
 if (!header.IsValid())
   {
     cerr << " file " << image_raw_file << " does not seem to be a fits file " << endl;
-    return 0;
+    return EXIT_FAILURE;
   }
 
 if (!header.HasKey("TOADCHIP"))
   {
     cerr << " file " << dbimage.Name() << " does not have a TOADCHIP Key in its header: nothing done " << endl;
-    return 0;
+    return EXIT_FAILURE;
   }
 const int ccd = header.KeyVal("TOADCHIP");
 string flatname = FlatMap[ccd];
 if (FlatMap[ccd] == "")
   {
     cerr << " NO " << WhichInfo << " found for image " << dbimage.Name() << endl;
-    return 0;
+    return EXIT_FAILURE;
   }
 return AssignInfo(dbimage, FlatMap[ccd], WhichInfo);
 }
@@ -163,18 +162,18 @@ for (StringCIterator fi = FlatNames.begin(); fi != FlatNames.end(); ++fi)
     {
       cerr << " fits file " << *fi << " could not be open " << endl;
       FlatMap.clear();
-      return 0;
+      return EXIT_FAILURE;
     }
   int ccd = flat.KeyVal("TOADCHIP");
   if (FlatMap[ccd] != "")
     {
       cerr << *fi << " and " << FlatMap[ccd] << " both apply to ccd " << ccd <<  endl;
       FlatMap.clear();
-      return 0;
+      return EXIT_FAILURE;
     }
   FlatMap[ccd] = *fi;
   }
-return 1;
+return EXIT_SUCCESS;
 }
 
 int ReadList(char *fileName, StringList &Out)
@@ -205,7 +204,7 @@ int main(int argc, char **argv)
 if (argc < 6)
   {
     usage();
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
 
@@ -249,26 +248,29 @@ for (int i=2; i< argc; ++i)
 
 for (StringCIterator ci = images.begin(); ci != images.end(); ++ci)
   {
-  DbImage dbimage((*ci).c_str());
-  if (dbimage.IsValid()) 
-    {
-    process_one_image(dbimage, flatlist, whichInfo);
-    continue;
-    }
-  /* try to interpret it as a path */
-  DbImageList list((*ci).c_str());
-  if (list.size() == 0)
-    {
-    cerr << " cannot interpret " << *ci << " as an image name nor a path " << endl;
-    continue;
-    }
-  for (DbImageCIterator ii = list.begin(); ii != list.end(); ++ii)
-    {
+    DbImage dbimage((*ci).c_str());
+    if (dbimage.IsValid()) 
+      {
+	if(process_one_image(dbimage, flatlist, whichInfo)!=EXIT_SUCCESS)
+	  return EXIT_FAILURE;
+	continue;
+      }
+    /* try to interpret it as a path */
+    DbImageList list((*ci).c_str());
+    if (list.size() == 0)
+      {
+	cerr << " cannot interpret " << *ci << " as an image name nor a path " << endl;
+	continue;
+      }
+    for (DbImageCIterator ii = list.begin(); ii != list.end(); ++ii)
+      {
 #ifdef OLD
-    process_one_image(*ii, flatMap, whichInfo);
+	if(process_one_image(*ii, flatMap, whichInfo)!=EXIT_SUCCESS)
+	  return EXIT_FAILURE;
 #endif
-    process_one_image(*ii, flatlist, whichInfo);
-    }
+	if(process_one_image(*ii, flatlist, whichInfo)!=EXIT_SUCCESS)
+	  return EXIT_FAILURE;
+      }
   }
-return 0;
+ return EXIT_SUCCESS;
 }
