@@ -11,11 +11,13 @@ bin_PROGRAMS = \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
  preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve \
- split_fits2 rustine_for_fringe assign dbls split_fits test_matvect 
+ split_fits2 rustine_for_fringe assign dbls split_fits testdao test_matvect \
+ fitnight
+
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
-AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio  -L$(top_builddir)/lc -L$(top_builddir)/dao -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff -L@libdir@  -ltoads -ltoadio -lcernstuff  -llapackstuff @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
+AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio  -L$(top_builddir)/lc -L$(top_builddir)/dao -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff -L@libdir@  -ltoads -ltoadio  -lcernstuff -llapackstuff @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
 
 
@@ -32,10 +34,13 @@ make_phot_LDFLAGS =  -ltoadslc -ltoadsdao
 make_daophot_SOURCES = make_daophot.cc
 make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 make_daophot_LDFLAGS =  -ltoadsdao
+testdao_SOURCES = testdao.cc
+testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
+testdao_LDFLAGS =  -ltoadsdao
 
 
+fitnight_SOURCES = fitnight.cc
 test_matvect_SOURCES = test_matvect.cc
-
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
 split_fits_SOURCES = split_fits.cc
@@ -85,6 +90,7 @@ sum_images_SOURCES = sum_images.cc
 trim_SOURCES = trim.cc
 valid_fits_SOURCES = valid_fits.cc
 wiynpad_SOURCES = wiynpad.cc
+
 #write_star_SOURCES = write_star.cc
 
 
