@@ -217,10 +217,14 @@ int main(int argc, char **argv)
       sumzp2 += zp*zp*weight;
     }
   }
-  zp = sumzp/sumweight;
-  double rms = sqrt(sumzp2/sumweight -zp*zp);
-  printf("RESULT_zp_rms_error= %6.6f %6.6f %6.6f\n",zp,rms,rms/sqrt(float(count)));
   stream.close();
+  {
+    zp = sumzp/sumweight;
+    double rms = sqrt(sumzp2/sumweight -zp*zp);
+    FILE *file = fopen("calibration.summary","w");
+    fprintf(file,"RESULT_zp_rms_error= %6.6f %6.6f %6.6f\n",zp,rms,rms/sqrt(float(count)));
+    fclose(file);
+  }
   return EXIT_SUCCESS;
 }
 
