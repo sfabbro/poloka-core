@@ -28,9 +28,6 @@ public:
   //! a pointer to the reference star
   CountedRef<RefStar> Ref;
    
-  //! a pointer to the reference image
-  ReducedImageRef RefImage;
-
   //! push back a star to the LightCurve if image does not exist already
   void push_back(const ReducedImage* Rim, const PhotStar *Star);
 
