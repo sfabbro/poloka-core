@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.6 2004/03/04 16:34:04 nrl Exp $
+// $Id: xmlstream.h,v 1.7 2004/03/05 12:03:35 nrl Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -36,6 +36,9 @@ public:
   inline void     read_start_raw_pointer_tag() const;
   inline void     read_end_raw_pointer_tag() const;
   
+  inline void     read_start_reference_tag(void*& addr) const;
+  inline void     read_end_reference_tag() const;
+
   inline void     read_start_collection_tag(unsigned int&) const;
   inline void     read_end_collection_tag() const;
   
@@ -171,6 +174,27 @@ void xmlstream::read_end_object_tag() const
   assert_reader_ok;
   nextClosingTag_();
 }
+
+
+void xmlstream::read_start_reference_tag(void*& addr) const
+{
+  assert_reader_ok;
+  
+  nextOpeningTag_();
+  // should check the name here...
+  addr=0;
+  xmlChar* addr_str = xmlTextReaderGetAttribute(reader_, (xmlChar*)"addr");
+  if(addr_str==0) return; // should throw an exc. here
+  addr = (void*)atoi((char*)addr_str);
+}
+
+
+void xmlstream::read_end_reference_tag() const
+{
+  assert_reader_ok;
+  nextClosingTag_();
+}
+
 
 
 void xmlstream::read_start_raw_pointer_tag() const
