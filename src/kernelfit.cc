@@ -1107,6 +1107,7 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
   clock_t tend = clock();
   cout << "CPU for the kernel fit " <<  float(tend- tstart)/float(CLOCKS_PER_SEC) << endl;
   DeallocateConvolvedStamps();
+  nstamps = BestImageStamps->size();
   if (BestImageStamps) { delete BestImageStamps; BestImageStamps = NULL;}
   return 1;
 }
