@@ -168,6 +168,6 @@ int main(int argc,char **argv)
     elixir_process(im,old_fringe_method,always_defringe);
   }
 
-  return 1;
+  return EXIT_SUCCESS;
 }
 

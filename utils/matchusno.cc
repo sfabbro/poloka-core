@@ -21,7 +21,7 @@ int main(int argc, char **argv)
   list<string> dbImageList;
   if (argc < 2)
     {
-      usage(argv[0]);  return 0;
+      usage(argv[0]);  return -1;
     }
 
   char *fitsName = NULL;
@@ -65,10 +65,12 @@ int main(int argc, char **argv)
       if (head.HasKey("DZEROUSN")  && !overwrite && MatchPrefs.writeWCS && !MatchPrefs.asciiWCS)
 	{
 	  cout << "Match already done! " << endl;
-	  exit(1);
+	  exit(EXIT_SUCCESS);
 	}	
-      UsnoProcess(fitsName,listName, NULL);
-      return 1;
+      if(UsnoProcess(fitsName,listName, NULL))
+	return EXIT_SUCCESS;
+      else
+	return EXIT_FAILURE;
     }
   
 
@@ -102,7 +104,8 @@ int main(int argc, char **argv)
 	    continue;
 	  }	
       }
-      UsnoProcess(fitsFileName, catalogName, &dbimage);
+      if(!UsnoProcess(fitsFileName, catalogName, &dbimage))
+	return EXIT_FAILURE;
 
     } /* end of loop on arguments */
 

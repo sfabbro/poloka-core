@@ -51,7 +51,7 @@ int main(int argc,char **args)
       if (use_header) illu = TotalIlluRegion(image);
       image.Trim(illu);
     }
-  return 1;
+  return EXIT_SUCCESS;
 }
 
 
