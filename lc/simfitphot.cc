@@ -54,39 +54,23 @@ void SimFitPhot::operator() (LightCurve& Lc)
 #endif  
   zeFit.Load(Lc);
   
-  switch (Lc.Ref->type)
-    {
-    case -1: // sn+galaxy fixed position 
-      break; 
-    case 0: // sn+galaxy
-      break;
-    case 1: //star 
-      zeFit.SetWhatToFit(FitFlux);
-      zeFit.UseGalaxyModel(false);
-      zeFit.DoTheFit();
-      zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky );
-      zeFit.UseGalaxyModel(false);
-      zeFit.DoTheFit(50,0.05);
-      // robustify to get rid of other stars in the vignet
-      for (SimFitVignetIterator itVig = zeFit.begin(); itVig != zeFit.end(); ++itVig) {
-	(*itVig)->KillOutliers();
-	(*itVig)->CheckWeight();
-      }
-      zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky );
-      zeFit.UseGalaxyModel(false);
-      //zeFit.DoTheFit(50,0.05);
-      break;
-    case 2: //galaxy 
-      zeFit.SetWhatToFit(                   FitGal); 
-      break;
-    }
-  
-  //string dir = Lc.Ref->name;
   string dir = ".";
-  
   if(dowrite && !IsDirectory(dir))
     MKDir(dir.c_str());
   
+  
+  //============================================================
+  // galaxy 
+  //============================================================
+  if(Lc.Ref->type == 2) {
+    zeFit.SetWhatToFit(FitGal);
+    zeFit.UseGalaxyModel(true);
+    zeFit.DoTheFit(50,0.005); 
+  }
+
+  //============================================================
+  // star with galaxy 
+  //============================================================
   if(Lc.Ref->type == 0) {
 #ifdef DEBUG0
     cout << " ============= SimFitPhot::operator() FitInitialGalaxy =============" << endl;
@@ -128,9 +112,8 @@ void SimFitPhot::operator() (LightCurve& Lc)
   }
 
   //============================================================
+  // star with galaxy BUT with fixed position
   //============================================================
-
-  
   if(Lc.Ref->type == -1) {
 #ifdef DEBUG0
     cout << " ============= SimFitPhot::operator() FitInitialGalaxy =============" << endl;
@@ -165,8 +148,23 @@ void SimFitPhot::operator() (LightCurve& Lc)
      zeFit.DoTheFit(30,0.005);
   }
   
-  
-  if(Lc.Ref->type>0){
+  //============================================================
+  // star without galaxy
+  //============================================================
+  if(Lc.Ref->type==1){
+    zeFit.SetWhatToFit(FitFlux);
+    zeFit.UseGalaxyModel(false);
+    zeFit.DoTheFit();
+    zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky );
+    zeFit.UseGalaxyModel(false);
+    zeFit.DoTheFit(10,0.05);
+    // robustify to get rid of other stars in the vignet
+    for (SimFitVignetIterator itVig = zeFit.begin(); itVig != zeFit.end(); ++itVig) {
+      (*itVig)->KillOutliers();
+      (*itVig)->CheckWeight();
+    }
+    zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky );
+    zeFit.UseGalaxyModel(false);
     zeFit.DoTheFit(50,0.005); 
   }
 
