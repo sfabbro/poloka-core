@@ -41,10 +41,15 @@ AC_CHECK_LIB([g2c], [main])
 # FIXME: Replace `main' with a function in `-lnsl':
 AC_CHECK_LIB([nsl], [main])
 AM_PATH_XML2(2.6.2)
-CHECK_CFITSIO(2.470)
+
+# Use CMT to link packages, see cmt/configure.in
+CHECK_CMT
+
+# Link other packages
+#CHECK_CFITSIO(2.470)
 CHECK_CERNLIB
-CHECK_SEX
-CHECK_LAPACK
+#CHECK_SEX
+#CHECK_LAPACK
 
 
 # Checks for header files.
@@ -91,5 +96,8 @@ AC_CONFIG_FILES([Makefile
                  telinst/Makefile
                  utils/Makefile
                  repack-config
-                 repack.spec])
+                 repack.spec
+		 cmt/requirements
+		 cmt/version.cmt
+])
 AC_OUTPUT
