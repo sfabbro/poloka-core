@@ -758,7 +758,7 @@ void HistoStarFinder(SEStarList const & stlse,
   
   for (SEStarCIterator it=stlse.begin(); it!=stlse.end(); ++it) 
     { 
-      histo.Fill((*it)->Fwhm() ,-2.5*log10((*it)->flux/(*it)->Fluxmax()), 1 );
+      histo.Fill((*it)->Fwhm() ,-2.5*log10((*it)->flux/(*it)->Fluxmax()), (*it)->Fluxmax() );
     }
 
   // recherche du mode de l'histo
