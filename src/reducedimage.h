@@ -29,7 +29,7 @@ using namespace std;
 #include "sextractor_box.h"
 #include "fileutils.h" // for FileExist
 #include "countedref.h"
-#include "fitsimage.h" //for OpenedRWFitsHeader
+
 /*! \file reducedimage.cc reducedimage.h */
 /*!
     \brief a handle to access data associated to an image: the fits file, the catalog,
@@ -53,25 +53,15 @@ private :
   // take care if you add any pointer here : 
   // the default copy constructor then has to be written
   bool actuallyReduced;//!
-  
-  FitsFileMode OpenedFitsHeader_Mode; // if it is RW or RO
-  bool OpenedFitsHeader_is_mine; // true if OpenedRWFitsHeader was created by this reduced image (in GetRWFitsHeader)
-  FitsHeader *OpenedFitsHeader; // use this fitsheader to set keys values 
-  FitsHeader* GetFitsHeader(FitsFileMode Mode); // internal function to get OpenedFitsHeader in RW mode
 
 public :
   //!
-  ReducedImage();
+  ReducedImage(): actuallyReduced(false){};
   //!
   explicit ReducedImage(const DbImage&);
   //!
   ReducedImage(const string &Name);
-  
-  ReducedImage(const ReducedImage& other);
-
-  bool SetFitsHeader(FitsHeader* header,FitsFileMode Mode); // set the  OpenedFitsHeader, this is needed in compression mode 
-  bool CloseFitsHeader(); // close fitsheader;
-  
+ 
   bool HasImage() const { return (FileExists(FitsName()));}
   bool HasBack() const { return (FileExists(FitsBackName()));}
   bool HasMiniBack() const { return (FileExists(FitsMiniBackName()));}
@@ -401,14 +391,6 @@ Usefull in case of artificially smoothed images
 
   //! Multiply images by gain when not =1 (after stacking for example)
   double MultiplyGain();
-  
-  string UncompressedImage(const string& filename, bool& didit);
-  string UncompressedCalibrated();
-  string UncompressedWeight();
-  string CompressedImage(const string& filename);
-  string CompressedCalibrated();
-  string CompressedWeight();
-  
 
   //!
   virtual ReducedImage* Clone() const;
@@ -438,12 +420,8 @@ Usefull in case of artificially smoothed images
   bool set_string_key(const string &Value, const char *KeyName, const string &RoutineName, 
                       const string Comment);
   void init();
-  void reset();
-  void operator = (const ReducedImage&); // same comment
 
-  bool IHaveUncompressedFitsImage;
-  bool IHaveUncompressedFitsWeight;
-  
+  void operator = (const ReducedImage&); // same comment
   
 };
 
