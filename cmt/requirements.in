@@ -4,9 +4,8 @@
 
 package @PACKAGE@	
 
-use cfitsio v2r440b
+use cfitsio v2r440
 use sex v222
-use lapack v1r1p_a_gcc_3.2.3
 	
 macro @PACKAGE@_cflags   "-I@prefix@/include @XML_CFLAGS@" 
 macro @PACKAGE@_cppflags   "-I@prefix@/include @XML_CFLAGS@" 
