@@ -81,7 +81,8 @@ int main(int argc, char **argv)
   
   double mag;
   char name[100];
-  
+  double mag_med;
+  double mag_rms;
   map<RefStar*,CalibratedStar> assocs;
   
   for(DictFileCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
@@ -94,6 +95,14 @@ int main(int argc, char **argv)
     // now check mag
     mag=entry->Value(band);
     if(mag<=0 || mag>50) continue; // crazy mag
+    
+    // median 
+    mag_med=entry->Value(band+"2");
+    mag_rms=entry->Value(band+"3");
+
+    if(mag_rms<0 || mag_rms>0.05) continue; // cuts validated on color-color plot
+    if(fabs(mag-mag_med)>0.05) continue;
+    
     
     count_total_stars++;
     
