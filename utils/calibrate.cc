@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     count_total++;
     
     // apply a cut on cgal
-    if(double(entry->Value("cgalcat"))>0.2) continue; // not a nice star
+    // if(double(entry->Value("cgalcat"))>0.2) continue; // not a nice star (no more cgalcat)
     
     // now check mag
     mag=entry->Value(band);
