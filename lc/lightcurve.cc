@@ -180,6 +180,7 @@ double LightCurve::computeElixirZeroPoint() const {
   double min_attenuation = 12; 
   double attenuation;
   
+  
   for (LightCurve::const_iterator it = begin(); it != end(); ++it) {
   //for (ReducedImageCIterator im=Images.begin(); im != Images.end(); ++im) {
     const Fiducial<PhotStar> *fs = *it;
@@ -204,12 +205,38 @@ double LightCurve::computeElixirZeroPoint() const {
   
 #endif
   
-  // we do not take into account color terms !!!
-  FitsHeader refhead(photometric_image_fitsname);
-  double expo =  refhead.KeyVal("TOADEXPO");
-  double PHOT_C =  refhead.KeyVal("PHOT_C");
-  double PHOT_K =  refhead.KeyVal("PHOT_K");
-  double AIRMASS =  refhead.KeyVal("AIRMASS");
+  double expo,PHOT_C,PHOT_K,AIRMASS;
+  expo=1;
+  PHOT_C=0;
+  PHOT_K=0;
+  AIRMASS=1;
   
+  FitsHeader refhead(photometric_image_fitsname);
+  if(refhead.HasKey("PHOT_C")) {
+    expo =  refhead.KeyVal("TOADEXPO");
+    PHOT_C =  refhead.KeyVal("PHOT_C");
+    PHOT_K =  refhead.KeyVal("PHOT_K");
+    AIRMASS =  refhead.KeyVal("AIRMASS");
+  }else{
+    cout << "LightCurve::computeElixirZeroPoint WARNING " << photometric_image_fitsname << " has no PHOT_C, try another one ..." << endl;
+    for (LightCurve::const_iterator it = begin(); it != end(); ++it) {
+      const Fiducial<PhotStar> *fs = *it;
+      FitsHeader head(fs->Image()->FitsName());
+      if(head.HasKey("PHOT_C")) {
+	expo =  head.KeyVal("TOADEXPO");
+	PHOT_C =  head.KeyVal("PHOT_C");
+	PHOT_K =  head.KeyVal("PHOT_K");
+	AIRMASS =  head.KeyVal("AIRMASS");
+	photometric_image_fitsname = fs->Image()->FitsName();
+	photomratio = fs->photomratio;
+	cout << "LightCurve::computeElixirZeroPoint using " << photometric_image_fitsname << endl;
+	break;
+      }
+    }
+  }
+  if(PHOT_C==0) {
+    cout << "LightCurve::computeElixirZeroPoint NO ELIXIR ZP AT ALL !!!! " << endl;
+    return 0;
+  }
   return 2.5*log10(expo) + PHOT_C + PHOT_K*(AIRMASS-1.) + 2.5*log10(photomratio); // if photomratio>1, flux in ref < flux photometric => mag in ref > mag  photometric
 }
