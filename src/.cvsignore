@@ -1,4 +1,4 @@
-*.pp
-*.ph
 dbfileParse.c dbfileParse.h
 alltelinst.cc alltelinst.h
+*.lo
+
