@@ -146,7 +146,9 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
   // seeing (from sextractor SESEEING) is sigma in pixel units
   
   // radius is the size of the reference vignet
-  int radius = int(ceil(2.3548*worst_seeing+worst_kernel)); 
+  float nseeing = 2.3548; // number of seeings for the vignet radius size
+  //float nseeing = 1.5; // number of seeings for the vignet radius size
+  int radius = int(ceil(nseeing*worst_seeing+worst_kernel)); 
   // minscale  = min_radius/radius (min_radius is used for fitting the position)
   minscale = (worst_seeing+worst_kernel)/radius;
   
@@ -175,7 +177,8 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
       (*itVig)->CanFitFlux      = Lc.Ref->IsVariable((*itVig)->Image()->ModifiedModifiedJulianDate());
       (*itVig)->CanFitPos       = (*itVig)->CanFitFlux;
       (*itVig)->CanFitSky       = true;
-      (*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name(); 
+      //(*itVig)->DontConvolve = Lc.Ref->Image()->Name() == (*itVig)->Image()->Name(); 
+      (*itVig)->DontConvolve = false;
       // this resizes the vignet and update everything (kernel, psf, residus) 
       (*itVig)->ModifiedResid();
       (*itVig)->AutoResize();
