@@ -222,6 +222,7 @@ class MatchedDetectionList : public StarList<MatchedDetection>
 
  public:
   MatchedDetectionList(const DetectionList &L);
+  MatchedDetectionList(){}
   void ApplyCuts();
 
   bool OneToOneAssoc(const string &ImageName, DetectionList &L);
