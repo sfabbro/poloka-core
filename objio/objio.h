@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.9 2004/03/04 16:34:04 nrl Exp $
+// $Id: objio.h,v 1.10 2004/03/04 17:19:55 nrl Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/04 16:34:04 $
+// Last modified: $Date: 2004/03/04 17:19:55 $
 // by:            $Author: nrl $
 // 
 #ifndef OBJIO_H
@@ -401,9 +401,31 @@ public:
     stream_.read_end_collection_tag();
   }
   
-  //  template<class T>
-  //  void         read(CountedRef<T>&) const {}
-
+  
+  template<class T>
+  void         read(CountedRef<T>& r) const {
+    void* addr;
+    stream_.read_start_reference_tag(addr);
+    T* pt = (T*)check_address_(addr);
+    if(pt) {
+      CountedRef<T> tmp(pt);
+      r = tmp; // FIXME: nrl: check that a countedref can be copied
+    }
+    else {
+      pt = new T;
+      oi >> *pt;
+      CountedRef<T> tmp(pt);
+      r = tmp;
+    }
+  }
+  
+  
+  void         read(RefCount& rc) const {
+    std::string name; unsigned int version;
+    stream_.read_start_object_tag(name,version);
+    stream_.read_end_object_tag();
+  }
+  
   //  template<class T>
   //  void         read(handle<T>& h) const {
   //    stream_.read(h,*this);
@@ -482,6 +504,20 @@ obj_input<IOS> const& operator>>(obj_input<IOS> const& io, std::map<T,U>& m)
 
 
 template<class IOS, class T>
+obj_input<IOS> const& operator>>(obj_input<IOS> const& io, CountedRef<T>& cr)
+{
+  io.read(cr); return io;
+}
+
+template<class IOS>
+obj_input<IOS> const& operator>>(obj_input<IOS> const& io, RefCount& cr)
+{
+  io.read(cr); return io;
+}
+
+
+
+template<class IOS, class T>
 void read(obj_input<IOS> const& oi, T* p, unsigned long sz)
 {
   oi.read(p,sz);
@@ -521,6 +557,17 @@ void read(obj_input<IOS> const& io, std::map<T,U>& m)
   io.read(m);
 }
 
+template<class IOS, class T>
+void read(obj_input<IOS> const& io, CountedRef<T>& cr)
+{
+  io.read(cr);
+}
+
+template<class IOS>
+void read(obj_input<IOS> const& io, RefCount& cr)
+{
+  io.read(cr);
+}
 
 
 // FIXME: this may be dangerous
