@@ -18,17 +18,28 @@
 void ReducedImage::init()
 {
   actuallyReduced = (DbImage::IsValid() && FileExists(FitsName()) && FileExists(CatalogName()));
+  reset();
 }
+
+void ReducedImage::reset()
+{
+  OpenedFitsHeader=0;  
+  OpenedFitsHeader_is_mine=false;
+  OpenedFitsHeader_Mode=RO;
+  actuallyReduced=false;
+  IHaveUncompressedFitsImage=false;
+  IHaveUncompressedFitsWeight=false;
+}
+
+
+
 
 ReducedImage::ReducedImage()
 {
 #ifdef DEBUG
   cout << " > ReducedImage::ReducedImage()" << endl;
 #endif
-  OpenedFitsHeader=0;  
-  OpenedFitsHeader_is_mine=false;
-  OpenedFitsHeader_Mode=RO;
-  actuallyReduced=false;
+  reset();
 }
 
 ReducedImage::ReducedImage(const DbImage &a_DbImage) : DbImage(a_DbImage)
@@ -36,9 +47,6 @@ ReducedImage::ReducedImage(const DbImage &a_DbImage) : DbImage(a_DbImage)
 #ifdef DEBUG
   cout << " > ReducedImage::ReducedImage(const DbImage &a_DbImage)" << endl;
 #endif
-  OpenedFitsHeader=0;
-  OpenedFitsHeader_is_mine=false;
-  OpenedFitsHeader_Mode=RO;
   init();
 }
 
@@ -47,18 +55,12 @@ ReducedImage::ReducedImage(const string &Name) : DbImage(Name)
 #ifdef DEBUG
   cout << " > ReducedImage::ReducedImage(const string &Name), Name = " << Name << endl;
 #endif 
-  OpenedFitsHeader=0;
-  OpenedFitsHeader_is_mine=false;
-  OpenedFitsHeader_Mode=RO;
   init();
 } 
 
 ReducedImage::ReducedImage(const ReducedImage &other) : 
   DbImage(other)
 {
-  OpenedFitsHeader=0;
-  OpenedFitsHeader_is_mine=false;
-  OpenedFitsHeader_Mode=RO;
   init(); 
 } 
 
@@ -82,6 +84,64 @@ ReducedImage *ReducedImage::Clone() const
   //rim->OpenedFitsHeader = 0;
   return rim;
 }
+
+string ReducedImage::UncompressedImage(const string& filename, bool& didit) {
+  int index = filename.find(".fz"); 
+  if(index<0 || index>=int(filename.size())) { // no ".fz in image, i assume it is not compressed
+    didit = false;
+    return filename;
+  }
+  string uncompressedfilename = filename;
+  uncompressedfilename.erase(index,3);
+  uncompressedfilename+=".fits";
+  cout << "Uncompressing " << filename << " -> " << uncompressedfilename << endl;
+  {
+    FitsImage im1(filename,RO);
+    FitsImage im2(uncompressedfilename,(const FitsHeader &)im1);
+    Image &im2_im = im2;
+    im2_im = im1;
+  }
+  didit = true;
+  return uncompressedfilename;
+}
+
+string ReducedImage::CompressedImage(const string& filename) {
+  int index = filename.find(".fits"); 
+  if(index<0 || index>=int(filename.size())) { // no ".fits in image, i assume it is compressed
+    return filename;
+  }
+  string compressedfilename = filename;
+  compressedfilename.erase(index,5);
+  compressedfilename+=".fz";
+  cout << "Compressing " << filename << " -> " << compressedfilename << endl;
+  {
+    FitsImage im1(filename,RO);
+    FitsImage im2(compressedfilename+"[compress R; 16]",(const FitsHeader &)im1);
+    Image &im2_im = im2;
+    im2_im = im1;
+  }
+  return compressedfilename;
+}
+
+// routines to compress/uncompress images, needed for sextractor
+string ReducedImage::UncompressedCalibrated() {
+  return UncompressedImage(FitsImageName(Calibrated),IHaveUncompressedFitsImage);
+}
+
+string ReducedImage::UncompressedWeight() {
+  return UncompressedImage(FitsWeightName(),IHaveUncompressedFitsWeight);
+}
+
+string ReducedImage::CompressedCalibrated() {
+  return CompressedImage(FitsImageName(Calibrated));
+}
+
+string ReducedImage::CompressedWeight() {
+  return CompressedImage(FitsWeightName());
+}
+
+
+
 
 
 bool ReducedImage::MakeFits()
@@ -121,8 +181,11 @@ void ReducedImage::FillSExtractorData(ForSExtractor & data,
 	  cerr << "Using the background sigma written in header to compute detctions levels: " << data.sigma_back << endl ;
 	}
     }
-  data.FitsFileName = FitsImageName(Calibrated).c_str();
-
+  CloseFitsHeader();
+  
+  // if calibrated image is compressed, we have to uncompress it first
+  data.FitsFileName = UncompressedCalibrated().c_str();
+  
   if (fond_deja_soustrait)
     {
       data.backmean=0.0;
@@ -142,8 +205,8 @@ void ReducedImage::FillSExtractorData(ForSExtractor & data,
     }
   if (HasWeight())
     {
-      cout << "Weighting from " << FitsWeightName() << endl ;
-      data.FitsWeightName = FitsWeightName();
+      data.FitsWeightName = UncompressedWeight();
+      cout << "Weighting from " << data.FitsWeightName << endl ;
       if (MakeBad())
 	data.FitsMaskName = FitsBadName(); // flag image for SExtractor process
       else
@@ -327,12 +390,14 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   string nommasksat ;
   if (savemasksat)
     {
-      FitsHeader imgheader(FitsName());
-      pmasksat = new FitsImage(FitsSaturName(), imgheader);
+      //FitsHeader imgheader(FitsName());
+      FitsHeader *header = GetFitsHeader(RO);
+      pmasksat = new FitsImage(FitsSaturName(), *header);
       pmasksat->AddOrModKey("BITPIX",8);
       pmasksat->EnableWrite(false); // in case something goes wrong
     }
   SEStarList stlse ;
+  CloseFitsHeader(); // close image if opened
   int status = SEStarListMake(data, stlse, Fond, SigmaFond, pmasksat);
   if (status == 0) {if (pmasksat) delete pmasksat; return 0;}
 
@@ -365,6 +430,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 	{
 	  cout << "TOADS: Subtracting Image Background" << endl ;
 	  FitsImage back(FitsBackName(), RO);
+	  CloseFitsHeader(); // close fits header if opened, cause we are going to open this image again
 	  FitsImage img(FitsName(), RW);
 	  img -= back ;
 	  cout << " removing the background image computed by sextractor : " 
@@ -1697,6 +1763,11 @@ ReducedImage::~ReducedImage()
  
   CloseFitsHeader(); // close OpenedFitsHeader if exists (and writes if OpenedFitsHeader_Mode=RW)
   writeEverythingElse();
+  if(IHaveUncompressedFitsImage)
+    remove(UncompressedCalibrated().c_str());
+  if(IHaveUncompressedFitsWeight)
+    remove(UncompressedWeight().c_str());
+  
 }
 
 //! enlarge satured clusters in order to get rid of diffraction spikes (aigrettes en francais)

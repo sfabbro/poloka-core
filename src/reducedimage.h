@@ -401,6 +401,14 @@ Usefull in case of artificially smoothed images
 
   //! Multiply images by gain when not =1 (after stacking for example)
   double MultiplyGain();
+  
+  string UncompressedImage(const string& filename, bool& didit);
+  string UncompressedCalibrated();
+  string UncompressedWeight();
+  string CompressedImage(const string& filename);
+  string CompressedCalibrated();
+  string CompressedWeight();
+  
 
   //!
   virtual ReducedImage* Clone() const;
@@ -430,8 +438,12 @@ Usefull in case of artificially smoothed images
   bool set_string_key(const string &Value, const char *KeyName, const string &RoutineName, 
                       const string Comment);
   void init();
-
+  void reset();
   void operator = (const ReducedImage&); // same comment
+
+  bool IHaveUncompressedFitsImage;
+  bool IHaveUncompressedFitsWeight;
+  
   
 };
 
