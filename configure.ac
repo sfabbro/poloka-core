@@ -4,6 +4,8 @@
 PACKAGE=poloka
 VERSION=0.1.0
 
+
+
 AC_PREREQ(2.57)
 AC_INIT(poloka,0.1.0,regnault@in2p3.fr)
 AC_CONFIG_SRCDIR([config.h.in])
@@ -18,6 +20,10 @@ AM_DISABLE_STATIC
 AC_PREFIX_DEFAULT([`\pwd`/installarea])
 
 # optional features
+
+
+AC_SUBST(CMTPACKAGE,"`\basename $PWD`")
+
 
 # Checks for programs.
 AC_PROG_F77
