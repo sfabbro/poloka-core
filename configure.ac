@@ -25,10 +25,13 @@ AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
 AC_CHECK_PROG(DOXYGEN,doxygen)
+SWIG_PROG(1.3.20)
+SWIG_ENABLE_CXX
+
+CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 
 # Checks for libraries.
-# FIXME: Replace `main' with a function in `-lcernstuff':
-#AC_CHECK_LIB([cernstuff], [main])
+AM_PATH_PYTHON
 # FIXME: Replace `main' with a function in `-lcrypt':
 AC_CHECK_LIB([crypt], [main])
 # FIXME: Replace `main' with a function in `-ldl':
@@ -37,14 +40,11 @@ AC_CHECK_LIB([dl], [main])
 AC_CHECK_LIB([g2c], [main])
 # FIXME: Replace `main' with a function in `-lnsl':
 AC_CHECK_LIB([nsl], [main])
-# FIXME: Replace `main' with a function in `-lpacklib':
-#AC_CHECK_LIB([packlib], [main])
-# FIXME: Replace `main' with a function in `-ltoadio':
-#AC_CHECK_LIB([toadio], [main])
-# FIXME: Replace `main' with a function in `-ltoads':
-#AC_CHECK_LIB([toads], [main])
-# FIXME: Replace `main' with a function in `-lxml2':
-#AC_CHECK_LIB([xml2], [main])
+AM_PATH_XML2(2.6.2)
+AM_CHECK_CFITSIO(2.470)
+AM_CHECK_CERNLIB
+# AM_CHECK_SEX
+
 
 # Checks for header files.
 AC_HEADER_DIRENT
@@ -58,6 +58,7 @@ AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
 AC_C_VOLATILE
+AC_LANG(C++)
 AC_CHECK_SIZEOF(char)
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
@@ -88,5 +89,7 @@ AC_CONFIG_FILES([Makefile
                  objio/Makefile
                  src/Makefile
                  telinst/Makefile
-                 utils/Makefile])
+                 utils/Makefile
+                 repack-config
+                 repack.spec])
 AC_OUTPUT
