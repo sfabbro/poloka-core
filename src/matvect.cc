@@ -333,6 +333,42 @@ Mat Mat::SubBlock
   return res;
 }
 
+Mat Mat::WithoutRows(unsigned int y_min,unsigned int y_max) const {
+  if( y_min <0 || y_max < y_min || y_max >= ny ) {
+    cout << "Mat::WithoutRows ERROR " << endl;
+    abort();
+  } 
+  unsigned int nrows = y_max-y_min+1;
+  Mat res(nx,ny-nrows);
+  for(unsigned int j = 0 ;j<y_min ;j++)
+    for(unsigned int i=0;i<nx;i++)
+      res(i,j)=(*this)(i,j);
+  for(unsigned int j = y_max+1 ;j<ny ;j++)
+    for(unsigned int i=0;i<nx;i++)
+      res(i,j-nrows)=(*this)(i,j);
+  return res;
+}
+
+Mat Mat::WithoutColumns(unsigned int x_min,unsigned int x_max) const {
+  if( x_min <0 || x_max < x_min || x_max >= nx ) {
+    cout << "Mat::WithoutColumns ERROR " << endl;
+    abort();
+  } 
+  unsigned int ncols = x_max-x_min+1;
+  Mat res(nx-ncols,ny);
+  for(unsigned int i=0;i<x_min;i++)
+    for(unsigned int j = 0 ;j<ny ;j++)
+      res(i,j)=(*this)(i,j);
+  for(unsigned int i=x_max+1;i<nx;i++)
+    for(unsigned int j = 0 ;j<ny ;j++)
+      res(i-ncols,j)=(*this)(i,j);
+  return res;
+}
+
+
+
+
+
 int Mat::readFits(const string &FitsName) {
   int status = 0;
   fitsfile *fptr = 0;

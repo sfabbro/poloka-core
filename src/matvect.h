@@ -76,6 +76,10 @@ class Mat {
   // remember  0 <= x < nx ,  0 <= y < ny
   Mat SubBlock
     (unsigned int x_min,unsigned int x_max,unsigned int y_min,unsigned int y_max) const;
+  
+  Mat WithoutRows(unsigned int y_min,unsigned int y_max) const;
+  Mat WithoutColumns(unsigned int x_min,unsigned int x_max) const;
+
 
   // i/o in fits for matrices
   int readFits(const std::string &FitsName);
