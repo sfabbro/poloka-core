@@ -5,7 +5,7 @@ PACKAGE=poloka
 VERSION=0.1.0
 
 AC_PREREQ(2.57)
-AC_INIT(repack2,0.1.0,regnault@in2p3.fr)
+AC_INIT(poloka,0.1.0,regnault@in2p3.fr)
 AC_CONFIG_SRCDIR([config.h.in])
 #AM_CONFIG_HEADER([config.h])
 AC_CONFIG_HEADERS([config.h])
