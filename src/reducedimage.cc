@@ -1699,8 +1699,8 @@ bool DecreasingArea(const ReducedImage *one, const ReducedImage *two)
 
 /************************************ ReducedImageList *******************/
 
-#include "imagelist.cc"
-template class ImageList<ReducedImage> ; // to force instanciation 
+//#include "imagelist.cc"
+//template class ImageList<ReducedImage> ; // to force instanciation 
 
 
 #ifdef USE_ROOT

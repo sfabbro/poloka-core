@@ -1,4 +1,4 @@
-EXTRA_DIST = 
+EXTRA_DIST = kernnum/pilot.h
 
 lib_LTLIBRARIES = libcernstuff.la
 libcernstuff_la_SOURCES = \

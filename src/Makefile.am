@@ -192,4 +192,4 @@ simulation.h
 
 
 
-noinst_HEADERS = wcscon.h
+noinst_HEADERS = wcscon.h defs.h simps2d.h

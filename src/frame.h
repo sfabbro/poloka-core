@@ -6,7 +6,6 @@
 #include "point.h"
 
 #include "../objio/persister.h"
-#include "../objio/toadtypes.h"
 
 class Gtransfo;
 typedef enum {WholeSizeFrame, ClippedSizeFrame} WhichFrame;
@@ -22,7 +21,7 @@ class Image;
 class Frame {
 public:
   //! coordinate of boundary.
-  float8 xMin,xMax,yMin,yMax;
+  double xMin,xMax,yMin,yMax;
   
   //! Default constructor
   Frame();
