@@ -52,7 +52,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
       zeFit.SetWhatToFit(FitFlux);
       zeFit.UseGalaxyModel(false);
       zeFit.DoTheFit();
-      zeFit.SetWhatToFit(FitFlux  | FitPos);
+      zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky);
       zeFit.UseGalaxyModel(false);
       break;
     case 2: //galaxy 
