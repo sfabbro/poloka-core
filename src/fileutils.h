@@ -96,10 +96,6 @@ std::string StringToLower(const std::string Source);
 //! removes a given pattern
 int RemovePattern(std::string &Source, const std::string &aPattern);
 
-//! substitute a given pattern (InPattern) for another (OutPattern)
-int SubstitutePattern(string &Source, const string &InPattern, 
-		      const string & OutPattern);
-
 
 //! Decompose string into substring separated by a char token
 void DecomposeString(std::vector<std::string> &SubStrings, const string &Source, const char token=' ');
@@ -108,7 +104,13 @@ void DecomposeString(std::vector<std::string> &SubStrings, const string &Source,
 /*! to change toto.fits to toto.head call 
   SubstituteExtension("toto.fits", ".head");
 */
-std::string SubstituteExtension(std::string Original, std::string NewExtension);
+std::string SubstituteExtension(const std::string &Original,
+				const std::string &NewExtension);
 
+
+//! not a regexp handler, just straight substitutions.
+std::string SubstitutePattern(const std::string &InputString, 
+			      const std::string &Pattern,
+			      const std::string &Substitution);
 
 #endif /* FILEUTILS__H */

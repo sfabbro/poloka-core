@@ -114,7 +114,9 @@ string link     = FullFileName(LinkLocation);
  realFile = RemoveDoubleSlash(realFile);
  link     = RemoveDoubleSlash(link);
 
- 
+ if (realFile == link) return ""; 
+
+
 /* find the common part */
 int bound = min(realFile.length(), link.length());
 int i;
@@ -135,7 +137,12 @@ int MakeRelativeLink(const std::string &RealFile,
 		     const std::string &LinkLocation)
 {
   string link_value = RelativeLink(StandardPath(RealFile).c_str(), 
-				 StandardPath(LinkLocation).c_str());
+				   StandardPath(LinkLocation).c_str());
+
+  if (link_value =="") return 1; // trying to link a file on itself
+
+  // if the link already exists, symlink does not overwrite it so
+  remove(LinkLocation.c_str());
   if (0==symlink(link_value.c_str(), LinkLocation.c_str()))
     return 1;
   std::cerr << " could not create a link " << std::endl
@@ -346,20 +353,15 @@ string StandardPath(const string &Path)
   /*  Checks that a path does not contain things improperly handled 
       by RelativeLink or correct what can be corrected. */
 {
-string standard_path;
-const char *path = Path.c_str();
-if (!path) return NULL;
-if (strstr(path,"./") == path) path +=2;
-standard_path = path;
-if (path[0] == '.' && path[1] == '\0') /* got . */
+string standard_path = Path;
+//remove leading ./
+ if (standard_path.find("./") == 0) standard_path.erase(0,2);
+
+if (standard_path == ".")
+  standard_path = getenv("PWD");
+else if (strstr(standard_path.c_str(),".."))
   {
-    //char value[512];
-    //getcwd(value, 512);
-    standard_path = getenv("PWD");;
-  }
-else if (strstr(path,".."))
-  {
-  string complete_path = FullFileName(path);
+  string complete_path = FullFileName(standard_path);
   StringList dirs = SplitString(complete_path,'/');
   for (StringIterator p = dirs.begin(); p != dirs.end() ; )
     {
@@ -553,24 +555,6 @@ int RemovePattern(string &Source, const string &aPattern)
   return iter;
 }
 
-int SubstitutePattern(string &Source, const string &InPattern, 
-		      const string & OutPattern)
-{
-  //cerr << "Substituting Pattern " << InPattern << " for " << OutPattern << " in " <<Source << " : "  ;
-  if (OutPattern.find(InPattern) != Source.npos)
-    return(0);
-  int iter = 0;
-  unsigned pos = Source.find(InPattern);
-  while (pos != Source.npos)
-    {
-      Source.erase(pos, InPattern.length()); 
-      Source.insert(pos,OutPattern);
-      iter++;
-      pos = Source.find(InPattern);
-    }
-  //cerr << Source << " , occurences : " << iter << endl ;
-  return iter;
-}
 void DecomposeString(vector<string> &SubStrings, const string &Source, const char token)
 {
   unsigned start = 0;
@@ -595,9 +579,33 @@ void DecomposeString(vector<string> &SubStrings, const string &Source, const cha
   //   cout << i << "='"<< SubStrings[i] << "'"<<endl;
 }
 
-std::string SubstituteExtension(std::string Original, std::string NewExtension)
+std::string SubstituteExtension(const std::string &Original, 
+				const std::string &NewExtension)
 {
   unsigned int dotpos = Original.rfind('.');
   if (dotpos > Original.size()) return Original;
   return Original.substr(0,dotpos)+NewExtension;
 }
+
+
+std::string SubstitutePattern(const std::string &InputString, 
+			      const std::string &Pattern,
+			      const std::string &Substitution)
+{
+  const char *pinput = InputString.c_str();
+  int lpat = Pattern.size();
+  const char *where;
+  char output[40000];
+  char *pout = output;
+  while ((where = strstr(pinput,Pattern.c_str())))
+    {
+      strncpy(pout,pinput,where-pinput);
+      pout+= where-pinput;
+      strcpy(pout, Substitution.c_str());
+      pout += Substitution.size();
+      pinput = where+lpat;
+    }
+  strcpy(pout, pinput);// copy the remainder
+  return std::string(output);
+}
+
