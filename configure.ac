@@ -60,9 +60,10 @@ CHECK_SEX
 CHECK_LAPACK
 ])
 
-# Check cernlib anyway
-CHECK_CERNLIB
-
+# Check cernlib 
+AC_ARG_ENABLE(cernlib,
+[AC_HELP_STRING([--disable-cernlib],[Do not use cernlib, programs such as l2tup will no be compiled ])],,
+[CHECK_CERNLIB])
 
 
 # Checks for header files.
@@ -115,9 +116,11 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  telinst/Makefile
                  utils/Makefile
+		 cern_utils/Makefile
                  repack-config
                  repack.spec
 		 cmt/requirements
 		 cmt/version.cmt
 ])
+
 AC_OUTPUT
