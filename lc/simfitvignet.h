@@ -111,22 +111,30 @@ public:
 //! A Vignet with tabulated PSF, and Kernel
 class SimFitVignet : public Vignet {
 
+private: 
+  //! list of boolean to check whether components have been updated when the star is changed
+  bool kernel_updated;
+  bool psf_updated;
+  bool resid_updated;
+
 public:
 
   //! empty constructor allocate nothing
   SimFitVignet() : FitFlux(false) {}
 
-  SimFitVignet(const ReducedImage *Rim);
+  SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref);
 
   //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels
   //! loads the Kern with the Reference, and also builds the proper Psf.
-  SimFitVignet(const PhotStar *Star, const ReducedImage *Rim, const SimFitRefVignet& Ref);
+  SimFitVignet( const PhotStar *Star, const ReducedImage *Rim,  SimFitRefVignet* Ref);
   
-
+  void ModifiedResid() {resid_updated = false;};
+  
   // default destructor, copy constructor and assigning operator are OK
 
-  bool FitFlux;
-
+  bool FitFlux; // do we need to fit the flux
+  bool FitPos; //  do we need to fit the position
+  bool UseGal; // do we need to use a model for the galaxy (does not mean we necessarly fit it)
   bool DontConvolve;
 
   //! a kernel to convolve a reference to match the current vignet
@@ -134,27 +142,44 @@ public:
 
   //! tabulated PSF and its derivatives to allow fast computation
   TabulatedPsf Psf;
+
+  //! reference to the simfitvignetref for updating size, star, and psf 
+  CountedRef<SimFitRefVignet> VignetRef;
+  
   
   void SetStar(const PhotStar *RefStar) {
     Star = RefStar;
-  }
-
+    kernel_updated = false;
+    psf_updated = false;
+  } 
+  
+  //! resize vignet and call Update()
   void Resize(const int Hx, const int Hy);
+  
+  // ! this makes a tabulated version of the reference image psf (that of VignetRef)
+  void BuildPsf();
 
-  //! 
-  void BuildKernel(const ReducedImage *Ref);
+  //! this builds the kernel between this image and that of the reference image (that of VignetRef)
+  void BuildKernel();
 
   //! update psf and residuals assuming the model = Star->flux[Kern*RefPsf] + Kern*RefGal + Star->sky
-  void UpdatePsfResid(const SimFitRefVignet& Ref);
+  void UpdateResid_psf_gal();
 
   //! update psf and residuals assuming the model = Star->flux[Kern*RefPsf] + Star->sky
-  void UpdatePsfResid(const TabulatedPsf& RefPsf);
+  void UpdateResid_psf();
 
   //! update residuals assuming the model = Star->flux*Psf + Kern*RefGal + Star->sky
-  void UpdateResid(const Kernel& RefGal);
+  void UpdateResid_gal();
 
   //! update residuals assuming the model = Star->flux*Psf + Star->sky
   void UpdateResid();
+  
+  //! update kernel, psf, residus if needed
+  void Update();
+  
+  //! auto resize vignet according to the size of vignetref and call Update()
+  void AutoResize();
+
 
   //! enable "cout << SimFitVignet << endl"
   friend ostream& operator << (ostream & stream, const SimFitVignet& myVignet);

@@ -193,49 +193,113 @@ void SimFitRefVignet::UpdatePsfResid()
 }
 
 //=========================================================================================
-SimFitVignet::SimFitVignet(const ReducedImage *Rim)
-  : Vignet(Rim), FitFlux(false)
+SimFitVignet::SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref)
+  : Vignet(Rim)
 {
+  VignetRef = Ref;
+  kernel_updated = false;
+  psf_updated = false;
+  resid_updated = false;
+  FitFlux = false;
+  FitPos = false;
+  UseGal = false;
 }
 
-SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const SimFitRefVignet& Ref)
+SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimFitRefVignet* Ref)
   : Vignet(Star, Rim, 0), FitFlux(false)
 {  
 #ifdef FNAME
   cout << " > SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const SimFitRefVignet& Ref)" << endl;
 #endif
-  BuildKernel(Ref.Image());
-  UpdatePsfResid(Ref);
+  VignetRef = Ref;
+  kernel_updated = false;
+  psf_updated = false;
+  resid_updated = false;
+  FitFlux = false;
+  FitPos = false;
+  UseGal = false;
+  //Update();
+}
+
+void SimFitVignet::AutoResize() {
+#ifdef FNAME
+  cout << " > SimFitVignet::AutoResize()" << endl;
+#endif
+  if(!Star) {
+    cerr << "SimFitVignet::AutoResize ERROR you need a star to update this vignet, use SetStar for this" << endl;
+  }
+  int hx_ref = VignetRef->Hx();
+  int hy_ref = VignetRef->Hy();
+  if(!kernel_updated)
+    BuildKernel();
+  int hx_kernel = Kern.HSizeX();
+  int hy_kernel = Kern.HSizeY();
+
+#ifdef DEBUG
+  SimFitRefVignet *toto = VignetRef;
+  cout << "   in SimFitVignet::AutoResize VignetRef = " << toto << endl;
+  cout << "   in SimFitVignet::AutoResize hx_ref    = " << hx_ref << endl;
+  cout << "   in SimFitVignet::AutoResize hy_ref    = " << hy_ref << endl;
+  cout << "   in SimFitVignet::AutoResize hx_kernel = " << hx_kernel << endl;
+  cout << "   in SimFitVignet::AutoResize hy_kernel = " << hy_kernel << endl;  
+#endif
+  Resize(hx_ref-hx_kernel,hy_ref-hy_kernel); // resize vignet, this will actually read the data
+}
+
+void SimFitVignet::Update()
+{
+#ifdef FNAME
+  cout << " > SimFitVignet::Update()" << endl;
+#endif
+  if(!Star) {
+    cerr << "SimFitVignet::Update ERROR you need a star to update this vignet, use SetStar for this" << endl;
+  }
+  if(!kernel_updated)
+    BuildKernel();
+  if(!psf_updated)
+    BuildPsf();
+  if(!resid_updated) {
+    if(FitPos && UseGal) UpdateResid_psf_gal();
+    else if(FitPos && (!UseGal))  UpdateResid_psf();
+    else if((!FitPos) && UseGal)  UpdateResid_gal();
+    else  UpdateResid(); 
+  }
 }
 
 // make sure that psf, vignet and data have proper sizes.
 // allocate if needed, do only with a Star
 void SimFitVignet::Resize(const int Hx, const int Hy)
 {
-
+  
   if (!Star) return;
 
   // resize data, weight, resid if necessary
   Vignet::Resize(Hx,Hy);
-
-  // resize psf if necessary
-  Psf.Resize(Hx,Hy);
-  // and need to retabulate it
-  
+  kernel_updated = false;
+  psf_updated = false;
+  Update();
 }
 
-void SimFitVignet::BuildKernel(const ReducedImage* Ref)
+void  SimFitVignet::BuildPsf() {
+  if(!VignetRef->psf) {
+    cerr << " SimFitVignet::BuildPsf ERROR no VignetRef->psf to tabulate !!" << endl;
+  }
+  Psf.Tabulate(*Star,*(VignetRef->psf),*this);
+  psf_updated = true;
+}
+
+void SimFitVignet::BuildKernel()
 {
 
 #ifdef FNAME
   cout << " > SimFitVignet::BuildKernel(const ReducedImage* Ref)" << endl;
 #endif
   if (!Star) return;
-
+  
   // build kernel
-  PsfMatch psfmatch(*Ref, *rim);
+  PsfMatch psfmatch(*(VignetRef->Image()), *rim);
   {
-    const string kernelpath = rim->Dir()+"/kernel_from_"+Ref->Name()+".xml";
+    const string kernelpath = rim->Dir()+"/kernel_from_"+VignetRef->Image()->Name()+".xml";
     if(FileExists(kernelpath)) 
       {
 	KernelFit *kernel = new KernelFit();
@@ -256,11 +320,16 @@ void SimFitVignet::BuildKernel(const ReducedImage* Ref)
   }
 
   psfmatch.KernelToWorst(Kern, Star->x, Star->y);
-
+  kernel_updated = true;
 }
 
-void SimFitVignet::UpdatePsfResid(const SimFitRefVignet& Ref)
+void SimFitVignet::UpdateResid_psf_gal()
 {
+#ifdef FNAME
+  cout << " > SimFitVignet::UpdateResid_psf_gal() : convolving Psf, Galaxy and updating residuals " << endl;
+#endif
+  
+  SimFitRefVignet& Ref = *VignetRef;
 
   // convolve all of them at same time  
   double sump, sumx, sumy, sumg;
@@ -268,9 +337,7 @@ void SimFitVignet::UpdatePsfResid(const SimFitRefVignet& Ref)
   DPixel *pkern, *prpsf, *prpdx, *prpdy, *prgal;
   int hkx = Kern.HSizeX();
   int hky = Kern.HSizeY();
-
-  cout << " SimFitVignet::UpdatePsfResid() : convolving Psf, Galaxy and updating residuals " << endl;
-
+  
   for (int j=-hy; j<=hy; ++j)
     {
       pdat = &Data   (-hx,j);
@@ -303,12 +370,15 @@ void SimFitVignet::UpdatePsfResid(const SimFitRefVignet& Ref)
 	  *ppdy = sumy;
 	}
     }
+  resid_updated = true;
 }
   
 // update psf and residuals with a convolved psf
-void SimFitVignet::UpdatePsfResid(const TabulatedPsf& RefPsf)
+void SimFitVignet::UpdateResid_psf()
 {
-
+#ifdef FNAME
+  cout << " > SimFitVignet::UpdateResid_psf() : convolving Psf and updating residuals " << endl;
+#endif
   // convolve all of them at same time  
   double sump, sumx, sumy;
   DPixel *pdat, *pres, *ppsf, *ppdx, *ppdy;
@@ -316,7 +386,8 @@ void SimFitVignet::UpdatePsfResid(const TabulatedPsf& RefPsf)
   int hkx = Kern.HSizeX();
   int hky = Kern.HSizeY();
 
-  cout << " SimFitVignet::UpdatePsfResid() : convolving Psf and updating residuals " << endl;
+  const TabulatedPsf& RefPsf = VignetRef->Psf;
+
   for (int j=-hy; j<=hy; ++j)
     {
       pdat = &Data   (-hx,j);
@@ -347,13 +418,14 @@ void SimFitVignet::UpdatePsfResid(const TabulatedPsf& RefPsf)
 	  *ppdy = sumy;
 	}
     }
+   resid_updated = true;
 }
 
 
-void SimFitVignet::UpdateResid(const Kernel &RefGal)
+void SimFitVignet::UpdateResid_gal()
 {
 #ifdef FNAME
-  cout << " > SimFitVignet::UpdateResid(const Kernel &RefGal) : convolving galaxy and updating residuals " << endl;
+  cout << " > SimFitVignet::UpdateResid_gal() : convolving galaxy and updating residuals " << endl;
 #endif
 #ifdef DEBUG
   cout << " in SimFitVignet::UpdateResid Kern  = " << Kern  << endl;
@@ -367,7 +439,8 @@ void SimFitVignet::UpdateResid(const Kernel &RefGal)
   int hkx = Kern.HSizeX();
   int hky = Kern.HSizeY();
 
-  ;
+  const Kernel& RefGal = VignetRef->Galaxy;
+
   for (int j=-hy; j<=hy; ++j)
     {
       pdat = &Data  (-hx,j);
@@ -388,6 +461,7 @@ void SimFitVignet::UpdateResid(const Kernel &RefGal)
 	  *pres = *pdat++ - Star->flux* *ppsf++ - sumg - Star->sky;
 	}
     }
+  resid_updated = true;
 }
 
 
@@ -406,6 +480,7 @@ void SimFitVignet::UpdateResid()
     {	
       *pres++ = *pdat++ - Star->flux * *ppsf++ - Star->sky;
     }
+   resid_updated = true;
 }
 
 ostream& operator << (ostream& Stream, const SimFitVignet &Vig)
