@@ -4,15 +4,12 @@
 
 #include "reducedimage.h"
 #include "candidatestar.h"
-#include "candstar.h"
-#include "yquemstar.h"
 #include <list>
 #include <vector>
 
 
 
 
-class SENearStarList;
 class ImageSum;
 class ReducedImage;
 
@@ -27,13 +24,20 @@ public :
   string Name() const { return name;}
   ReducedImageRef newStack; // will points in fact on an ImageSum.
   ImageSubtractionRef sub; // inherits from the PSFMatch
+  ImageSubtractionRef original_sub;
   StackType stackType;
-
   NewStack(const string &Name = "")
   { name = Name; stackType = RegularKind;}
 
   // this class will not work if you copy objects after having assigned the
   // pointers newStack and sub.
+
+  //! Name of the subtraction from Name of the stack: if the stackname is new1, then the SubName is new1. If the stackname is blabla, then the SubName is blabla_sub.
+  string SubName() const { string subname = name ; 
+  if (SubstitutePattern(subname, "new", "sub") > 0 )
+    return subname;
+  else
+   return(name + "_sub");}
 
   ~NewStack();
 };
@@ -63,18 +67,22 @@ private :
   bool detectOnAllSub;
   ReducedImageRef RefStack;
   ImageSubtractionRef GlobalSub;
+  ImageSubtractionRef Original_Sub;
   ReducedImageRef GlobalNew; // en fait une ImageSum en pratique.
-  SENearStarList *FakeList;
+  string globnewname ;
+  string globsubname ;
 
   //string DatacardsName;
-  bool AddFakes;
-  bool AssociateGal;
   bool FixRef;
   
   string GeomRefName;
   ReducedImageRef GeometricReference;
 
 public :
+  string GlobalNewName() const { return globnewname;}
+  string GlobalSubName() const { return globsubname;}
+  string& GlobalNewName() { return globnewname;}
+  string& GlobalSubName() { return globsubname;}
   //! the constructor. see \ref subfile for the syntax of the "subfile"
   Sub(const string &SubFileName, const bool Overwrite = false, const bool OnlyDet = false);
 
@@ -95,18 +103,7 @@ public :
 
   void RunDetection();
 
-  /*
-  int DoOneSub(const ReducedImage *RefStack, const ImageSum *NewStack, const string &SubName, ImageSubtraction *&Sub);
-  
-
-  
-  void MatchDetectionsWithFakes(SEStarList *Detections, const string &MatchListName);
-  void ApplyCutsAndWrite(ImageSubtraction &ASubtraction);
-  void Construction(ImageSubtraction &ASub, YquemStarList & stlcand);
-  void ConstructMatchAndCut();
-  void Cut_Write(YquemStarList & stlcand, string & cutscanname);
-  void Cut_Write(CandStarList & stlcand);
-  */
+ 
 };
 
 
