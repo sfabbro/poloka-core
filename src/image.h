@@ -5,6 +5,7 @@
 #define IMAGE__H
 #include <iostream>
 #include <algorithm> /* for min .. max */
+//#include "persistence.h"
 
 using namespace std;
 
@@ -28,10 +29,12 @@ typedef float Pixel;
      (32 bits) float numbers, designated later as the Pixel type. 
 */
 class Image {
-
   friend class FitsImageArray;
-
+  
  public:
+  //CLASS_VERSION(Image,1);
+  //#define Image__is__persistent
+  
   //! constructor reserves the needed space to store the pixels.
       Image(const int Nx, const int Ny);
 
