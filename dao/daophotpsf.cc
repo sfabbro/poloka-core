@@ -46,11 +46,12 @@ bool DaoPsf::read(const string &FileName)
       return false;
     }
 
-  Allocate(MAXPSF, MAXPAR);
-
-  int istat = RDPSF(FileName.c_str(), &type, param, &MAXPAR, &npar, 
-		    table, &MAXPSF, &MAXEXP, &npsf, &nexp, &nfrac, 
-		    &psfmag, &bright, &xpsf, &ypsf);
+  Allocate(GETMAXPSF(), GETMAXPAR());
+  
+  char filename_str[256]; strcpy(filename_str,FileName.c_str());
+  int istat = RDPSF(filename_str, type, param, npar, 
+		    table, npsf, nexp, nfrac, 
+		    psfmag, bright, xpsf, ypsf);
 
   if (istat == -1)
     {
@@ -124,7 +125,6 @@ double DaoPsf::Value(const int i, const int j, const double &Xc, const double &Y
   float dvdxc, dvdyc;  
 
   double val = USEPSF(&type, &dx, &dy, &bright, param, table, 
-		      &MAXPSF, &MAXPAR, &MAXEXP,
 		      &npsf, &npar, &nexp, &nfrac, &deltax, &deltay, 
 		      &dvdxc, &dvdyc);  
 

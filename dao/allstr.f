@@ -1,8 +1,7 @@
 C
 C#######################################################################
 C
-      SUBROUTINE  ALLSTR  (DATA, NCOL, NROW, MAXSTR, MAXPSF, 
-     .     MAXMAX, MAXPAR, MAXEXP, SUBT, SIGMA, FITRAD, 
+      SUBROUTINE  ALLSTR  (DATA, NCOL, NROW, SUBT, SIGMA, FITRAD, 
      .     WATCH, HALF, IEXP, CENTER, MAXGRP, PERERR, PROERR, 
      .     SKYIN, SKYOUT, ISTAT, PSFFIL, MAGFIL, ALSFIL, SUBPIC, 
      .     GLOBAL_SKY)
@@ -50,7 +49,9 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAXSTR, MAXPSF, MAXIT, MAXMAX, MAXPAR, MAXEXP
+      
+      include 'daocommon.f'
+      INTEGER MAXIT
       PARAMETER (MAXIT=200)
 C
 C Parameters:
@@ -66,7 +67,7 @@ C MAXMAX is the largest group for which a solution will ever be
 C        attempted = maximum permissible value of MAXGRP.
 C
       INTEGER NCOL, NROW
-      CHARACTER*256 MAGFIL, PSFFIL, ALSFIL, SUBPIC
+      CHARACTER*(*) MAGFIL, PSFFIL, ALSFIL, SUBPIC
       CHARACTER LINE*80
       REAL C(3*MAXMAX+1,3*MAXMAX+1), V(3*MAXMAX+1), X(3*MAXMAX+1)
       REAL DATA(NCOL,NROW), SUBT(NCOL,NROW), SIGMA(NCOL,NROW)
@@ -178,7 +179,7 @@ C      END IF
 C
       CALL INFILE (2, MAGFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//MAGFIL)
+         CALL STUPID2 ('Error opening input file ',MAGFIL)
          ISTAT = 1
          RETURN
 C         MAGFIL = 'GIVE UP'
@@ -209,7 +210,7 @@ C
 C      PROFIL = EXTEND(PROFIL, CASE('als'))
       CALL OUTFIL (1, ALSFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//ALSFIL)
+         CALL STUPID2 ('Error opening output file ',ALSFIL)
          ISTAT = 1
          RETURN
 C         PROFIL = 'GIVE UP'

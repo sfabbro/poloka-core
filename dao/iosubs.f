@@ -116,7 +116,7 @@ C=======================================================================
 C
       IMPLICIT NONE
       CHARACTER*(*) PROMPT, FILE
-      CHARACTER*256 LINE, IFILE, SWITCH
+      CHARACTER*(256) LINE, IFILE, SWITCH
       CHARACTER*1 PUNC
       INTEGER I, J, M, N, IERR
 
@@ -852,6 +852,18 @@ C
   601 FORMAT (/1X, A, A1/)
       RETURN
       END!
+
+      SUBROUTINE  STUPID2 (MESSAG1,MESSAG2)
+      IMPLICIT NONE
+      CHARACTER*(*) MESSAG1
+      CHARACTER*(*) MESSAG2
+c      CHARACTER*1 BELL
+c      BELL = CHAR(7)
+c      WRITE (6,601) MESSAG1, MESSAG2, BELL
+c  601 FORMAT (/1X, A, A1/)
+      print *,MESSAG1,MESSAG2
+      RETURN
+      END!     
 C
 C#######################################################################
 C
@@ -885,7 +897,7 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  OPTION (OPTFIL, NOPT, LBL, OPT, MAXOPT, OMIN,
+      SUBROUTINE  OPTION (OPTFIL, NOPT, LBL, OPT, OMIN,
      .     OMAX, PROMPT, ISTAT)
 C
 C=======================================================================
@@ -914,7 +926,7 @@ C=======================================================================
 C
       IMPLICIT NONE
       INTEGER MAXOPT, NOPT
-C      PARAMETER  (MAXOPT=100)
+      PARAMETER  (MAXOPT=100)
 C
 C Parameter:
 C

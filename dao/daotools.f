@@ -20,6 +20,7 @@ C
       IMPLICIT NONE
 C
       INTEGER ICNVRT, I, NCMD
+      
 C
 C NCMD is the total number of defined commands.
 C
@@ -56,7 +57,7 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  GETSKY  (D, S, INDEX, MAX, READNS, HIBAD, 
+      SUBROUTINE  GETSKY  (D, S, INDEX, READNS, HIBAD, 
      .     SKYMN, SKYMED, SKYMOD, SKYSIG, N)
 C
 C=======================================================================
@@ -70,13 +71,10 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAX
-C
-C MAX    is the maximum number of sky pixels we can deal with,
-C        given the limited amount of working space.
-C
-      REAL S(MAX), D(MAX), AMAX1
-      INTEGER INDEX(MAX)
+      
+      include 'daocommon.f'
+      REAL S(MAXSKY), D(MAXSKY), AMAX1
+      INTEGER INDEX(MAXSKY)
 C
       REAL READNS, HIBAD, SKYMN, SKYMED, SKYMOD, SKYSIG, SKYSKW
       INTEGER NCOL, NROW, ISTEP, LX, LY, NX, NY, IROW, I, N, K
@@ -89,7 +87,7 @@ C The spacing between pixels that will be included in the sample is
 C estimated by the ratio of the total number of pixels in the picture to
 C the maximum number of pixels that can be accomodated in the vector S.
 C
-      ISTEP = NCOL*NROW/MAX+1
+      ISTEP = NCOL*NROW/MAXSKY+1
 C
 C Go through the disk file reading a row at a time and extracting every 
 C ISTEP-th pixel.  If ISTEP is not equal to 1, make sure that the
@@ -102,7 +100,7 @@ C
       N = 0
       DO IROW=1,NROW
          LY = IROW
-         CALL RDARAY ('DATA', LX, LY, NX, NY, MAX, D, ISTAT)
+         CALL RDARAY ('DATA', LX, LY, NX, NY, MAXSKY, D, ISTAT)
          IF (ISTAT .NE. 0) RETURN
          IFIRST = IFIRST + 1
          IF (IFIRST .GT. ISTEP) IFIRST = IFIRST - ISTEP
@@ -111,7 +109,7 @@ C
             N = N+1
             S(N) = D(I)
             k = nint(s(n))
-            IF (N .EQ. MAX) GO TO 1100
+            IF (N .EQ. MAXSKY) GO TO 1100
             I = I + ISTEP
          ELSE
             I = I+1
@@ -153,7 +151,7 @@ C=======================================================================
 C
       IMPLICIT NONE
       CHARACTER*132 LINE
-      CHARACTER*256 IFILE1, IFILE2, CMBFILE
+      CHARACTER*(*) IFILE1, IFILE2, CMBFILE
       REAL R1, R2, R3, R4, R5, R6, R7
       INTEGER ISTAT, K, I1, I2, I3
 C
@@ -175,7 +173,7 @@ C
       END IF
 C
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//IFILE1)
+         CALL STUPID2 ('Error opening input file ',IFILE1)
          IFILE1 = 'GIVE UP'
          GO TO 950
       END IF
@@ -189,7 +187,7 @@ C         RETURN
 C      END IF
       CALL INFILE (2, IFILE2, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//IFILE2)
+         CALL STUPID2 ('Error opening input file ',IFILE2)
          IFILE2 = 'GIVE UP'
 C         GO TO 960
          CALL CLFILE (1)
@@ -206,7 +204,7 @@ C         RETURN
 C      END IF
       CALL OUTFIL (3, CMBFILE, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//CMBFILE)
+         CALL STUPID2 ('Error opening output file ',CMBFILE)
          CMBFILE = 'GIVE UP'
 C         GO TO 970
          CALL CLFILE (1)
@@ -256,7 +254,7 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  DAOSLT (MAX, INGRPFIL, OUTGRPFIL, MINGRP, MAXGRP)
+      SUBROUTINE  DAOSLT (INGRPFIL, OUTGRPFIL, MINGRP, MAXGRP)
 C
 C=======================================================================
 C
@@ -268,15 +266,13 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAX
-C
-C MAX is the largest number of stars that can be held in working space.
-C
-      CHARACTER*256 INGRPFIL, OUTGRPFIL
+      
+      include 'daocommon.f'
+      CHARACTER*(*) INGRPFIL, OUTGRPFIL
 C      CHARACTER CASE*3
-      REAL XC(MAX), YC(MAX), MAG(MAX), SKY(MAX)
+      REAL XC(MAXSKY), YC(MAXSKY), MAG(MAXSKY), SKY(MAXSKY)
 C      REAL SIZE(2)
-      INTEGER ID(MAX)
+      INTEGER ID(MAXSKY)
 C
       REAL ALOG10
 C
@@ -305,7 +301,7 @@ C      END IF
 C
       CALL INFILE (2, INGRPFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//INGRPFIL)
+         CALL STUPID2 ('Error opening input file ',INGRPFIL)
 C         GRPFIL = 'GIVE UP'
 C         GO TO 950
          RETURN
@@ -342,7 +338,7 @@ C
 C      MAGFIL = EXTEND(MAGFIL, CASE('grp'))
       CALL OUTFIL (3, OUTGRPFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//OUTGRPFIL)
+         CALL STUPID2 ('Error opening output file ',OUTGRPFIL)
 C         MAGFIL = 'GIVE UP'
 C         GO TO 960
          RETURN
@@ -363,9 +359,9 @@ C
  2000 I=0                                       ! Begin loop over groups
  2010 I=I+1                                     ! Begin loop over stars
 C
-      IF (I .GT. MAX) THEN                 ! Too many stars in group
+      IF (I .GT. MAXSKY) THEN                 ! Too many stars in group
          CALL STUPID ('/Group too large.')
-         WRITE (6,6) MAX
+         WRITE (6,6) MAXSKY
     6    FORMAT (I10, ' is the largest number of stars I can',
      .        ' possibly consider.  I''m throwing it out.'/)
 C
@@ -540,7 +536,7 @@ C=======================================================================
 C
       IMPLICIT NONE
       CHARACTER*133 LINE1, LINE2
-      CHARACTER*256 FILE, OFFILE
+      CHARACTER*(*) FILE, OFFILE
       REAL DELTA(4)
       REAL LOBAD, COLMAX, ROWMAX, HIBAD, THRESH, AP1, PHPADU
       REAL READNS, FRAD, X, Y, AMAG
@@ -593,7 +589,7 @@ C         RETURN
 C      END IF
       CALL OUTFIL (3, OFFILE, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//OFFILE)
+         CALL STUPID2 ('Error opening output file ',OFFILE)
 C         FILE = 'GIVE UP'
 C         GO TO 960
          RETURN

@@ -1,5 +1,5 @@
-      SUBROUTINE  SUBSTR  (MAXBOX, MAXPSF, MAXPAR, MAXEXC, MAXEXP,
-     .     F, NCOL, NROW, WATCH, PSFFIL, PROFIL, LSTFIL, SUBPIC)
+      SUBROUTINE  SUBSTR  (F, NCOL, NROW, WATCH, PSFFIL, PROFIL,
+     +     LSTFIL, SUBPIC)
 C
 C=======================================================================
 C
@@ -18,7 +18,7 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAXBOX, MAXPSF, MAXPAR, MAXEXC, MAXEXP
+      include 'daocommon.f'
 C
 C Parameters
 C
@@ -29,7 +29,10 @@ C MAXPSF is the largest permissible number of elements on a side of the
 C        (square) look-up table for the point-spread function.
 C
 C        MAXBOX = (MAXPSF-7)/2.
-C
+      
+      INTEGER MAXEXC
+      PARAMETER  (MAXEXC=200)
+
       INTEGER NCOL, NROW
       REAL PAR(MAXPAR)
       REAL F(NCOL,NROW), PSF(MAXPSF,MAXPSF,MAXEXP)
@@ -39,7 +42,7 @@ C
       INTEGER RDPSF, MAX0, MIN0, INT
 C
       CHARACTER*80 LINE
-      CHARACTER*256 SUBPIC, PSFFIL, PROFIL, LSTFIL
+      CHARACTER*(*) SUBPIC, PSFFIL, PROFIL, LSTFIL
       CHARACTER ANSWER*1
       REAL LOBAD, X, Y, STRMAG, SKY, DX, DY, DYSQ, SCALE, COL, ROW
       REAL DELTAX, DELTAY, DVDXC, DVDYC, XPSF, YPSF, PSFRAD, DUM
@@ -91,7 +94,7 @@ C         RETURN
 C      END IF
       CALL INFILE (2, PROFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//PROFIL)
+         CALL STUPID2 ('Error opening input file ',PROFIL)
          PROFIL = ' '
          RETURN
 C         PROFIL = 'GIVE UP'
@@ -110,7 +113,7 @@ C            RETURN
 C         END IF
          CALL INFILE (3, LSTFIL, ISTAT)
          IF (ISTAT .NE. 0) THEN
-            CALL STUPID ('Error opening file '//LSTFIL)
+            CALL STUPID2 ('Error opening file ',LSTFIL)
             CALL CLFILE (2)
             RETURN
 C            SUBPIC = 'GIVE UP'

@@ -1,5 +1,4 @@
-      SUBROUTINE  DAOPK (MAXPSF, MAXEXP, MAXBOX, MAXPAR, 
-     .     F, WATCH, FITRAD, PERERR, PROERR, MAGFIL, 
+      SUBROUTINE  DAOPK (F, WATCH, FITRAD, PERERR, PROERR, MAGFIL, 
      .     PSFFIL, PKFIL, GLOBAL_SKY)
 C
 C=======================================================================
@@ -29,7 +28,8 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAXPSF, MAXEXP, MAXBOX, MAXPAR
+      
+      include 'daocommon.f'
 C
 C Parameters
 C
@@ -39,7 +39,7 @@ C
 C MAXBOX is the length of the side of the largest box within which the
 C        PSF can be evaluated.  (MAXBOX = (MAXPSF-7)/2 )
 C
-      CHARACTER*256 MAGFIL, PSFFIL, PKFIL
+      CHARACTER*(*) MAGFIL, PSFFIL, PKFIL
       CHARACTER LINE*80
       REAL F(MAXBOX,MAXBOX)
       REAL PSF(MAXPSF,MAXPSF,MAXEXP), PAR(MAXPAR)
@@ -122,7 +122,7 @@ C      END IF
 C      PROFIL = EXTEND(PROFIL, CASE('pk'))
       CALL OUTFIL (3, PKFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//PKFIL)
+         CALL STUPID2 ('Error opening output file ',PKFIL)
          CALL CLFILE (2)
          PKFIL = ' '
          RETURN
@@ -187,10 +187,10 @@ C
       IBEG=2
       SCALE=10.**(-0.4*(APMAG-PSFMAG))                 ! Starting value
 
-      CALL PKFIT (F, NX, NY, MAXBOX, X, Y, SCALE, SKY, RADIUS, LOBAD, 
+      CALL PKFIT (F, NX, NY, X, Y, SCALE, SKY, RADIUS, LOBAD, 
      .     HIBAD, PHPADU, RONOIS, PERR, PKERR,
-     .     BRIGHT, IPSTYP, PAR, MAXPAR, NPAR, 
-     .     PSF, MAXPSF, MAXEXP, NPSF, NEXP, NFRAC, 
+     .     BRIGHT, IPSTYP, PAR, NPAR, 
+     .     PSF, NPSF, NEXP, NFRAC, 
      .     DELTAX, DELTAY, ERRMAG, CHI, SHARP, NITER, GLOBAL_SKY)
       IF (NITER .GT. 0) GO TO 2010
 C
@@ -228,10 +228,10 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  PKFIT (F, NX, NY, MAXBOX, X, Y, SCALE, SKY, RADIUS,
+      SUBROUTINE  PKFIT (F, NX, NY, X, Y, SCALE, SKY, RADIUS,
      .     LOBAD, HIBAD, PHPADU, RONOIS, PERR, PKERR,
-     .     BRIGHT, IPSTYP, PAR, MAXPAR, NPAR,
-     .     PSF, MAXPSF, MAXEXP, NPSF, NEXP, NFRAC, 
+     .     BRIGHT, IPSTYP, PAR, NPAR,
+     .     PSF, NPSF, NEXP, NFRAC, 
      .     DELTAX, DELTAY, ERRMAG, CHI, SHARP, NITER, GLOBAL_SKY)
 C
 C=======================================================================
@@ -300,7 +300,7 @@ C
 C=======================================================================
 C        
       IMPLICIT NONE
-      INTEGER MAXPSF, MAXEXP, MAXBOX, MAXPAR
+      include 'daocommon.f'
 C
 C Parameter
 C

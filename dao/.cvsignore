@@ -1,0 +1,4 @@
+*.lo
+Makefile
+Makefile.in
+

@@ -18,6 +18,8 @@ static bool CouldBeStar(const SEStar* star,
 			const double& MaxChi,
 			const double& CutSharp)
 {
+  //cout << star->Fwhm() << " " << star->Cstar() << " " << star->Chi() << endl;
+  
   return (
 	  (star->flux      >  1e-10    && star->flux    <  1e38    ) &&
 	  (star->Flag()    == 0                                    ) &&
@@ -90,6 +92,10 @@ size_t SelectTwoStars(SEStarList& Slist)
   Slist.CutTail(5);
   Slist.sort(&DecreasingCstar);
   Slist.CutTail(2);
+  for (SEStarIterator it=Slist.begin(); it != Slist.end(); ++it)
+    cout << "a star=" << (**it) << endl;
+  
+  
   return Slist.size();
 }
 
@@ -100,12 +106,15 @@ static bool increasing_chi(const SEStar *S1, const SEStar *S2)
 
 static size_t filter_chi(SEStarList& Stars, const double& maxchi)
 {
+  
   SEStarIterator si = Stars.begin();
   // remove chi == 0 and chi>0.1 
   while (si != Stars.end()) 
     {
-      if ( ((*si)->Chi() > maxchi) || ((*si)->Chi() < 1e-10)) 
+      if ( ((*si)->Chi() > maxchi) || ((*si)->Chi() < 1e-10)) {
+	cout << "erasing star cause chi2 = " << (*si)->Chi() << endl;
 	si = Stars.erase(si); 
+      }
       else ++si;
     }
   if(Stars.size()==0) {
@@ -133,7 +142,7 @@ bool IteratePsf(Daophot& DaoSession, SEStarList& Stars)
   unsigned int curIter = 0;
 
   DaoSession.opt[WatchProgress].SetValue(-1);
-  const double maxchi(1.5);
+  const double maxchi(1000);
   do
     {
       nStars = nStarsLeft;
@@ -180,7 +189,8 @@ void MakeExperimentalPsf(ReducedImage &Rim)
   SEStarList psfStars(Rim.CatalogName());
   psfStars.FluxSort();
   float saturratio = 0.5;
-  SelectIsolatedStars(psfStars, Rim.UsablePart(), Rim.Saturation()*saturratio, Rim.Seeing(), 0.3, 1., 0.5);  
+  float maxcstar=0.3; // <=> disable
+  SelectIsolatedStars(psfStars, Rim.UsablePart(), Rim.Saturation()*saturratio, Rim.Seeing(), maxcstar , 1., 0.5);  
   Daophot daoSession(Rim);
   daoSession.opt.write(Rim.Dir()+"/daophot.opt");
   daoSession.WriteSEStarList<DaophotAp>(psfStars);
@@ -188,7 +198,11 @@ void MakeExperimentalPsf(ReducedImage &Rim)
 
   if (!FileExists(Rim.ImageCatalogName(DaophotAls)))
     {
+#ifdef DEBUG
+      cout << "in MakeExperimentalPsf: write 2 psf stars" << endl;
+#endif
       SelectTwoStars(psfStars);
+      //SelectOKStars(psfStars, Rim.Saturation()*saturratio, Rim.Seeing(), 0.3, 2., 0.3);
       daoSession.WriteSEStarList<DaophotLst>(psfStars);
       daoSession.opt[AnalyticPsf].SetValue(3);  // Moffat
       daoSession.opt[VariablePsf].SetValue(0);
@@ -196,7 +210,13 @@ void MakeExperimentalPsf(ReducedImage &Rim)
       daoSession.opt[OutterSky].SetValue(0.);
       daoSession.opt[MaxGroup].SetValue(10.);
       cout << daoSession.opt << endl;
+#ifdef DEBUG
+      cout << "in MakeExperimentalPsf: daoSession.Psf()" << endl;
+#endif
       daoSession.Psf();
+#ifdef DEBUG
+      cout << "in MakeExperimentalPsf: daoSession.Allstar()" << endl;
+#endif
       daoSession.Allstar();
     }
 
@@ -293,11 +313,11 @@ bool UpdateSeeingFromDaoPsf(ReducedImage &Rim)
     seeing = sqrt(sqrt(r)*sigmaX*sigmaY);
   else seeing =  max(sigmaX,sigmaY); // is this ok?
 
-  //double oldseeing = Rim.Seeing();
+  double oldseeing = Rim.Seeing();
   //Rim.SetSeeing(seeing, "Seeing updated from DAOPHOT PSF file");
-  Rim.SetPsfShapeParams(sigmaX, sigmaY, thetaXY, "Sigmas and theta updated from DAOPHOT PSF file");
+  //Rim.SetPsfShapeParams(sigmaX, sigmaY, thetaXY, "Sigmas and theta updated from DAOPHOT PSF file");
 
-  //cout << " UpdateFromDaoPsf() : old seeing = " << oldseeing << " new seeing = " << seeing << endl;  
+  cout << " UpdateFromDaoPsf() : old seeing = " << oldseeing << " new seeing = " << seeing << endl;  
 
   return true;
 }

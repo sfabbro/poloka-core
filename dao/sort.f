@@ -1,4 +1,4 @@
-      SUBROUTINE  SORTER (MAXSTR, WATCH, MODE, FILE, SRTFILE, ANSWER)
+      SUBROUTINE  SORTER (WATCH, MODE, FILE, SRTFILE, ANSWER)
 C
 C=======================================================================
 C
@@ -35,7 +35,8 @@ C
 C MAXITM is the maximum number of output data per line of an output.
 C        (currently 15, realized in PHOTOMETRY)
 C
-      INTEGER  MAXWRK, MAXSTR, MAXITM
+      include 'daocommon.f'
+      INTEGER  MAXWRK, MAXITM
       PARAMETER (MAXITM=30, MAXWRK=2100000)
 C
       REAL DATUM(MAXITM), WORK(MAXWRK), SORT(MAXSTR)
@@ -46,7 +47,7 @@ C      REAL ABS
 C      INTEGER NINT
 C
       CHARACTER*133 TEXT
-      CHARACTER*256 FILE, SRTFILE
+      CHARACTER*(*) FILE, SRTFILE
       CHARACTER ANSWER*1
       REAL LOBAD, HIBAD, THRESH, AP1, PHPADU, READNS, FRAD
       REAL WATCH, FLIP
@@ -100,7 +101,7 @@ C  950 CALL GETNAM ('Input file name:', FILE)
 C      IF ((FILE .EQ. 'END-OF-FILE') .OR. (FILE .EQ. 'GIVE UP')) RETURN
       CALL INFILE (2, FILE, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//FILE)
+         CALL STUPID2 ('Error opening input file ',FILE)
 C         FILE = 'GIVE UP'
 C         GO TO 950
          RETURN
@@ -117,7 +118,7 @@ C      END IF
 C
       CALL OUTFIL (3, SRTFILE, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//SRTFILE)
+         CALL STUPID2 ('Error opening output file ',SRTFILE)
 C         FILE = 'GIVE UP'
 C         GO TO 960
          CALL CLFILE (2)

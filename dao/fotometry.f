@@ -1,4 +1,4 @@
-      SUBROUTINE  PHOTSB (F, SKY, INDEX, MAXSKY, NCOL, NROW, 
+      SUBROUTINE  PHOTSB (F, SKY, INDEX, NCOL, NROW, 
      .     INBAD, WATCH, ESTMTR, COOFIL, MAGFIL, TABLE, GLOBAL_SKY)
 C
 C=======================================================================
@@ -18,9 +18,10 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MINSKY, MAXSKY, MAXAP, NCOL, NROW
+      include 'daocommon.f'
+      INTEGER MINSKY, MAXAP, NCOL, NROW
       PARAMETER  (MINSKY=20, MAXAP=12)
-C
+C     
 C Parameters:
 C
 C MINSKY is the smallest number of pixels from which the sky may be
@@ -35,7 +36,7 @@ C
 C MAXAP  the maximum number of star apertures allowed.
 C
       CHARACTER*80 LINE
-      CHARACTER*256 COOFIL, MAGFIL, TABLE
+      CHARACTER*(*) COOFIL, MAGFIL, TABLE
       CHARACTER LBL(MAXAP+2)*26
       DOUBLE PRECISION MAGLIM, MAGSQ, WT, SUMWT, DLOG10, DBLE, DMAX1
       DOUBLE PRECISION APMAG(MAXAP), AREA(MAXAP)
@@ -157,7 +158,7 @@ C         RETURN
 C      END IF
       CALL INFILE (2, COOFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//COOFIL)
+         CALL STUPID2 ('Error opening input file ',COOFIL)
          COOFIL = ' '
          RETURN
       END IF
@@ -183,7 +184,7 @@ C      END IF
 C     MAGFIL = EXTEND(MAGFIL, CASE('ap'))
       CALL OUTFIL (3, MAGFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//MAGFIL)
+         CALL STUPID2 ('Error opening output file ',MAGFIL)
          CALL CLFILE (2)
          MAGFIL = ' '
          RETURN

@@ -1,5 +1,8 @@
-      SUBROUTINE STRIP (ID, X, Y, MAG, SKY, SKIP, MAXSTR,
+      SUBROUTINE STRIP (ID, X, Y, MAG, SKY, SKIP, 
      .     NSTAR, NDISAP, RADIUS, INDEX, HOLD)
+
+      include 'daocommon.f'
+      
       REAL X(MAXSTR), Y(MAXSTR), MAG(MAXSTR), SKY(MAXSTR)
       REAL HOLD(MAXSTR)
       INTEGER ID(MAXSTR), INDEX(MAXSTR)
@@ -65,7 +68,7 @@ C
 C#######################################################################
 C
       SUBROUTINE  REGRP (ID, X, Y, MAG, SKY, CHI, DXOLD, DYOLD, 
-     .     XCLAMP, YCLAMP, MAXSTR, NSTAR, FITRAD, LAST, INDEX, HOLD)
+     .     XCLAMP, YCLAMP, NSTAR, FITRAD, LAST, INDEX, HOLD)
 C
 C=======================================================================
 C
@@ -79,6 +82,8 @@ C             OFFICIAL DAO VERSION:  1985 August 15
 C
 C======================================================================
 C
+      include 'daocommon.f'
+      
       REAL X(MAXSTR), Y(MAXSTR), MAG(MAXSTR), SKY(MAXSTR)
       REAL CHI(MAXSTR), DXOLD(MAXSTR), DYOLD(MAXSTR)
       REAL XCLAMP(MAXSTR), YCLAMP(MAXSTR), HOLD(MAXSTR)
@@ -175,7 +180,7 @@ C position ITEST.  Therefore it should be added to the current group by
 C moving it up to position ITOP in the stack, where the pointer ITEST 
 C may eventually reach it.
 C
-         CALL ASWAP (MAXSTR, ITOP, I, X, Y, INDEX)
+         CALL ASWAP (ITOP, I, X, Y, INDEX)
 C
 C Now increment ITOP by 1 to point at the topmost unassigned star in the
 C stack.
@@ -214,7 +219,7 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  ASWAP (MAXSTR, I, J, X, Y, INDEX)
+      SUBROUTINE  ASWAP (I, J, X, Y, INDEX)
 C
 C=======================================================================
 C
@@ -225,7 +230,8 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAXSTR
+
+      include 'daocommon.f'
 C
       REAL X(MAXSTR), Y(MAXSTR)
       INTEGER INDEX(MAXSTR)

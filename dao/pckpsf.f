@@ -23,7 +23,7 @@ C
 C
       REAL ABS
 C
-      CHARACTER*256 MAGFIL, STRFIL
+      CHARACTER*(*) MAGFIL, STRFIL
 C      CHARACTER CASE*4
       REAL PSFRAD, FITRAD, RADSQ, DY, RADIUS, LOBAD, HIBAD, THRESH
       REAL AP1, PHPADU, READNS, FRAD, XYMIN, XMAX, YMAX, MAGLIM
@@ -54,7 +54,7 @@ C      END IF
 C
       CALL INFILE (2, MAGFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//MAGFIL)
+         CALL STUPID2 ('Error opening input file ',MAGFIL)
          RETURN
       END IF
 C
@@ -72,7 +72,7 @@ C      FILE = SWITCH (MAGFIL, CASE('.lst'))
 C      CALL GETNAM ('Output file name:', FILE)
       CALL OUTFIL (3, STRFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//STRFIL)
+         CALL STUPID2 ('Error opening output file ',STRFIL)
          CALL CLFILE (2)
          RETURN
       END IF

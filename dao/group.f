@@ -1,5 +1,4 @@
-      SUBROUTINE  GROUP (MAXPSF, MAXPAR, MAXEXP, MAXBOX, MAXSTR,
-     .                   FITRAD, PSFRAD, MAGFIL, PSFFIL, GRPFIL, 
+      SUBROUTINE  GROUP (FITRAD, PSFRAD, MAGFIL, PSFFIL, GRPFIL, 
      .                   CRIT, GLOBAL_SKY) 
 C
 C=======================================================================
@@ -22,14 +21,14 @@ C
 C======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAXSTR, MAXPSF, MAXBOX, MAXPAR, MAXEXP
+      include 'daocommon.f'
 C
 C Parameter
 C
 C MAXSTR is the largest number of stars that may be contained in a data
 C        file.
 C
-      CHARACTER*256 MAGFIL, PSFFIL, GRPFIL
+      CHARACTER*(*) MAGFIL, PSFFIL, GRPFIL
 C      CHARACTER CASE*4
       REAL X(MAXSTR), Y(MAXSTR), MAG(MAXSTR), SKY(MAXSTR)
       REAL PSF(MAXPSF,MAXPSF,MAXEXP), DATA(MAXBOX,MAXBOX), PAR(MAXPAR)
@@ -67,7 +66,7 @@ C         RETURN
 C      END IF
       CALL INFILE (2, MAGFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//MAGFIL)
+         CALL STUPID2 ('Error opening input file ',MAGFIL)
          MAGFIL = ' '
          RETURN
 C        MAGFIL = 'GIVE UP'
@@ -115,7 +114,7 @@ C      END IF
 C      GRPFIL = EXTEND(GRPFIL, CASE('grp'))
       CALL OUTFIL (3, GRPFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//GRPFIL)
+         CALL STUPID2 ('Error opening output file ',GRPFIL)
          CALL CLFILE (2)
          RETURN
 C         GRPFIL = 'GIVE UP'
@@ -212,7 +211,7 @@ C 90.0-- i.e. the aperture photometry blew up on all stars, BRTMAG
 C is equal to the apparent magnitude of the point-spread function.)
 C
       IF (NEXP+NFRAC .GE. 1) 
-     .     CALL SMTHPS (PSF, MAXPSF, MAXEXP, NPSF, NEXP+NFRAC)
+     .     CALL SMTHPS (PSF, NPSF, NEXP+NFRAC)
 C
 C Compute the effective radius of the point-spread function, and
 C add one fitting radius plus one pixel.
@@ -496,14 +495,16 @@ C
 C
 C#######################################################################
 C
-      SUBROUTINE  SMTHPS (PSF, MAXPSF, MAXEXP, NPSF, NEXPND)
+      SUBROUTINE  SMTHPS (PSF, NPSF, NEXPND)
 C
 C Smooth the PSF azimuthally, so that noise will not influence whether
 C or not stars belong in the same group.  Averages will be computed for
 C four quadrants.
 C
       IMPLICIT NONE
-      INTEGER MAXPSF, MAXEXP, MAXR, NSEC, IRMIN
+
+      include 'daocommon.f'
+      INTEGER MAXR, NSEC, IRMIN
       PARAMETER (MAXR=145, NSEC=4, IRMIN=4)
 C
       REAL PSF(MAXPSF,MAXPSF,MAXEXP)

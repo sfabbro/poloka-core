@@ -96,7 +96,9 @@ public:
   void WriteSEStarList(const SEStarList& Stars) const
   {    
     const string filename = rootname + "." + DaoFileExtension(filetype);
-    // cout << " Daophot::WriteSEStarList() : Writing " << filename << endl;
+#ifdef DEBUG
+    cout << " Daophot::WriteSEStarList() : Writing " << filename << endl;
+#endif
     write_dao<filetype>(filename, SIZE.ncol, SIZE.nrow, lowbad, opt[AduHighDatum].Value(), 
 			threshold, ap1, opt[Gain].Value(), 
 			opt[ReadNoise].Value(), opt[FitRadius].Value(), Stars);

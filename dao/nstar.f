@@ -1,5 +1,4 @@
-      SUBROUTINE  NSTAR  (MAXPSF, MAXPAR, MAXEXP, MAXSTR, 
-     .     DATA, NCOL, NROW, WATCH, FITRAD, E1, E2,
+      SUBROUTINE  NSTAR  (DATA, NCOL, NROW, WATCH, FITRAD, E1, E2,
      .     GRPFIL, PSFFIL, FITFIL, GLOBAL_SKY)
 C
 C=======================================================================
@@ -27,7 +26,8 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAXSTR, MAXEXP, MAXPSF, MAXPAR, NCOL, NROW
+      include 'daocommon.f'
+      INTEGER NCOL, NROW
 C
 C Parameters:
 C
@@ -56,7 +56,7 @@ C
       INTEGER MIN0, MAX0
 C
       CHARACTER*80 LINE
-      CHARACTER*256 GRPFIL, PSFFIL, FITFIL
+      CHARACTER*(*) GRPFIL, PSFFIL, FITFIL
 C      CHARACTER CASE*4
       REAL LOBAD, DF, DX, DY, ERR, PSFMAG, BRIGHT, XPSF, YPSF
       REAL SEPCRIT, PSFRAD, RADIUS, THRESH, AP1, PHPADU, RONOIS
@@ -155,7 +155,7 @@ C      END IF
 C
       CALL OUTFIL (1, FITFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//FITFIL)
+         CALL STUPID2 ('Error opening output file ',FITFIL)
          CALL CLFILE (2)
          FITFIL = ' '
          RETURN

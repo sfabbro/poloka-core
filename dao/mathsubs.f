@@ -199,6 +199,7 @@ C
       GO TO 200
       END!
 C
+
 C#######################################################################
 C
       SUBROUTINE  QUICK (DATUM, N, INDEX)
@@ -1001,19 +1002,21 @@ C
 C
 C#######################################################################
 C
-      INTEGER FUNCTION  RDPSF  (PSFFIL, IPSTYP, PAR, MAXPAR, NPAR,
-     .     PSF, MAXPSF, MAXEXP, NPSF, NEXP, NFRAC, 
+      INTEGER FUNCTION  RDPSF  (PSFFIL, IPSTYP, PAR, NPAR,
+     .     PSF, NPSF, NEXP, NFRAC, 
      .     PSFMAG, BRIGHT, XPSF, YPSF)
 C
 C Read in the point-spread function
 C
       IMPLICIT NONE
-      INTEGER MAXPSF, MAXTYP, MAXPAR, MAXEXP
+
+      include 'daocommon.f'
+      INTEGER MAXTYP
       PARAMETER (MAXTYP=6)
 C
       REAL PAR(MAXPAR), PSF(MAXPSF,MAXPSF,MAXEXP)
 C
-      CHARACTER*256 PSFFIL
+      CHARACTER*(*) PSFFIL
       CHARACTER*8 LABEL, CHECK
       REAL PSFMAG, BRIGHT, XPSF, YPSF
       INTEGER I, J, K, IPSTYP, NPSF, NPAR, NEXP, NFRAC, ISTAT
@@ -1021,7 +1024,7 @@ C
 C
       CALL INFILE (3, PSFFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening PSF file '//PSFFIL)
+         CALL STUPID2 ('Error opening PSF file ',PSFFIL)
          RDPSF = -1
          RETURN
       END IF
@@ -1039,7 +1042,7 @@ C
          I = NPARAM(IPSTYP, 1., CHECK, PAR, MAXPAR)
          IF ((LABEL .EQ. CHECK) .AND. (I .EQ. NPAR)) GO TO 1100
       END DO
-      CALL STUPID ('Inappropriate PSF: '//LABEL)
+      CALL STUPID2 ('Inappropriate PSF: ',LABEL)
       CALL CLFILE (3)
       RDPSF = -1
       RETURN
@@ -1151,17 +1154,14 @@ C
 C#######################################################################
 C
       REAL  FUNCTION  USEPSF (IPSTYP, DX, DY, BRIGHT, PAR, PSF, 
-     .     MAXPSF, MAXPAR, MAXEXP, NPSF, NPAR, NEXP, NFRAC, 
+     .     NPSF, NPAR, NEXP, NFRAC, 
      .     DELTAX, DELTAY, DVDXC, DVDYC)
 C
 C Evaluate the PSF for a point distant DX, DY from the center of a
 C star located at relative frame coordinates DELTAX, DELTAY.
 C
       IMPLICIT NONE
-      INTEGER MAXPSF, MAXPAR, MAXEXP
-C      PARAMETER (MAXPSF=207, MAXPAR=6, MAXEXP=10)
-C
-c      REAL PAR(*), PSF(MAXPSF,MAXPSF,*), JUNK(MAXEXP)
+      include 'daocommon.f'
       REAL PAR(MAXPAR), PSF(MAXPSF,MAXPSF,MAXEXP), JUNK(MAXEXP)
 C
       REAL PROFIL, BICUBC
@@ -1849,7 +1849,7 @@ C
          PAR(3) = 0.
          LABEL = 'LORENTZ '
       ELSE
-         CALL STUPID ('Invalid PSF type: '//CHAR(IPSTYP+48))
+         CALL STUPID2 ('Invalid PSF type: ',CHAR(IPSTYP+48))
       END IF
       RETURN
       END!

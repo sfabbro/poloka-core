@@ -1,5 +1,5 @@
-      SUBROUTINE  FIND (D, NCOL, NROW, H, JCYLN, G, SKIP, MAX, 
-     .     MAXBOX, MAXCOL, MAXSKY, OPT, NOPT, COOFIL, GLOBAL_SKY)
+      SUBROUTINE  FIND (D, NCOL, NROW, H, JCYLN, G, SKIP,
+     +     OPT, COOFIL, GLOBAL_SKY)
       IMPLICIT NONE
 C
 C=======================================================================
@@ -71,7 +71,10 @@ C=======================================================================
 C
 C Parameters:
 C
-      INTEGER MAX, MAXBOX, MAXCOL, MAXSKY, NOPT
+
+      include 'daocommon.f'
+      INTEGER MAX, MAXCOL
+      PARAMETER(MAX=3000000,MAXCOL=MAX/MAXBOX)
 C
 C MAXBOX is the length of the side of the largest subarray that you plan
 C        to need for computing the brightness enhancement in each pixel.
@@ -84,16 +87,18 @@ C
 C DIMENSIONS
 C
 C Arrays
-C
+C     
+      
       REAL D(MAXCOL,MAXBOX), H(MAXCOL,MAXBOX), DATA(2), OPT(NOPT)
       REAL G(MAXBOX,MAXBOX), AMAX1, AMIN1
-      INTEGER JCYLN(MAX) 
+      INTEGER JCYLN(MAX) !  
       LOGICAL SKIP(MAXBOX,MAXBOX)
 C
 C Variables
 C
-      CHARACTER*256 COOFIL, CONPIC
-      CHARACTER SWITCH*256, LINE*5, CASE*4
+      CHARACTER*(*) COOFIL
+      CHARACTER*(256) CONPIC
+      CHARACTER SWITCH*(256), LINE*5, CASE*4
       REAL PIXELS, RADIUS, FWHM, SIGSQ, RSQ, RELERR, SKYLVL, TEMP
       REAL HMIN, LOBAD, HIBAD, WATCH, P, DATUM, HEIGHT, DENOM, SGOP
       REAL SHARP, ROUND, SHRPLO, SHRPHI, RNDLO, RNDHI
@@ -330,7 +335,7 @@ C
 C      COOFIL = EXTEND(COOFIL, CASE('coo'))
       CALL OUTFIL (3, COOFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//COOFIL)
+         CALL STUPID2 ('Error opening output file ',COOFIL)
          COOFIL = ' '
          RETURN
 C         COOFIL = 'GIVE UP'

@@ -1,4 +1,4 @@
-      SUBROUTINE  ADDSTR  (F, NCOL, NROW, MAXPSF, MAXPAR, MAXEXP, 
+      SUBROUTINE  ADDSTR  (F, NCOL, NROW, 
      .     WATCH, PSFFIL, ADDFIL, ADDPIC, OUTSTM, 
      .     PHPADU, RMAG, NSTAR, NFRAME, INSEED)
 C
@@ -16,7 +16,8 @@ C
 C=======================================================================
 C
       IMPLICIT NONE
-      INTEGER MAXPSF, MAXPAR, MAXEXP, NCOL, NROW
+      INTEGER NCOL, NROW
+      include 'daocommon.f'
 C
 C Parameters
 C
@@ -32,7 +33,8 @@ C
       INTEGER RDPSF, MIN0, MAX0
 C
       CHARACTER*80 LINE
-      CHARACTER*256 ADDPIC, OUTSTM, PSFFIL, ADDFIL, SWITCH
+      CHARACTER*(*) ADDPIC, OUTSTM, PSFFIL, ADDFIL
+      CHARACTER*(256) SWITCH
 C      CHARACTER*256 COOFIL, MAGFIL, PSFFIL, PROFIL, GRPFIL, 
       CHARACTER CASE*5, NTOCHR*2
       DOUBLE PRECISION SUMPHOT, SUMERR
@@ -125,7 +127,7 @@ C
 C         ADDFIL = EXTEND(ADDFIL, CASE('add'))
          CALL INFILE (2, ADDFIL, ISTAT)
          IF (ISTAT .NE. 0) THEN
-            CALL STUPID ('Error opening input file '//ADDFIL)
+            CALL STUPID2 ('Error opening input file ',ADDFIL)
 C            ADDFIL = 'GIVE UP'
 C            GO TO 1015
          RETURN
@@ -161,7 +163,7 @@ C
          ADDFIL=SWITCH(OUTSTM,ADDFIL)
   952    CALL OUTFIL (3, ADDFIL, ISTAT)
          IF (ISTAT .NE. 0) THEN
-            CALL STUPID ('Error opening output file '//ADDFIL)
+            CALL STUPID2 ('Error opening output file ',ADDFIL)
             RETURN
 C            ADDFIL = 'GIVE UP'
 C            CALL GETNAM ('New output file name:', ADDFIL)

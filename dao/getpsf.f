@@ -1,5 +1,4 @@
-      SUBROUTINE  GETPSF (PIC, NCOL, NROW, OPT, NOPT,
-     .     MAXBOX, MAXPSF, MAXSTR, MAXN, MAXPAR, MAXEXP,
+      SUBROUTINE  GETPSF (PIC, NCOL, NROW, OPT,
      .     MAGFIL, STRFIL, PSFFIL, NEIFIL, GLOBAL_SKY)
 
       IMPLICIT NONE
@@ -51,8 +50,8 @@ C change the way PSF operates.  Instead of reading in a subsection
 C for each PSF star one at a time, it will read in the whole image
 C and work in memory.
 C
-      INTEGER MAXBOX, MAXPSF, MAXSTR, MAXN, MAXPAR, MAXEXP
-      INTEGER NCOL, NROW, NOPT
+      include 'daocommon.f'
+      INTEGER NCOL, NROW
 C
 C Parameters
 C
@@ -88,7 +87,7 @@ C MAXEXP is the maximum number of terms in the expansion of the
 C        look-up table (1 for constant, 3 for linear, 6 for quadratic).
 C
       CHARACTER LINE*80, LABEL*8
-      CHARACTER*256 MAGFIL, STRFIL, PSFFIL, NEIFIL
+      CHARACTER*(*) MAGFIL, STRFIL, PSFFIL, NEIFIL
       CHARACTER FLAG(MAXN)*1, ANSWER*1
       REAL C(MAXEXP,MAXEXP), V(MAXEXP), A(MAXEXP)
       REAL CON(MAXPSF,MAXPSF), TERM(MAXEXP)
@@ -123,8 +122,11 @@ C
 C      COMMON /FILNAM/ COOFIL, MAGFIL, PSFFIL, FITFIL, GRPFIL
 
 C     COMMON /ERROR/ PHPADU, RONOIS, PERR, PKERR
-C
       DATA NTAB / 0, 1, 3, 6, 10 /
+      
+      print *,"NOPT=",NOPT,"       "
+      print *,"OPT=",OPT
+
 C
 C-----------------------------------------------------------------------
 C
@@ -169,13 +171,16 @@ C     .     (MAGFIL .EQ. 'GIVE UP')) THEN
 C         MAGFIL = ' '
 C         RETURN
 C      END IF
+c      CALL INFILE (2, MAGFIL, ISTAT)
       CALL INFILE (2, MAGFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//MAGFIL)
+         CALL STUPID2 ('Error opening input file',MAGFIL)
          MAGFIL = ' '
          RETURN
 C         MAGFIL = 'GIVE UP'
 C         GO TO 920
+      ELSE
+         print *,'Successfully opened',MAGFIL
       END IF
       CALL RDHEAD (2, NL, I, I, LOBAD, HIBAD, THRESH, AP1,
      .     PHPADU, READNS, RADIUS)
@@ -200,7 +205,7 @@ C         RETURN
 C      END IF
       CALL INFILE (2, STRFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening input file '//STRFIL)
+          CALL STUPID2 ('Error opening input file',STRFIL)
 C         INFIL = ' '
          RETURN
 C         PSFFIL = 'GIVE UP'
@@ -217,7 +222,7 @@ C      END IF
 C      PSFFIL = EXTEND(PSFFIL, CASE('psf'))
       CALL OUTFIL (3, PSFFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//PSFFIL)
+         CALL STUPID2 ('Error opening output file',PSFFIL)
 C         PSFFIL = ' '
          RETURN
 C         PSFFIL = 'GIVE UP'
@@ -442,6 +447,8 @@ C
          CALL TBLANK
          RETURN
       END IF
+
+c      print *,"NSTAR_2=",NSTAR,"   "
 C
 C If the first star is saturated, exchange it for the first 
 C unsaturated one.
@@ -480,7 +487,7 @@ C
 C
          N = NPARAM(I, FWHM, LABEL, PAR, MAXPAR)
          CALL  FITANA  (PIC, NCOL, NROW, HJNK, XJNK, YJNK, SKY, 
-     .        SATR8D, NSTAR, MAXPAR, MAXBOX, MAXN, FITRAD, WATCH, 
+     .        SATR8D, NSTAR, FITRAD, WATCH, 
      .        I, PAR, N, SIG)
 C
 C SIG is the root-mean-square scatter about the best-fitting analytic
@@ -754,6 +761,7 @@ C (MIDDLE,MIDDLE) corresponds to the centroid of the PSF], consult
 C each of the PSF stars to determine the value(s) to put into the
 C table(s).
 C
+c            print *,"NSTAR_3=",NSTAR,"   "
             DO 4900 ISTAR = 1,NSTAR
                IF (SATR8D(ISTAR) .OR. (HPSF(ISTAR) .LT. 0.)) GO TO 4900
 C
@@ -841,6 +849,7 @@ C
             IF (SUMN .LT. NEXP) THEN
                CALL STUPID 
      .            ('Not enough PSF stars.  Please start over.')
+               print *,"SUMN=",SUMN," NEXP=",NEXP
                CALL CLFILE (3)
                RETURN
             END IF
@@ -1183,7 +1192,7 @@ C      CALL TBLANK
 C      WRITE (6,*) 'File with PSF stars and neighbors = ', NEIFIL
  2920 CALL OUTFIL (3, NEIFIL, ISTAT)
       IF (ISTAT .NE. 0) THEN
-         CALL STUPID ('Error opening output file '//NEIFIL)
+         CALL STUPID2 ('Error opening output file',NEIFIL)
 C         MAGFIL = 'GIVE UP'
 C         CALL GETNAM ('Name for neighbor-star file:', MAGFIL)
 C         IF ((MAGFIL .EQ. 'END-OF-FILE') .OR.
@@ -1266,7 +1275,7 @@ C
 C#######################################################################
 C
       SUBROUTINE  FITANA  (PIC, NCOL, NROW, H, XCEN, YCEN, SKY, 
-     .     SATR8D, NSTAR, MAXPAR, MAXBOX, MAXN,
+     .     SATR8D, NSTAR,
      .    FITRAD, WATCH, IPSTYP, PAR, NPAR, CHI)
 C
 C This subroutine fits the ANALYTIC profile to the selected stars.
@@ -1274,7 +1283,8 @@ C
 C  OFFICIAL DAO VERSION:    1997 March 31
 C
       IMPLICIT NONE
-      INTEGER MAXPAR, MAXBOX, MAXN, NCOL, NROW
+      include 'daocommon.f'
+      INTEGER NCOL, NROW
 C      PARAMETER  (MAXPAR=6, MAXBOX=69, MAXN=200)
       CHARACTER*80 LINE
       REAL PIC(NCOL,NROW)

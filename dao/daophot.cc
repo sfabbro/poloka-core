@@ -9,6 +9,8 @@
 #include "daophot.h"
 #include "cdaophot.h"
 
+#define CONVERTSTRING(A) char A##_str[256]; strcpy(A##_str,A.c_str());
+
 static void not_open_error(const string &RoutineName)
 {
   cerr << " Daophot::" << RoutineName << "() : fits file not yet open. \n";
@@ -69,16 +71,13 @@ void Daophot::Find(const string& CooFileName) const
 
   const int maxp   = 3000000;  // enough
   const int maxbox = 13;       // box for convolution
-  const int maxcol = maxp/maxbox;
-  float *options   = opt.GetArray(NOPT);
+  float *options   = opt.GetArray(GETNOPT());
   float *g         = new float[maxbox*maxbox];
   short int *skip  = new short int[maxbox*maxbox];
   int  *jcyln      = new int[maxp];
-
-  FIND(data, data+maxp, jcyln, g, skip, &maxp, 
-       &maxbox, &maxcol, &MAXSKY, options, &NOPT, 
-       CooFileName.c_str(), &global_sky);
-
+  CONVERTSTRING(CooFileName);
+  FIND(data,(SIZE.ncol),(SIZE.nrow), data+maxp, jcyln, g, skip, options,CooFileName_str, global_sky);
+  
   delete [] jcyln;
   delete [] g;
   delete [] skip;
@@ -91,12 +90,16 @@ void Daophot::Photometry(const string& CooFileName, const string& MagFileName, c
 
   cout << " Daophot::Photometry() : aperture photometry" << endl;
 
-  float *sky = new float[MAXSKY];
-  int *index = new int[MAXSKY];
-
-  PHOTSB(data, sky, index, &MAXSKY, &SIZE.ncol, &SIZE.nrow, &opt[AduHighDatum].Value(), 
-	 &opt[WatchProgress].Value(), &opt[SkyEstimator].Value(), CooFileName.c_str(), 
-	 MagFileName.c_str(), OptFileName.c_str(), &global_sky);
+  float *sky = new float[GETMAXSKY()];
+  int *index = new int[GETMAXSKY()];
+  
+  CONVERTSTRING(CooFileName);
+  CONVERTSTRING(MagFileName);
+  CONVERTSTRING(OptFileName);
+  
+  PHOTSB(data, sky, index, SIZE.ncol, SIZE.nrow, opt[AduHighDatum].Value(), 
+	 opt[WatchProgress].Value(), opt[SkyEstimator].Value(), CooFileName_str, 
+	 MagFileName_str, OptFileName_str, global_sky);
 
   delete [] sky;
   delete [] index;
@@ -107,10 +110,11 @@ void Daophot::Pick(const string& MagFileName, const string& LstFileName, const i
   const int maxp = 1000; // max number of stars to look
   int *id        = new int[maxp];
   int *index     = new int[maxp];
-
+  CONVERTSTRING(MagFileName);
+  CONVERTSTRING(LstFileName);
   PCKPSF(id, data+maxp, data+2*maxp, data+3*maxp, data+4*maxp, 
-	 index, &maxp, &opt[FitRadius].Value(), &opt[PsfRadius].Value(), &opt[VariablePsf].Value(),
-	 MagFileName.c_str(), LstFileName.c_str(), &Nstar, &MagLim);
+	 index, maxp, opt[FitRadius].Value(), opt[PsfRadius].Value(), opt[VariablePsf].Value(),
+	 MagFileName_str, LstFileName_str, Nstar, MagLim);
 
   delete [] id;
   delete [] index;
@@ -121,12 +125,17 @@ void Daophot::Psf(const string& ApFileName, const string& LstFileName, const str
   if (!open) {not_open_error("Psf");return;}
   cout << " Daophot::Psf() : Profile : " << opt[AnalyticPsf].Value() 
        << " Variability: " << opt[VariablePsf].Value() << endl;
-  const float *options = opt.GetArray(NOPT);
+  float *options = opt.GetArray(GETNOPT());
 
-  GETPSF(data, &SIZE.ncol, &SIZE.nrow, options, &NOPT, 
-	 &MAXBOX, &MAXPSF, &MAXSTR, &MAXN, &MAXPAR, &MAXEXP,
+  /*
+    GETPSF(data, &SIZE.ncol, &SIZE.nrow, options,
 	 ApFileName.c_str(), LstFileName.c_str(), PsfFileName.c_str(), NeiFileName.c_str(), &global_sky);
-
+  */
+  CONVERTSTRING(ApFileName);
+  CONVERTSTRING(LstFileName);
+  CONVERTSTRING(PsfFileName);
+  CONVERTSTRING(NeiFileName);
+  GETPSF(data,SIZE.ncol,SIZE.nrow, options,ApFileName_str,LstFileName_str,PsfFileName_str,NeiFileName_str,global_sky);
   delete [] options;
 }
 
@@ -135,20 +144,24 @@ void Daophot::Peak(const string& MagFileName, const string& PsfFileName, const s
   if (!open) {not_open_error("Peak");return;}
   cout << " Daophot::Peak() : Fitting a PSF to all stars" << endl;
 
-  DAOPK(data, &opt[WatchProgress].Value(), &opt[FitRadius].Value(), 
-	&opt[PercError].Value(), &opt[ProfError].Value(), 
-	MagFileName.c_str(), PsfFileName.c_str(), PkFileName.c_str(), &global_sky);
+  CONVERTSTRING(MagFileName);
+  CONVERTSTRING(PsfFileName);
+  CONVERTSTRING(PkFileName);
+  DAOPK(data,opt[WatchProgress].Value(),opt[FitRadius].Value(), 
+	opt[PercError].Value(),opt[ProfError].Value(), 
+	MagFileName_str, PsfFileName_str, PkFileName_str, global_sky);
 }
 
 void Daophot::Group(const string& MagFileName, const string& PsfFileName, const string& GrpFileName, const float& CriticalOverlap) const
 {
 
   cout << " Daophot::Group() : clustering stars to fit simultaneously" << endl;
-
-  GROUP(&MAXPSF, &MAXPAR, &MAXEXP, &MAXBOX, &MAXSTR,
-	&opt[FitRadius].Value(), &opt[PsfRadius].Value(), 
-	MagFileName.c_str(), PsfFileName.c_str(), GrpFileName.c_str(), 
-	&CriticalOverlap, &global_sky);
+  CONVERTSTRING(MagFileName);
+  CONVERTSTRING(PsfFileName);
+  CONVERTSTRING(GrpFileName);
+  GROUP(opt[FitRadius].Value(), opt[PsfRadius].Value(), 
+	MagFileName_str, PsfFileName_str, GrpFileName_str, 
+	CriticalOverlap, global_sky);
 }
 
 void Daophot::Nstar(const string& GrpFileName, const string& PsfFileName, const string& NstFileName) const
@@ -156,18 +169,25 @@ void Daophot::Nstar(const string& GrpFileName, const string& PsfFileName, const 
   if (!open) {not_open_error("Nstar");return;}
   cout << " Daophot::Nstar() : Fitting a PSF to all star groups" << endl;
 
-  NSTAR(data, &SIZE.ncol, &SIZE.nrow,
-	&opt[WatchProgress].Value(), &opt[FitRadius].Value(), &opt[PercError].Value(), &opt[ProfError].Value(), 
-	GrpFileName.c_str(), PsfFileName.c_str(), NstFileName.c_str(), &global_sky);
+  CONVERTSTRING(GrpFileName);
+  CONVERTSTRING(PsfFileName);
+  CONVERTSTRING(NstFileName);
+  NSTAR(data, SIZE.ncol, SIZE.nrow,
+	opt[WatchProgress].Value(), opt[FitRadius].Value(), opt[PercError].Value(), opt[ProfError].Value(), 
+	GrpFileName_str, PsfFileName_str, NstFileName_str, global_sky);
 }
 
 void Daophot::Substar(const string& PsfFileName, const string& NstFileName, const string& LstFileName, const string& SubPicFileName) const
 {
   if (!open) {not_open_error("Substar");return;}
   cout << " Daophot::Substar() : subtract PSF stars " << endl;
-
-  SUBSTR(data, &SIZE.ncol, &SIZE.nrow, &opt[WatchProgress].Value(), PsfFileName.c_str(), 
-	 NstFileName.c_str(), LstFileName.c_str(), SubPicFileName.c_str());
+  
+  CONVERTSTRING(PsfFileName);
+  CONVERTSTRING(NstFileName);
+  CONVERTSTRING(LstFileName);
+  CONVERTSTRING(SubPicFileName);
+  SUBSTR(data,SIZE.ncol,SIZE.nrow,opt[WatchProgress].Value(), 
+	 PsfFileName_str,NstFileName_str, LstFileName_str, SubPicFileName_str);
 }
 
 void Daophot::Addstar(const string& PsfFileName, const string& AddFileName, const string& AddPicName, const int InSeed)
@@ -181,13 +201,15 @@ void Daophot::Addstar(const string& PsfFileName, const string& AddFileName, cons
   float rmag[]  = {0., 0.};
   int nstar     = 0;
   int nframe    = 1;
-
-  ADDSTR(data, &SIZE.ncol, &SIZE.nrow, &MAXPSF, &MAXPAR, &MAXEXP,  
-	 &opt[WatchProgress].Value(), PsfFileName.c_str(), AddFileName.c_str(), 
-	 AddPicName.c_str(), outstm.c_str(), &opt[Gain].Value(), 
-	 rmag, &nstar, &nframe, &InSeed);
-
-
+  CONVERTSTRING(PsfFileName);
+  CONVERTSTRING(AddFileName);
+  CONVERTSTRING(AddPicName);
+  CONVERTSTRING(outstm);
+  ADDSTR(data,SIZE.ncol,SIZE.nrow,  
+	 opt[WatchProgress].Value(),PsfFileName_str, AddFileName_str, 
+	 AddPicName_str, outstm_str,opt[Gain].Value(), 
+	 rmag,nstar,nframe,InSeed);
+ 
 }
 
 void Daophot::Allstar(const string& ApFileName, const string& PsfFileName, const string& AlsFileName, const string& SubPicFileName) const
@@ -205,14 +227,17 @@ void Daophot::Allstar(const string& ApFileName, const string& PsfFileName, const
   float *sigma = new float[SIZE.ncol*SIZE.nrow];
   if (opt[Recentroid].Value() > 0.5) center = 1;
   int status;
-
-  ALLSTR(data, &SIZE.ncol, &SIZE.nrow, 
-	 &MAXSTR, &MAXPSF, &MAXMAX, &MAXPAR, &MAXEXP,
-	 subt, sigma, &opt[PsfRadius].Value(), 
-	 &opt[WatchProgress].Value(),&opt[ClipRange].Value(), &iexp, &center, &maxgrp, 
-	 &pererr, &proerr, &opt[InnerSky].Value(), &opt[OutterSky].Value(), &status, 
-	 PsfFileName.c_str(), ApFileName.c_str(), AlsFileName.c_str(), SubPicFileName.c_str(), 
-	 &global_sky);
+  
+  CONVERTSTRING(ApFileName);
+  CONVERTSTRING(PsfFileName);
+  CONVERTSTRING(AlsFileName);
+  CONVERTSTRING(SubPicFileName);
+  ALLSTR(data,SIZE.ncol,SIZE.nrow, 
+	 subt, sigma, opt[PsfRadius].Value(), 
+	 opt[WatchProgress].Value(),opt[ClipRange].Value(), iexp, center, maxgrp, 
+	 pererr, proerr, opt[InnerSky].Value(), opt[OutterSky].Value(), status, 
+	 PsfFileName_str, ApFileName_str, AlsFileName_str, SubPicFileName_str, 
+	 global_sky);
 
   delete [] subt;
   delete [] sigma;
@@ -231,11 +256,11 @@ void Daophot::GetSky(float& SkyMean, float& SkyMedian, float& SkyMode, float &Sk
   if (!open) {not_open_error("GetSky"); return;}
 
   int k;
-  int maxs   = min(MAXSKY, SIZE.ncol*SIZE.nrow/3);
+  int maxs   = min(GETMAXSKY(), SIZE.ncol*SIZE.nrow/3);
   int *index = new int[maxs];
   float *s   = new float[maxs];
 
-  GETSKY(data, s, index, &maxs, &opt[ReadNoise].Value(), &opt[AduHighDatum].Value(), 
+  GETSKY(data, s, index, &opt[ReadNoise].Value(), &opt[AduHighDatum].Value(), 
 	 &SkyMean, &SkyMedian, &SkyMode, &SkySigma, &k);
 
   delete [] index;
