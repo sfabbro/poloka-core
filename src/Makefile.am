@@ -10,7 +10,7 @@ AM_YFLAGS = -l -d
 	../objio/dictgen -o $@ $<
 
 
-#  psf.cc                      psf.h            
+
 
 
 
@@ -123,12 +123,6 @@ libtoads_la_SOURCES = \
   swarpstack.cc		      swarpstack.h
 
 
-#  simulation.cc               simulation.h                       
-
-# suppression de image_dict.cc dimage_dict.cc
-
-
-# psf.h 
 include_HEADERS = \
 vutils.h         \
 wcsutils.h       \
@@ -213,10 +207,30 @@ swarpstack.h    \
 night.h     \
 nightelement.h 
 
-#simulation.h                       
+
 
 noinst_HEADERS = wcscon.h defs.h simps2d.h
 
 
 CLEANFILES = *_dict.h *_dict.cc *__persister.h *__persister.cc
 
+######## auto symbolic link #########
+# if configure is set with option --enable-autoinstall
+# symbolic links to all binaries are set in the install directory
+# this prevents during developpement to install
+# systematically the package
+
+if AUTOINSTALL
+
+@prefix@/bin/% : .libs/%
+	ln -fs @abs_builddir@/.libs/$* @prefix@/bin/$*
+
+@prefix@/lib/% : .libs/%
+	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
+
+@prefix@/include/% : @abs_builddir@/%
+	ln -fs @abs_builddir@/$* @prefix@/include/$*
+
+all : $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoads.*))  $(patsubst %,@prefix@/include/%,${include_HEADERS})
+
+endif

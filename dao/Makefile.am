@@ -31,3 +31,19 @@ libtoadsdao_la_SOURCES = \
 	daophotoption.cc \
 	daophotpsf.cc	 \
 	daophotutils.cc
+
+
+######## auto symbolic link #########
+# if configure is set with option --enable-autoinstall
+# symbolic links to all binaries are set in the install directory
+# this prevents during developpement to install
+# systematically the package
+
+if AUTOINSTALL
+
+@prefix@/lib/% : .libs/%
+	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
+
+all :  $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadsdao.*))
+
+endif

@@ -59,6 +59,17 @@ CHECK_CFITSIO(2.470)
 CHECK_SEX
 ])
 
+######## auto symbolic link #########
+# if configure is set with option --enable-autoinstall
+# symbolic links to all binaries are set in the install directory
+# this prevents during developpement to install
+# systematically the package
+AC_ARG_ENABLE(autoinstall,
+[AC_HELP_STRING([--enable-autoinstall],[automatically install package using symbolic links])],
+[autoinstall=true],
+[autoinstall=false])
+AM_CONDITIONAL(AUTOINSTALL, test x$autoinstall = xtrue)
+
 # Check cernlib 
 AC_ARG_ENABLE(cernlib,
 [AC_HELP_STRING([--disable-cernlib],[Do not use cernlib, programs such as l2tup will no be compiled ])],

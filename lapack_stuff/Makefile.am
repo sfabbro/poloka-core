@@ -23,3 +23,18 @@ liblapackstuff_la_SOURCES = \
 		  ilaenv.f  \
 		  lsame.f   \
 		  xerbla.f  
+
+######## auto symbolic link #########
+# if configure is set with option --enable-autoinstall
+# symbolic links to all binaries are set in the install directory
+# this prevents during developpement to install
+# systematically the package
+
+if AUTOINSTALL
+
+@prefix@/lib/% : .libs/%
+	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
+
+all :  $(patsubst %,@prefix@/bin/%,${bin_PROGRAMS}) $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/liblapackstuff.*)) $(patsubst %,@prefix@/include/%,${include_HEADERS})
+
+endif
