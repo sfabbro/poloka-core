@@ -2,6 +2,8 @@
 #include "image.h"
 #include "gtransfo.h"
 #include "agaussian.h"
+#include "daophotpsf.h"
+
 
 #include <fstream>
 
@@ -418,11 +420,8 @@ void
 SimSNWModelStar::MariageToAModelStar(SEStarList const & BellesEtoiles)
 {
   
-  Gtransfo *Transfo = new GtransfoIdentity;    
-  Gtransfo *TransfoInv = new GtransfoIdentity; 
-  MariageToAModelStar(BellesEtoiles,Transfo,TransfoInv);
-  delete Transfo ;
-  delete TransfoInv ;
+  GtransfoIdentity id;
+  MariageToAModelStar(BellesEtoiles, &id, &id);
 }
 
 
@@ -458,6 +457,8 @@ static void PrintDebugHead(ofstream & pr)
 
 } 
 
+
+#include "fileutils.h"
 static void PrepareDebug()
 {
   if (prdebugstate == 0)
