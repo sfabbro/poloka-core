@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.14 2004/03/08 17:41:02 guy Exp $
+// $Id: objio.h,v 1.15 2004/03/15 12:05:45 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/08 17:41:02 $
+// Last modified: $Date: 2004/03/15 12:05:45 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -20,6 +20,7 @@
 
 #include "countedref.h"
 
+using namespace std;
 
 template<class IOS> class typemgr;
 template<class IOS> class persister_base;
