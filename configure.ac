@@ -4,7 +4,7 @@
 AC_PREREQ(2.57)
 AC_INIT(repack2, 0.1.0, regnault@in2p3.fr)
 AC_CONFIG_SRCDIR([config.h.in])
-AC_CONFIG_HEADER([config.h])
+AM_CONFIG_HEADER([config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 AC_CANONICAL_HOST
