@@ -1,4 +1,4 @@
-// $Id: datacards.cc,v 1.1 2004/02/20 10:48:36 nrl Exp $
+// $Id: datacards.cc,v 1.2 2004/08/25 10:17:31 guy Exp $
 //
 // Datacards, acquisition EROS II
 //
@@ -143,6 +143,7 @@ while (fgets(line_buff,511,fip) != NULL)
   string line(line_buff);
   AppendCard(line);
   }
+ fclose(fip);
 }
 
 int
