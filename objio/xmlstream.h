@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.8 2004/03/07 01:04:01 nrl Exp $
+// $Id: xmlstream.h,v 1.9 2004/03/08 17:41:58 guy Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -162,13 +162,16 @@ void xmlstream::read_start_object_tag(std::string& name, unsigned int& version) 
   assert_reader_ok;
   
   nextOpeningTag_();
-  xmlChar const* nm = xmlTextReaderConstName(reader_);
+  //xmlChar const* nm = xmlTextReaderConstName(reader_);
+  xmlChar const* nm = xmlTextReaderGetAttribute(reader_, (xmlChar*)"xsi:type");
   name = (char*)nm;
+  
   version=0;
   xmlChar* ver_str = xmlTextReaderGetAttribute(reader_, (xmlChar*)"version");
   if(ver_str==0) return; // should throw an exc. here
   version = (unsigned int)atoi((char*)ver_str);
 }
+
 
 
 void xmlstream::read_end_object_tag() const
