@@ -1,11 +1,24 @@
 #include <iomanip>
 #include "vignet.h"
 
+//#define DEBUG
+
+void Vignet::Allocate(const int Nx, const int Ny)
+{
+  Data.Allocate(Nx,Ny);
+  Weight.Allocate(Nx,Ny);
+  Resid.Allocate(Nx,Ny);
+}
+
 bool Vignet::Load(const PhotStar *AStar)
 {    
-  if (!AStar) return false;
+#ifdef DEBUG
+  cout << " Vignet::Load(" << AStar<< ");" << endl;
+  cout << " rim->refCount() = " << rim->refCount() << endl;
+  cout << " rim->Name() = " << rim->Name() << endl;
+#endif
 
-  cout << " loading " << *AStar << endl;
+  if (!AStar) return false;
 
   Star = AStar;
 
@@ -27,25 +40,41 @@ bool Vignet::Load(const PhotStar *AStar)
 
   if (rim->HasWeight()) Weight.readFromImage(rim->FitsWeightName(), *this);
   
+#ifdef DEBUG
+  cout << " in Vignet::Load Data.HSizeX() = " << Data.HSizeX() << endl;
+  cout << " in Vignet::Load Data.HSizeY() = " << Data.HSizeY() << endl;
+#endif
   return true;
 }
 
+
 void Vignet::Resize(const int HNewX, const int HNewY)
 {
-  if ((HNewX > Data.HSizeX()) ||(HNewY > Data.HSizeY()) || (HNewX < 0) ||(HNewY < 0))
+#ifdef DEBUG
+  cout << " Vignet::Resize(" <<  HNewX << "," << HNewY << "); rim is " << rim->Name() << endl;
+#endif
+
+  if  (HNewX < 0 || HNewY < 0) 
     {
-      cerr << " Vignet::Resize(" << HNewX << "," << HNewY << ") : Error :  can't resize, max half sizes are (" 
-	   << Data.HSizeX() << "," << Data.HSizeY() << ")\n";
+      cerr << " Vignet::Resize(" << HNewX << "," << HNewY << ") : impossible \n";
       return;
-    }
-  
+    } 
+
   hx = HNewX;
   hy = HNewY;
-  
+
+  Allocate(2*hx+1,2*hy+1);
+#ifdef DEBUG
+  cout << " in Vignet::Resize Data.HSizeX() = " << Data.HSizeX() << endl;
+  cout << " in Vignet::Resize Data.HSizeY() = " << Data.HSizeY() << endl;
+#endif
 }
 
 void Vignet::Resize(const double &ScaleFactor)
 {
+#ifdef DEBUG
+  cout << " Vignet::Resize(" << ScaleFactor << ");" << endl;
+#endif
   
   if (ScaleFactor*hx > Data.HSizeX() || ScaleFactor*hy > Data.HSizeY() || ScaleFactor < 0.)
     {
@@ -56,12 +85,17 @@ void Vignet::Resize(const double &ScaleFactor)
   
   hx = int(ceil(ScaleFactor*double(hx)));
   hy = int(ceil(ScaleFactor*double(hy)));
+
+  Allocate(2*hx+1,2*hy+1);
 }
 
-bool Vignet::IsInside(const Point& Pt) const
-{
-  return (Pt.x > xstart) && (Pt.x < xend) 
-    &&   (Pt.y > ystart) && (Pt.y < yend);
+bool Vignet::IsInside(const Point& point) {
+  cerr << "Vignet::IsInside TO MODIFY !!!!!!!!!!!!!!" << endl;
+  // JG pas sur de lui
+  return (point.x >= xstart) 
+    && (point.x < xend)
+    && (point.y >= ystart)
+    && (point.y < yend);
 }
 
 bool Vignet::ShiftCenter(const Point& Shift)
@@ -159,7 +193,7 @@ ostream& operator << (ostream & stream, const Vignet& Vig)
     stream << " chi2 = " << Vig.Chi2() 
 	   << " mean resid = " << Vig.MeanResid() << endl;
     
-  stream << " Star " << *Vig.Star << endl;
+  if (Vig.Star) stream << " Star " << *Vig.Star << endl;
   
   return stream;
 }

@@ -7,6 +7,8 @@
 #include "objio.h"
 #include "typemgr.h"
 
+//#define DEBUG
+
 static double sqr(const double& x) { return x*x; }
 
 TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
@@ -73,7 +75,7 @@ void TabulatedPsf::Scale(const double& s)
 //=========================================================================================
 
 SimFitRefVignet::SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius)
-  : Vignet(Star, Rim, Radius), Psf(*Star, DaoPsf(*Rim), Radius)
+  : Vignet(Star, Rim, Radius), psf(new DaoPsf(*Rim)), Psf(*Star, *psf, Radius)
 {
 }
 
@@ -143,14 +145,23 @@ void SimFitRefVignet::UpdatePsfResid()
 }
 
 //=========================================================================================
-SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim, const ReducedImage *Ref, 
+SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const ReducedImage *Ref, 
 			   const int Radius)
   : Vignet(Star, Rim, Radius), FitFlux(false)
 {
-  // load kernel
-  PsfMatch psfmatch(*Ref,*Rim);
+
+  BuildKernelPsf(Ref);
+}
+
+
+void SimFitVignet::BuildKernelPsf(const ReducedImage *Ref)
+{
+
+  if (!Star) return;
+
+  PsfMatch psfmatch(*Ref,*rim);
   {
-    std::string kernelpath = Rim->Dir()+"/kernel_from_"+Ref->Name()+".xml";
+    std::string kernelpath = rim->Dir()+"/kernel_from_"+Ref->Name()+".xml";
     if(FileExists(kernelpath.c_str())) {
       KernelFit *kernel = new KernelFit();
       obj_input<xmlstream> oi(kernelpath);
@@ -165,13 +176,18 @@ SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim, const 
       oo.close();
     }
   }
+
   psfmatch.KernelToWorst(Kern, Star->x, Star->y);
 
   // make psf=refpsf*kernel
-  TabulatedPsf refPsf(*Star, DaoPsf(*Ref), Radius + Kern.HSizeX()); 
-  Psf = TabulatedPsf(refPsf.HSizeX()-Kern.HSizeX(), refPsf.HSizeY()-Kern.HSizeY());
+  TabulatedPsf refPsf(*Star, DaoPsf(*Ref), Hx() + Kern.HSizeX()); 
+
+  Psf = TabulatedPsf(refPsf.HSizeX()-Kern.HSizeX(), 
+		     refPsf.HSizeY()-Kern.HSizeY());
+
   // resize properly vignets ready for convolution
   Resize(refPsf.HSizeX()-Kern.HSizeX(), refPsf.HSizeY()-Kern.HSizeY());
+
 }
 
 void SimFitVignet::UpdatePsfResid(const SimFitRefVignet& Ref)

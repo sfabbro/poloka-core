@@ -22,7 +22,10 @@ class Vignet : public Fiducial<Window>, public RefCount {
 
 protected:
 
-  int hx,hy;    // current half size of the vignet (hSizeX and hSizeY are the max sizes).
+  int hx,hy;       // current half size of the vignet (hSizeX and hSizeY are the max sizes).
+  
+  void Allocate(const int Nx, const int Ny);
+  bool IsInside(const Point& point);
 
 public:
 
@@ -31,15 +34,15 @@ public:
 
   //! extract a squared vignette around a point on a image and a weight of a ReducedImage
   Vignet(const Fiducial<PhotStar> *Fs, const int HMax)
-    : hx(HMax), hy(HMax)  { Load(Fs); }
+    : hx(HMax), hy(HMax)  { AssignImage(Fs->Image()); Resize(hx,hy); Load(Fs); }
 
   //! extract a squared vignette around a point on a image and a weight of a ReducedImage
   Vignet(const PhotStar *Star, const ReducedImage* Rim, const int HMax)
-    : Fiducial<Window>(Rim), hx(HMax), hy(HMax)   { Load(Star); }
+    : Fiducial<Window>(Rim), hx(HMax), hy(HMax)   { Resize(hx,hy); Load(Star); }
 
   //! extract a rectangular vignette around a point on a image and a weight of a ReducedImage
   Vignet(const PhotStar *Star, const ReducedImage* Rim, const int HMaxX, const int HMaxY)
-    : Fiducial<Window>(Rim), hx(HMaxX), hy(HMaxY) { Load(Star); }
+    : Fiducial<Window>(Rim), hx(HMaxX), hy(HMaxY) { Resize(hx,hy); Load(Star); }
 
   //! reads a vignet from a vignette FITS file
   Vignet(const string &FitsFileName) { Data.readFits(FitsFileName); }
@@ -57,12 +60,6 @@ public:
   //! the residual pixels if u need it
   Kernel Resid;
     
-  //! current horizontal half size used in loops
-  int Hx() const { return hx; }
-
-  //! current vertical half size used in loops
-  int Hy() const { return hy; }
-
   //! initializer from a ReducedImage, loads the calibrated and weight vignets around a star
   bool Load(const PhotStar *Star);
 
@@ -71,9 +68,6 @@ public:
 
   //! resize the Vignet with a scale factor
   void Resize(const double &ScaleFactor);
-
-  //! return true if point is inside the formerly grabbed vignette
-  bool IsInside(const Point& Pt) const;
 
   //! shift the center of the vignet
   bool ShiftCenter(const Point& Shift);
@@ -93,6 +87,12 @@ public:
 
   //! enable "cout << Vignet << endl"
   friend ostream& operator << (ostream & stream, const Vignet& Vig);
+
+  //! current half size of the vignet along x
+  int Hx() const {return hx;};
+  
+  //! current half size of the vignet along y
+  int Hy() const {return hy;};
   
 };
 

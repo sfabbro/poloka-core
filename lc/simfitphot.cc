@@ -6,6 +6,7 @@
 #include "simfit.h"
 #include "simfitphot.h"
 
+//#define DEBUG
 
 static void init_phot(LightCurveList& Fiducials)
 {  
@@ -70,20 +71,21 @@ static void init_phot(LightCurveList& Fiducials)
 
 SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 {
-
+#ifdef DEBUG
+  cout << " SimFitPhot::SimFitPhot" << endl;
+#endif
   init_phot(Fiducials);
 
   zeFit.reserve(Fiducials.Images.size());
   
-  // load the stuff with a dummy star  
-  PhotStar *star = new PhotStar();
-
   // 4 fwhm maximum size vignets
   const double rad = 4.*2.3548;
 
+  PhotStar *star = new PhotStar();
+  
   zeFit.VignetRef = SimFitRefVignet(star, Fiducials.RefImage, 
 				    int(ceil(Fiducials.RefImage->Seeing()*rad)));
-
+  
   double worstSeeing = -1e29;
   
   for (ReducedImageCIterator it=Fiducials.Images.begin(); it != Fiducials.Images.end(); ++it)
@@ -93,7 +95,10 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
       zeFit.push_back(vig);
       if (worstSeeing < curSeeing) worstSeeing = curSeeing;
     }
-
+ 
+#ifdef DEBUG
+  cout << " SimFitPhot::SimFitPhot zeFit.FindMinimumScale" << endl;
+#endif
   zeFit.FindMinimumScale(worstSeeing);
 }
 

@@ -10,6 +10,7 @@
 #include <lapackutils.h>
 #include <blas++.h>
 
+//#define DEBUG
 
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   :::::::::::::::::: SimFit stuff   ::::::::::::::::::::::::::
@@ -36,11 +37,19 @@ void SimFit::SetWhatToFit(const unsigned int ToFit)
 
 void SimFit::FindMinimumScale(const double &WorstSeeing)
 {
+
+
   int hmin = max(int(ceil(WorstSeeing*2.3548)), 5);
   int hrefx = VignetRef.Data.HSizeX();
   int hrefy = VignetRef.Data.HSizeY();
   int hkx = 0;
   int hky = 0;
+
+#ifdef DEBUG
+  cout << " SimFit::FindMinimumScale(" << WorstSeeing << ");" << endl;
+  cout << "VignetRef.Data.HSizeX() = " << hrefx << endl;
+  cout << "VignetRef.Data.HSizeY() = " << hrefy << endl;
+#endif
 
   for (SimFitVignetIterator it = begin(); it != end(); ++it)
     {
@@ -83,6 +92,11 @@ void SimFit::Load(LightCurve& Lc)
 
 void SimFit::Resize(const double &ScaleFactor)
 {
+
+#ifdef DEBUG
+  cout << " SimFit::Resize(" << ScaleFactor << ");" << endl;
+#endif
+ 
 
   if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
     {

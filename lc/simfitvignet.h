@@ -5,6 +5,7 @@
 #include <countedref.h>
 #include <daophotpsf.h>
 #include <reducedimage.h>
+
 #include "photstar.h"
 #include "vignet.h"
 
@@ -42,7 +43,7 @@ public:
   Kernel Dy;
 
   //! rescale psf and derivative by a factor
-  void   Scale(const double& scale);
+  void Scale(const double& scale);
 
   //! return the current norm of the psf
   double Norm() const { return sum(); }
@@ -83,8 +84,8 @@ public:
   void UpdatePsfResid();
 
   //!
-  void Load(const Fiducial<PhotStar> *RefStar) 
-  { Vignet::Load(RefStar); makeInitialGalaxy(); }
+  void Load(const PhotStar *RefStar) 
+  { Vignet::Load(RefStar); makeInitialGalaxy(); UpdatePsfResid(); }
 
   //! enable "cout << SimFitRefVignet << endl"
   //friend ostream& operator << (ostream& stream, const SimFitRefVignet& myVignet);
@@ -103,9 +104,11 @@ public:
   //! loads the Kern with the Reference, and also builds the proper Psf.
   SimFitVignet(const PhotStar *Star, const ReducedImage *Rim, const ReducedImage *Ref, const int Radius);
   
+
   // default destructor, copy constructor and assigning operator are OK
 
   bool FitFlux;
+
   bool DontConvolve;
 
   //! a kernel to convolve a reference to match the current vignet
@@ -113,6 +116,10 @@ public:
 
   //! tabulated PSF and its derivatives to allow fast computation
   TabulatedPsf Psf;
+
+  //! 
+  void BuildKernelPsf(const ReducedImage *Ref);
+
 
   //! update psf and residuals assuming the model = Star->flux[Kern*RefPsf] + Kern*RefGal + Star->sky
   void UpdatePsfResid(const SimFitRefVignet& Ref);
