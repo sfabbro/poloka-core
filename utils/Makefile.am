@@ -49,7 +49,7 @@ testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
-essai_SOURCES = essai.cc
+
 compute_SOURCES = compute.cc
 wrapswarp_SOURCES = wrapswarp.cc
 joinlist_SOURCES = joinlist.cc
