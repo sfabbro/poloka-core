@@ -12,6 +12,7 @@ using namespace std;
 #include "image.h"
 #include "dimage.h"
 #include "frame.h"
+#include "countedref.h"
 
 /*! \class KernelFit
     \brief Kernel fitting by least squares. 
@@ -136,7 +137,8 @@ public :
 /* The actual hanger for kernel fit data */
 
 //! A class to fit a convolution kernel between 2 images by least squares.
-class KernelFit {
+class KernelFit  :  public RefCount 
+{
   CLASS_VERSION(KernelFit,1);
   #define KernelFit__is__persistent
 
@@ -172,8 +174,8 @@ class KernelFit {
   Image *WorstDiffBkgrdSubtracted;
 
 
-  int HKernelSizeX() { return optParams.HKernelSize;}
-  int HKernelSizeY() { return optParams.HKernelSize;}
+  int HKernelSizeX() const { return optParams.HKernelSize;}
+  int HKernelSizeY() const { return optParams.HKernelSize;}
 
   int mSize; /* the size of the matrix m */
   double *m;  /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */ // we don't save it  
@@ -276,6 +278,8 @@ private:
 
 };
 
+
+typedef CountedRef<KernelFit> KernelFitRef;
 
 
 #endif /* KERNELFIT__H */
