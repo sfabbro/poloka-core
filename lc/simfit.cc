@@ -1148,6 +1148,29 @@ double SimFit::computeChi2() const
   return c;
 }
 
+
+bool SimFit::CheckConsistency() const {
+  
+  for (SimFitVignetCIterator it=begin(); it != end(); ++it)
+    {
+      const SimFitVignet *vi = *it;
+      if( vi->Star->x != VignetRef->Star->x || vi->Star->y != VignetRef->Star->y ) {
+	DumpAndAbort("Inconsistent coordinates of star between vignets");
+	return false;
+      }
+    }
+  return true;
+}
+
+void SimFit::DumpAndAbort(const string& message) const {
+  cout << "DumpAndAbort cause: " << message << endl;
+  cout << "===============================================" << endl;
+  cout << *VignetRef << endl;
+  for (SimFitVignetCIterator it=begin(); it != end(); ++it) {
+    (*it)->DumpDebug();
+  }
+}
+
 bool SimFit::Update(double Factor)
 {
   if(fit_pos) {

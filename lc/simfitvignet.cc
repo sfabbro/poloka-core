@@ -776,17 +776,19 @@ void SimFitVignet::UpdateResid()
 
 void SimFitVignet::DumpDebug() const {  
   cout << "############# SimFitVignet::DumpDebug #############" << endl;
-  cout << " star flux = " << Star->flux << endl; 
+  string name =  Image()->Name();
+  cout << " image = " << name << endl; 
+  cout << " star = " << *Star << endl; 
   cout << " galaxy(0,0) = " << VignetRef->Galaxy(0,0) << endl;
   cout << " Data(0,0) = " << Data(0,0) << endl;
   cout << " Psf(0,0) = " << Psf(0,0) << endl;
   cout << " writing *_DEBUG.fits" << endl;
-  Weight.writeFits("weight_DEBUG.fits");
-  Resid.writeFits("resid_DEBUG.fits");
-  Data.writeFits("data_DEBUG.fits");
-  Psf.writeFits("psf_DEBUG.fits");
-  VignetRef->Psf.writeFits("refpsf_DEBUG.fits");
-  Kern.writeFits("kern_DEBUG.fits");
+  Weight.writeFits(name+"_weight_DEBUG.fits");
+  Resid.writeFits(name+"_resid_DEBUG.fits");
+  Data.writeFits(name+"_data_DEBUG.fits");
+  Psf.writeFits(name+"_psf_DEBUG.fits");
+  VignetRef->Psf.writeFits(name+"_refpsf_DEBUG.fits");
+  Kern.writeFits(name+"_kern_DEBUG.fits");
 }
 
 

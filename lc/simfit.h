@@ -172,7 +172,13 @@ public:
   // e   |    1
   // s   |     1 ...  
   void fillNightMat();
+
+  //! DumpAndAbort
+  void DumpAndAbort(const string& message) const ;
   
+  //! Check Consistency of vignets
+  bool CheckConsistency() const;
+
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);
   
