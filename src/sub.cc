@@ -574,9 +574,22 @@ int Sub::DoIt()
   for (unsigned i=0; i<AllNew.size(); ++i)
     {
       NewStack &stack = AllNew[i]; 
-      cerr << "Processing " << stack.Name() << endl ;
-      stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
-      stack.newStack->FlagDiffractionSpikes();
+      if (stack.newStack == NULL )
+	{
+	  cerr << "Processing " << stack.Name() << endl ;
+	  stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
+	  stack.newStack->FlagDiffractionSpikes();
+	}
+      else
+	{
+	  // we are in fact in MC mode, and the stack.newStack
+	  // ImageSum Has already been prepared.
+	  // the type should be RegularKind
+	  if (stack.stackType != RegularKind)
+	    cerr <<"Error in Sub, bad compatibility with MC" << endl ;
+	  (stack.newStack)->Execute(DoFits | DoSatur | DoWeight);
+	  stack.newStack->FlagDiffractionSpikes(); //util?
+	}
       
       if ( stack.original_sub == NULL )
 	{	  
