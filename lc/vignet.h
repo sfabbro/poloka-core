@@ -25,12 +25,22 @@ protected:
   int hx,hy;       // current half size of the vignet (hSizeX and hSizeY are the max sizes).
   
   void Allocate(const int Nx, const int Ny);
-  bool IsInside(const Point& point);
 
 public:
 
   //! default constructor initialize everything to zero
   Vignet(): hx(0), hy(0) {}
+
+  //! associate a ReducedImage
+  Vignet(const ReducedImage* Rim) : Fiducial<Window>(Rim) { }
+
+  //! extract a squared vignette around a point on a image and a weight of a ReducedImage
+  Vignet(const ReducedImage* Rim, const int HMax)
+    : Fiducial<Window>(Rim), hx(HMax), hy(HMax)   { Resize(hx,hy); }
+
+  //! extract a rectangular vignette around a point on a image and a weight of a ReducedImage
+  Vignet(const ReducedImage* Rim, const int HMaxX, const int HMaxY)
+    : Fiducial<Window>(Rim), hx(HMaxX), hy(HMaxY) { Resize(hx,hy); }
 
   //! extract a squared vignette around a point on a image and a weight of a ReducedImage
   Vignet(const Fiducial<PhotStar> *Fs, const int HMax)
@@ -63,8 +73,8 @@ public:
   //! initializer from a ReducedImage, loads the calibrated and weight vignets around a star
   bool Load(const PhotStar *Star);
 
-  //! resize the Vignet (attempt to modify Hx and Hy)
-  void Resize(const int HNewX, const int HNewY);
+  //! resize the Vignet (attempt to modify hx and hy)
+  void Resize(const int Hx, const int Hy);
 
   //! resize the Vignet with a scale factor
   void Resize(const double &ScaleFactor);
