@@ -684,6 +684,27 @@ Image::SumPixels()
   return(S);
 }
 
+
+// This is used in debug in simulation.cc
+double Image::SumPixels(double x, double y, double demi_size) const
+{
+  int xmin = (int) ( x - demi_size + 0.5 );
+  int ymin = (int) ( y - demi_size + 0.5 );
+  int xmax = (int) ( x + demi_size + 1. + 0.5 );
+  int ymax = (int) ( y + demi_size + 1. + 0.5 );
+  if (xmin < 0 ) xmin = 0 ;  
+  if (ymin < 0 ) ymin = 0 ;
+  if (xmax > Nx() ) xmax = Nx();
+  if (ymax > Ny() ) ymax = Ny();
+  double S = 0. ;
+  for(int i = xmin ; i < xmax ; i++)    
+    for(int j = ymin ; j < ymax ; j++)
+      {
+	S += (*this)(i,j);
+      }
+  return S ;
+}
+
 void 
 Image::Simplify(double threshold, int above_val, int  under_val ) 
 {
