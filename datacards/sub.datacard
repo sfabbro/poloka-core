@@ -34,7 +34,12 @@
 @KFIT_KERNVAR_DEG 2
 #
 # degree of polynomial used to fit differential image backgrounds
-@KFIT_BACKVAR_DEG 2
+# no background at all : -1
+@KFIT_BACKVAR_DEG -1
+#
+# degree of polynomial used to fit differential image backgrounds if fitted separatly
+#
+@KFIT_SEPBACKVAR_DEG 2
 #
 ##################    end of KernelFit #################
 
