@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.9 2004/03/08 17:41:58 guy Exp $
+// $Id: xmlstream.h,v 1.10 2004/04/15 11:35:13 guy Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -384,8 +384,6 @@ void xmlstream::write(type v, const char* name)                              \
    xmlTextWriterWriteFormatString(writer_, "\n");                            \
 }                                                                            \
 
-//   if(addr) xmlTextWriterWriteFormatAttribute(writer_, (xmlChar*)"addr",     \
-//                                              "%lu", addr);                  \
 
 simple_type_write_def(int1,   i1, %d)
 simple_type_write_def(uint1,  u1, %u)
