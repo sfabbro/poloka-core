@@ -21,12 +21,20 @@ that is : the generation of the supernova caracteristics (position,flux),
 its eventual association to an host galaxy. 
 No connexion with a model star is done at this point.
 
-2)ForSim regroups what is necessary to generate the fake supernova and marry them to a ModelStar.
+2)ForSim regroups what is necessary to generate the fake supernova SimSNStar:
 It thus contains a DatSim, and a SEStarList of host galaxy + zero_point.
-It also contains a SEStarList of selected stars to become model stars
-(+ zero_point), and a geometrical transfo.
+The creator reads the DatSim in the TOADSCARDS sub.datacard.
+There is also a very simple creator provided, if one wants to do things
+personnaly.
 
-Note that both SEStarList are supposed to be in the same geom. frame, 
+3)ForSimWModel inheriting from ForSim, contains what
+ necessary to generate supernovae and marry them to a ModelStar.
+
+It thus contains a SEStarList of selected stars to become model stars
+(zero_point is that of ForSim), and a geometrical transfo.
+
+Note that rightnow, both SEStarList for stars and galaxies 
+are supposed to be in the same geom. frame, 
 and the same photometric system : only one zero_point is given for both.
 
 The geometrical transfo. is used when one wants to compute
@@ -41,19 +49,15 @@ are close to a translation. This may holds better for the
     images of the new stack (where the fake is added )
 than for the new images + the ref image.
 
+The method MakeListSn generate a list of fake supernovae associated 
+to a model star.
 
-The creator then fills the DatSim, SEStarLists and transfo in 
-two ways, on simple and one according to what is 
-needed for the efficiency computing. 
-
-MakeListSn uses all this to generate a list of fake supernovae associated to a model star.
-
-  3) a routine, that could be put elsewhere for the selection
-    of ModelStar.
-    This one uses a ReducedImageList i.e.
+4) routine(s), that could be put elsewhere for the selection
+  of ModelStar.
+   Rightnow there is one using a ReducedImageList i.e.
     mainly a list of catalogs. Note that it uses a few static routine
  for the selection of ModelStars, that, if proven useful elswhere in the code 
-in the future elswhere, could be "un-static-fied".
+in the future, could be "un-static-fied".
 
 
 */
@@ -118,41 +122,66 @@ SelectModelStars(ReducedImageList & imglist, SEStarList const & stlref,
 
 
 //! ForSim regroups all the necessary elements to perform the generation
-// and the association to a model star.
 class ForSim {
 
-public : 
-  //! indispensable.
+public :   
+
+  //For the SN carateristics generation :
+  //*************************************
+  //! read from defaults or copied from a given DatSim 
+  DatSim datsim ;
+ //!  host gal in coor of ref.      
+  SEStarList BellesGal;
   //! zero point for starlist in which model stars an host galaxies are selected. supposed to be the same, but this can be changed easily.
   double zero_point;
   //! size of the frame where SN will be simulated (=ref frame)
   int XrefCCD, YrefCCD ;
-
   //! facultatif
   //! size of the image frame where the SN are added (for grid simulation).
   int XCCD, YCCD ;
-  //! geom transfo from ref to an image of the newstack, so that the integer shift is computed in the image coordinate system.
-  const Gtransfo *Transfo ; // transfo de ref vers image
-  const Gtransfo *TransfoInv ;
 
-  //! will be produced by the creator:
-  //! read from defaults or copied from a given DatSim 
-  DatSim datsim ;
-  //! model stars in coor of ref.
-  SEStarList BellesEtoiles;
-  //!  host gal in coor of ref.      
-  SEStarList BellesGal;
-
+  
+ 
  
   //! creator reads DatSim from default datacard, select model star
   //! in the list  ListForModelStars, finds the related zero-point etc. in 
   //! the RefImage header, select host gal in the ref image catalogue 
-  ForSim(ReducedImage const & RefImage, SEStarList const & ListForModelStars, 
-	 const ImageGtransfo* tf);
+  ForSim(ReducedImage const & RefImage);
     
-  //! creator does nothing. ForSim can be filled afterwards as 
+  //! this creator does nothing. ForSim can be filled afterwards as 
   //! done in above  creator with Fill method.
-  ForSim(){zero_point=0.;XrefCCD=0; YrefCCD=0; XCCD=0; YCCD=0;Transfo =NULL;TransfoInv=NULL ;}
+  ForSim(){zero_point=0.;XrefCCD=0; YrefCCD=0; XCCD=0; YCCD=0;}
+  void Fill(ReducedImage const & RefImage);
+
+};
+    
+
+//! ForSimWModel regroups all the necessary elements to perform the generation
+// and the association to a model star.
+class ForSimWModel : public ForSim {
+
+public : 
+
+  //For the mariage to a model star:
+  //*********************************
+  //! model stars in coor of ref.
+  SEStarList BellesEtoiles; 
+  //! geom transfo from ref to an image of the newstack, so that the integer shift is computed in the image coordinate system.
+  const Gtransfo *Transfo ; // transfo de ref vers image
+  const Gtransfo *TransfoInv ;
+
+ 
+ 
+  //! creator reads DatSim from default datacard, select model star
+  //! in the list  ListForModelStars, finds the related zero-point etc. in 
+  //! the RefImage header, select host gal in the ref image catalogue 
+  ForSimWModel(ReducedImage const & RefImage, 
+	       SEStarList const & ListForModelStars, 
+	       const ImageGtransfo* tf);
+    
+  //! this creator does nothing. ForSim can be filled afterwards as 
+  //! done in above  creator with Fill method.
+  ForSimWModel(){Transfo =NULL;TransfoInv=NULL ;}
   //! 
   void Fill(ReducedImage const & RefImage, SEStarList const & ListForModelStars, 
 	 const ImageGtransfo* tf);
@@ -160,15 +189,13 @@ public :
   //If you need another creator, feel free to add yours.
 
   //! Does it.
-  void MakeListSN(SimSNStarList & SNList);
+  void MakeListSN(SimSNWModelStarList & SNList);
 
 private :
-	
-  void PreFill(ReducedImage const & RefImage);
   // tirage et association a etoile modele.
-  void Construct_Sn_Random(SimSNStarList & SNList) ;
-  void Construct_Sn_Damier(SimSNStarList & SNList);
-  void Construct_SnList_WHost(SimSNStarList & SNList);
+  void Construct_Sn_Random(SimSNWModelStarList & SNList) ;
+  void Construct_Sn_Damier(SimSNWModelStarList & SNList);
+  void Construct_SnList_WHost(SimSNWModelStarList & SNList);
 
 };
     

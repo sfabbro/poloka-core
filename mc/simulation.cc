@@ -489,15 +489,10 @@ void SaveModel(SEStarList & stl,
    }
 }  
 
+// ****************** ForSim ***************
 
-
-
-// partie commune aux 2 createurs adaptes a mon utilisation
-// personnelle (DH)
-// prend une DatSim et la recopie, recupere taille ref, point zero,
-// son catalogue pour la selection des hotes 
 void
-ForSim::PreFill(ReducedImage const & RefImage)
+ForSim::Fill(ReducedImage const & RefImage)
 {
  
   zero_point = RefImage.AnyZeroPoint() ;
@@ -532,30 +527,33 @@ ForSim::PreFill(ReducedImage const & RefImage)
     }
 }
 
-/* datsim recopiee, 1 cat et 1 image d'une reducedimage pour 
-// les etoiles et les galaxies.
-// utile dans des petits main d'essai
-ForSim::ForSim( DatSim const & datSim, ReducedImage const & RefImage)
+ForSim::ForSim(ReducedImage const & RefImage)
 {
-  datsim =  datSim ;
-  PreFill(RefImage);
+  string band = RefImage.Band();
+  datsim.Read(DefaultDatacards(), band);
+  datsim.Print();
+  Fill(RefImage);
+}
 
-  SEStarList stl(RefImage.CatalogName());
-  FitsImage img_model(RefImage.FitsName());
-  SelectionOfModelStars(stl, BellesEtoiles, &img_model);
-  CheckSeeing(BellesEtoiles, RefImage);
-  SaveModel(BellesEtoiles, RefImage, "model");
 
-  Transfo = new GtransfoIdentity;    
-  TransfoInv = new GtransfoIdentity;
-  }*/
+
+
+
+
+// ****************** ForSimWModel ***************
+
+// partie commune aux 2 createurs adaptes a mon utilisation
+// personnelle (DH)
+// prend une DatSim et la recopie, recupere taille ref, point zero,
+// son catalogue pour la selection des hotes 
+
 
 void
-ForSim::Fill(ReducedImage const & RefImage,
-	       SEStarList const & ListForModelStars, 
-	       const ImageGtransfo* tf)
+ForSimWModel::Fill(ReducedImage const & RefImage,
+		   SEStarList const & ListForModelStars, 
+		   const ImageGtransfo* tf)
 {
-   PreFill(RefImage);
+   ForSim::Fill(RefImage);
 
   ListForModelStars.CopyTo(BellesEtoiles);
   CheckSeeing(BellesEtoiles, RefImage);
@@ -569,7 +567,7 @@ ForSim::Fill(ReducedImage const & RefImage,
 }
 
 
-ForSim::ForSim(ReducedImage const & RefImage,
+ForSimWModel::ForSimWModel(ReducedImage const & RefImage,
 	       SEStarList const & ListForModelStars, 
 	       const ImageGtransfo* tf)
 {
@@ -582,10 +580,11 @@ ForSim::ForSim(ReducedImage const & RefImage,
 }
 
 void 
-ForSim::Construct_Sn_Random(SimSNStarList & SNList)
+ForSimWModel::Construct_Sn_Random(SimSNWModelStarList & SNList)
 {
   // imprimer les 5 premieres etoiles modeles pour debug .......
   int nnn = 0 ;
+  cerr << "This are the first 5 ModelStar " << endl ;
   for (SEStarCIterator it= BellesEtoiles.begin(); it != BellesEtoiles.end() && nnn < 5 ; it++)
     {
       double x1,y1 ;
@@ -598,7 +597,9 @@ ForSim::Construct_Sn_Random(SimSNStarList & SNList)
   int compteur=0 ;
   while (compteur<datsim.numberOfFakes)
     {
-      SimSNStar *p = datsim.RandomSN(XrefCCD, YrefCCD,zero_point);
+      SimSNStar *psim = datsim.RandomSN(XrefCCD, YrefCCD,zero_point);
+      SimSNWModelStar *p = new SimSNWModelStar(*psim);
+      delete psim ;
       p->MariageToAModelStar(BellesEtoiles,Transfo,TransfoInv);
       // apres mariage, les coordonnees de la fake ont peut etre un 
       // peu bouge.  verif que est toujours dans la ref.
@@ -619,7 +620,7 @@ ForSim::Construct_Sn_Random(SimSNStarList & SNList)
 
 //** position en Damier
 void 
-ForSim::Construct_Sn_Damier(SimSNStarList & SNList)
+ForSimWModel::Construct_Sn_Damier(SimSNWModelStarList & SNList)
 {
 
   // position en damier sur image 1 et non ref !
@@ -632,7 +633,9 @@ ForSim::Construct_Sn_Damier(SimSNStarList & SNList)
       // coord ref sn.
       double xsnref, ysnref ;
       TransfoInv->apply(xsn1, ysn1,xsnref,ysnref);
-      SimSNStar *p = datsim.RandomFluxSN(xsnref, ysnref, zero_point);
+      SimSNStar *psim = datsim.RandomFluxSN(xsnref, ysnref, zero_point);
+      SimSNWModelStar *p = new SimSNWModelStar(*psim);
+      delete psim ;
       p->MariageToAModelStar(BellesEtoiles,Transfo,TransfoInv);
       SNList.push_back(p);
 	
@@ -647,7 +650,7 @@ ForSim::Construct_Sn_Damier(SimSNStarList & SNList)
 
 
 void 
-ForSim::Construct_SnList_WHost(SimSNStarList & SNList)
+ForSimWModel::Construct_SnList_WHost(SimSNWModelStarList & SNList)
 {
   SEStarList BG;
   (BellesGal).CopyTo(BG); //coord as on image ref.
@@ -666,10 +669,12 @@ ForSim::Construct_SnList_WHost(SimSNStarList & SNList)
   while (NSN <datsim.numberOfFakes && BG.size()>0 )
     {
       SEStar *galref = RandomAndRemoveGalaxy(XrefCCD,YrefCCD , BG ) ;
-      SimSNStar *p = datsim.RandomSNInGalaxy(*galref , zero_point);
+      SimSNStar *psim = datsim.RandomSNInGalaxy(*galref , zero_point);
+      SimSNWModelStar *p = new SimSNWModelStar(*psim);
+      delete psim ;
       p->MariageToAModelStar(BellesEtoiles, Transfo,TransfoInv);
       SNList.push_back(p);
-      // peut bouger.  verif que est toujours dans la ref.
+      // a cause du mariage, la position peut bouger.  verif que est toujours dans la ref.
       if ( 0 < p->x  && p->x  < XrefCCD &&
 	   0 < p->y  && p->y < YrefCCD)
 	{
@@ -691,7 +696,7 @@ ForSim::Construct_SnList_WHost(SimSNStarList & SNList)
 
   
 void 
-ForSim::MakeListSN(SimSNStarList & SNList)
+ForSimWModel::MakeListSN(SimSNWModelStarList & SNList)
 {    
   switch (datsim.Methode)
     { 
