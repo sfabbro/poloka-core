@@ -71,8 +71,8 @@ public:
   void                             print(int verbosity) const;
   
   // FIXME: nrl -- 03/2004 put this in the code generator
-  std::string                      templateSymbolicArgList(bool first, bool last) const;
-  std::string                      templateSymbolicArgListDecl(bool first, bool last) const;
+  std::string                      templateSymbolicArgList() const;
+  std::string                      templateSymbolicArgListDecl() const;
   
 protected:
   unsigned int version_;
@@ -100,9 +100,9 @@ public:
   ~templateInstantiation();
   
   std::string    name() const { return templateClassName_; }
-  
   int            nTemplateArgs() const { return (int)symbolicTypes_.size(); }
   
+
   std::string    fullSymbolicName() const;
   std::string    fullRealName() const;
   bool           hasSymbolicType(std::string const&) const;
@@ -117,12 +117,13 @@ public:
   void           print() const;
   
   
-private:
+
   std::string templateClassName_;
-  
   std::vector<std::string> symbolicTypes_;
   std::vector<std::string> realTypes_;
-  
+
+private:
+
   void clear_();
   void splitType_(std::string const&,std::vector<std::string>&) const;
   std::string rebuildType_(std::vector<std::string> const&) const;

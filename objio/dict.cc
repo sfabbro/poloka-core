@@ -245,42 +245,30 @@ void dict::instantiate(templateInstantiation const& ti)
 
 
 
-std::string dict::templateSymbolicArgList(bool first, bool last) const
+std::string dict::templateSymbolicArgList() const
 {
   int i,sz=symbolicTypes_.size();
   string ret;
   
-  if(first && sz)
-    ret = ",";
-  
-  for(i=0;i<sz;i++) 
-    ret = ret + symbolicTypes_[i] + ",";
-  
-  if(!last) {
-    std::string::size_type pos = ret.find_last_of(",");
-    if(pos!=std::string::npos)
-      ret = ret.substr(0,pos);
+  for(i=0;i<sz;i++) {
+    if (symbolicTypes_[i].size())
+      ret = ret + "," + symbolicTypes_[i];
   }
   return ret;
 }
 
 
-std::string dict::templateSymbolicArgListDecl(bool first, bool last) const
+std::string dict::templateSymbolicArgListDecl() const
 {
+  
   int i,sz=symbolicTypes_.size();
   string ret;
   
-  if(first && sz)
-    ret = ",";
-  
-  for(i=0;i<sz;i++) 
-    ret = ret + "class " + symbolicTypes_[i] + ",";
-  
-  if(!last) {
-    std::string::size_type pos = ret.find_last_of(",");
-    if(pos!=std::string::npos)
-      ret = ret.substr(0,pos);
+  for(i=0;i<sz;i++) {
+    if (symbolicTypes_[i].size())
+      ret = ret + ",class " + symbolicTypes_[i];
   }
+  
   return ret;
 }
 
@@ -323,7 +311,7 @@ std::string templateInstantiation::fullSymbolicName() const
 std::string templateInstantiation::fullRealName() const
 {
   std::string ret = templateClassName_ + "<";
-  int i, n = nTemplateArgs();
+  int i, n = realTypes_.size();//nTemplateArgs();
   if(n==0) ret = ret = ">";
   
   for(i=0;i<n-1;i++)
@@ -331,6 +319,7 @@ std::string templateInstantiation::fullRealName() const
   ret = ret + realTypes_[n-1] + ">";
   return ret;
 }
+
 
 
 bool templateInstantiation::readFromConfigFile(std::string const& buff)
@@ -352,9 +341,13 @@ bool templateInstantiation::readFromConfigFile(std::string const& buff)
     std::string nm, symtype, realtype;
     std::string::size_type pos;
     sstrm >> nm;
+    if(strlen(nm.c_str())==0) // fix due to probable bug in gcc 3.2.2
+      continue;
     pos = nm.find_first_of("=");
     symtype = nm.substr(0,pos);
     realtype = nm.substr(pos+1,std::string::npos);
+    
+    std::cout << "****** in templateInstantiation::readFromConfigFile \"" <<  symtype << "=" <<  realtype << "\"" << endl; 
     symbolicTypes_.push_back(symtype);
     realTypes_.push_back(realtype);
   }

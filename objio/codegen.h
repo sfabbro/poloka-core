@@ -46,12 +46,17 @@ private:
   //  };
   
   //  bool  parseCommandLine_(std::string const& buff, std::string const& rqst_className, TemplateInst_& ti);
-  void  checkConfigFile_(std::string const& className_,
-			 std::vector<templateInstantiation>&);
+ 
   void  classPersisterDecl_(dict const&);
   void  classPersisterCode_(dict const&);
-  //  void  templateClassPersisterDecl_(dict const&, TemplateInst_ const&);
-  //  void  templateClassPersisterCode_(dict const&, TemplateInst_ const&);
+
+  
+  int findNextCket(std::string const& buffer,int after);
+  int findNextComaOutsideBracket(std::string const& buffer,int after);
+  int findRecursivelyTemplateInstantiation_(std::string & sbuff,std::string const& className, std::vector<templateInstantiation>& tvec);
+  int readOneTemplateInstantiation_(std::string const& classname,std::string & content, std::vector<templateInstantiation>& tvec);
+  void  checkTemplateInstantiation_(std::string const& className_,std::vector<templateInstantiation>&);
+  
   
   int  counter_;
   std::string   source_header_name_;
