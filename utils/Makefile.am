@@ -12,7 +12,7 @@ bin_PROGRAMS = \
  preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao test_matvect \
- fitnight
+ fitnight test_vignet
 
 
 ### CPPFLAGS for all programs
@@ -30,6 +30,15 @@ make_phot_SOURCES = make_phot.cc
 make_phot_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
 make_phot_LDFLAGS =  -ltoadslc -ltoadsdao
 
+fitnight_SOURCES = fitnight.cc
+fitnight_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
+fitnight_LDFLAGS =  -ltoadslc -ltoadsdao
+
+test_vignet_SOURCES = test_vignet.cc
+test_vignet_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
+test_vignet_LDFLAGS =  -ltoadslc -ltoadsdao
+
+
 ### Programs depending on dao
 make_daophot_SOURCES = make_daophot.cc
 make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
@@ -39,7 +48,7 @@ testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
 
-fitnight_SOURCES = fitnight.cc
+
 test_matvect_SOURCES = test_matvect.cc
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
