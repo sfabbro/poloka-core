@@ -38,7 +38,7 @@ DatSim::Read(const string &FileName, string const & filter)
 void DatSim::LitDataCards(DataCards &Data, string const & filter)
 {
   Methode = Random;
-  string line = Data.SParam("METHOD");
+  string line = Data.SParam("GENERATION_METHOD");
   if (strstr(line.c_str(),"FAKES_INHOST"))
     Methode = InHost;
 
@@ -230,6 +230,48 @@ DatSim::RandomSNInGalaxy(SEStar & gal_onref ,double zerop_ref )
 
 //  ********** Model Star Selection
 
+// une routine static de debug
+//sauvegarde d'une image a zero sauf autour des objets de la stl:
+// pour verifier d'un coup d'eil les etoile smodeles ou les galaxies hotes.
+#include "fitsimage.h"
+#include "fileutils.h"
+static
+void SaveModel(SEStarList & stl, Image const & ref, string nom )
+{
+
+  MKDir("./mc");
+ string catmodel = "./mc/" + nom + ".list" ;
+ stl.write(catmodel);
+ cerr << "Writing " << catmodel << endl ; 
+ string name = "./mc/" + nom + ".fits" ;
+ // test on the existence
+ // so that when simulations are called in sequence, the
+ // model stars/galaxies are not saved each time. 
+ if ( ! FileExists(name) )
+   {
+     Image test(ref.Nx(),ref.Ny() );
+     {
+       GtransfoIdentity identity;
+       for (SEStarCIterator c = stl.begin() ; c != stl.end() ; c++)
+	 {
+	   ModelStar model(*(*c), (*c)->StampSize(),0, 0,1.) ;
+	   model.AddToImage(ref, test,(Gtransfo *) &identity);
+	 }
+     }
+     
+     FitsImage tt(name,test);
+   }
+}  
+
+static
+void SaveModel(SEStarList & stl, 
+	       ReducedImage const & r, string nom )
+{
+
+  FitsImage ref(r.FitsName());
+  SaveModel(stl, ref, nom );
+}  
+
 
 
 static
@@ -250,8 +292,8 @@ PreSelectModelStars(SEStarList const &starList,
   // On vire les etoiles en dessous d'un certain signal sur bruit 
   cout << "List size after stars selection: " << etoiles.size() << endl;
 
-  //etoiles.write("etoiles.list");
-
+  SaveModel(etoiles,*model,"etoiles");
+  
   int n = 0 ;
   BaseStarList *lb = ( BaseStarList *) &etoiles;
   for (SEStarIterator it= etoiles.begin(); it!= etoiles.end(); ++it )
@@ -275,7 +317,8 @@ PreSelectModelStars(SEStarList const &starList,
 	}
     } 
   cout << "After S/N cut, number of model stars " 
-       << BellesEtoiles.size() << endl;
+       << BellesEtoiles.size() << endl; 
+
 }
 
 // short utilitaries used in PrefIll Constructor
@@ -425,40 +468,7 @@ SelectHostGalaxies(DatSim  const & datsim,
 
 
 
-// une routine static de debug
-//sauvegarde d'une image a zero sauf autour des objets de la stl:
-// pour verifier d'un coup d'eil les etoile smodeles ou les galaxies hotes.
-#include "fitsimage.h"
 
-static
-void SaveModel(SEStarList & stl, 
-	       ReducedImage const & r, string nom )
-{
-
- string catmodel = r.Dir()+ "/" + nom + ".list" ;
- stl.write(catmodel);
- cerr << "Writing " << catmodel << endl ; 
- string name = r.Dir()+ "/" + nom + ".fits" ;
- // test on the existence
- // so that when simulations are called in sequence, the
- // model stars/galaxies are not saved each time. 
- if ( ! FileExists(name) )
-   {
-     Image test(r.XSize(),r.YSize() );
-     {
-       FitsImage ref(r.FitsName());
-       GtransfoIdentity identity;
-       for (SEStarCIterator c = stl.begin() ; c != stl.end() ; c++)
-	 {
-	   ModelStar model(*(*c), (*c)->StampSize(),0, 0,1.) ;
-	   model.AddToImage(ref, test,(Gtransfo *) &identity);
-	 }
-     }
-     
-     FitsHeader head(r.FitsName());
-     FitsImage tt(name,head,test);
-   }
-}  
 
 // ****************** ForSim ***************
 
@@ -467,8 +477,7 @@ ForSim::Fill(ReducedImage const & RefImage)
 {
  
   zero_point = RefImage.AnyZeroPoint() ;
-  cerr << "Image de selection des Modeles :" << RefImage.Name() 
-       << " Zero Point : " << zero_point << endl ;
+
   XCCD = 0 ;
   YCCD = 0 ;
   XrefCCD = RefImage.XSize();

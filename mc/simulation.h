@@ -8,10 +8,11 @@
 #include "datacards.h"
 #include "reducedimage.h"
 #include "simsnstar.h"
+#include "gtransfo.h"
 
 class ImageGtransfo ;
 
-typedef enum MethodeSim{Random =0, Damier, InHost, AdaptedToHost, Gaussian};
+typedef enum MethodeSim{Random =0, Damier, InHost, AdaptedToHost};
 
 
 /*! \page effic Preparation of the fake supernova starlist.
@@ -116,7 +117,7 @@ struct DatSim {
 // a changer de place (dans fakestar ? dans sestar ?)
 // des que je serai fixee DH
 bool
-SelectModelStars(ReducedImageList & imglist, SEStarList const & stlref, 
+SelectModelStars(ReducedImageList  & imglist, SEStarList const & stlref, 
 		 SEStarList &BellesEtoiles, Image * model);
 
 void 
@@ -159,6 +160,7 @@ public :
   void Fill(ReducedImage const & RefImage);  
 //! Does it.
   void MakeListSN(SimSNStarList & SNList);
+  SimSNStarList *MakeListSN(){SimSNStarList *list = new SimSNStarList; MakeListSN(*list);return(list);}
 
 private :
   //! as indicated in Name. 
@@ -181,21 +183,25 @@ public :
   //! model stars in coor of ref.
   SEStarList BellesEtoiles; 
   //! geom transfo from ref to an image of the newstack, so that the integer shift is computed in the image coordinate system.
-  const Gtransfo *Transfo ; // transfo de ref vers image
-  const Gtransfo *TransfoInv ;
+  GtransfoRef Transfo ; // transfo de ref vers image
+  GtransfoRef TransfoInv ;
 
  
  
   //! creator reads DatSim from default datacard, select model star
   //! in the list  ListForModelStars, finds the related zero-point etc. in 
-  //! the RefImage header, select host gal in the ref image catalogue 
+  //! the RefImage header, select host gal in the ref image catalogue
+  //! for debug, a fits image with the used model stars is saved. 
   ForSimWModel(ReducedImage const & RefImage, 
 	       SEStarList const & ListForModelStars, 
 	       const ImageGtransfo* tf=NULL);
     
   //! this creator does nothing. ForSim can be filled afterwards as 
   //! done in above  creator with Fill method.
-  ForSimWModel(){Transfo =NULL;TransfoInv=NULL ;}
+  ForSimWModel(){}
+  
+  //! 
+  ForSimWModel(ForSim const & aforsim):ForSim(aforsim){}
   //! 
   void Fill(ReducedImage const & RefImage, SEStarList const & ListForModelStars, 
 	 const ImageGtransfo* tf=NULL);
@@ -203,8 +209,8 @@ public :
   //If you need another creator, feel free to add yours.
 
   //! Does it.
-  //! for debug, a fits image with the used model stars is saved.
   void MakeListSNWModel(SimSNWModelStarList & SNList);
+  SimSNWModelStarList *MakeListSNWModel(){SimSNWModelStarList *list = new SimSNWModelStarList; MakeListSNWModel(*list);return(list);}
 };
     
 
