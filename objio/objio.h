@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.15 2004/03/15 12:05:45 guy Exp $
+// $Id: objio.h,v 1.16 2004/03/16 17:31:22 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/15 12:05:45 $
+// Last modified: $Date: 2004/03/16 17:31:22 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -94,8 +94,11 @@ public:
   void           write(std::list<T> const& l, const char* name=0) {
     stream_.write_start_collection_tag(l.size(), name);
     typename std::list<T>::const_iterator it;
-    for(it=l.begin();it!=l.end();it++)
-      *this << *it;
+    for(it=l.begin();it!=l.end();it++) {
+      persister<T,IOS> p(*it);
+      write(p);
+      // *this << *it;
+    }
     stream_.write_end_collection_tag();
   }
 
@@ -104,28 +107,36 @@ public:
     stream_.write_start_collection_tag(v.size(), name);
     typename std::vector<T>::const_iterator it;
     for(it=v.begin();it!=v.end();it++) {
-      *this << *it;
+      persister<T,IOS> p(*it);
+      write(p);
+      //*this << *it;
     }
     stream_.write_end_collection_tag();
   }
 
   template<class T, class U>
-  void           write(std::map<T,U> const& m, const char* name=0) {
+  void           write( std::map<T,U> const& m, const char* name=0) {
     stream_.write_start_collection_tag(m.size(), name);
     typename std::map<T,U>::const_iterator it;
-    for(it=m.begin();it!=m.end();it++)
+    for(it=m.begin();it!=m.end();it++) {
       // this time, we must use write().
       // Because we know what we are writing out...
-      write(*it);
+      
+      const  std::pair<T,U>&  pairTU = *it;
+      write(pairTU);
+      //write(*it);
+    }
     stream_.write_end_collection_tag();
   }
   
   
   template<class T, class U>
-  void           write(std::pair<T,U> const& p, const char* name=0) {
+  void           write( std::pair<T,U> const& p, const char* name=0) {
     stream_.write_start_collection_tag(2, name);
-    *this << p.first;
-    *this << p.second;
+    persister<T,IOS> fp(p.first);
+    persister<U,IOS> sp(p.second);
+    write(fp);
+    write(sp);
     stream_.write_end_collection_tag();
   }
   
@@ -358,9 +369,11 @@ public:
     unsigned int i, sz;
     T val;
     stream_.read_start_collection_tag(sz);
+    l.clear(); // we reset the list
     for(i=0;i<sz;i++) {
-      //      read(val);
-      *this >> val;
+      persister<T,IOS> p(val);
+      read(p);
+      //*this >> val;
       l.push_back(val);
     }
     stream_.read_end_collection_tag();
@@ -371,9 +384,10 @@ public:
     unsigned int i, sz;
     T val;
     stream_.read_start_collection_tag(sz);
+    v.clear();
     for(i=0;i<sz;i++) {
-      //      read(val);
-      *this >> val;
+      persister<T,IOS> p(val);
+      read(p);
       v.push_back(val);
     }
     stream_.read_end_collection_tag();
@@ -384,6 +398,7 @@ public:
     unsigned int i, sz;
     std::pair<T,U> val;
     stream_.read_start_collection_tag(sz);
+    m.clear();
     for(i=0;i<sz;i++) {
       read(val);
       m[val.first]=val.second;
@@ -396,8 +411,13 @@ public:
     unsigned int sz;
     T v1; U v2;
     stream_.read_start_collection_tag(sz);
-    *this >> v1; p.first=v1;
-    *this >> v2;
+    persister<T,IOS> p1(v1);
+    persister<U,IOS> p2(v2);
+    read(p1);
+    read(p2);
+    //*this >> v1; 
+    //*this >> v2;
+    p.first=v1;
     p.second=v2;
     stream_.read_end_collection_tag();
   }
