@@ -1,13 +1,8 @@
 // This may look like C code, but it is really -*- C++ -*-
-
-#ifndef FITSMODE__H
-#define FITSMODE__H
-enum FitsFileMode {RO = 0, RW = 1};
-#endif
-
-
 #ifndef FITSIMAGE__H
 #define FITSIMAGE__H
+
+enum FitsFileMode {RO = 0, RW = 1};
 
 #include <string>
 #include <cstdio>
@@ -308,8 +303,16 @@ private:
   int create_file();
 
   //! reads the image data. 0,0,nx,ny reads the whole image.
-  int read_image(const int xmin, const int ymin, const int xmax, const int ymax,
-		 float *data);
+  int read_image(const int xmin, const int ymin, const int xmax, 
+		 const int ymax, float *data);
+
+  //! write_image(0,nx*ny,...) writes the whole image
+  int write_image(int FirstPix, int NPix, Pixel *Data, 
+		  int nx, int bitpix, double bscale, double bzero);
+
+  //! actually creates the image. Only active for compressed images.
+  int create_image(int bitpix, int nx, int ny);
+
 
   string fileName;
   fitsfile *fptr; /* internal pointer for cfitsio */

@@ -55,6 +55,8 @@ class FitsOutSlice : public FitsHeader, public Image
     int sliceSize, overlap;
     int ySliceStart; /* in whole image coordinates */
     int nyTotal;
+    int bitpix;
+    double bscale, bzero;
      int write_pixels(const int StartRow, int &NRows, Pixel *Where);
     bool lastSlice;
 

@@ -2,6 +2,7 @@
 #include "fitsslice.h"
 #include  <fitsio.h>
 
+
 /************** info when we get cfitsio errors ************/
 
 #define CHECK_STATUS(status, message, return_statement) \
@@ -52,7 +53,7 @@ int FitsSlice::read_pixels(const int StartRow, int &NRows, Pixel* Where)
      use our own reading routine */
   int status = read_image(0, StartRow, nx, endRow, Where);
 
-  CHECK_STATUS(status," FitsSlice::read_pixels", );
+  CHECK_STATUS(status," FitsSlice::read_image", );
   return (!status);
 }
   
@@ -83,7 +84,7 @@ int FitsSlice::LoadNextSlice()
 FitsOutSlice::FitsOutSlice(const string FileName, 
 			   const int Nx, const int Ny,
 			   const int SliceSize, const int Overlap) 
-  : FitsHeader(FileName,RW) , Image(0,0)
+  : FitsHeader(FileName,RW) , Image(0,0), bitpix(0)
 {
   overlap = Overlap;  
   int nx = Nx;
@@ -95,26 +96,8 @@ FitsOutSlice::FitsOutSlice(const string FileName,
 
 FitsOutSlice::FitsOutSlice(const string FileName, const FitsHeader &ModelHead,
 			   const int SliceYSize, const int Overlap) 
-  : FitsHeader(ModelHead, FileName) , Image(0,0)
+  : FitsHeader(ModelHead, FileName) , Image(0,0), bitpix(0)
 {
-  /* 2 ways to avoid the following crash :
-     - implement the mechanism for writing compressed images in slices
-         this means writing a FitsHeader::write_image that would look like 
-                              FitsHeader::read_image
-        It can be tedious....
-
-     - simpler : add a bool argument to FitsHeader(const FitsHeader &, const string)
-          (with a default value) that enables to forbid compression. It has to be propagated
-          to FitsHeader::create_file();
-  */
-
-  if (compressedImg)
-    {
-      cerr << " the present code does not enable to use FitsOutSlice on compressed images" 
-	   << std::endl
-	   << " for file " << this->FileName() << ". Stopping here " << std::endl;
-      abort();
-    }
   overlap = Overlap;  
   int nx = KeyVal("NAXIS1");
   nyTotal = KeyVal("NAXIS2");
@@ -153,6 +136,14 @@ int FitsOutSlice::WriteCurrentSlice()
 
 int FitsOutSlice::write_pixels(const int StartRow, int &NRows, Pixel *Where)
 {
+  if (bitpix == 0)
+    {
+      // to avoid reading them at each pixel chunk.
+      bitpix = KeyVal("BITPIX");
+      bscale = KeyVal("BSCALE");
+      bzero =  KeyVal("BZERO");
+      create_image(bitpix, nx, nyTotal);
+    }
 #ifdef DEBUG_SLICES
   cout << " write requested for file : " << FileName() << " from row " << StartRow << " for " << NRows << endl;
 #endif
@@ -163,8 +154,8 @@ int FitsOutSlice::write_pixels(const int StartRow, int &NRows, Pixel *Where)
   int nPix =  NRows * Nx();
   int status = 0;
 
-  /* fits_write_img uses the fortran like numberring: fits pixel is pixel "1" */
-  if (nPix) fits_write_img(fptr, TFLOAT, startPix+1, nPix,  Where, &status);
+  if (nPix) status = write_image(startPix, nPix,  Where, 
+				 nx, bitpix, bscale, bzero);
   CHECK_STATUS(status," FitsOutSlice::write_pixels", );
   return (!status);
 }

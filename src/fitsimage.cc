@@ -6,6 +6,11 @@
 #include "frame.h"
 #include "stringlist.h"
 
+
+extern "C" {
+#include <fitsio2.h> // for ffr4fi{1,2}
+}
+
 /******** FitsKey *********/
 
 //#define DEBUG
@@ -258,18 +263,21 @@ int FitsHeader::create_file()
  fileModeAtOpen = RW;
 
  if (FileExtension(fileName) == "fz") 
-   /* this is a Toads convention: requesting a file named fz means you 
-      want a compressed image. In this source file, compression refers
-      to internal compression of the pixel buffer, not external compression
-      of files using gzip (which cfitsio handles totally transparently)
+   /* this is a Toads convention: requesting a (non-existent) file
+      named fz means you want a compressed image. In this source file,
+      compression refers to internal compression of the pixel buffer,
+      not external compression of files using gzip (which cfitsio
+      handles totally transparently).
 
-      Notes about the way we use internal compression (RICE compression by default)
-      is decribed in a long comment at the end of this source file.
+      Notes about the way we use internal compression (RICE
+      compression by default) is decribed in a long comment at the end
+      of this source file.
    */
+
    {
      fits_create_file(&fptr, (fileName+"[compress]").c_str(), &status);
      compressedImg = false;
-     minimum_header();
+     minimum_header();// minimum_header refuses compressed images.
      compressedImg = true;
 
      // create a dummy compressed image 
@@ -1067,6 +1075,139 @@ int FitsHeader::read_image(const int xmin, const int ymin,
 }
 
 
+
+/* this routine belongs to FitsHeader to enable classes derived
+   from FitsHeader to write images */
+int FitsHeader::write_image(int FirstPix, int NPix, Pixel *Data, 
+			    int nx, int bitpix, double bscale, double bzero)
+{
+#ifdef DEBUG
+  cout << " > FitsHeader::write_image(FirstPix = " << FirstPix 
+       << ", NPix=" << NPix << ", nx="<<nx<<", bitpix="<<bitpix 
+       << ", bscale=" << bscale << ", bzero="<<bzero << endl;
+#endif
+
+
+  int status = 0;
+  if (!compressedImg || bitpix == -32)
+    {
+      /* write the pixels straight ahead : either the image uses
+      compression without format change (float->float), or no
+      compression, which both work for fits_write_img. fits_write_img
+      does not do compression and format change together properly. */
+      fits_write_img(fptr, TFLOAT, FirstPix+1, NPix, Data, &status);
+      CHECK_STATUS(status," fits_write_img in FitsHeader::write_image ", );
+    }
+  else
+    {
+      /* there is a serious bug in cfitsio : when writing a 
+	 compressed image, the requested bitpix (which becomes ZBITPIX
+	 is ignored. so we do our conversion ourselves into the target
+	 BITPIX
+      */
+      if (bitpix != 16 && bitpix != 8) 
+	{
+	  std::cerr << " unhandled condition in FitsHeader::write_image(), contact developpers" << std::endl;
+	  abort();
+	}
+
+      fits_set_bscale(fptr, 1., 0., &status); // turn off automatic scaling 
+      // write slice chunks (it is somehow faster)
+      int ychunk = 100;
+      int npix_chunk = nx*ychunk;
+      Pixel *pixel = Data;
+      const Pixel *pend = Data+NPix;
+      int firstPix = FirstPix;
+      if (bitpix == 16)
+	{
+	  short *temp = new short[npix_chunk];
+	  while (pixel < pend)
+	    {
+	      int npix = min(npix_chunk, pend-pixel);
+	      ffr4fi2(pixel, npix, bscale, bzero, temp, &status);
+	      fits_write_img(fptr, TSHORT, firstPix+1, npix, temp, &status);
+	      firstPix+= npix;
+	      pixel += npix;
+	    }
+	  delete [] temp;
+	  CHECK_STATUS(status,
+		   " fits_write_img (TSHORT) in FitsHeader::write_image ",);
+	}
+
+      if (bitpix == 16)
+	{
+	  unsigned char* temp = new unsigned char[npix_chunk];
+	  while (pixel < pend)
+	    {
+	      int npix = min(npix_chunk, pend-pixel);
+	      ffr4fi1(pixel, npix, 1., 0., temp, &status);
+	      fits_write_img(fptr, TBYTE, firstPix+1, npix, temp, &status);
+	      firstPix+= npix;
+	      pixel += npix;
+	    }
+	  delete [] temp;
+	  CHECK_STATUS(status,
+		   " fits_write_img (TBYTE) in FitsHeader::write_image ",);
+	}
+    }
+  return status;
+}
+
+int FitsHeader::create_image(int bitpix, int nx, int ny)
+{
+  int status = 0;
+  if (compressedImg)  
+    /* 
+       what we do here almost reproduces what imcopy (from cfitsio
+       sources) does. imcopy only works if the output file does not
+       exist. To get compressed images, we did not find any other way
+       than reconstructing the file from scratch. Notes about cfitsio
+       and compressed images can be found at the end of this file
+    */
+   {
+
+     /* store all the user keywords (not the structural keywords) */
+     int nkeys = 0;
+     fits_get_hdrspace(fptr, &nkeys, NULL, &status); 
+     vector<string> cards;
+     cards.reserve(nkeys); // allocate more than needed : fast push_back
+
+     for (int ii = 1; ii <= nkeys; ii++) 
+       {
+	 char card[81];
+	 fits_read_record(fptr, ii, card, &status);
+	 if (fits_get_keyclass(card) > TYP_CMPRS_KEY)
+	   cards.push_back(card);
+       }
+
+     // we need to store bitpix, needed by fits_create_img
+     int bitpix = KeyVal("BITPIX");
+
+     // delete file
+     fits_delete_file(fptr, &status);
+     /* structural header keys may be inconsistent, and fits_delete_file
+	checks all that .... but we just don't care : no CHECK_STATUS and reset
+     */
+     //CHECK_STATUS(status," fits_delete_file(compress) in FitsImage::Write",);
+     status = 0;
+
+     fits_create_file(&fptr, (fileName+"[compress]").c_str(), &status);
+     CHECK_STATUS(status," fits_create_file (compress) in FitsImage::Write",);
+     /* noise bits only matter for floting point images (bitpix = -32 or -64)
+	the default value of cfitsio is 4 which really alters images */
+     fits_set_noise_bits(fptr,16, &status);
+     CHECK_STATUS(status," fits_set noise_bits in FitsImage::Write",);
+
+     long int npix[2]; 
+     npix[0] = nx;
+     npix[1] = ny;
+     fits_create_img(fptr, bitpix, 2, npix, &status);
+     CHECK_STATUS(status," fits_create_img (compress) in FitsImage::Write",);
+     for (unsigned int ii = 0; ii < cards.size(); ++ii)
+       fits_write_record(fptr, cards[ii].c_str(), &status);
+   }
+  return status;
+}
 /*****************  FitsImage ****************/
 
 FitsImage::FitsImage(const string &FileName, const FitsFileMode Mode) : FitsHeader(FileName, Mode) , Image()
@@ -1236,69 +1377,18 @@ void FitsImage::PreserveZeros()
 int FitsImage::Write(bool force_bscale) 
 {
   if (!writeEnabled) return 0;
-  if (compressedImg)  
-    /* 
-       what we do here almost reproduces what imcopy (from cfitsio sources)
-       does. imcopy only works if the output file does not exist. To get
-       compressed images, we did not find any other way to go than reconstructing
-       the file from scratch. notes about cfitsio and compressed images can be found
-       at the end of this file
-    */
-   {
-     int status = 0;
-
-     /* store all the user keywords (not the structural keywords) */
-     int nkeys = 0;
-     fits_get_hdrspace(fptr, &nkeys, NULL, &status); 
-     vector<string> cards;
-     cards.reserve(nkeys); // allocate more than needed : fast push_back
-
-     for (int ii = 1; ii <= nkeys; ii++) 
-       {
-	 char card[81];
-	 fits_read_record(fptr, ii, card, &status);
-	 if (fits_get_keyclass(card) > TYP_CMPRS_KEY)
-	   cards.push_back(card);
-       }
-
-     // we need to store bitpix, needed by fits_create_img
-     int bitpix = KeyVal("BITPIX");
-
-     // delete file
-     fits_delete_file(fptr, &status);
-     /* structural header keys may be inconsistent, and fits_delete_file
-	checks all that .... but we just don't care : no CHECK_STATUS and reset
-     */
-     //CHECK_STATUS(status," fits_delete_file(compress) in FitsImage::Write",);
-     status = 0;
-
-
-     fits_create_file(&fptr, (fileName+"[compress]").c_str(), &status);
-     CHECK_STATUS(status," fits_create_file (compress) in FitsImage::Write",);
-     /* noise bits only matter for floting point images (bitpix = -32 or -64)
-	the default value of cfitsio is 4 which really alters images */
-     fits_set_noise_bits(fptr,16, &status);
-     CHECK_STATUS(status," fits_set noise_bits in FitsImage::Write",);
-
-     long int npix[2]; 
-     npix[0] = nx; // of the Image
-     npix[1] = ny;
-     fits_create_img(fptr, bitpix, 2, npix, &status);
-     CHECK_STATUS(status," fits_create_img (compress) in FitsImage::Write",);
-     for (unsigned int ii = 0; ii < cards.size(); ++ii)
-       fits_write_record(fptr, cards[ii].c_str(), &status);
-   }
-
-
-  cout << " Writing " << nx << "x" << ny << " " << fileName << endl;
   if (FileMode() != RW) return 0;
   int bitpix = KeyVal("BITPIX");
   if (bitpix == 0) bitpix = 16;
-  if (compressedImg && !(bitpix == 16 || bitpix ==-32))
+  create_image(bitpix,nx,ny);
+
+  cout << " Writing " << nx << "x" << ny << " " << fileName << endl;
+
+  if (compressedImg && !(bitpix == 16 || bitpix == 8 || bitpix ==-32))
     {
       std::cerr << " for image " << FileName() << " bitpix = " << bitpix 
 		<< std::endl;
-      std::cerr <<" only know how to write compressed image with BITPIX=16 or -32, for now, setting bitpix = -32" << std::endl;
+      std::cerr <<" only know how to write compressed image with BITPIX!=[8,16,-32, for now, setting bitpix = -32" << std::endl;
       ModKey("BITPIX",-32);
       bitpix = -32;
     }
@@ -1353,7 +1443,6 @@ int FitsImage::Write(bool force_bscale)
   ModKey("NAXIS1", nx);
   ModKey("NAXIS2", ny);
   
-  //AddOrModKey("ZBITPIX", bitpix); // JG
 
 /* This "Flush()" is because new values of BSCALE and BZERO are not
   read (and thus not used for writing) by fits_write_img. The
@@ -1363,66 +1452,8 @@ int FitsImage::Write(bool force_bscale)
 
   Flush();
 
+  status = write_image(0,nx*ny,data, nx, bitpix, bscale, bzero);
 
-  if (!compressedImg || bitpix == -32)
-    {
-      /* there is a serious bug in cfitsio : when writing a 
-	 compressed image, the requested bitpix (which becomes ZBITPIX
-	 is ignored. so we do our conversion ourselves into the target
-	 BITPIX
-      */
-
-      /* actually write it */
-      fits_write_img(fptr, TFLOAT, 1, nx*ny, data, &status);
-      CHECK_STATUS(status," fits_write_img in FitsImage::Write ", );
-    }
-  else
-    {
-      if (bitpix != 16) 
-	{
-	  std::cerr << " unhandled condition in FitsImage::Write(), contact developpers" << std::endl;
-	  abort();
-	}
-      // bitpix = 16 = SHORT_IMG => datatype = TSHORT
-      fits_set_bscale(fptr, 1., 0., &status); // turn off automatic scaling 
-      if(true) { // write slice chunks (it is somehow faster)
-	int ychunk = 100;
-	int npix_chunk = nx*ychunk;
-	short *temp = new short[npix_chunk];
-	const Pixel *pixel = this->begin();
-	double dvalue;
-	double inv_bscale = 1/bscale; // * is far faster than /
-	for (int j=0; j< ny; j+=ychunk)
-	  {
-	    int lastj = min(j+ychunk, ny);
-	    int npix = (lastj-j)*nx;
-	    for (int i=0; i<npix; ++i) {
-	      dvalue = (*pixel - bzero) * inv_bscale;
-	      pixel++;
-	      // there is a discontinuity in the float->short conversion:
-	      if (dvalue >= 0) 
-		dvalue += 0.5;
-	      else
-		dvalue -= 0.5;
-	      temp[i] = short(dvalue);
-	    }
-	    fits_write_img(fptr, TSHORT, nx*j+1, npix, temp, &status);
-	    CHECK_STATUS(status,
-			 " fits_write_img (TSHORT) in FitsImage::Write ",);
-	  }
-	delete [] temp;
-      }else{ // write all at once
-	short *temp = new short[nx*ny];
-	const Image &im = *this;
-	for (int j=0; j< ny; ++j)
-	  for (int i=0; i< nx; ++i)
-	    temp[i+j*nx]=short((im(i,j)-bzero)/bscale);
-	fits_write_img(fptr, TSHORT, 1, nx*ny, temp, &status);
-	CHECK_STATUS(status," fits_write_img (TSHORT) in FitsImage::Write ",);
-	delete [] temp;
-      }
-      
-    }
   written = 1 ;
   return (!status);
 } 
@@ -1648,7 +1679,8 @@ std::string DecompressImageIfNeeded(const std::string &InFileName,
   // zipped?
   if (IsZipped(InFileName))
     {
-      std::string command = "gunzip -c InfileName > "+OutFileName;
+      remove(OutFileName.c_str());
+      std::string command = "gunzip -c "+InFileName+" > "+OutFileName;
       ToRemove += " "+OutFileName;
       //DEBUG
       cout << "executing " << command << endl;
