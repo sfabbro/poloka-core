@@ -58,7 +58,7 @@ int main(int nargs, char **args)
       FitsImage flat(name);
       cout << " Processing " << name;
       string deadname = "dead_"+name;
-      FitsImage dead(deadname, (FitsHeader) flat);
+      FitsImage dead(deadname, (const FitsHeader &) flat);
       NormalizeImage(flat);
       MakeDead(flat, dead, minv, maxv);
       dead.ModKey("BITPIX",8);

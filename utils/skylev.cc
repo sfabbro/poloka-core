@@ -46,15 +46,17 @@ int main(int argc,char **args)
       Pixel mean,sigma;
       if (Namp==1)
       {
-	FitsHeader  head(image);
+	FitsHeader  &head = image;
 	Pixel meanOS = 0, sigmaOS =0;
 	if (!head.HasKey("WRITEDAT"))
 	  {
-	    cout << " raw image: subtract bias from the mean" << endl;
-
 	    Frame overscan= OverscanRegion(head,Namp);
-	    meanOS = image.MedianInFrame(overscan, sigmaOS);
-	    cout << "Median of overscan region " << meanOS << endl;
+	    if (overscan.Area() != 0)
+	      {
+		cout << " raw image: subtract bias from the mean" << endl;
+		meanOS = image.MedianInFrame(overscan, sigmaOS);
+		cout << "Median of overscan region " << meanOS << endl;
+	      }
 	  }
 	image.SkyLevel((head),& mean, &sigma);
 	cout << args[i] << ' ' << "  m : " << mean - meanOS<< " s : " << sigma << endl;

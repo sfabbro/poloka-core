@@ -25,14 +25,16 @@ if (argc <=1)
     if (FileExists(dbimage.FitsImageName(Calibrated)))
       {
 	im = new FitsImage(dbimage.FitsImageName(Calibrated));
-	im->SkyLevel(Frame(FitsHeader(*im)),& mean_im, &sigma_im);
+	FitsHeader &head = *im;
+	im->SkyLevel(Frame(head),& mean_im, &sigma_im);
       }
     Pixel mean_w = 0, sigma_w = -1;
     FitsImage *w = NULL;
     if (FileExists(dbimage.FitsWeightName()))
       {
 	w = new FitsImage(dbimage.FitsWeightName());
-	w->SkyLevel(Frame(FitsHeader(*w)),& mean_w, &sigma_w);
+	FitsHeader &head = *im;
+	w->SkyLevel(Frame(head),& mean_w, &sigma_w);
       }
     double im_w_stat = -1;
     if (im&&w)

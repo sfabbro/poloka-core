@@ -13,8 +13,8 @@ bin_PROGRAMS = \
  preptoads removeback selection \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
- fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp
-
+ fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
+  essai
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
@@ -102,6 +102,8 @@ skylev_SOURCES = skylev.cc
 sum_images_SOURCES = sum_images.cc
 trim_SOURCES = trim.cc
 valid_fits_SOURCES = valid_fits.cc
+
+essai_SOURCES = essai.cc
 
 
 ######## auto symbolic link #########
