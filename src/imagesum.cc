@@ -840,11 +840,20 @@ bool ImageSum::MakeSatur()
   cout << " making Satur image for " << Name() << endl;
   if (components.size() == 1)
     {
+      string name = components.front().Ri->FitsSaturName();
+      if ( !FileExists(name) )
+	components.front().Ri->MakeSatur();
       MakeRelativeLink(components.front().Ri->FitsSaturName().c_str(),
 		       FitsSaturName().c_str());
       return true;
     }
   ReducedImageList components = Components();
+  for (ReducedImageIterator i=components.begin(); i != components.end(); ++i)  
+    {
+      string name = (*i)->FitsSaturName();
+      if (!FileExists(name) )
+	(*i)->MakeSatur();
+    }
   return BoolImageOr(components, &ReducedImage::FitsSaturName, 
 		     &ReducedImage::MakeSatur, FitsSaturName());
 }
