@@ -257,6 +257,10 @@ static string ToadBand(const string &keyval)
 	  ToadBandMap["Sloanu`"] = 'U';
 	  ToadBandMap["Sloanz`"] = 'Z';
 	  ToadBandMap[sF+"Johnson"] = F;
+	  ToadBandMap["g.MP9401"] = 'G';
+	  ToadBandMap["r.MP9601"] = 'R';
+	  ToadBandMap["i.MP9701"] = 'I';
+	  ToadBandMap["z.MP9801"] = 'Z';
 	}  
     }
   StringCharMap::iterator match = ToadBandMap.find(keyval);
