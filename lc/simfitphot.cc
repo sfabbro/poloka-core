@@ -113,7 +113,10 @@ void SimFitPhot::operator() (LightCurve& Lc)
     case 0: // sn+galaxy
       break;
     case 1: //star 
-      zeFit.SetWhatToFit(FitFlux | FitPos         );
+      zeFit.SetWhatToFit(FitFlux);
+      zeFit.UseGalaxyModel(false);
+      zeFit.DoTheFit();
+      zeFit.SetWhatToFit(FitFlux | FitSky | FitPos);
       zeFit.UseGalaxyModel(false);
       break;
     case 2: //galaxy 
@@ -123,12 +126,11 @@ void SimFitPhot::operator() (LightCurve& Lc)
 		  << Lc.Ref->type << endl; return;
     }
   
+  string dir = Lc.Ref->name;
+  if(!IsDirectory(dir))
+    MKDir(dir.c_str());
   
   if(Lc.Ref->type == 0) {
-    string dir = Lc.Ref->name;
-    if(!IsDirectory(dir))
-      MKDir(dir.c_str());
-
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
 #endif
@@ -145,7 +147,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
-     zeFit.SetWhatToFit(FitFlux | FitGal | FitPos); // then everything    
+     zeFit.SetWhatToFit(FitFlux | FitGal | FitPos | FitSky); // then everything    
      zeFit.DoTheFit();     
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() Robustify  =============" << endl;
@@ -157,14 +159,16 @@ void SimFitPhot::operator() (LightCurve& Lc)
      cout << " ============= SimFitPhot::operator() refit FitFlux | FitPos | FitGal =============" << endl;
 #endif	
      zeFit.DoTheFit();
-     zeFit.write("sn",dir, WriteLightCurve|WriteGalaxy|WriteResid|WriteData|WriteVignetsInfo|WriteMatrices);
-     ofstream lstream((string(dir+"/lc.dat")).c_str());
-     Lc.write_short((ostream&)lstream);
-     lstream.close();
-     Lc.write_xml((string(dir+"/lc.xml")).c_str());  
   }else{
-    zeFit.DoTheFit();
+    zeFit.DoTheFit(); 
   }
+  
+  zeFit.write("sn",dir, WriteLightCurve|WriteGalaxy|WriteResid|WriteWeight|WriteData|WriteVignetsInfo|WriteMatrices);
+  ofstream lstream((string(dir+"/lc.dat")).c_str());
+  Lc.write_short((ostream&)lstream);
+  lstream.close();
+  Lc.write_xml((string(dir+"/lc.xml")).c_str()); 
+  
 }
 
 
