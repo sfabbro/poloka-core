@@ -136,7 +136,7 @@ bool ImageSubtraction::MakeWeight()
   if (FileExists(fileName)) return true;
   if (!MakeFits()) return false; // Hard way to get the convolution kernel.
 
-  cout << " making " << fileName << endl;
+  cout << " making WeightImage  " << fileName << endl;
   FitsHeader imageHeader(FitsName()); 
 
   FitsImage  weights(FitsWeightName(), imageHeader);
@@ -317,76 +317,7 @@ string ImageSubtraction::CandCutScanName() const
 //#include "convolution.h"
 
 
-#ifdef STORAGE
-bool ImageSubtraction::MakeCatalog()
-{
-  
-  if (FileExists(CatalogName())) return true;
-  MakeFits();
-  CandidateStarList stl;
-  /*
-    Detection_on_one_Sub(DatDetec & datdet, 
-                     CandidateStarList &  stl, double seeing_subtraction,
-		     double x_candidate, double y_candidate,
-		     string Name_Sub, string Name_Dead, 
-		     string Name_List);
-  */
-  DatDetec datdet(DefaultDatacards());
-  MakeDead();
-  MakeSatur();
 
-  MaskSatur();
-  double seeing_sub = Seeing();
-  double sigfond = PsfMatch::SigmaBack();
-  datdet.ComputeRadius_Seuil( seeing_sub, sigfond);
-  //  datdet.Print(); there is a print in CVDetection
-  FitsImage img(FitsName(), RO);
-  Frame frame_det = UsablePart();
-  
-  //FitsImage *dead = new FitsImage(FitsDeadName());
-  FitsImage *satur = new FitsImage(FitsSaturName());
-  
-  Image mask = (*satur);  
-
-  cout << " making catalog for " << Name() << " in " << Dir() << endl;
-
-  // NEIN !!! les deads devraient partir au stacking...
-
-  mask = mask.Subimage(frame_det);
-  //delete dead; 
-  delete satur;
-  mask.Simplify(0.9);
-
-  //bool fond_sub = img.BACK_SUB();
-  Image newimg = img.Subimage(frame_det);
-
-  
-
-  double truesky = NoisePow();
-  cout << "EXPECTED NOISE : " 
-       << sqrt(4*M_PI)*seeing_sub*truesky << endl;
-
-  NewCvDetection(/*fond_sub,*/ newimg, mask, stl, datdet, seeing_sub, seeing_sub);
-
-  // On shift les positions des objets detectes dans le frame.
-  GtransfoLinShift shift(floor(frame_det.xMin), floor(frame_det.yMin));
-  stl.ApplyTransfo(shift);
-
-  // Dump des listes dans differents formats
-  stl.write(AllCandidateCatalogName());
-
-  // Convert CandidateStarList to SEStarlist. have to actually
-  // convert objects because the write routines are virtual!
-  SEStarList selist;
-  for (CandidateStarCIterator i = stl.begin(); i != stl.end(); ++i)
-    {
-      selist.push_back(new SEStar(*(*i)));
-    }
-  selist.write(CatalogName());
-  return true;
-
-}
-#endif
 #include "detection.h"
 
 bool ImageSubtraction::RunDetection(DetectionList &Detections,
