@@ -2,7 +2,6 @@
 #include <iomanip>
 #include "fileutils.h"
 #include "datacards.h"
-#include "fitsimage.h"
 #include "datdetec.h"
 
 #ifndef M_PI
@@ -196,6 +195,7 @@ DatDetec::ComputeRadius(double seeing)
   //  if ( n_rad_locmax > 0 )   rad_locmax = n_rad_locmax * seeing  ;
 }
 
+#include <math.h>
 
 void
 DatDetec::Compute_Seuil(double seeing, double sigma_fd)
@@ -221,16 +221,6 @@ DatDetec::ComputeRadius_Seuil(double seeing, double sigma_fd)
   Compute_Seuil(seeing, sigma_fd);
 }
 
-
-
-
-static double key_val_double_with_check(FitsHeader &header, const char *KeyName)
-{
-if (header.HasKey(KeyName)) return (double(header.KeyVal(KeyName)));
-cerr << "clef " << KeyName << " manquante dans header " << header.FileName() << endl ; 
-exit(0);
-return 0;
-}
 
 
 
