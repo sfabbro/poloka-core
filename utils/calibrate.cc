@@ -11,6 +11,8 @@
 #include <photstar.h>
 #include <lightcurve.h>
 #include <simfitphot.h>
+#include <vutils.h>
+
 #include <map>
 #include <iomanip>
 
@@ -101,8 +103,7 @@ int main(int argc, char **argv)
 
   DictFile catalog(catalogname);
   
-  
-  int requiredlevel=3;
+  int requiredlevel=2;
   // get keys for mag
   string band = header.KeyVal("TOADBAND");
   string mag_key=getkey("m"+band,catalog);
@@ -124,7 +125,7 @@ int main(int argc, char **argv)
 
     count_total++;
     
-    if(entry->Value("level")!=requiredlevel)  continue; // not a star with correct level 
+    if(entry->Value("level")<requiredlevel)  continue; // not a star with correct level 
     mag=entry->Value(mag_key);
     
     count_total_stars++;
@@ -220,12 +221,10 @@ int main(int argc, char **argv)
   stream << "#end" <<endl;
   stream << setprecision(12);
   // first let's try to compute the ZP
-  double weight;
+  
   int count=0;
-  double sumzp=0;
-  double sumzp2=0;
-  double sumweight=0;
-  double zp,dzp;
+  double *values = new double[lclist.size()];
+  
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
     //cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
@@ -263,63 +262,15 @@ int main(int argc, char **argv)
       stream << endl;
       
       if(fs->flux<=0) continue;
-      dzp = sqrt(fs->varflux)/fs->flux;
-      if(dzp < 0.002)  dzp = 0.002; // minimum error
-      if(dzp>0.5) continue;
-      
-      weight = 1./dzp/dzp;
-      count ++;
-      sumweight += weight;
-      zp = 2.5*log10(fs->flux/cstar.flux);
-      sumzp += zp*weight;
-      sumzp2 += zp*zp*weight;
+      values[count++]=2.5*log10(fs->flux/cstar.flux);
     }
   }
   stream.close();
   
-  zp = sumzp/sumweight;
-  double rms = sqrt(sumzp2/sumweight -zp*zp);
-
+  double zp,rms;
+  zp = clipmean(values,count,rms,3.0,3);
   FILE *file = fopen("calibration.summary","w");
-  fprintf(file,"BEFORE_ROBUSTIFICATION_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
-  
-  // robustify
-  double zpmin = zp - rms*3;
-  double zpmax = zp + rms*3;
-  
-  count=0;
-  sumzp=0;
-  sumzp2=0;
-  sumweight=0;
-  
-  for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
-    CalibratedStar cstar=assocs.find(ilc->Ref)->second;
-    for (LightCurve::const_iterator it = ilc->begin(); it != ilc->end(); ++it) { // loop on points
-      const Fiducial<PhotStar> *fs = *it;
-      if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
-	continue;
-      if(fs->flux<=0) continue;
-      dzp = sqrt(fs->varflux)/fs->flux;
-      if(dzp < 0.002)  dzp = 0.002; // minimum error
-      if(dzp>0.5) continue;
-      zp = 2.5*log10(fs->flux/cstar.flux);
-      if(zp<zpmin) continue;
-      if(zp>zpmax) continue;
-      
-
-      weight = 1./dzp/dzp;
-      count ++;
-      sumweight += weight;
-      sumzp += zp*weight;
-      sumzp2 += zp*zp*weight;
-    }
-  }
-  
-  zp = sumzp/sumweight;
-  rms = sqrt(sumzp2/sumweight -zp*zp);
   fprintf(file,"RESULT_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
-
-
   fclose(file);
 
   return EXIT_SUCCESS;
