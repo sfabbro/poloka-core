@@ -12,7 +12,7 @@
 #define DEBUG_PsfMatch
 
 //both images are supposedly already registered (i.e. aligned)
-PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch, bool nospwap)
+PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMatch *APreviousMatch, bool noswap)
 {
   shouldNotDeleteFit = false;
   refName = Ref.Name();
