@@ -121,7 +121,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
      zeFit.SetWhatToFit(FitFlux | FitGal | FitPos | FitSky);
      zeFit.DoTheFit(30,0.005);
   }else{
-    zeFit.DoTheFit(); 
+    zeFit.DoTheFit(50,0.005); 
   }
 
   if(dowrite) {

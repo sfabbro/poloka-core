@@ -1355,8 +1355,9 @@ bool SimFit::GetCovariance()
   // it corrects for initially under-estimated (ex: correlated) weights if chi2/dof < 1 
   // or for error in our model if chi2/dof > 1
 
-  //double sigscale = chi2 / double(ndata - nparams);
-  double sigscale = 1;
+  double sigscale = chi2 / double(ndata - nparams);
+  //double sigscale = 1;
+  if(sigscale<1) sigscale = 1;
   
   int fluxind = 0;
   int skyind  = 0;

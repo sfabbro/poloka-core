@@ -94,14 +94,13 @@ int main(int argc, char **argv)
     
     // now check mag
     mag=entry->Value(band);
-    if(mag<=0 || mag>50) continue; // crazy mag
+    if(mag<10 || mag>30) continue; // crazy mag
     
-    // median 
-    mag_med=entry->Value(band+"2");
-    mag_rms=entry->Value(band+"3");
-
-    if(mag_rms<0 || mag_rms>0.05) continue; // cuts validated on color-color plot
-    if(fabs(mag-mag_med)>0.05) continue;
+    
+    //mag_med=entry->Value(band+"2");
+    //mag_rms=entry->Value(band+"3");
+    //if(mag_rms<0 || mag_rms>0.05) continue; // cuts validated on color-color plot
+    //if(fabs(mag-mag_med)>0.05) continue;
     
     
     count_total_stars++;
@@ -191,7 +190,7 @@ int main(int argc, char **argv)
   double sumzp=0;
   double sumzp2=0;
   double sumweight=0;
-  double zp;
+  double zp,dzp;
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
     //cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
@@ -218,7 +217,13 @@ int main(int argc, char **argv)
 	stream << 0 << " ";
       stream << endl;
       
-      weight = 1./fs->varflux;
+      
+      if(fs->flux<=0) continue;
+      dzp = sqrt(fs->varflux)/fs->flux;
+      if(dzp < 0.002)  dzp = 0.002; // minimum error
+      if(dzp>0.5) continue;
+      
+      weight = 1./dzp/dzp;
       count ++;
       sumweight += weight;
       zp = 2.5*log10(fs->flux/cstar.flux);
@@ -227,13 +232,52 @@ int main(int argc, char **argv)
     }
   }
   stream.close();
-  {
-    zp = sumzp/sumweight;
-    double rms = sqrt(sumzp2/sumweight -zp*zp);
-    FILE *file = fopen("calibration.summary","w");
-    fprintf(file,"RESULT_zp_rms_error= %6.6f %6.6f %6.6f\n",zp,rms,rms/sqrt(float(count)));
-    fclose(file);
+  
+  zp = sumzp/sumweight;
+  double rms = sqrt(sumzp2/sumweight -zp*zp);
+
+  FILE *file = fopen("calibration.summary","w");
+  fprintf(file,"BEFORE_ROBUSTIFICATION_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
+  
+  // robustify
+  double zpmin = zp - rms*3;
+  double zpmax = zp + rms*3;
+  
+  count=0;
+  sumzp=0;
+  sumzp2=0;
+  sumweight=0;
+  
+  for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
+    CalibratedStar cstar=assocs.find(ilc->Ref)->second;
+    for (LightCurve::const_iterator it = ilc->begin(); it != ilc->end(); ++it) { // loop on points
+      const Fiducial<PhotStar> *fs = *it;
+      if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
+	continue;
+      if(fs->flux<=0) continue;
+      dzp = sqrt(fs->varflux)/fs->flux;
+      if(dzp < 0.002)  dzp = 0.002; // minimum error
+      if(dzp>0.5) continue;
+      zp = 2.5*log10(fs->flux/cstar.flux);
+      if(zp<zpmin) continue;
+      if(zp>zpmax) continue;
+      
+
+      weight = 1./dzp/dzp;
+      count ++;
+      sumweight += weight;
+      sumzp += zp*weight;
+      sumzp2 += zp*zp*weight;
+    }
   }
+  
+  zp = sumzp/sumweight;
+ rms = sqrt(sumzp2/sumweight -zp*zp);
+  fprintf(file,"RESULT_zp_rms_count= %6.6f %6.6f %d\n",zp,rms,count);
+
+
+  fclose(file);
+
   return EXIT_SUCCESS;
 }
 
