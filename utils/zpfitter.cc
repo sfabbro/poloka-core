@@ -90,7 +90,10 @@ int main(int argc, char **argv)
   zp = gaussianfit(values,count,zp,rms,2.,false);
   zp = gaussianfit(values,count,zp,rms,1.5,false);
   zp = gaussianfit(values,count,zp,rms,1.,false);
-  fprintf(file,"@PSFZP %6.6f %6.6f %d\n",zp,rms,count);
+  fprintf(file,"@PSFZP %6.6f\n",zp);
+  fprintf(file,"@PSFZPERROR %6.6f\n",rms);
+  fprintf(file,"@NMEASUREMENTS %d\n",count);
+  
   printf("@PSFZP %6.6f %6.6f %d\n",zp,rms,count);
   if(nstars>0) {
     fprintf(file,"@NSTARS %d\n",nstars);
