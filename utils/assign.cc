@@ -14,7 +14,7 @@ struct Flat {
     {
       FitsHeader header(file);
       chip = header.KeyVal("TOADCHIP");
-      filter = header.KeyVal("TOADBAND");
+      filter = string(header.KeyVal("TOADBAND"));
       filename = file;
     };
 };
