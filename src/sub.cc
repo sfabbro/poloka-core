@@ -537,6 +537,10 @@ ReducedImage* Sub::DoOneStack(const StringList &Components,
       SwarpStack *result = new SwarpStack(StackName, Components, 
 					  GeometricReference,
 					  GeometricReference->PhysicalSize());
+      /* subtractions are usually run in parallel so do not use swarp 
+	 internal parallelization :
+      */
+      AddSwarpDefaultKey("NTHREADS","1");
       result->Execute(ToDo);
       return result;
     }
@@ -725,6 +729,17 @@ Sub::~Sub()
 {
   /*  if (FakeList) delete FakeList; */
 }
+
+
+string NewStack::SubName() const
+{ 
+  string subname = name ; 
+  if (strstr(name.c_str(), "new"))
+    return SubstitutePattern(name,"new","sub");
+  else
+   return(name + "_sub");
+}
+
 
 
 NewStack::~NewStack()

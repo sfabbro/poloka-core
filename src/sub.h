@@ -34,11 +34,7 @@ public :
   // pointers newStack and sub.
 
   //! Name of the subtraction from Name of the stack: if the stackname is new1, then the SubName is new1. If the stackname is blabla, then the SubName is blabla_sub.
-  string SubName() const { string subname = name ; 
-  if (SubstitutePattern(subname, "new", "sub") > 0 )
-    return subname;
-  else
-   return(name + "_sub");}
+  string SubName() const;
 
   ~NewStack();
 };
