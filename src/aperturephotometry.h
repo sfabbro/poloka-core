@@ -14,7 +14,8 @@
 #include "fitsimage.h"
 #include "gtransfo.h"
 
-double fraction(double, double, double, double, double);
+
+
 
 // =================================================================
 // =================================================================

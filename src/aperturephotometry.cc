@@ -11,6 +11,111 @@
 #include "starlist.h"
 #include "starlist.cc" /* since starlist is a template class */
 
+// premier probleme, quelle est la fraction de pixel couverte par un disque de rayon R ?
+// x_pix, y_pix coord du centre du pixel (de taille 1x1 par convention)
+
+static double fraction(double x_centre, double y_centre, double R, double x_pix, double y_pix)
+{
+  double x_min, x_max;
+	// Je m'arrange pour que le pixel soit dans le premier quadrant par rapport au centre du cercle
+	
+	if (x_pix < x_centre) {x_pix = 2.*x_centre - x_pix;};
+	if (y_pix < y_centre) {y_pix = 2.*y_centre - y_pix;};
+       
+	// Je m'arrange même pour qu'il soit dans la zone y>x
+	
+	if ((x_pix-x_centre)>(y_pix-y_centre))
+	{
+		double prov = x_pix; x_pix = y_pix; y_pix = prov;
+		prov = x_centre; x_centre = y_centre; y_centre = prov;
+	}
+	
+#ifdef DEBUG
+	cout << x_centre << " " << y_centre << " " << R << " " << x_pix << " " << y_pix << endl;
+#endif
+
+	// je definis les coordonnees par rapport au coin inf gauche du pixel
+
+	x_centre -= x_pix - 0.5;
+	y_centre -= y_pix - 0.5;
+
+#ifdef DEBUG
+	cout << "coord centre utilisees : " << x_centre << " " << y_centre << endl;
+#endif
+	// si la distance entre centre et bord inf gauch du pix est > R, le pixel est dehors (faux pour R petit)
+
+	if (pow(x_centre,2.)+pow(y_centre,2.) > pow(R,2.)) return 0.;
+
+	// si la distance entre centre et bord sup droit du pix est < R, le pixel est dedans (faux pour R petit)
+
+	if (pow(x_centre-1.,2.)+pow(y_centre-1.,2.) < pow(R,2.)) return 1.;
+
+	// L'equation du cercle est y = y_centre + sqrt(R^2-(x-x_centre)^2)
+	
+	// 
+	// On calcule les intersections de ce cercle avec les bords du pixel.
+	//
+	
+		
+	// en quels points du bord inferieur du pixel passe le cercle.
+
+	x_min = x_centre - sqrt(pow(R,2.) - pow(y_centre,2.));
+	x_max = x_centre + sqrt(pow(R,2.) - pow(y_centre,2.));
+
+	if (x_min > x_max) { double prov = x_min; x_min=x_max; x_max=prov;}
+	
+#ifdef DEBUG
+	cout << "intersections bord inf : " << x_min << " " << x_max << endl;
+#endif
+
+	if (x_min < 0.) x_min = 0.;
+	if (x_max > 1.) x_max = 1.;
+
+
+	// Si le point UL du pixel n'est pas dans le cercle, il suffit de calculer l'integrale
+
+	double complement;
+	if (pow(x_centre,2.)+pow(y_centre+1.,2.) < pow(R,2.))
+	  {
+#ifdef DEBUG
+	    cout << "cas 1 : complement = 0" << endl;
+#endif
+	    complement = 0.;
+	  }
+	else
+	// Sinon il faut recalculer x_min, le point ou le cercle coupe le bord sup du pixel
+	  {
+	    double x_min1 = x_centre - sqrt(pow(R,2.) - pow(y_centre-1.,2.));
+	    double x_min2 = x_centre + sqrt(pow(R,2.) - pow(y_centre-1.,2.));
+
+#ifdef DEBUG
+	    cout << "intersections bord sup : " << x_min1 << " " << x_min2 << endl;
+#endif
+
+	    x_min = x_min1;
+	    if (x_min<x_min2) x_min=x_min2;
+	    complement = x_min;
+#ifdef DEBUG
+	    cout << "cas 2 :complement = " << x_min << endl;
+#endif
+	  }
+
+	//int(sqrt(R^2-x^2),x) = 1/2 x sqrt(R^2-x^2) + 1/2 R^2 arcsin (x/R)
+
+	double integrale = (x_max-x_centre) * sqrt(pow(R,2.) - pow(x_max-x_centre,2.))/2. 
+	  + pow(R,2.)* asin ((x_max-x_centre)/R)/2. + y_centre*(x_max-x_centre);
+	integrale -= (x_min-x_centre) * sqrt(pow(R,2.) - pow(x_min-x_centre,2.))/2. 
+	  + pow(R,2.)* asin ((x_min-x_centre)/R)/2. + y_centre*(x_min-x_centre);
+	integrale += complement;
+	  
+#ifdef DEBUG
+	cout << integrale << endl;
+#endif
+	
+	return x_min + integrale;	
+}
+
+
 
 // ==============================================
 //
