@@ -2,10 +2,15 @@
 #ifndef PHOTSTAR__H
 #define PHOTSTAR__H
 
+#include "persistence.h"
+
 #include "basestar.h"
 class SEStar;
 
 class PhotStar : public BaseStar {
+  CLASS_VERSION(PhotStar,1);
+  #define PhotStar__is__persistent
+
 public:
   PhotStar();
   PhotStar(const BaseStar &BStar);

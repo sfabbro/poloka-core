@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "persistence.h"
+
 #include "basestar.h"
 #include "astroutils.h"
 #include "sestar.h"
@@ -11,10 +13,12 @@
 // To match an image with the Standard catalogue
 
 
-typedef enum StandardColor {NONE, VBAND, BBAND, UBAND, RBAND, IBAND};
+typedef enum StandardColor {NONE=0, VBAND, BBAND, UBAND, RBAND, IBAND};
 
 
 class StandardStar : public BaseStar {
+  CLASS_VERSION(StandardStar,1);
+  #define StandardStar__is__persistent
 
 public :
 

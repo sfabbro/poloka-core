@@ -1,12 +1,17 @@
 #ifndef FIDSTAR__H
 #define FIDSTAR__H
 
+#include "persistence.h"
+
+
 #include "photstar.h"
 
 //using namespace std;
 class SEStar;
 
 class FidStar : public PhotStar {
+  CLASS_VERSION(FidStar,1);
+  #define FidStar__is__persistent
 public:
 
   FidStar();

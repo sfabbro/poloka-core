@@ -3,8 +3,11 @@
 
 #include <math.h>
 
-class Histo1d {
+#include "persistence.h"
 
+class Histo1d {
+  CLASS_VERSION(Histo1d,1);
+  #define Histo1d__is__persistent
  private:
   float *data;
   int nx;
@@ -12,6 +15,7 @@ class Histo1d {
   float scalex;
 
  public:
+  Histo1d() {}
   Histo1d(int Nx, float Minx, float Maxx);
   void Fill(float X, float weight=1.)
       {int bin = int(floor((X - minx)*scalex)); 

@@ -1,9 +1,11 @@
 #ifndef HISTO4D__H
 #define HISTO4D__H
 
+#include "persistence.h"
 
 class SparseHisto4d {
-
+  CLASS_VERSION(SparseHisto4d,1);
+  #define SparseHisto4d__is__persistent
  private:
   int *data;
   int ndata; int dataSize;
@@ -13,6 +15,7 @@ class SparseHisto4d {
   bool sorted;
   
  public:
+  SparseHisto4d() {}
   // obvious meanings. NEntries is used as the size of the primary allocation.
   SparseHisto4d(const int N1, double Min1, double Max1, 
 		const int N2, double Min2, double Max2,

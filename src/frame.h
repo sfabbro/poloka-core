@@ -5,7 +5,7 @@
 #include <iostream>
 #include "point.h"
 
-#include "../objio/persister.h"
+#include "persistence.h"
 
 class Gtransfo;
 typedef enum {WholeSizeFrame, ClippedSizeFrame} WhichFrame;
@@ -106,8 +106,8 @@ public:
 private:
   void order();
   
-  static const unsigned short __version__=2;
-  friend class persister<Frame>;
+  CLASS_VERSION(Frame,1);
+  #define Frame__is__persistent
 };
 
 

@@ -1,6 +1,8 @@
 #ifndef ROLLINGSTAR__H
 #define ROLLINGSTAR__H
 
+#include "persistence.h"
+
 #include "basestar.h"
 #include "image.h"
 #include "nstarmatch.h"
@@ -8,11 +10,14 @@
 #include "reducedimage.h"
 
 class RollingStar : public BaseStar {
+  CLASS_VERSION(RollingStar,1);
+  #define RollingStar__is__persistent
   //class RollingStar {
  private:
   double Faper_ref;
   int Nlists;
  public:
+  RollingStar() {}
   RollingStar(int & n);
 
   

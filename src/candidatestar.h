@@ -4,6 +4,7 @@
 #ifndef  CANDISTAR__H 
 #define  CANDISTAR__H
 
+#include "persistence.h"
 
 #include "sestar.h"
 #include "image.h"
@@ -11,7 +12,8 @@
 
 
 class CandidateStar : public SEStar {
-
+  CLASS_VERSION(CandidateStar,1);
+  #define CandidateStar__is__persistent
 public:
   CandidateStar();
   CandidateStar(SEStar const & sestar);

@@ -5,6 +5,8 @@
 #include <list>
 #include <string.h>
 
+#include "persistence.h"
+
 #include "basestar.h"
 //#include "image.h"
 
@@ -17,6 +19,8 @@ class Image;
 //! a double precision image type.
 class DImage  
 {
+  CLASS_VERSION(DImage,1);
+  #define DImage__is__persistent
 private :
   int nx,ny;
   DPixel *data;
@@ -153,7 +157,8 @@ typedef list<Stamp>::const_iterator StampCIterator;
 //! An odd size DImage addressed with (0,0) at center 
 //! allows quick computation of convolution like operations.
 class Kernel : public DImage {
-
+  CLASS_VERSION(Kernel,1);
+  #define Kernel__is__persistent
 protected :
 int hSizeX, hSizeY;
 public:

@@ -1,20 +1,45 @@
 EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
 # with CMT
-AM_CPPFLAGS = @CMT_INCLUDES@ 
-AM_LDFLAGS = @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@
+#AM_CPPFLAGS = @CMT_INCLUDES@ 
+#AM_LDFLAGS = @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@
 
 # without CMT
-#AM_CPPFLAGS = @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@
-#AM_LDFLAGS = @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@
+AM_CPPFLAGS = -I../objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@
+AM_LDFLAGS = -L../objio -ltoadio @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@
 
 AM_YFLAGS = -l -d
+
+%_dict.cc : %.h
+	../objio/dictgen2 -o $@ $<
+
 
 #  psf.cc                      psf.h            
 
 
+
 lib_LTLIBRARIES = libtoads.la
 libtoads_la_SOURCES = \
+ \
+  frame_dict.cc \
+  point_dict.cc \
+  basestar_dict.cc \
+  sestar_dict.cc \
+  candidatestar_dict.cc \
+  fidstar_dict.cc \
+  jimstar_dict.cc \
+  photstar_dict.cc \
+  rollingstar_dict.cc \
+  senearstar_dict.cc \
+  standardstar_dict.cc \
+  starmatch_dict.cc \
+  yquemstar_dict.cc \
+  histo1d_dict.cc \
+  histo2d_dict.cc \
+  histo4d_dict.cc \
+  image_dict.cc \
+  dimage_dict.cc \
+ \
   vutils.cc                   vutils.h         \
   wcscon.c                    wcscon.h         \
   wcsutils.cc                 wcsutils.h       \
@@ -193,6 +218,8 @@ nightelement.h
 
 #simulation.h                       
 
-
-
 noinst_HEADERS = wcscon.h defs.h simps2d.h
+
+
+CLEANFILES = *_dict.h *_dict.cc *__persister.h *__persister.cc
+

@@ -7,6 +7,8 @@
 #include <algorithm> // for swap
 #include <string>
 
+#include "persistence.h"
+
 #include "point.h"
 #include "basestar.h"
 #include "gtransfo.h"
@@ -27,6 +29,9 @@
       the stars in the caller data structures. */
 
 class StarMatch {
+  CLASS_VERSION(StarMatch,1);
+  #define StarMatch__is__persistent
+
   friend class StarMatchList;
 
 public: /* if one sets that private, then fitting routines will be a nightmare. we could set all the Transfo classes friend... */

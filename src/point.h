@@ -3,12 +3,18 @@
 #define POINT__H
 #include <iostream>
 #include <cmath>
+
+#include "persistence.h"
+
+
 using namespace std;
 
 /*! \file */
 
 //! A point in a plane.
 class Point {
+  CLASS_VERSION(Point,1);
+  #define Point__is__persistent
 public:
   //! coordinate
    double x,y;

@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include "persistence.h"
+
 #include "basestar.h"
 #include "image.h"
 
@@ -36,8 +38,8 @@ using namespace std;
 /*! The flux of BaseStar is   FLUX_BEST from SExtractor, i.e.
   FLUX_ISOCOR if not crowded,  FLUX_AUTO otherwise. */ 
 class SEStar : public BaseStar {
-
-  
+  CLASS_VERSION(SEStar,1);
+  #define SEStar__is__persistent
 public:
   SEStar();
   SEStar(double xx, double yy, double ff);

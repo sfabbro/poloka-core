@@ -38,6 +38,8 @@ using namespace std;
 //! The base class for handling stars. Used by all matching routines.
 class BaseStar : public Point, public RefCount
 {
+  CLASS_VERSION(BaseStar,1);
+  #define BaseStar__is__persistent
   public : // si quelqu'un connait un moyen efficace d'eviter ca...
 double flux; 
 
