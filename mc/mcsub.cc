@@ -294,7 +294,7 @@ ImageGtransfoRef  MCSub::GetFirstTransfo()
 
 void MCSub::MakeFakeList()
 {
-  cerr <<"Entering MakeFakeList" << endl ;
+  cout <<" Entering MakeFakeList" << endl ;
   if (FileExists(FakeListName()))
     {
       cout << "Reading fake supernovae list: " << FakeListName() << endl;
@@ -305,7 +305,7 @@ void MCSub::MakeFakeList()
       if (Addition_Method == WModel)
 	{
 	  
-	  cerr << "Checking transfo Homogeneity." << endl ;
+	  cout << "Checking transfo Homogeneity." << endl ;
 	  bool ok1 = CheckTransfoHomogeneity();
 	  if (! ok1)
 	    {
@@ -319,9 +319,9 @@ void MCSub::MakeFakeList()
 	  {FitsImage ref(GeometricReference->FitsName());
 	  double satur = ref.ComputeSaturation();
       
-	  cerr << "Saturation for " << GeometricReference->Name() 
+	  cout << "Saturation for " << GeometricReference->Name() 
 	       << " : " << GeometricReference->Saturation() << endl ;
-	  cerr << "Computed Saturation for " << GeometricReference->Name() 
+	  cout << "Computed Saturation for " << GeometricReference->Name() 
 	       << " : " << satur << endl ;
 	  int nsat = FlagSaturatedStars(stlref, min(satur,GeometricReference->Saturation()));
 	  cerr << nsat  << " stars flagged as saturated. " << endl ;
@@ -330,16 +330,16 @@ void MCSub::MakeFakeList()
 	  // la class template de countedref.
 	  if (!sum)// si stack.newStack est bien un *ImageSum
 	    {
-	      cerr << " The new stack is not a sum" << endl ;
+	      cout << " The new stack is not a sum" << endl ;
 	      abort() ;
 	    }
 	  ReducedImageList alignedimages = sum->Components() ;
-	  bool ok2 = SelectModelStars(alignedimages,stlref,
-				      BellesEtoiles,&ref);
+	  bool ok2 = SelectModelStars(alignedimages, stlref,
+				      BellesEtoiles, ref);
       
 	  if (! ok2)
 	    {
-	      cerr << "Failing selecting model stars for simulation, aborting " << endl;
+	      cout << "Failing selecting model stars for simulation, aborting " << endl;
 	      abort() ;
 	    }}
 	  ForSimWModel forsim_wm(*GeometricReference,BellesEtoiles,tf);
@@ -351,7 +351,7 @@ void MCSub::MakeFakeList()
 	  SNList = forsim.MakeListSN();
 	}
 
-      cerr <<"Writing fake list in " << FakeListName() << endl ;
+      cout <<"Writing fake list in " << FakeListName() << endl ;
       SNList->write(FakeListName());
 	  
     } 
