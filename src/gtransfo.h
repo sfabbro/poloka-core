@@ -3,7 +3,7 @@
 // \file gtransfo.h
 // \brief Geometrical transformations (of 2D points)
 // 
-// Last modified: $Date: 2004/02/25 16:42:06 $
+// Last modified: $Date: 2004/03/09 10:57:06 $
 // By:            $Author: guy $
 // 
 #ifndef GTRANSFO_H
@@ -15,7 +15,8 @@
 #include <string>
 
 #include "point.h"
-
+#include "countedref.h"
+#include "persister.h"
 
 class StarMatchList;
 class Frame;
@@ -38,7 +39,7 @@ class GtransfoLin;
 
 
 
-class Gtransfo{
+class Gtransfo: public RefCount{
 public:
   
   //!
@@ -162,6 +163,9 @@ class GtransfoCub;
 class GtransfoLin : public Gtransfo {
 
  public:
+  CLASS_VERSION(GtransfoLin,1);
+  #define GtransfoLin__is__persistent
+
     //! the default constructor constructs the do-nothing transformation.
     GtransfoLin() {identity();}
 
