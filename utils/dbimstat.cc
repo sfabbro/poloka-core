@@ -1,9 +1,10 @@
 #include <iostream>
 #include <string>
 
-#include "dbimage.cc"
+#include "dbimage.h"
 #include "fitsimage.h"
 #include "frame.h"
+#include "fileutils.h"
 
 int main(int argc,char **args)
 {
