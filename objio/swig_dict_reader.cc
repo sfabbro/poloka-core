@@ -6,7 +6,7 @@
 
 #include <iostream>
 #include <sstream>
-
+#include <cassert>
 #include <libxml/parser.h>
 
 #include "dict.h"
