@@ -15,14 +15,6 @@
 #include "imagesum.h"
 #include "reducedutils.h"
 
-/* TO DO : 
-   - compute a correct gain and check image attributes
-   - it would be wise to produce an image roughly in electrons
-   - Satur map is very crude it overkills. 
-   - same for Dead map is probably wrong
-   - may be we miss a "just sum" using the binary masks. 
-*/
-
 
 static double sqr(const double &a) { return a*a;}
 

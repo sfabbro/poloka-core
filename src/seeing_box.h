@@ -11,12 +11,6 @@
 
 
 
-// coeff par lequel on multiplie le SATUR_LEV du header
-// pour obtenir la saturation
-//#define SATUR_COEFF 0.8 CCDs are more than 80% non linear.
-
-#define SATUR_COEFF 0.95
-
 
 // Structure pour le calcul du seeing:
 // - selection des etoiles

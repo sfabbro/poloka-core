@@ -34,7 +34,8 @@ class Detection : public BaseStar
   double xObj, yObj; // coordinates of object on ref
   double fluxObjRef; // flux of nearest object
   double distObjRef; // distance to the latter  
-
+  //  double fwhmRef; // FWHM of nearesest object (obsolete)
+  // double shapeRef; // flux/fluxmax of nearest object on ref (obsolete)
   double localback ; // local background as computed by detector
  
     //! temporary, for IO's
@@ -204,8 +205,7 @@ class MatchedDetection : public Detection
     {others.push_back(OtherDet);}
 
   bool CompatibleSig2Noise(const double &Fact) const;
-  // NRL : 02/2004 Not implemented !
-  //  bool CompatiblePosition(const double &DistMax) const;
+  bool CompatiblePosition(const double &DistMax) const;
   std::string WriteHeader_(ostream & stream, const char*i) const;
   static MatchedDetection* read(istream& r, const char* Format);
   void writen(ostream &s) const ;

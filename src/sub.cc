@@ -10,6 +10,7 @@
 #include "imagesum.h"
 #include "imagesubtraction.h"
 #include "reducedutils.h"
+#include "swarpstack.h"
 
 /*! \page newsubfile Syntax of the "subfile"
 a subfile is a very simple text file that describes what should be 
@@ -71,18 +72,6 @@ irrelevant since we run a "simple" subtraction (as specified by ONE SUBTRACTION)
 
 */
 
-typedef enum TypeSub{TypeRef =0, TypeNew1, TypeNew2, TypeNew};
-
-struct DatSim {
-  int numberOfFakes;
-  double minMag, maxMag;
-  
-  DatSim() { numberOfFakes = 100; minMag = 22; maxMag = 26;}
-  void LitDataCards(DataCards &);
-  DatSim(const string &FileName);
-  void Print();
-};
-
 
 #ifndef M_PI
 #define  M_PI           3.14159265358979323846  /* pi */
@@ -103,26 +92,26 @@ static void RenameDbImage(const DbImage& D, const string &NewName)
     }
 }
 
-
 static const char* last_word(const char *line, const char sep = ' ')
 {
   const char *p = line + strlen(line) - 1;
   // skip trailing sep's
   while ( (*p == sep) && (p > line)) p--;
-  while ( (*p != sep) && (p > line)) p--;
-  return p;
+  while ( (*p != sep))
+    {
+      if (p == line) return p;
+      p--;
+    }
+  return p+1;
 }
-
-static string first_word(const char *line, const char sep = ' ')
+ 
+static string first_word(const char *line, const char *seps = " \t")
 {
-  int start;
-  int end_line = strlen(line);
-
-  while ( line[start] == sep && start < end_line) start++;
-  int end = start;
-  while ( line[end] != sep &&  end < end_line) end++;
+  int start = strspn(line, seps); // first which is not
+  int end = strcspn(line+start,seps);
   return string(line).substr(start,end);;
 }
+ 
 
 
 
@@ -170,7 +159,14 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 	  inNew = true; inRef = false;  inFixRef = false;
 	  AllNew.push_back(NewStack());
 	  currentNewStack = &AllNew.back();
-	  string currentNewName = StringToLower(last_word(line)); 
+ // check if there is anything left
+	  string currentNewName;
+	  if (strstr(line,"SWARP_STACK"))
+	    {
+	      currentNewStack->stackType = SwarpKind;
+	      currentNewName = StringToLower(first_word(line));
+	    }
+	  else currentNewName = StringToLower(last_word(line)); 
 	  // remove trailing white space
 	  RemovePattern(currentNewName," ");
 	  currentNewStack->name = currentNewName;
@@ -221,6 +217,20 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 	  exit(1);
 	}
 
+      // .. and is not empty
+
+      // check if catalog exists...
+      if (current.HasCatalog())
+	{
+	  SEStarList catalog(current.CatalogName());
+	  if (catalog.size() == 0)
+	    {
+	      std::cerr << " image " << currentName 
+			<< " has an empty catalog : drop it" << std::endl;
+	      continue;
+	    }
+	}
+      
       if (inFixRef)
 	{
 	  GeomRefName = currentName;
@@ -233,13 +243,36 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 	  ToExtract.push_back(currentName);
 	}
       if (inRef)
-	{
-	  Ref.push_back(currentName);
+	{ // search if there is something after the image name
+	  std::string remainder = string(start_line + strcspn(start_line," \t"));
+	  RemovePattern(remainder," ");
+	  if (remainder.size() == 0) Ref.push_back(currentName);
+	  else if (strstr(remainder.c_str(), "SubImage") == 0)
+	    { // decode name=[a:b,c:d] 
+	      char refName[128];
+	      int imin,imax,jmin,jmax;
+	      /* sscanf format means : everything without "=", 
+		 then "=", then you can figure it out */
+	      if (sscanf(remainder.c_str(),"%[^=]=[%d:%d,%d:%d]",
+			 refName, &imin,&imax,&jmin,&jmax) != 5)
+		{
+		  std::cerr << " can't decode end of line : " 
+			    << remainder << std::endl
+			    << line << std::endl
+			    << " giving up " << std::endl;
+		  exit(1);
+		}
+	      SubImage ref(refName, currentName, Frame(imin,jmin,imax,jmax));
+	      ref.Execute(DoFits | DoWeight | DoSatur | DoCatalog );
+	      Ref.push_back(refName);
+	      currentName = refName; // for AllInputImages
+	      GeomRefName = currentName;
+	    }		    
 	}
       else if (inNew)
 	{
 	  currentNewStack->push_back(currentName); 
-	}      
+	}
       AllInputImages.push_back(currentName);
       //cerr << line << endl;
     }
@@ -453,7 +486,10 @@ void Sub::FindGeometricReference()
 }
 
 
-ReducedImage* Sub::DoOneStack(StringList Components, const string &StackName, int ToDo)
+ReducedImage* Sub::DoOneStack(const StringList &Components, 
+			      const string &StackName, 
+			      const int ToDo,
+			      const StackType ST)
 {
   // a single image stack to do with stackname = single image name
   if (Components.size() == 1 && Components.front() == StackName)
@@ -471,10 +507,22 @@ ReducedImage* Sub::DoOneStack(StringList Components, const string &StackName, in
       return GeometricReference;
     }
   // Do the stack
-  ReducedImageList unalignedImages(Components);
-  ImageSum *stack = ImagesAlignAndSum(unalignedImages, *GeometricReference,
-				      StackName, ToDo, RefStack);
-  return stack;
+  if (ST == RegularKind)
+    {
+      ReducedImageList unalignedImages(Components);
+      ImageSum *stack = ImagesAlignAndSum(unalignedImages, *GeometricReference,
+					  StackName, ToDo, RefStack);
+      return stack;
+    }
+  else if (ST == SwarpKind)
+    {
+      SwarpStack *result = new SwarpStack(StackName, Components, 
+					  GeometricReference,
+					  GeometricReference->PhysicalSize());
+      result->Execute(ToDo);
+      return result;
+    }
+  else return NULL;
 }
 
 
@@ -499,7 +547,9 @@ int Sub::DoIt()
     {
       NewStack &stack = AllNew[i];
       cerr << "Processing " << stack.Name() << endl ;
-      stack.newStack = DoOneStack(stack, stack.Name() , toDo);
+      stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
+      stack.newStack->FlagDiffractionSpikes();
+      
       // build the subtraction name
       string newName = stack.Name();
       RemovePattern(newName, "new");
@@ -616,545 +666,5 @@ Sub::~Sub()
 NewStack::~NewStack()
 {
 }
-
-
-#ifdef STORAGE
-
-
-
-static void ReducedToTransformed(const ReducedImageList &RIList, ReducedImageList &TIList)
-{
-  TIList.clear();
-  for (ReducedImageCIterator rii = RIList.begin(); rii != RIList.end(); ++rii)
-    {
-      ReducedImage *ri = *rii;
-      TransformedImage *ti = IsTransformedImage(ri);
-      if (!ti)
-	{
-	  GtransfoIdentity identity;
-	  ImageGtransfo itf(&identity,&identity, ri->UsablePart(),ri->Name());
-	  TIList.push_back(new 
-              TransformedImage(TransformedName(ri->Name(),ri->Name()),
-			       *ri, &itf)
-			   );
-	}
-      else TIList.push_back(new TransformedImage(*ti));
-    }
-}
-
-// Name of the transformed with Fakes
-
-static string NameWithFakes(const ReducedImage *Ri)
-{
-  return ("Fak"+Ri->Name());
-}
-
-
-
-#include "gtransfo.h"
-int Sub::DoOneSub(const ReducedImage *RefStackHere, const ImageSum *NewStackHere, const string &SubName, ImageSubtraction *&SubHere)
-{
-
-  SubHere = new ImageSubtraction(SubName, *RefStackHere,*NewStackHere);
-  SubHere->FitKernel();
-  SubHere->Execute(DoFits | DoCatalog);
-  if (AddFakes)
-    {
-      ReducedImageList tNew = NewStackHere->Components();
-      ReducedImageList withoutFakes;
-      
-      ReducedToTransformed(tNew, withoutFakes);
-      ReducedImageList listWithFakes;
-      
-      double SumNoise=0;
-      
-      for (ReducedImageIterator tii = withoutFakes.begin(); tii != withoutFakes.end(); ++tii)
-	{
-	  TransformedImage *ti = dynamic_cast<TransformedImage*>(*tii);
-	  Image img = FitsImage((*ti).FitsImageName(Calibrated));
-	  Pixel mean, sigma;
-	  img.SkyLevel(& mean, &sigma);
-	  SumNoise += sigma*sigma;
-	  TransformedImageAddFakes *withFakes = new 
-	    TransformedImageAddFakes(NameWithFakes(ti),ti->Source(), 
-				     ti->Transfo(), FakeList, ti->FromRef()); 
-	  listWithFakes.push_back(withFakes);
-	}
-      // sum up the new stack (with fakes added)
-      
-      ImageSum newStackWithFakes(NameWithFakes(NewStackHere), listWithFakes);
-
-
-      
-
-      newStackWithFakes.Execute(DoFits|DoCatalog);
-      // borrow the seeing (set when making the catalog)
-      //from the new stack w/o fakes:      
-      // means that we should put the seeing in the catalog...
-      newStackWithFakes.SetSeeing(NewStackHere->Seeing()," picked from the image without fakes");
-
-      FitsImage(newStackWithFakes.FitsImageName(Calibrated)).
-	AddOrModKey("TRUESKY",sqrt(SumNoise),
-		    " sqrt of the sum of all the images ");
-      // The catalog would contain the fakes, not done but anyway useless
-      // subtract it using the KernelFit from the regular subtraction.
-      ImageSubtraction subtractionWithFakes(NameWithFakes(SubHere), *RefStackHere, newStackWithFakes, SubHere);
-      subtractionWithFakes.Execute(DoFits | DoCatalog);
-      CandidateStarList foundCands(subtractionWithFakes.AllCandidateCatalogName());
-      MatchDetectionsWithFakes( (SEStarList *) &foundCands,
-			       subtractionWithFakes.Dir()+"/allcand.matchfakes.list");
-      ApplyCutsAndWrite(subtractionWithFakes);
-    }
-
-  return 1;
-}
-
-// uses SEStarList generically, since we may use this routine both for Candidates and Yquem
-void Sub::MatchDetectionsWithFakes(SEStarList *Detections, const string &MatchListName)
-{
-  double maxdist = 2.0; // pixels
-  if (!AddFakes) return;
-  SENearStarList putFakes;
-  // get the actual fake position/flux in putFakes.
-  FakeList->ActualFakes(putFakes); 
-  GtransfoIdentity identity;
-  StarMatchList *matches = 
-          ListMatchCollect(*(BaseStarList *) &putFakes, 
-			   *SE2Base(Detections), 
-			   &identity, maxdist);
-
-  cout << " for " << MatchListName << " we have " << putFakes.size() 
-       << " generated fakes" << endl
-       << matches->size() << " detected " << endl;
-    
-  matches->write(MatchListName);
-  delete matches;
-}
-
-
-class CandMatchList : public NStarMatchList {
-public:
-
-  // it is extremely important that the lists to match
-  //  live at least as long as the NStarMatchList, because the
-  // latere deos not hold copies of its inputs. This class serves mainly
-  // this purpose.
-
-  vector<CandidateStarList*> candList;
-  int nList;
-
-  CandMatchList(const vector<string> &toMatch);
-
-  ~CandMatchList() { for (int i=0; i<nList; ++i) delete candList[i];};
-
-
-private : 
-  // forbid copies, because the default way the compiler does is not gonna work.
-  CandMatchList(const CandMatchList &);
-  CandMatchList& operator = (const CandMatchList &);
-
-};
-
-
-CandMatchList::CandMatchList(const vector<string> &toMatch) : NStarMatchList(toMatch.size()), nList(toMatch.size())
-{
-  DbImage refimage(toMatch[0]);
-  
-  
-  for (int i=0; i<nList ; ++i)
-    {
-      cout << "Begining the Match of " << toMatch[i] << " with " << toMatch[0] << endl;
-      candList.push_back(new CandidateStarList(toMatch[i]));
-      BaseStarList* bsl2 = Candidate2Base(candList[i]);
-      
-            
-      // Images are already aligned
-      Gtransfo *guess1,*guess2;
-      GtransfoIdentity id;
-      guess1 = &id;
-      guess2 = &id;
-
-      
-      SetTransfo(guess1,0,i);
-      SetTransfo(guess2,i,0);
-
-      MatchAnotherList(*bsl2,i,2.0,new CandidateStar());
-    }
-}  
-
-typedef CandMatchList::iterator CandMatchIterator;
-typedef CandMatchList::const_iterator CandMatchCIterator;
-
-
-static double CombinedSTNoise(const NStarMatch &nStarMatch)
-{
-  double combinedSTNoise = 0;
-  for (int i =0; i<nStarMatch.npointers; ++i)
-    {
-      if ((nStarMatch.StarExist(i)))
-	{
-	  const CandidateStar *current = (CandidateStar*) nStarMatch.star[i];
-	  combinedSTNoise += sqr(current->SigToNoise());
-	}
-    }
-  return sqrt(combinedSTNoise);
-}
-
-
-
-static  void  MatchThenCutThenWrite(vector<string> toMatch, double STNoiseCut)
-{
-  CandMatchList cList(toMatch);
-  int nList = toMatch.size();
-  for (CandMatchIterator si = cList.begin(); si != cList.end(); )
-    {
-      NStarMatch &sm = *si;
-      if (CombinedSTNoise(sm) < STNoiseCut || !sm.StarExist(nList-1))
-	si = cList.erase(si);
-      else ++si;
-    }
-  cList.write("AllParameters.list");
-  RollingStarList(cList, ReducedImage("ref")).write("Matches.list");
-
-  // Pour Christian : 1 seule detection!
-  CandMatchList cListC(toMatch);
-  for (CandMatchIterator si = cListC.begin(); si != cListC.end(); )
-    {
-      NStarMatch &sm = *si;
-      if ( CombinedSTNoise(sm) < 5.0 || (sm.actualMatches != 1))
- 	si = cList.erase(si);
-      else ++si;
-    }
-  //  cList.write("ChristanAll.list");
-  RollingStarList(cListC, ReducedImage("ref")).write("SingleDetections.list");
-}
-
-
-#include "addfakes.h"
-
-int Sub::DoIt()
-{
-  if (!FixRef)
-    FindGeometricReference();  
-
-  ImageSum *RefStack, *NewStack;
-  
-  //  stack the subparts:
-  //int toDo = DoFits | DoCatalog | DoDead | DoSatur;
- 
-  // The dead is not used anymore (the dead are clipped)
-  int toDo = DoFits | DoCatalog | DoSatur | DoDead;
-
-  string NameRef = "ref";
-  if (!FileExists(NameRef))
-    RefStack = ImagesAlignAndSum(Ref, *GeometricReference, NameRef, toDo);
-  else
-    RefStack = new ImageSum(NameRef);
-    
-  // Simulation stuff : computation of the list of fakes
-  //  AddFakes=true;
-  cout << "AddFakes "<< AddFakes << endl;
-  if (AddFakes) 
-    {
-      FakeList = new SENearStarList;
-      
-      if (FileExists("infake.list"))
-	{
-	  cout << "On lit la liste deja existente " << endl;
-	  FakeList->read("infake.list");	
-	}
-      else
-	{
-	  cout << "On genere La liste de fakes " << endl;
-	  if (AssociateGal)
-	    MakeListSn(GeometricReference, NewStack, *FakeList, AssociateGal);
-	  else
-	    MakeListSn(GeometricReference, NewStack, *FakeList);
-	  FakeList->write("infake.list");
-	}
-    }  
-      
-  // Declaration of the two partial subtractions
-  //#ifdef STORAGE
-  //ReducedImageList ListOfSub;
-  if (!onlyOneSub)
-    {
-      int n = 1;
-      for (ReducedNewIterator it = ListNewList.begin(); it != ListNewList.end();++it )
-	{
-	  ReducedImageList NewList = *it; 
-	  char l[16];
-	  sprintf(l, "%d",n);
-	  string nameRef = "ref";
-	  string nameNew = "new";
-	  string nameSub = "sub";
-	  nameNew += l;
-	  nameSub += l;
-	  ImageSum *currentNew;// = NULL;
-	  ImageSubtraction *currentSub;
-	  if (!FileExists(nameNew))
-	    {
-	      cout << "Begin the stack of " << nameNew << endl;
-	      currentNew = ImagesAlignAndSum(NewList, *GeometricReference, nameNew, toDo);
-	    }
-	  else
-	    {
-	      currentNew = new ImageSum(nameNew);
-	    }
-	  if (!FileExists(nameSub))
-	    {
-	      cout << "Begin the subtraction " << nameSub << endl;
-	      DoOneSub(RefStack,currentNew, nameSub, currentSub);
-	      ApplyCutsAndWrite(*currentSub);
-	    }
-	  else
-	    {
-	      currentSub = new ImageSubtraction(nameSub,nameRef,nameNew);
-	    }
-	  ListOfSub.push_back(currentSub);
-	  
-	  n++;
-	  delete currentNew;
-	  //delete currentSub;
-	}
-    }
-  // Do the subtraction(s)
-  if(!FileExists("new"))
-    {
-      cout << "Do the stack of all the images " << endl;
-      NewStack = ImagesAlignAndSum(AllNew, *GeometricReference, "new", toDo);
-    }
-  else
-    NewStack = new ImageSum("new");
-  
-  if(!FileExists("sub"))
-    {
-      DoOneSub(RefStack,NewStack, "sub", Sub);
-      ApplyCutsAndWrite(*Sub);
-    }
-  else 
-    {
-      string NameRef = "ref";
-      string NameNew = "new";
-      Sub = new ImageSubtraction("sub",NameRef,NameNew);
-    }
-
-  if (NumberOfSub==2)
-    ConstructMatchAndCut();
-
-  vector<string> toMatch;
-  
-  // Do the partial subtraction 
-  //#ifdef STORAGE
-  if (!onlyOneSub)
-    {
-      for (ImageSubtractionIterator it = ListOfSub.begin(); it != ListOfSub.end(); ++it)
-	{
-	  ImageSubtraction *currentSub = *it;
-	  string CandCatName = currentSub->AllCandName();
-	  if (!FileExists(CandCatName.c_str()))
-	    {
-	      cerr << "The Candidate Catalog associated to image " << currentSub->Name() << " doesn't exist !! " << endl;
-	      if (onlyDet) currentSub->MakeCatalog();
-	      else continue;
-	    }
-	  
-	  string DbName = currentSub->Name();
-	  toMatch.push_back(CandCatName);
-	  // Is deleted there but created two loops before
-	  // Due to the constructor of ImageSubtraction
-	  delete currentSub;
-	}
-      //couper
-    }
-  
-
-  // else ApplyCutsAndWrite(*Sub); // this was I (P.A) think the stuff for 2 subs at the same epoch.
-  
-/* TO DO 
-  - faire la commutation automatique entre mode coincidence ( new1 new2 comme a l'INT )
-  et mode rolling
-  
-  Ca doit marcher en principe, il y a un switch pour le faire si le nombre de soustraction partielle est 2. Julien
-  
-  - lire le 3.5 qui suit dans les datacards.
-  - virer des datacards tout ce qui sert a rien (code + fichier)
-  -> J'ai commence a le faire mais pour le faire completement, il faut faire le menage dans les differentes listes.
-  
-  - virer de YquemStar tout ce qui sert plus a rien.
-  -> Voir le point ci-dessus. 
-  - est-ce que l'on peut utiliser NStarMatch plutot que YquemStar pour les soustractions traditionnelles.
-  
-  - et peut etre d'autres choses...
-
-*/
-
-
-  // this is for the rolling search "
-  // 3.5 to be read in the datacards.
-  MatchThenCutThenWrite(toMatch,3.5);
-
-  return 1;
-}
-
-
-
-
-
-//pour les cuts
-void Sub::ApplyCutsAndWrite(ImageSubtraction &ASubtraction)
-{
-  YquemStarList stlcand;
-  Construction(ASubtraction, stlcand); 
-  
-  //stlcand.write(ASubtraction.Dir()+"/beforecut.list");
-  // Is the same as cand.list
-  if (AddFakes)
-    MatchDetectionsWithFakes( (SEStarList *) &stlcand,
-			      ASubtraction.Dir()+"/cand_cut.matchfakes.list");
-  //  string filename = ASubtraction.Dir()+"/candcut.list" ;
-
-  //Apply cuts:
-  // on signal to noise as in the datacards (2.5)
-  // on the second moment greater than 1e-10
-  // on the percentage opf increase (3%)
-  // test if is not flagged
-  
-  DatDetec datdet(DefaultDatacards());
-  YquemStarList stlcandcut ;
-  stlcand.Cut(stlcandcut,datdet);
-  
-  // Write
-  string CutName = ASubtraction.CandCutName();
-  stlcandcut.write(CutName);
-  string CutScanName = ASubtraction.CandScanName();
-  stlcandcut.write_scan(CutScanName);
-  cout << stlcandcut.size() << " candidats selectionnes " << endl ;
-  //Cut_Write(stlcand, DirName);
-}
-
-
-// Used for the partial subtraction
-void Sub::Cut_Write(CandStarList & stlcand)
-{
-  DatDetec datdet(DefaultDatacards());
-  //datdet.Print();
-  
-  CandStarList stlcandcut;
-  // Cuts : sigtonoise
-  //        SigtoNoise1 and SigtoNoise2
-  //        saturation on ref
-  //        percentage increase
-  stlcand.Cut(stlcandcut,datdet);
-
-  cout << stlcandcut.size() << " candidats selectionnes " << endl ;
-  stlcandcut.write(Sub->CandCutName());
-  stlcandcut.write_scan(Sub->CandCutScanName());
-  //  stlcandcut.write_nice(CandCut_NiceList());
-  //  stlcandcut.write_scan(CandCut_ScanList());
-}
-
-
-
-// Associe atous les candidats une etoiles sur la ref
-void Sub::Construction(ImageSubtraction &ASub, YquemStarList & stlcand)
-{
-  DatDetec datdet(DefaultDatacards()); 
-  //datdet.Print();
-
-  double seeing_sub = ASub.Seeing();
-  double rayon_ref = datdet.n_rayon * seeing_sub; // could be seeing_ref
-  
-  FitsImage  *pimageref = new FitsImage(ASub.Ref()->FitsName()); // 1 image 
-  //cout << ASub.Ref()->FitsName() << endl;
-  double backlevel_ref = ASub.Ref()->BackLevel();
-  cout << "Pour flux ref : " << rayon_ref << " " << backlevel_ref << endl ;
-  
-  // Routines in  candstar.cc
-  SEStarList refList(ASub.Ref()->CatalogName());
-  CandidateStarList stl(ASub.AllCandidateCatalogName());
-  
-  stlcand.Construct(stl, refList, *pimageref, rayon_ref, backlevel_ref);
-  delete pimageref ; 
-  stlcand.write(ASub.CandName());
-  //  write_scan(stlcand, ASub.CandScanName());
-  cout << stlcand.size() << " candidats detectes " << endl ;
-}
-
-
-// Construction + simple
-void Sub::ConstructMatchAndCut()
-{
-  // read the catalog of the sub
-  CandidateStarList stl(Sub->AllCandidateCatalogName());
-
-  // reda the catalog of sub1 
-  ImageSubtractionIterator it = ListOfSub.begin();
-  CandidateStarList stl1((*it)->AllCandidateCatalogName());
-
-  // redad the catalog of sub2
-  ++it;  
-  CandidateStarList stl2((*it)->AllCandidateCatalogName());  
-  
-
-  CandStarList matches;
-  
-  // Read detection parameters in the datacards
-  DatDetec datdet(DefaultDatacards()); 
-  //datdet.Print(); Done several times elsewhere
-
-  double seeing_sub = Sub->Seeing();
-  double rayon_ref = datdet.n_rayon * seeing_sub; // could be seeing_ref
-  
-  FitsImage imageref(Sub->Ref()->FitsName()); // 1 image 
-
-  cout << "Pour flux ref : " << rayon_ref << " " << Sub->Ref()->BackLevel()<< endl ;
-  SEStarList RefList(Sub->Ref()->CatalogName());
-  
-  
-  matches.Construct_Simple(stl, stl1,  stl2, RefList, imageref, 
-			   datdet.dist_min, rayon_ref, Sub->Ref()->BackLevel());
-
-  matches.write(Sub->CandName());
-
-  Cut_Write(matches);
-
-
-  cout << matches.size() << " candidats detectes " << endl;
-}
-
-
-// ================ DatSim ========================== 
-
-DatSim::DatSim(const string &FileName)
-{
-  if (FileExists(FileName))
-    {
-      DataCards cards(FileName);
-      LitDataCards(cards);
-    }
-  else
-    {
-      cerr << " DatSim::DatSim Cannot open  FileName " << endl;
-    }
-}
-
-// Reads the parameters for the simulation
-void DatSim::LitDataCards(DataCards &Data)
-{
-  numberOfFakes = Data.IParam("NUMBER_OF_FAKES");
-  minMag = Data.DParam("MIN_FAKE_MAG");
-  maxMag = Data.DParam("MAX_FAKE_MAG");
-  if (minMag > maxMag) swap (minMag,maxMag);
-}
-
-void DatSim::Print()
-{
-  cout << " FAKES : number  of fakes : " <<  numberOfFakes 
-      << " mag range : ["<< minMag << ',' << maxMag << ']' << endl;
-}
-
-
-#endif
 
 

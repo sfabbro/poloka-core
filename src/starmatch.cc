@@ -14,8 +14,6 @@ ostream& operator << (ostream &stream, const StarMatch &Match)
 	 << Match.distance << endl; return stream; 
 }
 
-
-
 ostream& operator << (ostream &stream, const StarMatchList &List)
 { 
   stream << " number of elements " << List.size() << endl; 
@@ -58,28 +56,29 @@ void StarMatch::Streamer(TBuffer &R__b)
 #endif /*USE_ROOT */
 
 
-double StarMatchList::MedianDist2() const
+double *StarMatchList::Dist2() const
 {
-StarMatchCIterator smi;
-int npair = int(this->size());
-double *dist = new double [npair];
-int i=0;
+  StarMatchCIterator smi;
+  int npair = int(this->size());
+  if (npair == 0) return NULL; 
+  double *dist = new double [npair];
 
-for (smi = begin(); smi != end(); ++smi, ++i)
-  {
-  const StarMatch &match = *smi;
-  dist[i] = match.s2->Dist2(transfo->apply(*(match.s1)));
-  }
-double median = DArrayMedian(dist,npair);
-delete [] dist;
-return median;
+  int i=0;
+  for (smi = begin(); smi != end(); ++smi, ++i)
+    {
+      const StarMatch &match = *smi;
+      const Point &p1 = match.point1;
+      const Point &p2 = match.point2;
+      dist[i] = p2.Dist2(transfo->apply(p1));
+    }
+  return dist;
 }
 
   /*! removes pairs beyond NSigmas (where the sigma scale is
      set by the fit) and iterates until stabilization of the number of pairs. 
      If the transfo is not assigned, it will be set to a GtransfoLinear. User
      can set an other type/degree using SetTransfo() before call. */
-void StarMatchList::RefineTransfo(const double &NSigmas, const Gtransfo* PriorTransfo)
+void StarMatchList::RefineTransfo(const double &NSigmas)
 {
   double cut;
   int nremoved;
@@ -88,14 +87,19 @@ void StarMatchList::RefineTransfo(const double &NSigmas, const Gtransfo* PriorTr
     {
       nused = size();
       if (nused <= 2) { chi2 = -1; break;}
-      chi2 = transfo->fit(*this, PriorTransfo);
+      chi2 = transfo->fit(*this);
       // cerr << *transfo << endl; see cerr instead of cout : result will change if sextractor pass before!!
       if (chi2<0)
 	{
 	  // cerr << " in  StarMatchList::Refine , chi2 = " << chi2 << endl;
 	  return;
 	}
-      cut = NSigmas*sqrt(MedianDist2());
+      int npair = int(size());
+      if (npair == 0) break;
+      double *dist = Dist2();
+      double median = DArrayMedian(dist,npair);
+      delete [] dist;
+      cut = NSigmas*sqrt(median);
       //cout << " nused " << nused << " chi2 " << chi2 << endl;
       nremoved = Cleanup(cut, *transfo);
       //cout << *transfo << endl;
@@ -201,6 +205,8 @@ void StarMatchList::write(ostream & pr) const
 
   (starm.s1)->WriteHeader_(pr,"1");
   (starm.s2)->WriteHeader_(pr,"2");
+  pr << "# dx : diff in x" << std::endl;
+  pr << "# dy : diff in y" << std::endl;
   pr << "# dass : association distance"  << endl ; 
   pr << "# end " << endl ;
 
@@ -208,13 +214,15 @@ void StarMatchList::write(ostream & pr) const
   GtransfoIdentity id ;
   for (StarMatchCIterator it= begin(); it!= end(); it++ )
     {
-      StarMatch starm = *it ;
-      starm.SetDistance(id);
+      const StarMatch &starm = *it ;
 
       (starm.s1)->writen(pr);
       pr << " " ;
       (starm.s2)->writen(pr);
-      pr << " " << starm.Distance(identity) ;
+      pr << " " ;
+      double dx = starm.s1->x - starm.s2->x;
+      double dy = starm.s1->y - starm.s2->y;
+      pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy);
       pr << endl ;
     }
 
@@ -237,13 +245,15 @@ void StarMatchList::write(const Gtransfo  &tf, ostream & pr) const
   pr << "# y1tf: coordonnees y1 transformee "  << endl ; 
 
   (starm.s2)->WriteHeader_(pr, "2");
+  pr << "# dx : diff in x" << std::endl;
+  pr << "# dy : diff in y" << std::endl;
   pr << "# dass : association distance"  << endl ; 
   pr << "# end " << endl ;
 
  
   for (StarMatchCIterator it= begin(); it!= end(); it++ )
     {
-      const StarMatch starm = *it ;
+      const StarMatch &starm = *it ;
 
       (starm.s1)->writen(pr);
       pr << " " ; 
@@ -253,7 +263,9 @@ void StarMatchList::write(const Gtransfo  &tf, ostream & pr) const
       tf.apply(xi,yi,xo,yo);
       pr << xo << " " << yo << " " ;
       (starm.s2)->writen(pr);
-      pr << " " << starm.Distance(tf) ;
+      pr << " " << xo - starm.s2->x << ' ' 
+	 << yo - starm.s2->y << ' ' 
+	 << starm.Distance(tf) ;
       pr << endl ;
     }
 
@@ -290,12 +302,31 @@ void StarMatchList::Swap()
     }
 }
 
-void StarMatchList::SetChi2() 
+
+void StarMatchList::ApplyTransfo(StarMatchList &Transformed, 
+				 const Gtransfo *PriorTransfo,
+				 const Gtransfo *PosteriorTransfo) const
+{
+  Transformed.clear();
+  GtransfoIdentity id;
+  const Gtransfo &T1 = (PriorTransfo)? *PriorTransfo : id;
+  const Gtransfo &T2 = (PosteriorTransfo)? *PosteriorTransfo : id;
+
+  for (StarMatchCIterator it= begin(); it!= end(); ++it )
+    {
+      Point p1 = T1.apply(it->point1);
+      Point p2 = T2.apply(it->point2);
+      Transformed.push_back(StarMatch(p1, p2, it->s1, it->s2));
+    }
+}
+
+void StarMatchList::SetChi2()
 {
   chi2 = 0;
-  nused = 0;
-  for (StarMatchCIterator smi = begin(); smi != end(); ++smi, nused++)
-    chi2 += smi->s2->Dist2(transfo->apply(*smi->s1));
+  nused = int(size());
+  double *dist2 = Dist2();
+  for (int i=0; i<nused; ++i) chi2 += dist2[i];
+  if (dist2) delete [] dist2;
 }
 
 void StarMatchList::DumpTransfo(ostream &stream) const
@@ -308,6 +339,11 @@ void StarMatchList::DumpTransfo(ostream &stream) const
 	 << " ================================================================" << endl;
 }
 
+
+double FitResidual(const double Chi2, const StarMatchList &S, const Gtransfo &T)
+{
+  return sqrt(Chi2/(2.*S.size()-T.Npar()));
+}
 
 
 /*

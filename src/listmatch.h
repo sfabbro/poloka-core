@@ -64,6 +64,12 @@ StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,c
 StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2, const double MaxDist);
 
 //! searches for a 2 dimentionnal shift using a very crude histogram method.
+
+//! iteratively collect and fits, with the same transfo kind, until the residual increases
+StarMatchList *CollectAndFit(const BaseStarList &L1, const BaseStarList &L2,
+			     const Gtransfo *Guess, const double MaxDist);
+
+
 GtransfoLin *ListMatchupShift(const BaseStarList &L1, 
 			      const BaseStarList &L2, 
 			      const Gtransfo &Tin, 

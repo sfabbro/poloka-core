@@ -48,6 +48,43 @@ class FitsSlice : public FitsHeader, public Image
 
 };
 
+
+class FitsOutSlice : public FitsHeader, public Image
+{
+  private :
+    int sliceSize, overlap;
+    int ySliceStart; /* in whole image coordinates */
+    int nyTotal;
+     int write_pixels(const int StartRow, int &NRows, Pixel *Where);
+    bool lastSlice;
+
+  public :
+ //! Constructor for a non existing image. Overlap is the number of rows in common to successive slices   (usually 0).
+   FitsOutSlice(const string FileName, int Nx, int Ny, 
+		const int SliceYSize, const int Overlap);
+
+ //! constructor. Overlap is the number of rows in common to successive slices   (usually 0).
+   FitsOutSlice(const string FileName, const FitsHeader &ModelHead,
+	     const int SliceYSize, const int Overlap);
+
+ //! write current slice to disk and clears the pixel buffer.
+   int WriteCurrentSlice();
+
+ //! the current slice size (differs from the constructor value at last slice).
+   int SliceSize() const { return sliceSize;};
+
+ //! the coordinate in the full image of row j in present slice.
+   int ImageJ(const int j) const { return (j+ySliceStart);};
+
+ //! are we in the last slice?
+   bool LastSlice() const {return lastSlice;};
+
+   ~FitsOutSlice();
+
+
+};
+
+
 #include <vector>
 
 //! Several fits images of the same size to be processed in parallel.
@@ -89,5 +126,32 @@ public :
 
 typedef vector<FitsSlice*>::iterator       FitsSliceIterator;
 typedef vector<FitsSlice*>::const_iterator FitsSliceCIterator;
+
+
+//! To traverse in parallel one "in" and one "out" image
+class FitsInOutParallelSlices  
+{
+public : 
+    // no point to set them private
+  FitsSlice in;
+  FitsOutSlice out;
+
+ public:
+  FitsInOutParallelSlices(const std::string &InName,
+			  const std::string &OutName,
+			  const int YSliceSize = 100,
+			  const int Overlap = 0);
+
+  //! load next slice of input and write current slice of output
+  int LoadNextSlice();
+  //! size of the current slice size. Different from the constructor value for last slice.
+  int SliceSize() const {return in.SliceSize();};
+  //! return the index in the whole image of the row SliceJ in the current slice.
+  int ImageJ(const int SliceJ)  const {return in.ImageJ(SliceJ); };
+  //! are we in the last slice
+  bool LastSlice() const {return in.LastSlice();}
+  
+};
+
 
 #endif

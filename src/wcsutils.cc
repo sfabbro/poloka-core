@@ -8,6 +8,7 @@
 #include "frame.h"
 #include "fitstoad.h"
 #include "basestar.h" /* for MEMPIX2DISK */
+#include "stringlist.h"
 
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
@@ -17,7 +18,7 @@
 /* some history about Toads and WCS:
    to begin with, I (Pierre astier) have to admit I thought
    that all the projection stuff was useless for the size of 
-   images we usually handle, and that alinear approximation
+   images we usually handle, and that a linear approximation
    of the (de)projection was introducing less error than the 
    uncertainty of USNO astrometry. Roughly speaking, this
    is true, but finding the correct linear transformation
@@ -218,16 +219,22 @@ static bool OldLinWCSFromHeader(const FitsHeader& Header, GtransfoLin &Pix2RaDec
 /********** handling of TanProjWithCorr, and TanProjWithoutCorr **********/
 
 /* check that there are DJ or PV keys in the header ******/
-static bool HasNewCorrection(const FitsHeader &Head, FitsKeyArray *CorrKeys = NULL)
+static bool HasTanCorrection(const FitsHeader &Head, string &CorrTag, 
+			     FitsKeyArray *CorrKeys = NULL)
 {
-  const char *DJorPV;
-  if (Head.HasKey("DJ1_0")) DJorPV = "DJ?_#";
-  else if (Head.HasKey("PV1_0")) DJorPV = "PV?_#";
+  if (Head.HasKey("DJ1_0")) CorrTag = "DJ"; // only Toads
+  else if (Head.HasKey("PV1_0")|| Head.HasKey("PV1_1"))   // swarp & co:
+    CorrTag = "PV"; 
+  else if (Head.HasKey("DV1_0") || Head.HasKey("DV1_1")) // future names
+    CorrTag = "DV"; 
   else return false;
   FitsKeyArray array;
-  int count = Head.KeyMatch(DJorPV, (CorrKeys)? (*CorrKeys) : array );
-  if (count > 12) 
-    // min 6 for x and 6 for y for a correction beyond first order
+  string selector = CorrTag+"?_#"; // maches e.g. DJ2_10
+  int count = Head.KeyMatch(selector.c_str(), (CorrKeys)? 
+			    (*CorrKeys) : array );
+  if (count >= 12) 
+    /* min 6 for x and 6 for y for a correction beyond 
+       first order, but some may be 0? */
     return true;
   else
     {
@@ -284,13 +291,18 @@ bool TanLinWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
 }
 
 
-bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,const bool Warn)
+bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
+		      const bool Warn)
 {
   // read the linear (CD's, CRPIX's) and (de)projection (CRVAL's) parts
   if (!TanLinWCSFromHeader(Head, TanWcs,Warn)) return false;
+  // now go for non-linear distortions :
   FitsKeyArray corrections;
   int maxj = 0;
-  if (HasNewCorrection(Head, &corrections))
+  /* there has been a whole history of those distortions. Their
+     meanings depend on the "tag" value: */
+  string corrTag; // PV, DJ, DV...
+  if (HasTanCorrection(Head, corrTag, &corrections))
     {
       // convert the FitsKey's to  (name,double) pairs
       vector<NamedValue> values;
@@ -299,7 +311,7 @@ bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,const bool Wa
 	  FitsKey &key = corrections[k];
 	  string keyName = key.KeyName();
 	  double val = key;
-	  // remove PV or DJ at the beginnig of key names for the 
+	  // remove PV, DJ or DV at the beginnig of key names for the 
 	  // decoding routine
 	  values.push_back(NamedValue(string(keyName.c_str()+2), val));
 	  // analyse the keyname to guess the degree.
@@ -309,7 +321,7 @@ bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,const bool Wa
 	    if (j>maxj) maxj = j;
 	}
       GtransfoCub corr;
-      corr.SetValues(values);
+      corr.SetValues(values, corrTag);
       if (maxj==6)// convert to a GtransfoQuad
 	{
 	  GtransfoQuad q(corr);
@@ -320,21 +332,25 @@ bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,const bool Wa
   return true;
 }
 
-static void RemoveNewCorrection(FitsHeader &Head)
+// remove non linear corrections that apply to Tangent point WCS's
+static void RemoveTanCorrection(FitsHeader &Head)
 {
+  static string keyHead[] = {"DJ","PV","DV"};
+  static int nHead = sizeof(keyHead)/sizeof(keyHead[0]);;
   GtransfoCub dummy;
-  vector<NamedValue> values;
-  dummy.GetValues(values, GtransfoCub::New);
-  for (unsigned k =0; k < values.size(); ++k)
+  for (int i=0; i<nHead; ++i)
     {
-      string keyName = "DJ"+values[k].name;
-      if (Head.HasKey(keyName)) Head.RmKey(keyName);
-      keyName = "PV"+values[k].name;
-      if (Head.HasKey(keyName)) Head.RmKey(keyName);
+      vector<NamedValue> keyTail;
+      dummy.GetValues(keyTail, keyHead[i]);
+      for (unsigned k =0; k < keyTail.size(); ++k)
+	{
+	  string keyName = keyHead[i]+keyTail[k].name;
+	  if (Head.HasKey(keyName)) Head.RmKey(keyName);
+	}
     }
 }
   
-#define TOADS_WCS_VERSION "1.0"
+#define TOADS_WCS_VERSION "1.1"
 
 int TanWCS2Header(const string &FitsImageName, const TanPix2RaDec &TanWcs)
 {
@@ -351,7 +367,7 @@ void TanWCS2Header(FitsHeader &Head, const TanPix2RaDec &TanWcs)
   // old toads WCS distortion keys:
   RemoveWCS3Correction(Head);
   // new Tan plane distortion keys:
-  RemoveNewCorrection(Head);
+  RemoveTanCorrection(Head);
   // wrong tags were introduced at some point. remove them to avoid confusion.
   // but this happened to be (almost) harmless
   if (Head.HasKey("CRTYPE1")) Head.RmKey("CRTYPE1");
@@ -381,11 +397,12 @@ void TanWCS2Header(FitsHeader &Head, const TanPix2RaDec &TanWcs)
     {
       GtransfoCub corr(*TanWcs.Corr());
       vector<NamedValue> values;
-      corr.GetValues(values);
+      string keyHead="PV"; // for Swarp
+      corr.GetValues(values, keyHead);
       for (unsigned k=0; k< values.size(); ++k)
 	{
 	  if (values[k].value == 0) continue;
-	  Head.AddOrModKey("DJ"+values[k].name, values[k].value);
+	  Head.AddOrModKey(keyHead+values[k].name, values[k].value);
 	}
     }
   Head.AddOrModKey("WCSVERS", TOADS_WCS_VERSION);
@@ -410,15 +427,18 @@ bool WCSFromHeader(const FitsHeader &Head, Gtransfo* &Pix2RaDec)
      correction. In practise, only WCS from images from SWarp were copied,
      letting WCS3 keys in the header. But since SWarp headers do not contain 
      the CD matrix, but CDELT keys instead, there is a possible correction:
-     ignore the cubic terms if CD is absent. */
+     ignore the cubic terms if CD is absent. When this bug was corrected
+     we introduced the key WCSVERS in the headers, to simplify the handling
+     of possible  present or future bugs .
+   */
      
-  if ( (Head.HasKey("CDELT1",false) && !Head.HasKey("CD1_1")) 
-       || Head.HasKey("WCSVERS",false) 
+  if ( (Head.HasKey("CDELT1") && !Head.HasKey("CD1_1")) 
+       || Head.HasKey("WCSVERS") 
        ||!HasWCS3Correction(Head))
     {
        TanPix2RaDec wcs;
        bool ok = TanWCSFromHeader(Head, wcs);
-       Pix2RaDec = wcs.Clone();
+       Pix2RaDec = (ok)? wcs.Clone() : NULL;
        return ok;
     }
   else
@@ -446,15 +466,73 @@ bool WCSFromHeader(const string &FitsName, Gtransfo* &Pix2RaDec)
 static const char* WCSKeys[] = 
   {"CTYPE1","CTYPE2","CRVAL1","CRVAL2","CRPIX1","CRPIX2",
    "CD1_1","CD1_2","CD2_1","CD2_2",
-   "CDELT1","CDELT2","CUNIT1","CUNIT2","EQUINOX"};
+   "CDELT1","CDELT2","CUNIT1","CUNIT2","EQUINOX","RADECSYS"};
+
+static int NWCSKeys = sizeof(WCSKeys)/sizeof(WCSKeys[0]);
+
+//! returns key names that describe the WCS in this header
+void WCSKeyList(const FitsHeader &Head, StringList &KeyNames)
+{
+  KeyNames.clear();
+  for (int i=0; i< NWCSKeys; ++i) 
+    {
+    const char *keyName = WCSKeys[i];
+    if (Head.HasKey(keyName)) KeyNames.push_back(keyName);
+    }
+  FitsKeyArray keys;
+  string dummy;
+  if (!HasTanCorrection(Head, dummy,  &keys)) // try modern corr scheme
+    Head.KeyMatch("WCS3*", keys); // or old one.
+  for (unsigned k =0; k<keys.size(); ++k)
+    {
+      FitsKey &key = keys[k];
+      KeyNames.push_back(key.KeyName());
+    }
+}
 
 
+#define DEBUG
 
 bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader)
 {
   if (!HasLinWCS(FromHeader)) return false;
+  StringList fromKeys;
+  WCSKeyList(FromHeader, fromKeys);
+  StringList toKeys;
+  WCSKeyList (ToHeader, toKeys);
+  /* rather than removing all keys from To and inserting all keys 
+     from From, we update and remove: this preserves original 
+     locations in the header */
+  for (StringCIterator i = toKeys.begin(); i != toKeys.end(); ++i)
+    {
+      const std::string &toKey = *i;
+      if (fromKeys.Locate(toKey) == fromKeys.end()) 
+	{
+	  ToHeader.RmKey(toKey);
+#ifdef DEBUG
+	  cout << " removing " << toKey << " from " << ToHeader.FileName() 
+	       << endl;
+#endif
+	}
+    }
+  for (StringCIterator i = fromKeys.begin(); i != fromKeys.end(); ++i)
+    {
+      const std::string &fromKey = *i;
+      FromHeader.CopyKey(fromKey, ToHeader);
+#ifdef DEBUG
+      cout << " inserting " << fromKey << " into " << ToHeader.FileName() << endl;
+#endif
+    }
+  return true;
+}
+
+
+#ifdef STORAGE
+bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader)
+{
+  if (!HasLinWCS(FromHeader)) return false;
   RemoveWCS(ToHeader);
-  for (unsigned ik = 0; ik<sizeof(WCSKeys)/sizeof(WCSKeys[0]); ++ik)
+  for (unsigned ik = 0; ik<NWCSKeys; ++ik)
     {
       const char *keyName = WCSKeys[ik];
       if (FromHeader.HasKey(keyName))
@@ -462,7 +540,8 @@ bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader)
     }
   // handle corrections
   FitsKeyArray keys;
-  if (HasNewCorrection(FromHeader,  &keys))
+  string dummy;
+  if (HasTanCorrection(FromHeader, dummy,  &keys))
     {
       for (unsigned k =0; k<keys.size(); ++k)
 	{
@@ -479,6 +558,8 @@ bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader)
     }
   return true;
 }
+#endif
+
 
 bool WCSTransfoBetweenHeader(const FitsHeader &Header1, const FitsHeader &Header2, GtransfoLin &Transfo1to2)
 {
@@ -615,7 +696,7 @@ int WCS3Transfo2Header(FitsHeader &header, const GtransfoCub &CubicCorr)
 {
    const char* comment = " 3rd order WCS transfo coefficient (unofficial WCS)";
    vector<NamedValue> values;
-   CubicCorr.GetValues(values, GtransfoCub::Old);
+   CubicCorr.GetValues(values, TAG);
    for (unsigned int i=0 ;i < values.size(); ++i)
      header.AddOrModKey((TAG+string(values[i].name)).c_str(), 
 			values[i].value, comment);
@@ -642,11 +723,11 @@ int WCS3Transfo2Header(const string &FitsImageName, const GtransfoCub &CubicCorr
 static bool read_old_cubic_corr(const FitsHeader& Header, 
 				GtransfoCub &CubicCorr,
 				const bool Warn,
-				const GtransfoCub::OldOrNew WhichNames)
+				const string &KeyHead)
 {
    bool correct = true;
    vector<NamedValue> values;
-   CubicCorr.GetValues(values, WhichNames); // bizarre isn't it? this is the way to get the keys under which the 
+   CubicCorr.GetValues(values, KeyHead); // bizarre isn't it? this is the way to get the keys under which the 
                                 // data of the transfo is stored.
    for (unsigned int i=0; i< values.size() ;++i)
      {
@@ -662,7 +743,7 @@ static bool read_old_cubic_corr(const FitsHeader& Header,
 	 }
        values[i].value = Header.KeyVal(keyName);
      }
-   CubicCorr.SetValues(values);
+   CubicCorr.SetValues(values, KeyHead);
    return  correct;
 }  
 
@@ -674,9 +755,9 @@ bool WCS3TransfoFromHeader(const FitsHeader& Header, GtransfoCub &CubicCorr,
   /* due to a (temporary) bug, there exists a set of images with OLD WCS's
   (WCS3 keys) encoded with the new (i_j) scheme. So search for both of them. 
   */
-  if (read_old_cubic_corr(Header, CubicCorr, Warn, GtransfoCub::Old))
+  if (read_old_cubic_corr(Header, CubicCorr, Warn, "WCS3"))
     return true;
-  return read_old_cubic_corr(Header, CubicCorr, Warn, GtransfoCub::New); 
+  return read_old_cubic_corr(Header, CubicCorr, Warn, "DJ"); 
 }
 
 
@@ -684,7 +765,7 @@ static void RemoveWCS3Correction(FitsHeader &Head)
 {
   GtransfoCub dummy;
   vector<NamedValue> values;
-  dummy.GetValues(values, GtransfoCub::Old);
+  dummy.GetValues(values, "WCS3");
   for (unsigned int i=0; i< values.size() ;++i)
     {
       string KeyName = TAG+string(values[i].name);
@@ -692,7 +773,7 @@ static void RemoveWCS3Correction(FitsHeader &Head)
     }
   // due to a (temporary) bug, there are old WCS's (with WCS3 keys)
   // encoded with  the new (i_j) tagging scheme. So remove them here:
-  dummy.GetValues(values, GtransfoCub::New);
+  dummy.GetValues(values, "DJ");
   for (unsigned int i=0; i< values.size() ;++i)
     {
       string KeyName = TAG+string(values[i].name);
@@ -716,20 +797,6 @@ static bool HasWCS3Correction(const FitsHeader &Head)
 }
 
 
-void RemoveWCS(FitsHeader &Header)
-{
-  if (!HasLinWCS(Header)) return;
-  for (unsigned ik = 0; ik<sizeof(WCSKeys)/sizeof(WCSKeys[0]); ++ik)
-    {
-      const char *keyName = WCSKeys[ik];
-      if (Header.HasKey(keyName))
-	Header.RmKey(keyName);
-    }
-  RemoveWCS3Correction(Header);
-  RemoveNewCorrection(Header);
-}
-
-
 /********** Routines that analyze WCS ***************/
 
 // check the presence of basic keys
@@ -749,41 +816,6 @@ bool HasLinWCS(const FitsHeader &Header)
 	  );
 }
 
-#ifdef STORAGE
-static double /*WCSKind*/ GuessWCSKind(const FitsHeader &Head)
-{
-  if (!Head.HasKey("CTYPE1") || string(Head.KeyVal("CTYPE1")) != "RA---TAN")
-    return Unknown;
-  if (!HasLinWCS(Head)) return NoWCS;
-  if (HasWCS3Correction(Head))
-    {// handle the (now fixed) bug in WCSCopy
-      if (Head.HasKey("CD1_1")) return TanProjWithoutCorr;
-      return LinearProjApproximation;
-    }
-  if (!HasNewCorrection(Head)) return TanProjWithCorr;
-  else return TanProjWithoutCorr;
-}
-#endif
-
-#ifdef STORAGE
-unused routine, need some reshuffling if needed.
-WCSStat WCSStatus(const FitsHeader &Head)
-{
-  if (Head.HasKey(WCS_OK) && bool(Head.KeyVal(WCS_OK)) == false)
-    return Innacurate;
-  if (HasLinWCS(Head))
-    {
-      if (Head.HasKey("CREATOR") && string(Head.KeyVal("CREATOR")) == "SWarp")
-	{
-	  return Accurate;
-	}
-      else if (HasWcs3Correction(Head))
-	     return Accurate;
-    }
-  return Innacurate;
-}
-#endif /* STORAGE */
-
 
 bool UpdateRaDec(FitsHeader &Header)
 {
@@ -796,84 +828,5 @@ bool UpdateRaDec(FitsHeader &Header)
   delete pix2RaDec;
   return true;
 }
-
-
-#ifdef STORAGE /* REShuffled routines after improvement of WCS's, but in the meantime Seb rewrote them */
-double sqr(const double x) {return x*x;}
-
-static const double PixelSize(const FitsHeader& Head)
-{
-  TanPix2RaDec wcs;
-  if (!TanLinWCSFromHeader(Head, wcs))
-    {
-      return double(Head.KeyVal("TOADPIXS"));
-    }
-  return sqrt(wcs.LinPart().Determinant());
-}
-
-double Arcmin2Area(const Frame &aFrame,const FitsHeader &Header)
-{
-  Gtransfo *transfo;
-  if (WCSFromHeader(Header,transfo))
-    {
-      //do not use the ApplyTransfo from frame
-      double ra1,ra2,dec1,dec2;
-      transfo->apply(aFrame.xMin,aFrame.yMin,ra1,dec1);
-      transfo->apply(aFrame.xMax,aFrame.yMax,ra2,dec2);
-      delete transfo;
-      return fabs((ra1*cos(M_PI*dec1/180.)-ra2*cos(M_PI*dec2/180.))*(dec1-dec2))*3600.;
-    }
-  return aFrame.Area()*sqr(PixelSize(Header))/3600.;
-}
-
-double Arcmin2Area(const FitsHeader &Header)
-{Frame full(Header); return Arcmin2Area(full,Header);}
-
-double Arcmin2Overlap(const FitsHeader& Head1,const FitsHeader& Head2)
-{
-  //check overlap with WCS 
-  GtransfoLin transfo1to2;
-  if (WCSTransfoBetweenHeader(Head1,Head2,transfo1to2))
-    {
-      Frame frame1(Head1); // boundaries of the image
-      Frame frame2(Head2); // boundaries of the image
-      Frame frame1in2 = frame1.ApplyTransfo(transfo1to2); //assume simple rotation      
-      frame1in2 *= frame2;      
-      if ((frame1in2.xMin < frame1in2.xMax) &&
-	  (frame1in2.yMin < frame1in2.yMax) &&
-	  (frame1in2.Area() > 10) )// assume bad WCS transfo gives you a too small area
-	{
-	  return Arcmin2Area(frame1in2,Head2);
-	} 
-    }
-
-  //if no WCS or bad one, check overlap brutally by assuming RA and DEC 
-  // at center and a square area around it
-  double siz1,siz2,ra1,dec1,ra2,dec2;
-  RaDec2000(Head1,ra1,dec1); //in deg
-  RaDec2000(Head2,ra2,dec2);
-  double nx=Head1.KeyVal("NAXIS1");
-  double ny=Head1.KeyVal("NAXIS2");
-  double npix1 = min(nx,ny);
-  nx=Head2.KeyVal("NAXIS1");
-  ny=Head2.KeyVal("NAXIS2");
-  double npix2 = min(nx,ny);
-  siz1= PixelSize(Head1)*npix1/2; //in arcsec
-  siz2= PixelSize(Head2)*npix2/2; //in arcsec
-  double cosdec1=cos(M_PI*dec1/180.);
-  double cosdec2=cos(M_PI*dec2/180.);
-  ra1 *= 3600;
-  dec1 *= 3600;
-  ra2 *= 3600;
-  dec2 *= 3600;
-  Frame frame1((ra1-siz1)*cosdec1,dec1-siz1,(ra1+siz1)*cosdec1,dec1+siz1);
-  Frame frame2((ra2-siz2)*cosdec2,dec2-siz2,(ra2+siz2)*cosdec2,dec2+siz2);
-  Frame intersect = frame1 * frame2;
-  double area = 0.;
-  if ((intersect.xMin < intersect.xMax) && (intersect.yMin < intersect.yMax))
-    area=intersect.Area()*3600;
-  return area;
-}
-#endif
 
 

@@ -9,6 +9,33 @@
 #include "gtransfo.h"
 #include "vutils.h"
 
+struct MatchCards {
+  double linMatchCut; // max distance for lin match (arcsec)
+  int linMatchMinCount; // min number of matches
+  int distortionDegree; // degree of distortions.
+  double secondMatchCut; // cut applied for collecting matches after distortion fit
+  bool writeWCS;
+  bool asciiWCS;
+  string wcsFileName;
+  string astromCatalogName;
+  bool dumpMatches;
+  bool ignoreSatur;
+  bool ignoreBad;
+
+  MatchCards();
+  bool ReadCards(const string &CardsFileName);
+
+  bool cards_read;
+};
+
+
+#ifdef USNOUTILS__CC
+MatchCards MatchPrefs;
+#else
+extern MatchCards MatchPrefs;
+#endif
+
+
 //class BaseStar;
 class DbImage;
 class FitsHeader;
@@ -38,7 +65,7 @@ int UsnoRead(double minra, double maxra,
 
 
 //! replace the flux by pow(10, -flux/2.5) 
-void ConvertMagToFlux(BaseStarList *List);
+void ConvertMagToFlux(BaseStarList *List, const double Zp=0.);
 
 
 
@@ -54,12 +81,8 @@ StarMatchList* GuessedToGood(const Gtransfo *Guess, const SEStarList *OldImag, c
 int GetUsnoZeroPoint(const StarMatchList *List, UsnoColor Color,double& zeropoint, double& errzero);
 
 
-void FillMatchFile(const DbImage &Image, const Gtransfo &Pix2RaDec);
-
-void FillMatchFile(const FitsHeader &header, const SEStarList &imageList, const Gtransfo &Pix2RaDec, 
-                     const string &MatchFileName );
-
-bool UsnoProcess(const string &fitsFileName, const string &catalogName, DbImage *dbimage, const bool write);
-bool UsnoProcess(DbImage &dbimage, const bool write);
+bool UsnoProcess(const string &fitsFileName, const string &catalogName, 
+		 DbImage *dbimage);
+bool UsnoProcess(DbImage &dbimage);
 
 #endif /* USNOUTILS__H */

@@ -112,10 +112,10 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   //  frame = frame.ApplyTransfo(*lintransfoToRef);
 
   /* it's better to do it this way due to eventual wrong third order transfo terms*/
-  GtransfoLin *lintransfoFromRef = GtransfoToLin(transfoFromRef);
-  GtransfoLin lintransfoToRef = lintransfoFromRef->invert();
+  GtransfoLin lintransfoToRef = transfoFromRef->
+    LinearApproximation(Frame(transformedImage).Center(), 
+			min(nx_aligned,ny_aligned)).invert();
   frame = frame.ApplyTransfo(lintransfoToRef);
-  delete lintransfoFromRef;
 
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));
@@ -246,10 +246,10 @@ void ImageGtransfo::TransformWeightImage(const FitsImage &Original,
   //  frame = frame.ApplyTransfo(*lintransfoToRef);
 
   /* it's better to do it this way due to eventual wrong third order transfo terms*/
-  GtransfoLin *lintransfoFromRef = GtransfoToLin(transfoFromRef);
-  GtransfoLin lintransfoToRef = lintransfoFromRef->invert();
+  GtransfoLin lintransfoToRef = transfoFromRef->
+    LinearApproximation(Point(nx_aligned/2, ny_aligned/2), 
+			min(nx_aligned,ny_aligned)).invert();
   frame = frame.ApplyTransfo(lintransfoToRef);
-  delete lintransfoFromRef;
 
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));

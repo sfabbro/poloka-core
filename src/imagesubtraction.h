@@ -42,6 +42,8 @@ class ImageSubtraction : public ReducedImage, public PsfMatch {
     bool MakeSatur();
     //!  Mask the saturation on the subtraction
     bool MaskSatur();
+    //!  Mask null weights on the subtraction
+    bool MaskNullWeight();
 
     bool RunDetection(DetectionList &Detections,
 		      const BaseStarList* Positions = NULL);

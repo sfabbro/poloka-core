@@ -39,7 +39,7 @@ int main(int nargs, char **args)
   string listName =  (DbImage(sumName)).ImageCatalogName(SExtractor);
   string Name =  (DbImage(sumName)).FitsImageName(Calibrated);
   bool write = true;
-  UsnoProcess(Name,listName, NULL, write);
+  UsnoProcess(Name,listName, NULL);
   return EXIT_SUCCESS;
 }
 

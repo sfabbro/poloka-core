@@ -83,8 +83,9 @@ double flux;
   virtual string WriteHeader_(ostream & stream = cout, const char*i = NULL) const ;
 
   virtual void WriteHeader(ostream & stream = cout) const;
+#ifdef USE_ROOT
 
-
+#endif
   //  ClassDef(BaseStar,1) // no ";" ....
 };
 

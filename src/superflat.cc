@@ -55,42 +55,6 @@ return "";
 }
 
 //***************************************************************
-class NlCorrections
-{
-private:
-  double alpha,beta,gamma;
-
-public :
-  NlCorrections(const string &InFileName);
-  double CorValue(const double &Value) { return  Value*(alpha + Value*(beta + Value*gamma) );}
-};
-
-
-NlCorrections::NlCorrections(const string &InFileName)
-{
-alpha = 1; beta=0; gamma = 0;
-FitsHeader header(InFileName);
-int Ccd = header.KeyVal("TOADCHIP");
-string nlcorr = calibdir(InFileName) + "nlcorrection.dat";
-FILE *file;
-if (!(file = fopen(nlcorr.c_str(),"r"))) return;
-
-cout << "Found a file : " << nlcorr << ", now applying non-linear corrections " << endl;
-char line[256];
-bool found = false;
-while (fgets(line,256,file))
-   {
-   int id;
-   sscanf(line,"%i %lf %lf %lf",&id, &alpha, &beta, &gamma);
-   if (id == Ccd) {found = true; break;}
-   }
- fclose(file);
- if (!found)
-   {
-     cerr << " could not find CCD # " << Ccd << " in file " << nlcorr << endl;
-   }
- else cout << " using x' =" << alpha<< "*x + " << beta <<"*x^2 + " << gamma << "*x^3 for file " << InFileName << endl;
-}
 
 
 
@@ -140,7 +104,6 @@ static double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias)
      
       cout <<" x0 : "<< x0 << " y0 : " << y0 << " x1 : "<< x1 << " y1 : " << y1 << endl;
 
-      NlCorrections NonLinCorr(Current.FileName());
       
       if (UseOnlyOverscan == 0)
 	{
@@ -156,14 +119,12 @@ static double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias)
 	  Pixel correction = MedianOverscan - MedianBiasOverscan;
 	  
 	  for (int j=y0; j<y1; j++) for (int i=x0; i<x1; i++)
-	    Current(i,j) = NonLinCorr.CorValue(Current(i,j) - bias(i,j) 
-						 - correction );
+	    Current(i,j) = Current(i,j) - bias(i,j) - correction ;
   	}
 
       else
-	for (int j=y0; j<y1; j++) for (int i=x0; i<x1; i++)
 	  {
-	    Current(i,j) = NonLinCorr.CorValue(Current(i,j) - MedianOverscan);
+	    Current -= MedianOverscan;
 	  }
     }
   Current.Trim(Illu);
@@ -249,7 +210,6 @@ Image *MakeSuperFlat(const FitsSet &FitsFileSet, const Image *Bias, const Image 
 
   Image Count(nx_image, ny_image);
 
-  char *env_var = getenv("FLAT_COUNT");
   int sliceSize = 100;
   
   int overlap = 0;
@@ -271,7 +231,6 @@ Image *MakeSuperFlat(const FitsSet &FitsFileSet, const Image *Bias, const Image 
 	  int n = nImages;
 	  mean = FArrayMedian(pixelValues, n);
 	  (*Flat)(i,j_true) = mean;
-	  if (env_var) Count(i,j_true) = n;
 	}
     }
   while (slices.LoadNextSlice());
@@ -281,12 +240,6 @@ Image *MakeSuperFlat(const FitsSet &FitsFileSet, const Image *Bias, const Image 
   
   if (skyflat) *Flat *= *SkyFlat;
 
-  if (env_var)
-    {
-      string fitsn_name="flat.fitsn";
-      FitsImage outfitsn(fitsn_name,Count);
-    }
-  
   return Flat;
 }
 
@@ -427,19 +380,20 @@ Image *MakeRawMedian(const FitsSet &FitsFileSet)
 #include "histo1d.h"
 
 //*******************************************
-//! returns a histogram of pixels
-double HistoEndMax(const Image &Current, double MaxValue)
+/*! compute the most probable value of the pixel values (for the
+ upper half of the distribution. It happens to be a bad 
+"estimator" of the saturation 
+*/
+
+static double HistoEndMax(const Image &Current, double MaxValue)
 {
-Histo1d histo(500,MaxValue/2., MaxValue);
-for (int j= 0; j<Current.Ny() ; ++j)
-  {
-  Pixel *p = &Current(0,j);
-  Pixel *pend = p+Current.Nx();
+  Histo1d histo(500,MaxValue/2., MaxValue);
+  Pixel *p = Current.begin();
+  Pixel *pend = Current.end(); 
   for ( ;p<pend; ++p) histo.Fill(*p);
-  }
-double satur;
-histo.MaxBin(satur);
-return satur;
+  double satur;
+  histo.MaxBin(satur);
+  return satur;
 }
 
 //*****************************************
@@ -515,14 +469,17 @@ double GainMultiply(FitsImage &Current)
 	}
     }
   Current.AddOrModKey("TOADGAIN",1.0," image (hopefully) in photoelectrons");
-  Current.AddKey("OLDGAIN",gain," average gain used to convert pixels from adu to photoelectrons");  
+  Current.AddKey("OLDGAIN",gain," average gain used to convert pixels from adu to photoelectrons");
+  double readnoise = Current.KeyVal("TOADRDON");
+  Current.AddOrModKey("TOADRDON", readnoise*gain," original ro noise * gain");
   return gain;
 }
 
 
 
 // Modification du calcul de la saturation le 3 oct 2000 Julien
-double Saturation(Image &image)
+/* if anybody figures out how what this routine does, please write it here */
+static double Saturation(const Image &image)
 {
   float maxVal = image.MaxValue(); 
   double Saturation=maxVal, Sat;
@@ -656,6 +613,9 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
   
   // make sure the flat is normalized to 1 by renormalizing it
   // ImageNormalisation(Flat);
+  // No : this has to be done somewhere else and once for all,
+  // because there could be a good reason for flat averages different from 1,
+  // such as different efficiencies of CCDs within a mosaic...
   
   // this is the flatfielding
   out /= Flat;
@@ -691,9 +651,17 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
 #endif
     }
   
-  // converts in photoelectrons
-  double gain = GainMultiply(outFits);
-  
+  // convert in photoelectrons
+  /* No, because it is useless once one uses weights, and assumes that
+   gains for different CCDs within a mosaic are correct
+   (i.e. equalized by flatfielding). This is no the case for Megacam
+   where the gains refer to the usual e/ADU, but flats compensate for
+   both efficiency and actual electronic gain.  So a mosaic image
+   nicely flatfielded for uniform response becomes non uniform if
+   transformed to photelectrons, and for Megacam, these are NOT
+   photoelectrons  */
+  // double gain = GainMultiply(outFits);
+
   // computes max and saturation level
   double maxValue = ImageMaxCut(out,Flat);
   double minValue = 0;
@@ -702,7 +670,6 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
   
   cout << "Saturation level at " << satur << " e-" << endl;
   out.EnforceMinMax(minValue,satur*1.05);  
-  if (! IsOfKind<Cfht12K>(outFits)) satur = HistoEndMax(out,maxValue);
   
   // fill in the header
   outFits.AddOrModKey("MAXPIX",maxValue," true max value of the image after flat fielding");
@@ -711,21 +678,17 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
   
   float sigmaflat=0.0,meanflat=0.0;
   Flat.MeanSigmaValue(&meanflat,&sigmaflat);
-  //outFits.AddKey("SIGMAFLAT",sigmaflat,"Sigma of the flat used, gives an idea of saturation");
-  //SIGMAFLAT is 9 letters
-  outFits.AddKey("SIGFLAT",sigmaflat*gain,"Sigma (in e-) of the flat used, gives an idea of saturation");
+  outFits.AddKey("SIGFLAT",sigmaflat,"Sigma (in e-) of the flat used, gives an idea of saturation");
   
   float skylev, sigth=0.0, sigexp=0.0;
   out.MeanSigmaValue(&skylev,&sigexp);
   float readnoise = outFits.KeyVal("TOADRDON");
-  gain = outFits.KeyVal("TOADGAIN");
-  if (skylev > 0.0) sigth = sqrt(skylev*gain + readnoise*readnoise)/gain;
+  if (skylev > 0.0) sigth = sqrt(skylev + readnoise*readnoise);
   outFits.AddKey("SKYLEV",skylev,"Sky Level in photoelectrons");
   outFits.AddKey("SKYSIGTH",sigth,"Sigma of Sky Level obtained from sqrt(sky+ronoise^2)");
   outFits.AddKey("SKYSIGEX",sigexp,"Sigma of Sky Level obtained from Image");
   
   outFits.AddCommentLine("flat fielding done using masterflat, Overscan removed");
-  if (gain != 1) outFits.AddCommentLine("pixels in photoelectrons"); 
   cout << "Final flatfielding for " << BaseName(outFits.FileName()) 
        << " : Sqrt(Sky+Readout^2) = " << sigth
        << "  RMS(image) = " << sigexp << endl;
@@ -735,7 +698,8 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
   return 1;
 }
 
-
+/*This routine was cleaned up in 04/04, but not tested because we currently
+  have no images that require this processing  */
 void ImageAlreadyFlatFielded(const string &InFileName, const Image &Flat, 
                      const string &OutFileName)
 {
@@ -744,26 +708,31 @@ if (!in.IsValid()) return;
 
 FitsImage outImage(OutFileName, in, in);
 
+
 // converts in photoelectrons, if it's already in photoelectrons, nothing done
-double gain = GainMultiply(outImage);
+// No : this prooves to be a bad idea
+// double gain = GainMultiply(outImage);
 
 Image &out = outImage;
  
 double maxValue = ImageMaxCut(out,Flat);
-double satur =  HistoEndMax(out,maxValue);
+double satur =  Saturation(out);
+
 outImage.AddKey("MAXPIX",maxValue,"max value of the image after flat fielding");
 outImage.AddKey("SATURLEV",satur,"max value of the image after flat fielding");
 
 double sigmaflat = 0.02; /* it's an average value, as there is no flat specified */
-outImage.AddKey("SIGMAFLAT",sigmaflat,"Average value as there is no flat (image from Cambridge");
+outImage.AddKey("SIGMAFLAT",sigmaflat,"Default value put by hand: no flat");
 
-float skylev=0.0,sigth=0.0,sigexp=0.0;
+Pixel skylev=0.,sigexp=0.0;
 out.MeanSigmaValue(&skylev,&sigexp);
-float readnoise = outImage.KeyVal("TOADRDON");
-gain = outImage.KeyVal("TOADGAIN");
+// correct even if image is GainMultiplied:
+ double readnoise = outImage.KeyVal("TOADRDON"); 
+double gain = outImage.KeyVal("TOADGAIN");
 
-if (skylev > 0.0) sigth = sqrt(skylev*gain + readnoise*readnoise)/gain;
-outImage.AddKey("SKYLEV",skylev,"Sky Level in photoelectrons");
+ double sigth=0.0;
+ if (skylev > 0.0) sigth = sqrt(skylev/gain + readnoise*readnoise);
+outImage.AddKey("SKYLEV",skylev,"Sky Level in image units");
 outImage.AddKey("SKYSIGTH",sigth,"Sigma of Sky Level obtained from sqrt(sky+ronoise^2)");
 outImage.AddKey("SKYSIGEX",sigexp,"Sigma of Sky Level obtained from Image");
 

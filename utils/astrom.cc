@@ -24,6 +24,7 @@ void usage()
   cout << " Hence coordinates from toads catalogs (se.list) should be shifted by 1"<< endl;
 }
 
+
 static void convert_direct(const Gtransfo *Pix2RaDec, 
 			   const double x, const double y,
 			   const bool decimal,
@@ -39,6 +40,16 @@ static void convert_direct(const Gtransfo *Pix2RaDec,
   else cout << endl;
 }
 
+struct Coordinates {
+  double x,y;
+  string ras, decs;
+
+  // put a default constructor to enventually trace uninitialized data
+  Coordinates() : x(-1), y(-1), ras("-1"), decs("92") {};
+
+};
+
+
 int main(int argc, char **argv)
 {
   if (argc < 4)
@@ -53,7 +64,7 @@ int main(int argc, char **argv)
   bool angles2pix = false;
   bool decimal = false;
   bool verbose = false;
-  char *ras, *decs;
+  vector<Coordinates> to_convert;
   FILE *list = NULL;
   int status = EXIT_SUCCESS;
   for (int i=1; i< argc; ++i)
@@ -83,17 +94,36 @@ int main(int argc, char **argv)
 		{cerr << " cannot open " << fileName << endl; exit(-1);}
 	      break;
 	    }
-	  x = atof(argv[i]) - MEMPIX2DISK; 
-	  i++; y = atof(argv[i]) - MEMPIX2DISK; 
+	  else 
+	    {
+	      if (angles2pix)
+		{
+		  cerr << "cannot mix convertions both ways, choose -p or -c " << std::endl;
+		  return EXIT_FAILURE;
+		}
+	      Coordinates c;
+	      c.x = atof(argv[i]) - MEMPIX2DISK; 
+	      i++; c.y = atof(argv[i]) - MEMPIX2DISK; 
+	      to_convert.push_back(c);
+	    }
 	  break;
 	case 'd' : 
 	  decimal = true;
 	  break;
 	case 'c' :
-	  angles2pix = true;
-	  i++; ras  = argv[i];
-	  i++; decs = argv[i];
-	  break;
+	  {
+	    if (pix2angles)
+	      {
+		cerr << "cannot mix convertions both ways, choose -p or -c " << std::endl;
+		return EXIT_FAILURE;
+	      }
+	    angles2pix = true;
+	    Coordinates c;
+	    i++; c.ras  = argv[i];
+	    i++; c.decs = argv[i];
+	    to_convert.push_back(c);
+	    break;
+	  }
 	case 'v' :
 	  verbose = true;
 	  break;
@@ -120,7 +150,14 @@ int main(int argc, char **argv)
 
   if (pix2angles)
     {
-      if (!list) convert_direct(Pix2RaDec,x,y,decimal);
+      if (!list) 
+	{
+	  for (unsigned k=0; k < to_convert.size(); ++k)
+	    {
+	      Coordinates &c = to_convert[k]; 
+	      convert_direct(Pix2RaDec, c.x, c.y, decimal);
+	    }
+	}
       else
 	{
 	  char line[512];
@@ -142,33 +179,28 @@ int main(int argc, char **argv)
 	  fclose(list);
 	}
     }
-  else   if (angles2pix)
+  else  if (angles2pix)
     {
-      double ra,dec;
-      if (decimal)
-	{
-	  ra = atof(ras);
-	  dec = atof(decs);
-	}
-      else 
-	{
-	  ra = RaStringToDeg(ras);
-	  dec = DecStringToDeg(decs);
-	}
+      // 0.01 is the precision ot invertion (in pixels);
       Gtransfo *RaDec2Pix = Pix2RaDec->InverseTransfo(0.01, Frame(head));
-      double x,y;
-      RaDec2Pix->apply(ra,dec,x,y);
-      cout << x +MEMPIX2DISK << " " << y + MEMPIX2DISK << endl;
-            // check that the result makes sense:
-      double raf, decf;
-      Pix2RaDec->apply(x,y,raf,decf);
-      double error = fabs(ra-raf)/cos(M_PI*dec/180.)+fabs(dec-decf);
-      if (error > 0.2/3600.)
+      for (size_t i=0; i<to_convert.size(); ++i)
 	{
-	  cerr << " large error when inverting WCS " << endl;
-	  return EXIT_FAILURE;
+	  Coordinates &c = to_convert[i];
+	  double ra = RaStringToDeg(c.ras); // in principe decodes both sexagesimal and decimal.
+	  double dec = DecStringToDeg(c.decs); // same comment.
+	  double x,y;
+	  RaDec2Pix->apply(ra,dec,x,y);
+	  cout << x +MEMPIX2DISK << " " << y + MEMPIX2DISK << endl;
+	  // check that the result makes sense:
+	  double raf, decf;
+	  Pix2RaDec->apply(x,y,raf,decf);
+	  double error = fabs(ra-raf)/cos(M_PI*dec/180.)+fabs(dec-decf);
+	  if (error > 0.2/3600.)
+	    {
+	      cerr << " large error when inverting WCS " << endl;
+	      status = EXIT_FAILURE;
+	    }
 	}
-
     }
   return status;
 }

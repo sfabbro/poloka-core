@@ -134,8 +134,8 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
     << List1.size() << " " << List2.size() << " bright objects\n";
   
   // tolerance used to match stars in pixels through all routines below
-  const double init_toldist = 4;
-
+  const double init_toldist = 4; 
+  
 
   One2Two = new GtransfoLin();// the identity by default
 
@@ -145,9 +145,12 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 
   StarMatchList *matchList = ListMatchCollect(List1, List2, One2Two, init_toldist);
   size_t nmatch = matchList->size();
-  size_t nmin = min(min(List1.size(), List2.size())/10, size_t(20));
-
-  // 1 - Try WCS
+  size_t nmin = min(List1.size(), List2.size())/3;
+  
+  bool debug_match = true;
+  
+  
+  if(debug_match) cout << " 1 - Try WCS " << endl;
   cout << " MatchGuess : doing a quick guess with WCS" << endl;
   if (!WCSTransfoBetweenHeader(Head1, Head2, dynamic_cast<GtransfoLin&>(*One2Two))) 
     cout << " MatchGuess : one of images does not have WCS \n";
@@ -155,13 +158,13 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
   matchList = ListMatchCollect(List1, List2, One2Two , init_toldist);
   if (!testNewTransfo(matchList,One2Two , pixSizeRatio2, nmatch, nmin))
     {
-      // 2 - WCS failed: try a quick shift with this WCS 
+      if(debug_match) cout << " 2 - WCS failed: try a quick shift with this WCS" << endl; 
       ShiftGuess(List1, List2, One2Two);
       delete matchList;
       matchList = ListMatchCollect(List1, List2, One2Two, init_toldist);
       if (!testNewTransfo(matchList, One2Two, pixSizeRatio2, nmatch, nmin))
 	{
-	  // 3 - Both above failed: try brutal combinatorial approach
+	  if(debug_match) cout << " 3 - Both above failed: try brutal combinatorial approach" << endl; 
 	  BrutalGuess(List1, List2, One2Two, Head1, Head2);
 	  delete matchList;
 	  matchList = ListMatchCollect(List1, List2,One2Two , init_toldist);
@@ -221,6 +224,8 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 
   double refine_toldist = 4;
   int bestorder = 1;
+  
+
   cout << " RefineGuess : Will try until order 3" << endl;
   int order = 1;
   double prevChi2Red;

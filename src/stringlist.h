@@ -22,6 +22,8 @@ class StringList : public list<string> {
   void Remove(const string &Banned);
   //!
   void Substitute(const string &Original, const string &Substitution);
+  //!
+  string AllEntries() const;
 };
 
 #ifndef SWIG

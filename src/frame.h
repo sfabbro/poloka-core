@@ -11,7 +11,7 @@ class Gtransfo;
 typedef enum {WholeSizeFrame, ClippedSizeFrame} WhichFrame;
 
 
-
+typedef enum {LargeFrame, SmallFrame} WhichTransformed;
 class FitsHeader;
 class Image;
 
@@ -52,7 +52,7 @@ public:
   Point Center() const {return Point((xMax+xMin)*0.5,(yMax+yMin)*0.5);}
   
   //! assumes that Transfo is a shift or involves a 'simple rotation'
-  Frame ApplyTransfo(const Gtransfo &T) const;
+  Frame ApplyTransfo(const Gtransfo &T, const WhichTransformed W = SmallFrame) const;
 
   //! intersection of Frame's.
   Frame operator*(const Frame &Right) const;  /* intersection : a = b n c */

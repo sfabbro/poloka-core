@@ -277,6 +277,18 @@ bool ImageSubtraction::MaskSatur()
    return true;
  }
 
+bool ImageSubtraction::MaskNullWeight()
+{
+ if (!FileExists(FitsName()) || !FileExists(FitsWeightName())) return false;
+ FitsImage img(FitsName(),RW);
+ FitsImage weight(FitsWeightName());
+ weight.Simplify(1e-30);
+ Image &i = img;
+ i *= (weight);
+ return true;
+}
+
+
 
 string ImageSubtraction::CandName() const
 {
@@ -432,6 +444,9 @@ bool ImageSubtraction::RunDetection(DetectionList &Detections,
 					  Seeing(), Seeing());
       detectionProcess.DetectionScoresFromPositions(*Positions, Detections);
     }
+  cout << "zero the pixel with null weight" << endl;
+  MaskNullWeight();
+  
   return true;
 }
 

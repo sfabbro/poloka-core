@@ -34,6 +34,7 @@ useful functionnalities have been wrapped here in C++ classes.
 #define RW 1
 */
 
+class StringList;
 
 
 
@@ -136,7 +137,6 @@ class FitsHeader {
   
   //! opens a new file and copies a old header into it. 
   FitsHeader(const FitsHeader &a_header, const string & NewFileName);
-  ~FitsHeader();
  
   //! returns if the file could be opened. 
   bool IsValid() const { return (fptr!=0);};
@@ -221,7 +221,7 @@ class FitsHeader {
   int NKeys() const;
 
   //! copy verbatim a key (name, value, comment)
-  bool CopyKey(const char* KeyName, FitsHeader &To) const;
+  bool CopyKey(const std::string &KeyName, FitsHeader &To) const;
 
   //! add a COMMENT keyword. 
   /*! It will be split over multiple 
@@ -231,10 +231,17 @@ class FitsHeader {
   //! add a HISTORY keyword. 
   /*! It will be split over multiple 
       HISTORY lines if longer than 70 characters. */
+  bool ReadCard(const std::string &KeyName, string &Card) const;
   int AddHistoryLine(const string &HistoryStuff);
 
 
   //! flush file buffers.
+
+  //! dumps the keys contained in WhichKeys to an ascii file.
+  bool AsciiDump(const std::string &AsciiFileName, const StringList &WhichKeys) const;
+
+
+
   int Flush();
 
   //! add a whole card, name+value+comment (or modifies an existing one)
@@ -285,7 +292,8 @@ friend ostream& operator << (ostream &stream, const FitsHeader &Header);
   
   FitsHeader(const FitsHeader&);
  
-  friend class FitsKey; friend class FitsImage; friend class FitsSlice;
+  friend class FitsKey; friend class FitsImage; 
+  friend class FitsSlice; friend class FitsOutSlice;
 
   /* routines used to split multiple image fits files (used in split_fits)*/
   void Append_LowPriority(const FitsHeader& ToAppend);
@@ -293,6 +301,13 @@ friend ostream& operator << (ostream &stream, const FitsHeader &Header);
   int CopyCHDUTo(FitsHeader &OutHeader);
   int CopyDataTo(FitsHeader &OutHeader);
   int NHDU() const;
+
+  //!
+  void DeleteFile();
+
+  // closes file
+  ~FitsHeader();
+
 
 protected:
 

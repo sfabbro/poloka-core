@@ -416,6 +416,7 @@ public :
   // I would advise NOT to change these defaults: derived classes rely on it
   virtual SIMPLE_TRANSLATOR(TOADPIXS,"PIXSCALE")
   virtual TRANSLATOR_DEC(TOADINST) { return FitsKey("TOADINST",TelInstName());}
+  virtual TRANSLATOR_DEC(TOADTELE) { return FitsKey("TOADTELE",TelName());}
   virtual SIMPLE_TRANSLATOR(TOADFILT,"FILTER");
   virtual SIMPLE_TRANSLATOR(TOADEXPO,"EXPTIME");
   virtual SIMPLE_TRANSLATOR(TOADGAIN,"GAIN");
@@ -734,6 +735,7 @@ typedef struct ToadsKeyRec {
 static ToadsKeyRec ToadsKeys[] = {
   {"TOADPIXS", " PIXel Size in arcseconds. (double)", "PIXSCALE", &VirtualInstrument::TOADPIXS},
   {"TOADINST",  "INSTrument that recorded the image ", "Instrument Name", &VirtualInstrument::TOADINST},
+  {"TOADTELE",  "TELEscope  ", "Telescope Name", &VirtualInstrument::TOADTELE},
   {"TOADFILT",  "FILTer description (string)", "FILTER", &VirtualInstrument::TOADFILT},
   {"TOADEXPO", "EXPOsure time in seconds (double)", "EXPTIME", &VirtualInstrument::TOADEXPO},
   {"TOADGAIN", " GAIN of the CCD in e-/ADU (double)", "GAIN", &VirtualInstrument::TOADGAIN},

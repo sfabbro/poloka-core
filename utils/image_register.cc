@@ -1,4 +1,6 @@
 #include <stdlib.h> // for the setenv stuff
+#include <fstream>
+
 #include "imagematch.h"
 #include "gtransfo.h"
 #include "reducedimage.h"

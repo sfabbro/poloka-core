@@ -1,10 +1,12 @@
 #include <iostream>
+#include <fstream>
 
 #include "psfmatch.h"
 #include "fitsimage.h"
 #include "kernelfit.h"
 #include "sestar.h"
 #include "fastfinder.h"
+
 
 #define DEBUG_PsfMatch
 
@@ -19,13 +21,13 @@ PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMa
   ref_is_best = (Ref.Seeing() <= New.Seeing());
   if (ref_is_best)
     {
-      best = Ref.Clone();
-      worst = New.Clone();
+      best = &Ref;
+      worst = &New;
     }
   else
     {
-      best = New.Clone();
-      worst = Ref.Clone();
+      best = &New;
+      worst = &Ref;
     }
   cout << " PsfMatch between " << Ref.Name() << "(ref) and " << New.Name() << " (new) : " 
        << best->Name()  << " is the best one" << endl;
@@ -45,14 +47,12 @@ PsfMatch::PsfMatch(const PsfMatch &Original)
 PsfMatch::PsfMatch() // needed by any IO system
 {
   fit = NULL;
-  best = NULL;
-  worst = NULL;
+  best = (ReducedImage*)NULL;
+  worst = (ReducedImage*)NULL;
 }
 
 PsfMatch::~PsfMatch()
 {
-  if (best) delete best;
-  if (worst) delete worst;
   if (fit) 
     {
       // really a good idea ? (P.A)

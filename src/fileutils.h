@@ -36,6 +36,10 @@ int   IsFits (const std::string &fname);
 /*! Drops files beginning by . and .. */
 int   DirectoryContents(const char *DirName, StringList &FileNames);
 
+//! return true for filename ending by ".Z" or ".gz"
+bool IsCompressed(const string &FileName);
+
+
 //!
 int   IsDirectory(const std::string &FileName);
 
@@ -44,11 +48,12 @@ int   IsDirectory(const std::string &FileName);
 int   IsLink(const std::string &FileName);
 #endif
 
+
 //! mkdir shell command
 int MKDir(const char *path, const bool Warn=true);
 
 //! expands a file name (prepends cwd if missing)
-std::string FullFileName(const char *FileName);
+std::string FullFileName(const string  &FileName);
 
 //! used to setup 'relative' symbolic links
 /*!  Relative symbolic links do not refer to the common part of the path.
@@ -56,7 +61,7 @@ std::string FullFileName(const char *FileName);
 std::string RelativeLink(const char *RealFile, const char *LinkLocation);
 
 //! same as above but issue the command to the system.
-int MakeRelativeLink(const char*RealFile, const char *LinkLocation);
+int MakeRelativeLink(const std::string &RealFile, const std::string &LinkLocation);
 
 //! AddPrefix("save","dir/foo.c") returns "dir/savefoo.c"
 std::string AddPrefix(const std::string &Prefix, const std::string &FileName);
@@ -87,5 +92,12 @@ int RemovePattern(std::string &Source, const std::string &aPattern);
 
 //! Decompose string into substring separated by a char token
 void DecomposeString(std::vector<std::string> &SubStrings, const string &Source, const char token=' ');
+
+//! substitutes ".xxx" by "<newExtension>" at the end of "Original"
+/*! to change toto.fits to toto.head call 
+  SubstituteExtension("toto.fits", ".head");
+*/
+std::string SubstituteExtension(std::string Original, std::string NewExtension);
+
 
 #endif /* FILEUTILS__H */

@@ -1,10 +1,10 @@
 // -*- C++ -*-
-// $Id: frame.cc,v 1.1 2004/02/20 10:48:37 nrl Exp $
+// $Id: frame.cc,v 1.2 2004/04/26 13:30:39 guy Exp $
 // 
 // 
 // 
-// Last Modified: $Date: 2004/02/20 10:48:37 $
-// By:            $Author: nrl $
+// Last Modified: $Date: 2004/04/26 13:30:39 $
+// By:            $Author: guy $
 // 
 #include <iostream>
 
@@ -44,8 +44,8 @@ Frame::Frame(const Image &image)
 }
 
 
-/* clearly this assumes that the Transfo is essentially a translation */
-Frame Frame::ApplyTransfo(const Gtransfo &T) const
+/* clearly this assumes that the Transfo is essentially a translation or a simple rotation (n*pi/2) could probably be improved */
+Frame Frame::ApplyTransfo(const Gtransfo &T, const WhichTransformed W) const
 {
   // 2 opposite corners
   double xtmin1, xtmax1, ytmin1, ytmax1;
@@ -60,8 +60,8 @@ Frame Frame::ApplyTransfo(const Gtransfo &T) const
   Frame fr2(min(xtmin2,xtmax2), min(ytmin2,ytmax2), 
 	    max(xtmin2,xtmax2), max(ytmin2,ytmax2));
 
-  return fr1*fr2;
-  // Pourquoi ne pas utiliser GTransfoNewOrigin ?
+  if (W == SmallFrame) return fr1*fr2;
+  return fr1+fr2;
 }
 
 

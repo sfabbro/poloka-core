@@ -59,7 +59,7 @@ class RollingStar : public BaseStar {
 #endif
   /* DOCF  to write the StarList header with the string ${}^{\star}i$
      appended to every ntuple variable (with no end)  */
-  void  WriteHeader(ostream & pr ) ;
+  void  WriteHeader(ostream & pr ) const;
   
   void write(ostream &pr) const;
 

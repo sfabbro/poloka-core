@@ -9,6 +9,7 @@ int     yyparse(void);
 
 void where_am_i();
 int yylex();
+FILE *yyin;
 
 %}
 
@@ -52,10 +53,9 @@ where_am_i();
 int yywrap( void ) {return( 1 );}
 
 int DbConfigFileParse(const char * FileName)
-{FILE *input;
-int i;
-input = freopen(FileName,"r",stdin);
-if (!input) 
+{
+yyin  = fopen(FileName,"r");
+if (!yyin) 
   {
   printf(" DbConfigFileParse  : cannot open %s\n", FileName);
   return 0;

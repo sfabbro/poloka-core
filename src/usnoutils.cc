@@ -1,3 +1,4 @@
+#define USNOUTILS__CC
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -17,6 +18,7 @@
 #include "wcsutils.h"
 #include "fitstoad.h"
 #include "listmatch.h"
+#include "fastfinder.h"
 
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
@@ -97,74 +99,31 @@ static inline void read_a_star(FILE *ifp, unsigned int &raword, unsigned int  &d
 #endif
 }
 
-#ifdef COMMENT
-
-/* found in read.use in the catalog directory */
-
-12) The RA takes a full 32-bit integer as does the SPD.  The third 32-bit
-integer has been packed according to the following format.
-
-SQFFFBBBRRR   (decimal), where
-
-  S = sign is - if there is a correlated GSC entry, + if not.
-    Q = 1 if internal PMM flags indicate that the magnitude(s) might be
-      in error, or is 0 if things looked OK.  As discussed in read.pht,
-	the PMM gets confused on bright stars.  If more than 40% of the
-	pixels in the image were saturated, our experience is that the
-	image fitting process has failed, and that the listed magnitude
-	can be off by 3 magnitudes or more.  The Q flag is set if either
-	  the blue or red image failed this test.  In general, this is a
-	  problem for bright (<12th mag) stars only.
-
-	  FFF = field on which this object was detected.  In the north, we
-	    adopted the MLP numbers for POSS-I.  These start at 1 at the
-	    north pole (1 and 2 are degenerate) and end at 937 in the -30
-	    degree zone.  Note that fields 723 and 724 are degenerate, and we
-	    measured but omitted 723 in favor of 724 which corresponds to the
-	    print in the paper POSS-I atlas.  In the south, the fields start
-	    at 1 at the south pole and the -35 zone ends at 408.  To avoid
-	    wasting space, the field numbers were not put on a common system.
-	    Instead, you should use the following test.
-
-            IF ((zone.le.600).and.(field.le.408)) THEN
-	    south(field)
-	      ELSE
-	    north(field)
-	      ENDIF
-
-	    BBB = 10 times the blue magnitude.  The range 0 through 250 contains
-	    reasonable magnitudes.  500 is reserved for a PMM flux estimator
-	    that was exactly zero, and 501 through 750 are reserved for PMM
-	    flux estimators that were negative.  Only the reasonable magnitudes
-	    were calibrated: the weird ones are just as they came out of the PMM.
-	    For northern fields, magnitudes are defined by the 103a-O emulsion
-	    and filter, while southern fields are defined by the IIIa-J emulsion
-	    and filter.
-
-	    RRR = 10 times the red magnitude.  As above except that northern plates
-	    are 103a-E emulsions and southern plates are IIIa-F emulsions.
-
-#endif /* comment */
 
 
-/**********************************************************************/
-/* Does the actual work of reading a file                             */
-/**********************************************************************/
+
+
+/****************************************************************
+  Does the actual work of reading a USNO file. The format of the USNO
+  files (picked up in the USNO distribution) is documented at the end
+  of this source file
+*****************************************************************/
 
 //#define DEBUG_READ /* to actually debug the reading of a file */
-// routine for the official catalogue distribution
+
 static void readusno(const string &filebase,double minra,double maxra,
-	   double mindec,double maxdec, UsnoColor Color,
-	   BaseStarList &ApmList, const Gtransfo& T= GtransfoIdentity())
+		     double mindec,double maxdec, UsnoColor Color,
+		     BaseStarList &ApmList, 
+		     const Gtransfo& T= GtransfoIdentity())
 {
 
-  char line[80];
-  int idx[96],len[96],i,raidx0,pos;
-  float junk;
-  FILE *ifp=NULL;
-  unsigned int  raword,decword,magword;
-  unsigned int minraword,maxraword,mindecword,maxdecword;
-  double mag;
+char line[80];
+int idx[96],len[96],i,raidx0,pos;
+float junk;
+FILE *ifp=NULL;
+unsigned int  raword,decword,magword;
+unsigned int minraword,maxraword,mindecword,maxdecword;
+double mag;
 
 string catname = string(filebase) + ".cat";
 string accname = string(filebase) + ".acc";
@@ -270,14 +229,18 @@ while (raword<minraword && !feof(ifp)) read_a_star(ifp, raword, decword, magword
 
 
 // read an ascii file containing alpha,delta mag, 1 item per line.
-static void read_ascii_usno(const string &FileName, double MinRa, double MaxRa,
-	   double MinDec, double MaxDec, 
-	   BaseStarList &ApmList, const Gtransfo& T= GtransfoIdentity())
+//static void  read_ascii_astrom_file(const string &FileName, 
+static void read_ascii_astrom_file(const string &FileName, 
+				  double MinRa,  double MaxRa,
+				  double MinDec, double MaxDec, 
+				  BaseStarList &ApmList, 
+				  const Gtransfo& T= GtransfoIdentity())
 {
   FILE *file = fopen(FileName.c_str(),"r");
   if (!file)
     {
-      cerr << " cannot open (supposedly ascii USNO) file " << endl;
+      std::cerr << " cannot open (supposedly ascii USNO file ) " 
+		<< FileName << std::endl;
       return;
     }
   char line[512];
@@ -299,46 +262,27 @@ static void read_ascii_usno(const string &FileName, double MinRa, double MaxRa,
       *s = T.apply(*s);
       ApmList.push_back(s);
     }
+  std::cout << " collected " << ApmList.size() 
+	    << " objects from " << FileName << std::endl;
   fclose(file);
 }
 
-void ConvertMagToFlux(BaseStarList *List)
+void ConvertMagToFlux(BaseStarList *List, const double Zp)
 {
+  
   for (BaseStarIterator si = List->begin(); si != List->end(); ++si)
     {
       BaseStar *s = (*si);
-      if (s->flux < 40)  s->flux = pow(10., -(s->flux)/2.5);
+      if (s->flux < 40)  s->flux = pow(10., -(s->flux-Zp)*0.4);
       else s->flux = 0;
     }
 }
 
-int UsnoRead(const Frame &W, UsnoColor Color, BaseStarList &ApmList)
+static void actual_usno_read(const string &usnodir,
+			     double minra, double maxra, 
+			     double mindec, double maxdec, UsnoColor Color,
+			     BaseStarList &ApmList)
 {
-  return UsnoRead(W.xMin, W.xMax, W.yMin, W.yMax, Color, ApmList);
-}
-
-
-//! ra's and dec's in degrees. Handles limits across alpha=0. (not with USNOFILE)
-int UsnoRead(double minra, double maxra, 
-             double mindec, double maxdec, UsnoColor Color, BaseStarList &ApmList)
-{
-  char *env_var = getenv("USNODIR");
-  if (!env_var)
-    {
-      env_var = getenv("USNOFILE");
-      if (env_var)
-	{
-	  read_ascii_usno(env_var,minra,maxra,mindec,maxdec, ApmList);
-	  return ApmList.size();
-	}
-      else
-	{
-	  cerr << " you should define USNODIR or USNOFILE env var " 
-	       << "to run this code " << endl;
-	  return 0;
-	}
-    }
-  string usnodir(env_var);
   int cat0,cat1;
   
   cout << " reading usno in window (" << minra << ',' << maxra << ") (" << mindec << ',' << maxdec << ")" << endl;
@@ -353,11 +297,11 @@ int UsnoRead(double minra, double maxra,
 
   /* Make sure the region is reasonable */
 
-  if (minra == maxra || mindec == maxdec) return 0;
+  if (minra == maxra || mindec == maxdec) return;
   if (minra > maxra) swap (minra,maxra);
   if (mindec > maxdec) swap(mindec,maxdec);
-  if (maxra>=360.) return 0;
-  if (mindec<-90. || maxdec>90.) return 0;
+  if (maxra>=360.) return;
+  if (mindec<-90. || maxdec>90.) return;
 
   /* Figure out which catalog files we need to read, and read them */
 
@@ -413,21 +357,64 @@ int UsnoRead(double minra, double maxra,
    }
   int count = ApmList.size();
   cout << " collected " << count  << " objects" << endl;  
-  return count;
+}
+
+
+int UsnoRead(const Frame &W, UsnoColor Color, BaseStarList &ApmList)
+{
+  return UsnoRead(W.xMin, W.xMax, W.yMin, W.yMax, Color, ApmList);
+}
+
+
+
+//! ra's and dec's in degrees. Handles limits across alpha=0. (not with USNOFILE)
+int UsnoRead(double minra, double maxra, 
+	     double mindec, double maxdec, UsnoColor Color, 
+	     BaseStarList &ApmList)
+{
+  const char *ascii_source = NULL;
+
+  if (MatchPrefs.astromCatalogName != "" ) 
+    ascii_source = MatchPrefs.astromCatalogName.c_str();
+  else
+    {
+      char *env_var = getenv("USNOFILE");
+      if (env_var) ascii_source = env_var;
+    }
+  if (ascii_source)
+    read_ascii_astrom_file(ascii_source, minra,maxra,mindec,maxdec, 
+			   ApmList);
+  else
+    {
+      char *usno_dir = getenv("USNODIR");
+      if (usno_dir)
+	{
+	  actual_usno_read(usno_dir, 
+			   minra, maxra, mindec, maxdec, Color, 
+			   ApmList);
+	}
+      else
+	{
+	  std::cerr << " ERROR : You should define USNODIR or USNOFILE env var, " 
+		    << std::endl
+		    << " or provide ASTROM_CATALOG_NAME via datacards to run this code " << std::endl;
+	  return 0;
+	}
+    }
+  return ApmList.size();
 }
 
 
 
 //! Guesses the transfo from sestarlist to catalog.  
-/*! UsnoToPix is the transformation that was applied to 
-  the USNO catalog to project it on the tangent plane, 
-  with coordinates expressed in degrees.
-    Hence, UsnoCat constains coordinates in degrees in the
-  tangent plane, and fluxes (in dummy unit) instead of magnitudes.
-  The  tangent point can be extracted from UsnoToPix.
-  The found matches and the guessed transfo derived from 
-  them are in the
+/*! TangentPoint denote the tangent point used to project the USNO
+  catalog on a tangent plane, with coordinates expressed in degrees.
+  Hence, UsnoCat constains coordinates in degrees in the tangent
+  plane, and incidentally fluxes (in dummy unit) instead of
+  magnitudes.  The tangent point can be extracted from UsnoToPix.  The
+  found matches and the guessed transfo derived from them are in the
   returned StarMatchList, to be deleted by the caller.*/
+
 StarMatchList *FindMatchUsno(const string &FitsImageName, 
 			       SEStarList &ImageList, 
 			       Point &TangentPoint, 
@@ -445,6 +432,11 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
     }
   usnoFrame = usnoFrame.Rescale(1.2); // add 20%  
   UsnoRead(usnoFrame, RColor, UsnoCat);
+  if (UsnoCat.size() == 0)
+    {
+      std::cerr << " Could not collect anything from a ref catalog : giving up" << std::endl;
+      return NULL;
+    }
 
   ConvertMagToFlux( &UsnoCat);
   cout << " trying to match " << FitsImageName << " with usno R catalog " << endl;
@@ -469,8 +461,9 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
 					      UsnoCat, shift, 10.);
       delete shift;
       unsigned shiftMatches = match->size();
-      if (3*shiftMatches > UsnoCat.size() && shiftMatches > 25 ) // considered as good
+      if (3*shiftMatches > UsnoCat.size() && shiftMatches > 25 ) 
 	{
+	  // considered as good :
 	  cout << " found " << match->size() << " matches with a simple shift" 
 	   << endl;
 	  okShift =true;
@@ -499,8 +492,6 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
       if (!match) return NULL;
     }
 
-  // Here we check that our initial guess for the usnoWindow is accurate (i.e 
-  // we took in the USNO catalog all the area covered by the image.
   GtransfoLin guessCorr = *dynamic_cast<const GtransfoLin *>(match->Transfo());
   cout << " correction to guessed WCS, found using " << match->size() 
        << " pairs" << endl<< guessCorr << endl;
@@ -508,7 +499,7 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
   cout << " updated lin WCS: " << endl << newPix2RaDec << endl;
 
   /* now we know where the image is on the sky. Check that 
-     we collected catalog actually covers the image...
+     the area we collected in the catalog covers the image...
   */
   
   int nx,ny;
@@ -521,7 +512,7 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
   if (match->Nused() > 4 && overlap.Area() < newUsnoFrame.Area()*0.9) 
     {
       // recollect USNO
-      cout << " FindTransfoUsno: bad initial guess of window on USNO, recollecting" << endl;
+      cout << " FindMatchUsno: bad initial guess of window on USNO, recollecting" << endl;
       cout << " shifting by " 
 	   << newUsnoFrame.Center()-usnoFrame.Center() << endl;
       newUsnoFrame = newUsnoFrame.Rescale(1.2); // add 20%
@@ -540,11 +531,12 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
     }
 
   // express outputs in the tangent plane , in degrees
-  // transfo from guEssed pixels to degrees
+  // transfo from guessed pixels to degrees
   GtransfoLin pixToDegrees(UsnoToPix.LinPart().invert());
   UsnoCat.ApplyTransfo(pixToDegrees);
   TangentPoint = Pix2RaDec.TangentPoint();
-  // rebuild the match, since the UsnoList has changed (scale)
+  // rebuild the match, since the UsnoList has changed (scale). 
+  // Maybe refitting would be enough....
   delete match;
   GtransfoLin cdFound(newPix2RaDec.LinPart());
   match = ListMatchCollect(*SE2Base(&ImageList), UsnoCat, 
@@ -553,59 +545,34 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
   return match;
 }
 
-
+#ifdef STORAGE
 static double object_size(const SEStar *object)
 {
   return sqrt(object->Mxx()*object->Myy());
 }
+#endif
 
 static void match_clean(StarMatchList &List)
 {
-  int count = List.size();
-  double *sizes = new double[count];
-  int i=0;
-  for (StarMatchIterator si=List.begin(); si!= List.end(); ++si)
+
+  cout << " count before satur removal " << List.size() << endl;
+  for (StarMatchIterator si=List.begin(); si!= List.end();)
     {
       SEStar *object = (SEStar *) (BaseStar *) si->s1;
-      sizes[i] = object_size(object);
-      i++;
+      if (object->IsSaturated()) si = List.erase(si);
+      else si++;
     }
-  double cut = 2.0 * DArrayMedian(sizes,count);
-  cout << "cut " << cut << endl;
-  delete [] sizes;
-  for (StarMatchIterator si=List.begin(); si!= List.end(); )
-    {
-      SEStar *object = (SEStar *) (BaseStar *) si->s1;
-      if (object_size(object)>cut)
-	{
-	  si = List.erase(si);
-	}
-      else ++si;
-    }
+  cout << " count after satur removal " << List.size() << endl;
 }
+
+static double sq(const double &x) { return x*x;}
 
       
-//! fills a file to be used when building finding charts, or to check the match.
-void FillMatchFile(const DbImage &Image, const Gtransfo &Pix2RaDec)
-{
-  FillMatchFile(FitsHeader(Image.FitsImageName(Calibrated)), 
-		SEStarList(Image.ImageCatalogName()),
-		Pix2RaDec, Image.Dir()+"/match_usno.dat");
-}
 
 //! fills a file to be used when building finding charts, or to check the match.
-void FillMatchFile(const FitsHeader &header, const SEStarList &imageList, const Gtransfo &Pix2RaDec, const string &MatchFileName)
+static void FillMatchFile(const FitsHeader &Header, const SEStarList &ImageList, 
+			  const StarMatchList &MatchList, const Gtransfo &Pix2RaDec, const string &MatchFileName)
 {
-
-  Frame pixFrame(header); // boundaries of the image
-  Frame raDecFrame = pixFrame.ApplyTransfo(Pix2RaDec);
-  Frame bigraDecFrame = raDecFrame.Rescale(1.1);
-  BaseStarList catalog;
-  UsnoRead( bigraDecFrame, RColor, catalog);
-
-  // take a copy of the input list
-  // match to the catalog
-  StarMatchList *matches = ListMatchCollect(*SE2Base(&imageList), catalog, &Pix2RaDec, 2./3600.); /* not farther than 2", becomes wrong if abs(Dec) is too large.*/
 
   cout << " writing " << MatchFileName << endl;
   FILE  *matchstream = fopen(MatchFileName.c_str(), "w"); // use C IO's because formats are easy !
@@ -623,30 +590,67 @@ void FillMatchFile(const FitsHeader &header, const SEStarList &imageList, const 
   fprintf(matchstream,"# distsec : distance beween catalog and image in arcsec\n");
   fprintf(matchstream,"# end\n");
 
-  for (StarMatchCIterator it = matches->begin(); it != matches->end(); ++it)
+  BaseStarList usedUsno;
+
+  for (StarMatchCIterator it = MatchList.begin(); it != MatchList.end(); ++it)
     {
       const SEStar *s1 = (const SEStar *) (const BaseStar *) it->s1; // since *s1 belongs to imageList ...
       const BaseStar *s2 = it->s2;
+      usedUsno.push_back(s2);
+      double cosdec = cos(s2->y*M_PI/180.);
       Point ra_dec_im = Pix2RaDec(*s1);
-      double distsec = s2->Distance(ra_dec_im)*3600.;
+      double distsec = sqrt(sq((ra_dec_im.x-s2->x)*cosdec)+sq(ra_dec_im.y-s2->y))*3600.;
 
       fprintf(matchstream,"%8.2f %8.2f %12.6f %12.6f %12.1f %12.6f %12.6f %6.2f %12.1f %8.3f\n",
 	      //             x     y     ra     dec   flux   ra      dec   mag  apflux
 	      s1->x , s1->y , ra_dec_im.x, ra_dec_im.y, s1->flux, s2->x , s2->y, s2->flux, s1->Flux_aper(), distsec);
     }
 
-  for (SEStarCIterator it = imageList.begin(); it != imageList.end();++it  )
-    {
-      const SEStar &star = **it;
-      Point ra_dec_im = Pix2RaDec(star);
-      fprintf(matchstream,"%8.2f %8.2f %12.6f %12.6f %12.1f %12.6f %12.6f %6.2f %12.1f %8.3f\n",
-	      //             x     y     ra     dec   flux   ra      dec   mag  apflux
-	      star.x, star.y, ra_dec_im.x, ra_dec_im.y, star.flux,ra_dec_im.x, ra_dec_im.y, -10., star.flux, 0.);
-    } 
+  //also write distances to unmatched USNO stars
 
+  // collect the whole catalog
+  
+  Frame pixFrame(Header); // boundaries of the image
+  Frame raDecFrame = pixFrame.ApplyTransfo(Pix2RaDec);
+  Frame bigraDecFrame = raDecFrame.Rescale(1.1);
+  BaseStarList unusedUsno;
+  UsnoRead( bigraDecFrame, RColor, unusedUsno);
+
+  FastFinder finder(*SE2Base(&ImageList));
+  Gtransfo *raDec2Pix = Pix2RaDec.InverseTransfo(0.01,pixFrame);
+
+
+  // ignore matched stuff (collected 15 line above)
+  for (BaseStarIterator i=unusedUsno.begin(); i!= unusedUsno.end(); ++i)
+    {
+      BaseStar *s2 = *i;
+      BaseStar *b = usedUsno.FindClosest(*s2);
+      if (b->Distance(*s2)<0.0001) continue;
+      Point imageCoords = raDec2Pix->apply(*s2);
+      if (!pixFrame.InFrame(imageCoords)) continue;
+      double maxDist = 20; // pixels
+      const SEStar *s1 = (const SEStar *) finder.FindClosest(imageCoords,maxDist);
+      if (s1)
+	{
+	  Point ra_dec_im = Pix2RaDec.apply(*s1);
+	  double cosdec = cos(s2->y*M_PI/180.);
+	  double distsec = sqrt(sq((ra_dec_im.x-s2->x)*cosdec)+sq(ra_dec_im.y-s2->y))*3600.;
+	  fprintf(matchstream,"%8.2f %8.2f %12.6f %12.6f %12.1f %12.6f %12.6f %6.2f %12.1f %8.3f\n",
+	      //             x     y     ra     dec   flux   ra      dec   mag  apflux
+	      s1->x , s1->y , ra_dec_im.x, ra_dec_im.y, s1->flux, s2->x , s2->y, s2->flux, s1->Flux_aper(), distsec);
+	}
+    }
   fclose(matchstream);
-  delete matches;
 }
+
+//! fills a file to be used when building finding charts, or to check the match.
+static void FillMatchFile(const DbImage &Image, const Gtransfo &Pix2RaDec, const StarMatchList &MatchList)
+{
+   FillMatchFile(FitsHeader(Image.FitsImageName(Calibrated)),
+		 SEStarList(Image.ImageCatalogName()), MatchList,
+		 Pix2RaDec, Image.Dir()+"/match_usno.dat");
+}
+
 
 static void FillAllStarsFile(const DbImage &dbImage, const Gtransfo &Pix2RaDec)
 {
@@ -685,7 +689,7 @@ static void FillAllStarsFile(const DbImage &dbImage, const Gtransfo &Pix2RaDec)
 /********************************************************************/
 
 // To match an image with the usno catalogue
-bool UsnoProcess(DbImage &dbimage, const bool write)
+bool UsnoProcess(DbImage &dbimage)
 {
   if (!dbimage.IsValid())
     {
@@ -705,30 +709,121 @@ bool UsnoProcess(DbImage &dbimage, const bool write)
       return false;
     }
 
-  return UsnoProcess(fitsFileName, catalogName, &dbimage, write);
+  return UsnoProcess(fitsFileName, catalogName, &dbimage);
+}
+
+
+
+MatchCards::MatchCards()
+{
+   linMatchCut = 1.5;
+   linMatchMinCount = 10;
+   distortionDegree = 3;
+   secondMatchCut = 1;
+   writeWCS = true;
+   asciiWCS = false;
+   wcsFileName = "";
+   astromCatalogName = "";
+   dumpMatches=true;
+   ignoreSatur = false;
+   ignoreBad = false;
+   cards_read = false;
+}
+
+#include "datacards.h"
+
+bool MatchCards::ReadCards(const string &FileName)
+{
+  if (!FileExists(FileName))
+    {
+      std::cerr << " cannot open datacards filename " << FileName << std::endl;
+      return false;
+    }
+  if (cards_read) return false;
+  if (getenv("USNOFILE")) astromCatalogName = getenv("USNOFILE");
+  DataCards cards(FileName);
+#define READ_IF_EXISTS(VAR,TAG,TYPE) \
+if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
+  READ_IF_EXISTS(linMatchCut,"LIN_MATCH_CUT",DParam);
+  READ_IF_EXISTS(linMatchMinCount,"LIN_MATCH_MIN_COUNT",IParam);
+  READ_IF_EXISTS(distortionDegree,"DISTORTION_DEGREE",IParam);
+  READ_IF_EXISTS(secondMatchCut,"SECOND_MATCH_CUT",DParam);
+  READ_IF_EXISTS(writeWCS,"WRITE_WCS",IParam);
+  READ_IF_EXISTS(asciiWCS,"ASCII_WCS",IParam);
+  READ_IF_EXISTS(wcsFileName,"WCS_FILE_NAME",SParam);
+  READ_IF_EXISTS(astromCatalogName,"ASTROM_CATALOG_NAME",SParam);
+  READ_IF_EXISTS(dumpMatches,"DUMP_MATCHES",IParam);
+  READ_IF_EXISTS(ignoreBad,"IGNORE_BAD",IParam);
+  READ_IF_EXISTS(ignoreSatur,"IGNORE_SATUR",IParam);
+
+  if (asciiWCS && wcsFileName == "")
+    {
+      std::cout << " you have requested an ascii WCS file without providing a WCS_FILE_NAME" << std::endl;
+      wcsFileName = "ascii_wcs.head";
+      std::cout << " using \"" << wcsFileName << "\"" << std::endl;
+    }
+  cards_read = true;
+  return true;
 }
 
 
 bool UsnoProcess(const string &fitsFileName, const string &catalogName, 
-		 DbImage *dbimage, const bool write)
+		 DbImage *dbimage)
 {  
+  // cfitsio does not accept to reopen RW a file already opened RO:
+  {
+    FitsHeader header(fitsFileName);
 
-  FitsHeader header(fitsFileName,(write)? RW : RO);
-
-  cout << endl << "Matching with USNO catalog..."<< endl;
-  cout << fitsFileName << endl;
-  cout << "INSTRUMENT = " << header.KeyVal("TOADINST") << endl;
-  cout << "CCD no = " << header.KeyVal("TOADCHIP") << endl;
-  cout << "FILTER = " << header.KeyVal("TOADFILT") << endl;
-  cout << "OBJECT = " << header.KeyVal("TOADOBJE") << endl;
-  cout << "REMEMBER: matching with USNO + Zeropoint made in R-USNO !" << endl;
-  cout << endl;
+    cout << endl << "Matching with USNO catalog..."<< endl;
+    cout << fitsFileName << endl;
+    cout << "INSTRUMENT = " << header.KeyVal("TOADINST") << endl;
+    cout << "CCD no = " << header.KeyVal("TOADCHIP") << endl;
+    cout << "FILTER = " << header.KeyVal("TOADFILT") << endl;
+    cout << "OBJECT = " << header.KeyVal("TOADOBJE") << endl;
+    cout << "REMEMBER: matching with USNO + Zeropoint made in R-USNO !" << endl;
+    cout << endl;
+  }
    
   SEStarList sestarlist(catalogName);
+  int initialSize = sestarlist.size();
+  cout << " Read " << initialSize << " objects from SexCat " << std::endl; 
 
-  if (sestarlist.size()==0) {cerr << " UsnoProcess: SExtractor catalog empty " << endl; return false;}
+  /* remove objects flagged as "bad" (Ccd defects and cosmics mainly
+  but also some bright stars that may be useful for matching). 
+  This is  a good idea when using a "dense catalog".   */
+  if (MatchPrefs.ignoreBad)
+    {
+      for (SEStarIterator i = sestarlist.begin(); i !=sestarlist.end(); )
+	{
+	  SEStar &s = **i;
+	  if (s.FlagBad()) i=sestarlist.erase(i);
+	  else ++i;
+	}
 
-  cout << " Read " << sestarlist.size() << " objects from SexCat " << endl;   
+       std::cout << " left with " << sestarlist.size() 
+		 << " after removing bad objects" << std::endl;
+    }
+
+  // if requested, remove saturated stars
+  if (MatchPrefs.ignoreSatur)
+    {
+      for (SEStarIterator i = sestarlist.begin(); i !=sestarlist.end(); )
+	{
+	  SEStar &s = **i;
+	  if (s.IsSaturated()) i = sestarlist.erase(i);
+	  else ++i;
+	}
+      std::cout << " left with " << sestarlist.size() 
+		<< " after satur removal" << std::endl;
+    }
+
+  if (sestarlist.size()==0) 
+    {
+      cerr << " ERROR : UsnoProcess: SExtractor catalog (" 
+	   << catalogName << ") empty" << std::endl; 
+      return false;
+    }
+
 
 
   BaseStarList usnoList;
@@ -739,11 +834,10 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   if (usnoList.size()==0) 
     {cerr << " UsnoProcess: USNO list empty: give up " << endl;return false;}
 
-  // The list we get here is in units of pixels using the pixel scale from header.
-  // the transformation that was used to transform the catalogList is usnoToPix
+  // here the usnoList and guessedMatch refer to coordinate 
+  // in degrees in the tangent plane.
 
 
-  // Quand ca ne match pas, j'ai toujours vu un nombre de paires <= 4, so...
   if (guessedMatch->Nused() < 5)
     {
       cerr << " MATCH FAILED... " << endl;
@@ -760,16 +854,16 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
 
   // Recollect a better match with a controlled accuracy
-  double toldiff = 1.5;
   StarMatchList *accurateMatch = ListMatchCollect(*SE2Base(&sestarlist), 
 						  usnoList, 
 						  guess, 
-						  toldiff/3600.);
-  int nMatches = accurateMatch->size();
+						  MatchPrefs.linMatchCut/3600.);
   delete guessedMatch;
 
+  int nMatches = accurateMatch->size();
+
   cout << " collected " << nMatches << " matches with tolerance " 
-       << toldiff << " arcsec " << endl;
+       << MatchPrefs.linMatchCut << " arcsec " << endl;
 
   if (nMatches < 0.2*usnoList.size())
     {
@@ -777,8 +871,17 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       return false;
     }
 
-  int match_order = 3;
-  if (getenv("MATCH_ORDER")) match_order = atoi(getenv("MATCH_ORDER"));
+  // fit a linear transfo 
+  accurateMatch->RefineTransfo(4.);
+  std::cout << " after fitting a linear transfo, we have " 
+	    << accurateMatch->size() << " pairs left, " 
+	    << "1d residual : " << FitResidual(accurateMatch->Chi2(), 
+					       *accurateMatch, 
+					       *accurateMatch->Transfo())*3600
+	    << "\""
+	    << std::endl;
+
+  int match_order = MatchPrefs.distortionDegree;
   // check that the problem is enough constrained
   while (((match_order+1)*(match_order+2))/2 > nMatches)
     {
@@ -787,7 +890,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
     }
   accurateMatch->SetTransfoOrder(match_order);
   match_clean(*accurateMatch);
-  cout << " nmatches after clean " << accurateMatch->size() << endl;
+  cout << " Number of matches after clean " << accurateMatch->size() << endl;
+
   // return if not enough stars to produce a linear transfo (oderwize: seg fault soon)
   if (accurateMatch->size() < 5)
     { cerr << " not enough matches. giving up " << endl;return false;}
@@ -796,13 +900,36 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   accurateMatch->RefineTransfo(3);
   
   // some printouts
-  cout << "Match number after refine = " << accurateMatch->size() << endl;
-  cout << " Nused "  << accurateMatch->Nused() << " Residual " 
-       << accurateMatch->Residual()*3600. << " arcsec" << endl;
+  std::cout << ' ' << accurateMatch->size() << " matches after refine," 
+	    << " (1d res= " 
+	    << accurateMatch->Residual()*3600. << "\"," 
+	    << "order = " << match_order << ')'	<< std::endl;
 
-  //DEBUG
-  cout << *accurateMatch->Transfo();
-  cout << " 2000 2000 " << accurateMatch->Transfo()->apply(Point(2000,2000))<< endl;
+
+
+  // recollect using the higher order tranfo we just refined:
+  StarMatchList *newMatch = ListMatchCollect(*SE2Base(&sestarlist), 
+					     usnoList, 
+					     accurateMatch->Transfo(), 
+					     MatchPrefs.secondMatchCut/3600.);
+
+
+  std::cout << " collected " << newMatch->size() 
+	    << " matches (cut = " << MatchPrefs.secondMatchCut 
+	    << "\", transfo order = "  << accurateMatch->TransfoOrder() 
+	    << ")" <<  std::endl;
+  
+  newMatch->SetTransfoOrder(match_order);
+  newMatch->RefineTransfo(3);
+
+  std::cout << " number of matches after refine "  << newMatch->size() 
+	    << ", " << "1d residual " 
+	    << FitResidual(newMatch->Chi2(), *newMatch, 
+			   *newMatch->Transfo())*3600 
+	    << std::endl;
+
+  delete accurateMatch;
+  accurateMatch = newMatch;
 
   // dump a match file?
   char *matchFileName;
@@ -834,7 +961,11 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
   // get the best linear description of our match
   GtransfoLin linFit;
-  linFit.fit(*accurateMatch);
+  double residual = 3600.*FitResidual(linFit.fit(*accurateMatch), 
+				      *accurateMatch, linFit);
+  cout << " 1d residual before fitting corrections " << residual 
+       << " arcsec " << endl;
+  
 
   GtransfoCub cubCorr;
   GtransfoQuad quadCorr;
@@ -843,31 +974,108 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
     {
       if (match_order == 3) correction = &cubCorr;
       if (match_order == 2) correction = &quadCorr;
-      if (correction) correction->fit(*accurateMatch, &linFit, NULL);
+      if (correction) 
+	{
+	  StarMatchList linFitApplied;
+	  accurateMatch->ApplyTransfo(linFitApplied, &linFit);
+	  double chi2 = correction->fit(linFitApplied);
+	  residual = FitResidual(chi2, linFitApplied, *correction)*3600;
+	  cout << " 1d residual after fitting corrections " 
+	       << residual << " arcsec " << endl;
+	}
       else
 	{
 	  cerr << " ERROR in " << __FILE__ << endl;
 	  cerr << " match_order is wrong " << match_order 
-	       << " no corrections for non-linear distotions " << endl;
+	       << " no corrections for non-linear distortions " << endl;
 	}
+      cout << " fitted correction :  "  << endl << *correction << endl;
+    }
+
+
+  string outFitsFileName = fitsFileName;
+  if (MatchPrefs.wcsFileName != "")
+    {
+      if (dbimage)
+	{
+	  if (strstr(MatchPrefs.wcsFileName.c_str(),"%s"))
+	    {
+	      char toto[128];
+	      sprintf(toto, ("%s/"+MatchPrefs.wcsFileName).c_str(),
+		      dbimage->Dir().c_str(), dbimage->Name().c_str());
+	      outFitsFileName = toto;
+	    }
+	  else
+	    outFitsFileName = dbimage->Dir()+"/"+MatchPrefs.wcsFileName;
+	}
+      else outFitsFileName = MatchPrefs.wcsFileName;
+    }
+
+  if (outFitsFileName == fitsFileName && MatchPrefs.asciiWCS)
+    {
+      MatchPrefs.writeWCS = false;
+      std::cout << " I refuse to overwrite a fits file by an ascii file " << std::endl;
+      std::cout << " no output " << std::endl;
+    }
+	
+  string asciiWcsFileName;
+  if (MatchPrefs.asciiWCS && MatchPrefs.writeWCS)
+    {
+      asciiWcsFileName = outFitsFileName;
+      outFitsFileName = tmpnam(NULL);
     }
 
   // write the WCS in the fits header :
-  if (write)
+  if (MatchPrefs.writeWCS)
     {
       TanPix2RaDec pix2RaDec(linFit, tangentPoint);
       if (correction) pix2RaDec.SetCorrections(correction);
-      TanWCS2Header(fitsFileName, pix2RaDec);
-      if (dbimage) 
+      TanWCS2Header(outFitsFileName, pix2RaDec);
+      FitsHeader header(outFitsFileName, RW);
+      header.AddOrModKey("RMATCHUS", residual, 
+			 " 1d geom residual to ref catalog (arcsec)");
+      header.AddOrModKey("NMATCHUS", int(accurateMatch->size()), 
+			 " number of objects matched to ref catalog");
+      string astromRef;
+      if (MatchPrefs.astromCatalogName != "") 
+	astromRef = MatchPrefs.astromCatalogName;
+      else 
 	{
-	  FillMatchFile(*dbimage, pix2RaDec);
-	  FillAllStarsFile(*dbimage, pix2RaDec);
+	  char *usno_dir = getenv("USNODIR");
+	  if (usno_dir) astromRef = BaseName(usno_dir); // strip path
+	  else 
+	    {
+	      std::cerr << " ERROR: Cannot figure out which astrom catalog I used...., contact maintainer " << std::endl;
+	    }
 	}
-      else // write the match_usno.dat file
+      header.AddOrModKey("REFCAT",astromRef, " Name of the ref. cat. astrom. and photom.");
+      
+
+      if (MatchPrefs.dumpMatches)
 	{
-	  FillMatchFile(FitsHeader(fitsFileName), sestarlist, pix2RaDec,
-			DirName(fitsFileName)+"/match_usno1.dat");
-	} 
+      /* before writing lists to disk, we transform the usnoList back to ra
+	 and dec, i.e we transform it from the tangent plane to
+	 sideral sphere.  This is needed because accurateMatch has
+	 references to UsnoList elements. The Transfo reads (using the
+	 fact that GtransfoLin() == id)) :
+      */
+
+	  GtransfoLin id;
+	  TanPix2RaDec tan2RaDec(id, pix2RaDec.TangentPoint());
+	  usnoList.ApplyTransfo(tan2RaDec);
+	  // write the match_usno.dat file
+	  if (dbimage) 
+	    {
+	      FillMatchFile(*dbimage, pix2RaDec, *accurateMatch);
+	      FillAllStarsFile(*dbimage, pix2RaDec);
+	    }
+	  else 
+	    {
+	      FillMatchFile(FitsHeader(fitsFileName), sestarlist, 
+			    *accurateMatch, pix2RaDec,
+			    DirName(fitsFileName)+"/match_usno1.dat");
+	    } 
+	}
     }
 
   // photometric zero point   
@@ -875,19 +1083,35 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   if (GetUsnoZeroPoint(accurateMatch, RColor, zeropoint, errzero))
     {
 
-      cout << "Residue of the match with usno catalog " << accurateMatch->Residual() << endl
+      cout << "1d Residue of the match with usno catalog " << residual << endl
 	   << " Zero point " << zeropoint << endl
 	   << "Dispersion on Zero Point (in mag)" << errzero << endl;
-      if (write)
+
+      if (MatchPrefs.writeWCS)
 	{
-	  header.AddOrModKey("RMATCHUS", accurateMatch->Residual(), "Residue of the match with usno catalog");
-	  header.AddOrModKey("NMATCHUS", int(accurateMatch->size()), " number of objects matched to USNO catalog");
-	  header.AddOrModKey("ZEROUSNO", zeropoint, "Zero point : Mag(usno)=zero+Mag(imag)");
-	  header.AddOrModKey("DZEROUSN", errzero, "Dispersion on Zero Point (in mag)");
+	  FitsHeader header(outFitsFileName, RW);
+	  header.AddOrModKey("ZEROUSNO", zeropoint, 
+			     "Zero point : Mag(usno)=zero+Mag(imag)");
+	  header.AddOrModKey("DZEROUSN", errzero, 
+			     "Dispersion on Zero Point (in mag)");
+	  /* ZP key is considered as a serious zero point:
+	     write it if we use a "serious" catalog
+	  */
+	  if (MatchPrefs.astromCatalogName != "" )
+	    header.AddOrModKey("ZP", zeropoint,
+			       " zp w.r.t. "+MatchPrefs.astromCatalogName);
 	}
 
-      double skysig = header.KeyVal("SEXSIGMA");
-      double seeing = header.KeyVal("SESEEING");
+      double skysig;
+      double seeing;
+      if (true)
+	/* still this cfitsio limitation: cannot reopen RW a file
+	   already opened RO */
+	{
+	  FitsHeader header(outFitsFileName);
+	  seeing = header.KeyVal("SESEEING");
+	  skysig = header.KeyVal("SEXSIGMA");
+	}
       double flux21 = pow(10., -(21.-zeropoint)/2.5);
       double flux23 = pow(10., -(23.-zeropoint)/2.5);
       double flux25 = pow(10., -(25.-zeropoint)/2.5);
@@ -897,17 +1121,81 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       double ssn25 = flux25 / sqrt(flux25 + aine * skysig * skysig);
 
 
-      cout << "Signal/Noise (at mag 21) = " << ssn21 << " (at mag 25) = " << ssn25 << endl << endl;
-      if (write)
+      std::cout << "Signal/Noise (at mag 21) = " 
+		<< ssn21 << " (at mag 25) = " << ssn25 << std::endl;
+
+      if (MatchPrefs.writeWCS)
 	{
+	  FitsHeader header(outFitsFileName, RW);
 	  header.AddOrModKey("USNOSB21", ssn21, "Signal / Noise at mag = 21");
 	  header.AddOrModKey("USNOSB23", ssn23, "Signal / Noise at mag = 23");
 	  header.AddOrModKey("USNOSB25", ssn25, "Signal / Noise at mag = 25");
 	}
     }
+  // if ascii output requested, convert now
+    if (MatchPrefs.asciiWCS && MatchPrefs.writeWCS)
+      {
+	FitsHeader head(outFitsFileName);
+	ofstream s(asciiWcsFileName.c_str());
+	s << head << "END    " << std::endl;
+	s.close();
+      }
+    if (MatchPrefs.asciiWCS && MatchPrefs.writeWCS)
+      {
+	// remove the tmp file (it was open in the previous block!)
+	remove(outFitsFileName.c_str());
+      }
   return true;
 }
 
 
 
 
+#ifdef COMMENT
+
+/* found in read.use in the catalog directory */
+
+12) The RA takes a full 32-bit integer as does the SPD.  The third 32-bit
+integer has been packed according to the following format.
+
+SQFFFBBBRRR   (decimal), where
+
+  S = sign is - if there is a correlated GSC entry, + if not.
+    Q = 1 if internal PMM flags indicate that the magnitude(s) might be
+      in error, or is 0 if things looked OK.  As discussed in read.pht,
+	the PMM gets confused on bright stars.  If more than 40% of the
+	pixels in the image were saturated, our experience is that the
+	image fitting process has failed, and that the listed magnitude
+	can be off by 3 magnitudes or more.  The Q flag is set if either
+	  the blue or red image failed this test.  In general, this is a
+	  problem for bright (<12th mag) stars only.
+
+	  FFF = field on which this object was detected.  In the north, we
+	    adopted the MLP numbers for POSS-I.  These start at 1 at the
+	    north pole (1 and 2 are degenerate) and end at 937 in the -30
+	    degree zone.  Note that fields 723 and 724 are degenerate, and we
+	    measured but omitted 723 in favor of 724 which corresponds to the
+	    print in the paper POSS-I atlas.  In the south, the fields start
+	    at 1 at the south pole and the -35 zone ends at 408.  To avoid
+	    wasting space, the field numbers were not put on a common system.
+	    Instead, you should use the following test.
+
+            IF ((zone.le.600).and.(field.le.408)) THEN
+	    south(field)
+	      ELSE
+	    north(field)
+	      ENDIF
+
+	    BBB = 10 times the blue magnitude.  The range 0 through 250 contains
+	    reasonable magnitudes.  500 is reserved for a PMM flux estimator
+	    that was exactly zero, and 501 through 750 are reserved for PMM
+	    flux estimators that were negative.  Only the reasonable magnitudes
+	    were calibrated: the weird ones are just as they came out of the PMM.
+	    For northern fields, magnitudes are defined by the 103a-O emulsion
+	    and filter, while southern fields are defined by the IIIa-J emulsion
+	    and filter.
+
+	    RRR = 10 times the red magnitude.  As above except that northern plates
+	    are 103a-E emulsions and southern plates are IIIa-F emulsions.
+
+#endif /* comment */

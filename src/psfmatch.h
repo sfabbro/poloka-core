@@ -16,7 +16,7 @@ class Stamp;
 class PsfMatch {
 private:
   bool ref_is_best;
-  ReducedImage *best,*worst; //!
+  ReducedImageRef best,worst;
   string refName, newName;
   bool  shouldNotDeleteFit;
   Frame intersection;

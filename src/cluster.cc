@@ -3,7 +3,7 @@
 #include "fitsimage.h"
 
 #ifndef MAXCLUSTERSIZE
-#define MAXCLUSTERSIZE  50000
+#define MAXCLUSTERSIZE  80000
 #endif
 
 #ifndef MY_PI
@@ -97,8 +97,19 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
   debuglevel = 1;//debuglev;
   cout << "#### " << inrim.FitsName() << endl;
   FitsImage infits(inrim.FitsName());
+  FitsImage *weight =  new FitsImage(inrim.FitsWeightName());
+  FitsImage *satur =  new FitsImage(inrim.FitsSaturName());
+  for(long y=0 ; y<infits.Ny() ; y++) 
+    for(long x=0 ; x<infits.Nx() ; x++) 
+      if ((*weight)(x,y)== 0  || (*satur)(x,y) ==1) 
+	{
+	  infits(x,y) = 0.0 ;
+	}
+  delete weight;
+  delete satur;
+  double nsigma = 1 ;
   double threshold =0;
-  double nsigma = 1.5 ;
+  
   const int RELATIVE = 2 ;
   int giventhreshold = RELATIVE ;
 
@@ -114,6 +125,7 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
   // we should give sigmaback and backlevel from reducedimage
   double fondciel = inrim.BackLevel();
   double sigfond = inrim.SigmaBack();
+  threshold = nsigma * sigfond;
 
   cout << fondciel << " " << sigfond << endl;
   while (bigcluster) {
@@ -170,9 +182,9 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
 		   << endl
 		   << "warning: killsatellites: perhaps threshold is too low." 
 		   << endl
-		   << "warning: killsatellites: we will increase nsigma by 0.5"
+		   << "warning: killsatellites: we will increase nsigma by 0.1"
 		   << endl ;
-	      nsigma += 0.5 ;
+	      nsigma += 0.1 ;
 	      threshold = fondciel + nsigma * sigfond ;
 	      bigcluster = 1 ;
 	      delete current ;
@@ -247,10 +259,10 @@ bool ClusterList::Cut()
       }
       bool keep = false;
 
-      if ((*i).size >= (ccddiagonal / 2)) 
+      if ((*i).size >= (ccddiagonal / 10)) 
 	{
-	  if ((elongation >= /*5*/ 2) && (a >= (ccddiagonal / /*16*/ 25))) 
-	    if (fabs(fabs(theta) - (MY_PI/2)) >= 0.1) 
+	  if ((elongation >=  2) && (a >= (ccddiagonal / 50))) 
+	    //if (fabs(fabs(theta) - (MY_PI/2)) >= 0.01) 
 	      {
 		// To avoid dead columns
 		cout << "Cluster #" << i->color << "  size = " << i->size 
@@ -284,6 +296,7 @@ Image ClusterList::Mask()
 {
   cout<< "Constructing the mask " << endl;
   Image Mask(colors->Nx(), colors->Ny()) ;
+  //FitsImage("colors.fits",*colors);
 
   if(!trackfound) return Mask;
 

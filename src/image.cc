@@ -1176,6 +1176,7 @@ void Image::Cosmics(const double &Sigma, const double &Mean,
 
 double ImageAndWeightError(const Image &I, const Image &W, const double MinWeight, double *AverageShift)
 {
+  same_sizes(I,W);
   int npixTot = I.Nx()*I.Ny();
   int npix = min(10000, npixTot);
   int step = max(npixTot/npix, 1);

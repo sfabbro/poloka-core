@@ -1,4 +1,5 @@
 #include <iomanip>
+#include <fstream>
 
 #include "reducedimage.h"
 #include "reducedutils.h"

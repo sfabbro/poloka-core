@@ -3,15 +3,13 @@
 // \file gtransfo.h
 // \brief Geometrical transformations (of 2D points)
 // 
-// Last modified: $Date: 2004/03/15 11:13:43 $
+// Last modified: $Date: 2004/04/26 13:30:40 $
 // By:            $Author: guy $
 // 
 #ifndef GTRANSFO_H
 #define GTRANSFO_H
 
 #include <iostream>
-#include <iomanip>
-#include <fstream>
 #include <string>
 
 #include "point.h"
@@ -59,16 +57,21 @@ public:
   virtual void dump(ostream &stream = cout) const = 0;
 
 
-  //! fits a transfo to a list of star pairs (p1,p2).
-  /*! After the fit this(PriorTransfo(p1)) yields approximately
-    PosteriorTransfo(p2). The returned value is the chi2.*/
-  virtual double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL, 
-		     const Gtransfo *PosteriorTransfo = NULL) = 0;
+  //! fits a transfo to a list of Point pairs (p1,p2, the Point fields in StarMatch).
+  /*! After the fit this(p1) yields approximately p2. 
+    The returned value is the sum of squared residuals.
+    If you want to fit a partial transfo (e.g. such that 
+    this(T1(p1)) = T2(p2), use StarMatchList::ApplyTransfo beforehand. */
+  virtual double fit(const StarMatchList &List) = 0;
+
 
   //! allows to write MyTransfo(MyStar)
   Point operator()(const Point &In) const { return apply(In);};
 
   //! allow composition of transformations regardless of their actual types.see GtransfoCompose() for a user callable entry.
+  //! returns the local jacobian.
+  virtual double Jacobian(const Point &P) const {return Jacobian(P.x, P.y);}
+
   virtual Gtransfo *ReduceCompo(const Gtransfo *Right) const;
 
   //! returns a copy (allocated by new) of the transformation.
@@ -92,17 +95,35 @@ public:
   //! returns an inverse transfo. 
   /*! Precision and Region refer to the "input" side of this, 
     and hence to the output side of the returned Gtransfo. */
+
+  //! Derivative w.r.t parameters. Derivatives should be al least 2*NPar long. first Npar, for x, last Npar for y.
+  virtual void ParamDerivatives(const Point &Where, double *Derivatives) const;
+
+  //! Params should be at least Npar() long
+  void GetParams(double *Params) const;
+
+  //! 
+  void SetParams(const double *Params);
+
+  //!
+  virtual double ParamRef(const int i) const;
+
+  //!
+  virtual double& ParamRef(const int i);
+
+
   virtual Gtransfo* InverseTransfo(const double Precision,
 				   const Frame& Region) const;
 
   //! Rough inverse. 
   /*! Stored by the numerical inverter to guess starting point 
      for the trials. Just here to enable overloading. */
+#ifndef SWIG
   virtual Gtransfo* RoughInverse(const Frame &Region) const;
 
   //! returns the number of parameters (to compute chi2's)
   virtual int Npar() const {return 0;}
-
+#endif /* SWIG */
   virtual ~Gtransfo() {};
 
 };
@@ -131,10 +152,11 @@ public:
 	       double &Xout, double &Yout) const 
       {Xout = Xin; Yout = Yin;}; // to speed up
 
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL , 
-	       const Gtransfo *PosteriorTransfo = NULL)
-      {cerr << "GtransfoIdentity cannot be fitted : for list : "  << &List << 
-	 " and transfos " << PriorTransfo << ' ' << PosteriorTransfo << endl; return 0;}
+    double fit(const StarMatchList &List)
+      {std:: cerr << "GtransfoIdentity cannot be fitted for list : "  
+		  << &List << std::endl;
+      return -1;
+      }
 
     Gtransfo* ReduceCompo(const Gtransfo *Right) const { return Right->Clone();}
     void dump(ostream &stream = cout) const 
@@ -149,124 +171,121 @@ public:
     //! linear approximation.
     virtual GtransfoLin LinearApproximation(const Point &Where, 
 					    const double Step = 0.01) const;
-
-
+  
     //    ClassDef(GtransfoIdentity,1)
 };
 
 //! Shorthand test to tell if a transfo belongs to the GtransfoIdentity class. 
 bool IsIdentity(const Gtransfo *a_transfo);
 
+#ifndef SWIG
 class GtransfoQuad;
 class GtransfoCub;
+#endif /* SWIG */
 
 /*=============================================================*/
 //! implements the linear transformations (6 real coefficients). 
 class GtransfoLin : public Gtransfo {
-
+  
  public:
   CLASS_VERSION(GtransfoLin,1);
-  #define GtransfoLin__is__persistent
+#define GtransfoLin__is__persistent
+  
+  //! the default constructor constructs the do-nothing transformation.
+  GtransfoLin() {identity();}
+  
+  //!  enables to combine linear tranformations: T1=T2*T3 is legal. 
+  GtransfoLin  operator*(const  GtransfoLin &T2) const;
+  
+  //! returns the inverse: T1 = T2.invert(); 
+  GtransfoLin  invert() const;
+  
+  //!
+  void  apply(const double Xin, const double Yin, double &Xout, double &Yout) const
+  {
+    Xout =  dx + a11*Xin + a12*Yin;
+    Yout =  dy + a21*Xin + a22*Yin;
+  }
+  
+  //! 
+  double Determinant() const {return (a11*a22-a12*a21);}
 
-    //! the default constructor constructs the do-nothing transformation.
-    GtransfoLin() {identity();}
+  
+  // useful?    double Jacobian(const double x, const double y) const { return Determinant();}
+  
+  //!
+  void Derivative(const Point &Where, GtransfoLin &Derivative, 
+		  const double Step = 0.01) const;
+  //!
+  GtransfoLin LinearApproximation(const Point &Where, 
+				  const double step = 0.01) const;
+  
+  
+  Point apply(const Point &Pin) const 
+  { return Point(dx + a11*Pin.x + a12*Pin.y, dy + a21*Pin.x + a22*Pin.y);}
+  
+  void dump(ostream &stream = cout) const;
+  
+  double fit(const StarMatchList &List);
+  
+  
+  //! the constructor that enables to set all parameters independently. Not very useful. 
+  GtransfoLin(double ox, double oy , double aa11, double aa12, double aa21, double aa22) :
+    dx(ox), dy(oy), a11(aa11), a12(aa12), a21(aa21), a22(aa22) {}
+  
+  //! Handy converter:
+  GtransfoLin(const GtransfoIdentity &T)
+  { if (&T) {} /* avoid a warning */ identity();}
+  
+  
+  friend GtransfoCub operator*(const GtransfoLin &L, const GtransfoCub &R);
+  
+  friend GtransfoCub operator*(const GtransfoCub &L, const GtransfoLin &R);
+  
+  Gtransfo* Clone() const { return new GtransfoLin(*this);}
+  
+  Gtransfo* ReduceCompo(const Gtransfo *Right) const;
 
-    //!  enables to combine linear tranformations: T1=T2*T3 is legal. 
-    GtransfoLin  operator*(const  GtransfoLin &T2) const;
+  Gtransfo* InverseTransfo(const double Precision,
+			   const Frame& Region) const;
 
-    //! returns the inverse: T1 = T2.invert(); 
-    GtransfoLin  invert() const;
+  double  A11() const { return a11;};
+  double A12() const { return a12;};
+  double A21() const { return a21;};
+  double A22() const { return a22;};
+  double dX()  const { return dx ;};
+  double dY()  const { return dy ;};
+  virtual int Npar() const {return 6;}
+  
+  double  ParamRef(const int i) const;
+  double& ParamRef(const int i);
+  void ParamDerivatives(const Point &Where, double *Derivatives) const;
 
-    //!
-    void  apply(const double Xin, const double Yin, double &Xout, double &Yout) const
-      {
-      Xout =  dx + a11*Xin + a12*Yin;
-      Yout =  dy + a21*Xin + a22*Yin;
-      }
+  virtual int Degree() const {return 1;}
+  
+  friend class Gtransfo;
+  friend class GtransfoIdentity; // for Gtransfo::Derivative
+  
+protected:
+  double  dx,dy;
+  double a11,a12,a21,a22;
+  
+  void identity() {dx=dy=a12=a21=0; a11=a22=1.;}
+  
+private:
+  int do_the_fit(double &Chi2, const StarMatchList &List);
 
-    //! 
-    double Determinant() const {return (a11*a22-a12*a21);}
-
-
-    // useful?    double Jacobian(const double x, const double y) const { return Determinant();}
-
-    //!
-    void Derivative(const Point &Where, GtransfoLin &Derivative, 
-		    const double Step = 0.01) const;
-    //!
-    GtransfoLin LinearApproximation(const Point &Where, 
-				    const double step = 0.01) const;
-
-
-    Point apply(const Point &Pin) const 
-	{ return Point(dx + a11*Pin.x + a12*Pin.y, dy + a21*Pin.x + a22*Pin.y);}
-
-    void dump(ostream &stream = cout) const 
-         {ios::fmtflags  old_flags =  stream.flags(); 
-	   int oldprec = stream.precision();
-	   stream << resetiosflags(ios::scientific) ;
-	   stream << setiosflags(ios::fixed) ;
-	   stream << setprecision(8);
-	   stream << " newx = " << dx ;
-	   stream << " + " << a11 << "*x + " << a12 << "*y" << endl ;
-	   stream << " newy = " << dy ;
-	   stream << " + " << a21 << "*x + " << a22 << "*y" << endl ;
-	   stream << " Determinant = " << Determinant() << endl;
-	   stream.flags(old_flags);
-	   stream << setprecision(oldprec) ;}
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL , 
-	       const Gtransfo *PosteriorTransfo = NULL);
-
-
-    //! the constructor that enables to set all parameters independently. Not very useful. 
-    GtransfoLin(double ox, double oy , double aa11, double aa12, double aa21, double aa22) :
-	dx(ox), dy(oy), a11(aa11), a12(aa12), a21(aa21), a22(aa22) {}
-
-    //! Handy converter:
-    GtransfoLin(const GtransfoIdentity &T)
-	{ if (&T) {} /* avoid a warning */ identity();}
-
-
-    friend GtransfoCub operator*(const GtransfoLin &L, const GtransfoCub &R);
-
-    friend GtransfoCub operator*(const GtransfoCub &L, const GtransfoLin &R);
-
-    Gtransfo* Clone() const { return new GtransfoLin(*this);}
-
-    Gtransfo* ReduceCompo(const Gtransfo *Right) const;
-
-    Gtransfo* InverseTransfo(const double Precision,
-			     const Frame& Region) const;
-
-    double  A11() const { return a11;};
-    double A12() const { return a12;};
-    double A21() const { return a21;};
-    double A22() const { return a22;};
-    double dX()  const { return dx ;};
-    double dY()  const { return dy ;};
-    virtual int Npar() const {return 6;}
-
-    virtual int Degree() const {return 1;}
-
-    friend class Gtransfo;
-    friend class GtransfoIdentity; // for Gtransfo::Derivative
-
- protected:
-    double  dx,dy;
-    double a11,a12,a21,a22;
-
-    void identity() {dx=dy=a12=a21=0; a11=a22=1.;}
-
- private:
-    int do_the_fit(double &Chi2, const StarMatchList &List, 
-		   const Gtransfo *PriorTransfo = NULL, 
-		   const Gtransfo* PosteriorTransfo = NULL);
- 
-    //    ClassDef(GtransfoLin,1)
+  // parameter serializer tools :
+  struct LinParams { double GtransfoLin::*Item;};
+  static LinParams Params[];
+  
+  //    ClassDef(GtransfoLin,1)
 };
 
 
+#ifndef SWIG
 /*=============================================================*/
+#endif /*SWIG */
 //! just here to provide a specialized constructor, and fit.
 class GtransfoLinShift : public GtransfoLin
 {
@@ -277,8 +296,8 @@ public:
     //! Add ox and oy.
     GtransfoLinShift(double ox =0., double oy =0.) : GtransfoLin(ox,oy,1.,0.,0.,1.) {}
     GtransfoLinShift( const Point &P) : GtransfoLin(P.x, P.y, 1., 0. ,0. ,1.) {};
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL , 
-	       const Gtransfo *PosteriorTransfo = NULL);
+    double fit(const StarMatchList &List);
+
     int Npar() const {return 2;}
 };
 
@@ -293,8 +312,8 @@ class GtransfoLinRot : public GtransfoLin {
     GtransfoLinRot() : GtransfoLin() {};
     GtransfoLinRot(const double AngleRad, const Point *Center=NULL, 
 		   const double ScaleFactor=1.0);
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL , 
-	      const Gtransfo *PosteriorTransfo = NULL);
+    double fit(const StarMatchList &List);
+
     int Npar() const {return 4;}
 };
 
@@ -353,8 +372,7 @@ public :
 
     void dump(ostream &stream = cout) const;
 
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL , 
-	       const Gtransfo *PosteriorTransfo = NULL);
+    double fit(const StarMatchList &List);
 
 
     Gtransfo* Clone() const { return new GtransfoQuad(*this);}
@@ -375,6 +393,13 @@ public :
     double A2XY() const { return a2xy;};
     double A2Y2() const { return a2y2;};
     int Npar() const {return 12;}
+    // parameter serializer:
+    double  ParamRef(const int i) const;
+    double& ParamRef(const int i);
+    void ParamDerivatives(const Point &Where, double *Derivatives) const;
+
+
+
 
     virtual int Degree() const {return 2;}
 
@@ -393,13 +418,21 @@ public :
 	a1x2(aa1x2), a1xy(aa1xy), a1y2(aa1y2), 
 	a2x2(aa2x2), a2xy(aa2xy), a2y2(aa2y2) {}
 
+
+
     friend GtransfoQuad operator*(const GtransfoLin &L, const GtransfoQuad &R);
 
 private:
     double x_tr(const double Xin, const double Yin) const 
 	{ return  dx + a11*Xin + a12*Yin + a1x2*Xin*Xin + a1xy*Xin*Yin + a1y2*Yin*Yin;}
-    double y_tr(const double Xin, const double Yin) const 
-	{ return  dy + a21*Xin + a22*Yin + a2x2*Xin*Xin + a2xy*Xin*Yin + a2y2*Yin*Yin;}
+
+    struct QuadParams { double GtransfoQuad::*Item;};
+    static QuadParams Params[];
+
+
+
+  double y_tr(const double Xin, const double Yin) const 
+  { return  dy + a21*Xin + a22*Yin + a2x2*Xin*Xin + a2xy*Xin*Yin + a2y2*Yin*Yin;}
     GtransfoQuad truncated_product(const GtransfoQuad &R) const;  
     //    ClassDef(GtransfoQuad,1);
 };
@@ -456,8 +489,8 @@ class GtransfoCub : public GtransfoQuad {
 
     /*! fits a transfo to a list of star pairs (p1,p2). After the fit
        this(PriorTransfo(p1)) yields approximately p2. The returned value is the chi2.*/
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL, 
-	      const Gtransfo *PosteriorTransfo = NULL);
+    double fit(const StarMatchList &List);
+
    //!
     Gtransfo* Clone() const { return new GtransfoCub(*this);}
     Gtransfo* ReduceCompo(const Gtransfo *Right) const;
@@ -489,13 +522,17 @@ class GtransfoCub : public GtransfoQuad {
     double A2Y3() const { return a2y3;};
 
     typedef enum {Old, New} OldOrNew;
-    void GetValues(vector<NamedValue> &Values, const OldOrNew WhichNames = New) const;
-    void SetValues(vector<NamedValue> &Values);
+    void GetValues(vector<NamedValue> &Values, const string &KeyHeader = "DV") const;
+    void SetValues(vector<NamedValue> &Values, const string &KeyHeader);
     int Npar() const {return 20;}
 
     virtual int Degree() const {return 3;}
-
-
+  
+     // parameter serializer
+    double  ParamRef(const int i) const;
+    double& ParamRef(const int i);
+    void ParamDerivatives(const Point &Where, double *Derivatives) const;
+  
 
 protected:
     //    double dx,dy; //2
@@ -513,14 +550,20 @@ private:
   // arrays used to associate names to class data members once for all.
     typedef double GtransfoCub::*GtransfoCubItem;
     typedef struct { const char *name; GtransfoCubItem value; }  CubAssoc;
-    static CubAssoc GtransfoCubNames [];
-    static CubAssoc GtransfoCubOldNames [];
+    static CubAssoc WCS3Names[];
+    static CubAssoc DJNames [];
+    static CubAssoc DVNames [];
+
 
 
     double x_tr3(const double Xin, const double Yin) const 
 	{ return  dx + a11*Xin + a12*Yin + a1x2*Xin*Xin + a1xy*Xin*Yin + a1y2*Yin*Yin +
 	      a1x3*Xin*Xin*Xin + a1x2y*Xin*Xin*Yin + a1xy2*Xin*Yin*Yin + 
 	      a1y3*Yin*Yin*Yin;}
+
+    struct CubParams { double GtransfoCub::*Item;};
+    static CubParams Params[];
+
 
     double y_tr3(const double Xin, const double Yin) const 
 	{ return  dy + a21*Xin + a22*Yin + a2x2*Xin*Xin + a2xy*Xin*Yin + a2y2*Yin*Yin +
@@ -601,8 +644,8 @@ class TanPix2RaDec : public Gtransfo {
     Point CrPix() const;
 
     //!
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL ,
-	       const Gtransfo *PosteriorTransfo = NULL);
+    double fit(const StarMatchList &List);
+
 
     ~TanPix2RaDec();
 
@@ -656,8 +699,37 @@ class TanRaDec2Pix : public Gtransfo
 
     Gtransfo * Clone() const; 
 
-    double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL ,
-	     const Gtransfo *PosteriorTransfo = NULL);
+    double fit(const StarMatchList &List);
+
+
+};
+
+
+//! signature of the user-provided routine that actually does the coordinate transfo for UserTransfo.
+typedef void (GtransfoFun)(const double, const double, 
+			   double &, double &, const void*);
+
+
+//! a run-time transfo that allows users to define a Gtransfo with minimal coding (just the transfo routine).
+class UserTransfo : public Gtransfo
+{
+  private :
+  
+  GtransfoFun *userFun;
+  const void *userData;
+
+ public:
+  //! the transfo routine and extra data that it may need.
+  UserTransfo(GtransfoFun &Fun, const void *UserData);
+
+  void apply(const double Xin, const double Yin, 
+			  double &Xout, double &Yout) const;
+
+  void dump(ostream &stream = cout) const;
+
+  double fit(const StarMatchList &List);
+
+  Gtransfo *Clone() const;
 
 };
 

@@ -73,13 +73,26 @@ if (status && Warn)
 }
 
 
-string FullFileName(const char *FileName)
+string FullFileName(const string &FileName)
 {
-if (*FileName == '/') return FileName;
+if (strlen(FileName.c_str()) && FileName[0] == '/') return FileName;
 //char cwd[512];
 //getcwd(cwd,512); /* very nice : may not be equal to $cwd from shell (if there are links involved) */
-return  AddSlash(getenv("PWD")) + string(FileName);
+return  AddSlash(getenv("PWD")) + FileName;
 }
+
+static string RemoveDoubleSlash(const string &FileName)
+{
+  std::string result = FileName;
+    // string::find does not tell clearly when the pattern is not found
+    while (strstr(result.c_str(),"//"))
+      {
+	int pos = result.find("//");
+	result.erase(pos,1);
+      }
+    return result;
+}
+
 
 string RelativeLink(const char *RealFile, const char *LinkLocation)
   //  caveats : does not check if there are symbolic links in the given pathes.. 
@@ -88,6 +101,11 @@ string RelativeLink(const char *RealFile, const char *LinkLocation)
 {
 string realFile = FullFileName(RealFile);
 string link     = FullFileName(LinkLocation);
+//
+ realFile = RemoveDoubleSlash(realFile);
+ link     = RemoveDoubleSlash(link);
+
+ 
 /* find the common part */
 int bound = min(realFile.length(), link.length());
 int i;
@@ -104,8 +122,8 @@ result = result + (realFile.c_str()+i);
 return result;
 }
 
-
-int MakeRelativeLink(const char*RealFile, const char *LinkLocation)
+int MakeRelativeLink(const std::string &RealFile, 
+		     const std::string &LinkLocation)
 {
 string link_value = RelativeLink(StandardPath(RealFile).c_str(), 
 				 StandardPath(LinkLocation).c_str());
@@ -205,6 +223,14 @@ struct stat stat_struct;
 if (stat(FileName.c_str(), &stat_struct) != 0) return 0;
 return S_ISDIR(stat_struct.st_mode);
 }
+
+//! return true for filename ending by ".Z" or ".gz"
+bool IsCompressed(const string &FileName)
+{
+  const char*p = strrchr(FileName.c_str(),'.');
+  return (strstr(p,".Z") == p || strstr(p,".gz") == p );
+}
+
 
 #include <fstream>
 
@@ -368,7 +394,7 @@ int StringMatchPattern (
   lpattern  = strlen(a_pattern);
   lstring   = strlen(This);
   if ((lpattern==0)&&(lstring==0)) return 1;
-  if ((lpattern==0)&&(lstring!=0)) return 1;
+  if ((lpattern==0)&&(lstring!=0)) return 0;
   if ((lpattern!=0)&&(lstring==0)) return 0;
 /* pattern is * */
   if(strcmp(a_pattern,"*")==0) return 1;
@@ -513,4 +539,11 @@ void DecomposeString(vector<string> &SubStrings, const string &Source, const cha
 
   // for (unsigned i=0; i<SubStrings.size(); ++i) 
   //   cout << i << "='"<< SubStrings[i] << "'"<<endl;
+}
+
+std::string SubstituteExtension(std::string Original, std::string NewExtension)
+{
+  unsigned int dotpos = Original.rfind('.');
+  if (dotpos > Original.size()) return Original;
+  return Original.substr(0,dotpos)+NewExtension;
 }

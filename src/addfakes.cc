@@ -3,9 +3,9 @@
 #include "reducedimage.h"
 #include "toadscards.h"
 #include "senearstar.h"
-#include "newsub.h" // for DatSim
 #include "dodetection.h"
 #include "fitsimage.h"
+#include "datacards.h"
 
 // All simulation stuff
 // starFinder which uses an histo shape (log (flux/fluxmax)) vs fwhm to find stars
@@ -29,6 +29,49 @@ static bool DecreasingCStar(const SEStar *S1, const SEStar *S2)
 return (S1->Cstar() > S2->Cstar());
 }
 #endif
+
+
+struct DatSim {
+  int numberOfFakes;
+  double minMag, maxMag;
+  
+  DatSim() { numberOfFakes = 100; minMag = 22; maxMag = 26;}
+  void LitDataCards(DataCards &);
+  DatSim(const string &FileName);
+  void Print();
+};
+
+
+
+DatSim::DatSim(const string &FileName)
+{
+  if (FileExists(FileName))
+    {
+      DataCards cards(FileName);
+      LitDataCards(cards);
+    }
+  else
+    {
+      cerr << " DatSim::DatSim Cannot open  FileName " << endl;
+    }
+}
+
+// Reads the parameters for the simulation
+void DatSim::LitDataCards(DataCards &Data)
+{
+  numberOfFakes = Data.IParam("NUMBER_OF_FAKES");
+  minMag = Data.DParam("MIN_FAKE_MAG");
+  maxMag = Data.DParam("MAX_FAKE_MAG");
+  if (minMag > maxMag) swap (minMag,maxMag);
+}
+
+void DatSim::Print()
+{
+  cout << " FAKES : number  of fakes : " <<  numberOfFakes 
+      << " mag range : ["<< minMag << ',' << maxMag << ']' << endl;
+}
+
+
 
 
 
@@ -345,3 +388,4 @@ void MakeListSn( const ReducedImage *AnImage, ReducedImage *New, SENearStarList 
     }
 
 }
+

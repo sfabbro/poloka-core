@@ -129,7 +129,7 @@ void DumpHelp(const char *programname) {
        << "   will:\n" 
        << "     - trim the calibrated.fits \n"
        << "     - defringe if not yet defringed and i or z band \n"
-       << "     - multiply by the gain \n"
+       << "     - *NOT* multiply by the gain \n"
        << "     - compute the saturation and sky levels \n"
        << "     - fix the masked images if 0 \n"
        << endl;

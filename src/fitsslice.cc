@@ -8,14 +8,14 @@
 if (status)\
   {\
   cfitsio_report_error(status, message);\
-  cout << " for file " << this->fileName << endl;\
+  std:: cout << " for file " << this->FileName() << std::endl;\
   return_statement;\
   }
 
 static void cfitsio_report_error(int status, const char *Message)
 {
-cerr << Message ;
-fits_report_error(stderr, status);
+  std::cerr << Message ;
+  fits_report_error(stderr, status);
 }
 
 
@@ -79,6 +79,93 @@ int FitsSlice::LoadNextSlice()
 }
 
 
+/******************* FitsOutSlice ************************************/
+FitsOutSlice::FitsOutSlice(const string FileName, 
+			   const int Nx, const int Ny,
+			   const int SliceSize, const int Overlap) 
+  : FitsHeader(FileName,RW) , Image(0,0)
+{
+  overlap = Overlap;  
+  int nx = Nx;
+  nyTotal = Ny;
+  sliceSize = SliceSize;
+  Image::allocate(nx, sliceSize);
+  ySliceStart = 0;
+}
+
+FitsOutSlice::FitsOutSlice(const string FileName, const FitsHeader &ModelHead,
+			   const int SliceYSize, const int Overlap) 
+  : FitsHeader(ModelHead, FileName) , Image(0,0)
+{
+  overlap = Overlap;  
+  int nx = KeyVal("NAXIS1");
+  nyTotal = KeyVal("NAXIS2");
+  sliceSize = SliceYSize;
+  Image::allocate(nx, sliceSize);
+  ySliceStart = 0;
+}
+
+int FitsOutSlice::WriteCurrentSlice()
+{
+  int nx = Nx();
+  int n_pix_overlap = overlap * nx;
+  
+  int nRowWrite = sliceSize;
+  int status = write_pixels(ySliceStart, nRowWrite, data);
+  /* take the part at the end (corresponding to the overlap between
+     current slice and next one and place it at the beginning) */
+  int nbyte_copy = n_pix_overlap*sizeof(Pixel);
+  if (nbyte_copy) memcpy(data, data + (nRowWrite-overlap)*nx, nbyte_copy);
+  // clear the remainder
+  Pixel *zeroStart = data + n_pix_overlap;
+  int nbyte_zero = (end() - zeroStart)*sizeof(Pixel);
+  memset(zeroStart, 0, nbyte_zero);
+
+  // where we stand now (what the pixel buffer now holds):
+  ySliceStart += sliceSize - overlap;
+
+#ifdef DEBUG_SLICES
+  cout << " actually written " <<  nRowWrite << " rows " << endl;
+  cout << " zeroed  " <<  nbyte_zero/(nx*sizeof(Pixel)) << " rows " << endl;
+#endif
+  // nRowRead differs on output for the last slice : assign the sliceSize: 
+  //  sliceSize = overlap + nRowRead;
+  return status;
+}
+
+int FitsOutSlice::write_pixels(const int StartRow, int &NRows, Pixel *Where)
+{
+#ifdef DEBUG_SLICES
+  cout << " write requested for file : " << FileName() << " from row " << StartRow << " for " << NRows << endl;
+#endif
+  int startPix = StartRow*Nx();
+  int endRow = min(StartRow+NRows,nyTotal);
+  lastSlice = (StartRow+NRows >= nyTotal);
+  NRows = endRow-StartRow;
+  int nPix =  NRows * Nx();
+  int status = 0;
+
+  /* fits_read_img uses the fortran like numberring: fits pixel is pixel "1" */
+  if (nPix) fits_write_img(fptr, TFLOAT, startPix+1, nPix,  Where, &status);
+  CHECK_STATUS(status," FitsOutSlice::write_pixels", );
+  return (!status);
+}
+
+
+FitsOutSlice::~FitsOutSlice()
+{
+  WriteCurrentSlice(); // can be done several times (only for the last slice!)
+  std::cout << " FitsOutSlice : writen " 
+	    << int(KeyVal("NAXIS1")) << 'x' << int(KeyVal("NAXIS2")) << ' '
+	    << FileName() << endl
+	    << " with BITPIX=" << int(KeyVal("BITPIX"))
+    //	    << "BSCALE=" << double(KeyVal("BSCALE")) 
+    //	    << "BZERO=" << double(KeyVal("BZERO"))
+	    << std::endl;
+  // don't close the output file here : ~Fitsheader does it.
+}
+  
+
 /************************** FitsParallelSlices **************************/
 
 
@@ -134,6 +221,38 @@ int global_status = 1;
  }
  return global_status;
 }
+
+
+
+/**************  class FitsInOutParallelSlices  ************/
+
+/* The added value w.r.t FitsSlice and FitsOutSlice is just that
+FitsInOutParallelSlices class forces SliceSize and Overlap to be the
+same for input and ouput.  it also sequences read(in) and Write(out)
+in a single call.  If you say it is not much, I won't rush into an
+argument!
+*/
+
+
+FitsInOutParallelSlices::FitsInOutParallelSlices(const std::string &InName,
+			  const std::string &OutName,
+			  const int YSliceSize,
+			  const int Overlap)
+  : in(InName, YSliceSize, Overlap), out(OutName, in, YSliceSize, Overlap)
+{
+}
+
+   
+
+int FitsInOutParallelSlices::LoadNextSlice()
+{
+  return (in.LoadNextSlice() && out.WriteCurrentSlice());
+}
+
+
+
+
+
 
 /*
   comments for the doc:

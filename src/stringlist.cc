@@ -31,8 +31,16 @@ void StringList::Substitute(const string &Original, const string &Substitution)
   if (i != end()) *i = Substitution;
 }
 
+string StringList::AllEntries() const
+{
+  string result;
+  for (StringCIterator i = begin(); i != end(); ++i) result += *i+" ";
+  return result;
+}
+
 ostream & operator <<(ostream &stream, const StringList &List)
 {
   for (StringCIterator i = List.begin(); i != List.end(); ++i) 
       stream << *i << ' '; return stream; 
 }
+

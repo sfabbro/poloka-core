@@ -300,6 +300,7 @@ void DbImage::init_from_name()
       if (path) directory = AddSlash(AddSlash(path->path) + imageName);
     }
   saveEverythingElse = false; // this image already exists
+      imageName = BaseName(imageName);
   //  if (!FileExists(EverythingElseFileName())) saveEverythingElse = true;
   //if(!IsValid()) {
   //std::cerr << "ERROR in  DbImage::init_from_name cannot find " << imageName << endl;

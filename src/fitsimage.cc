@@ -4,7 +4,7 @@
 #include "fitstoad.h" 
 #include "fileutils.h"
 #include "frame.h"
-
+#include "stringlist.h"
 
 /******** FitsKey *********/
 
@@ -286,6 +286,14 @@ CHECK_STATUS(status, " CopyHeader ", )
   return telInst;
 }
 
+void FitsHeader::DeleteFile()
+{
+  int status = 0;
+  fits_delete_file(fptr, &status);
+  // we get a bad status when the file is corrupted, but we just don't care
+  //   CHECK_STATUS(status, "DeleteFile",);
+  fptr = NULL;
+}
 
 FitsHeader::~FitsHeader()
 {int status = 0;
@@ -418,12 +426,12 @@ int FitsHeader::write_key(const string &KeyName, void* KeyVal, const string &Com
     }
   fits_write_key(fptr, type, s_key_name, KeyVal, the_comment, &status);
   CHECK_STATUS(status,"AddKey : "+ string(KeyName),);
- if (FileMode() != RW)
-   {
-     cerr << " trying to write key " << KeyName << " in file " 
-	  << fileName << " opened RO " << endl;
-   }
-return (!status);
+  if (FileMode() != RW)
+    {
+      cerr << " trying to write key " << KeyName << " in file " 
+	   << fileName << " opened RO " << endl;
+    }
+  return (!status);
 }
 
 
@@ -611,6 +619,20 @@ CHECK_STATUS(status,"AddHistoryLine",);
 return (!status);
 }
 
+bool FitsHeader::ReadCard(const std::string &KeyName, string &Card) const
+{
+  int status = 0;
+  char keyName[80];
+  strcpy(keyName,KeyName.c_str());
+  char card[256];
+  if (fits_read_card(fptr, keyName, card, &status) == 0)
+    {
+      Card = string(card);
+      return true;
+    }
+  return false;
+}
+
 int FitsHeader::AddOrModCard(const string &KeyName, const string &Card)
 {
   char keyName[80];
@@ -622,6 +644,23 @@ int FitsHeader::AddOrModCard(const string &KeyName, const string &Card)
   CHECK_STATUS(status, "fits_update_card",);
   return (!status);
 }
+
+#include <fstream> // for ofstream
+
+bool FitsHeader::AsciiDump(const string &AsciiFileName, 
+			   const StringList &WhichKeys) const
+{
+  string card;
+  ofstream s(AsciiFileName.c_str());
+  for (StringCIterator i = WhichKeys.begin(); i != WhichKeys.end(); ++i)
+    if (ReadCard(*i, card))
+      {
+	s << card << std::endl;
+      }
+  s << "END     " << std::endl;
+  return true;
+}
+
 
 
 int FitsHeader::Flush()
@@ -648,12 +687,12 @@ for (int i=1; i<= nkeys; i++ ) /* fortran numbering of header lines  */
 return stream;
 }
 
-bool FitsHeader::CopyKey(const char *KeyName, FitsHeader &To) const
+bool FitsHeader::CopyKey(const std::string &KeyName, FitsHeader &To) const
 {
   char card[512];
   int status = 0;
   char keyName[80];
-  sprintf(keyName, "%s", KeyName);
+  sprintf(keyName, "%s", KeyName.c_str());
   // copy everything verbatim (name ,value, comment)
   fits_read_card(fptr, keyName, card, &status);
   fits_write_record(To.fptr, card, &status);

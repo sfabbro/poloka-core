@@ -1,5 +1,6 @@
 #include "gtransfo.h"
 #include <iostream>
+#include <iomanip>
 #include <iterator> /* for ostream_iterator */
 #include "frame.h"
 
@@ -151,7 +152,54 @@ Gtransfo* Gtransfo::RoughInverse(const Frame &Region) const
     *GtransfoLinShift(-centerIn.x, -centerIn.y);
   return new GtransfoLin(der);
 }
-    
+
+
+/* implement one in Gtransfo, so that all derived 
+   classes do not need to provide one... */
+
+
+/* the routines that follow are used for ea generic parameter 
+   transformation serialization, used e.g. for fits. Enables
+   to manipulate transformation parameters as vectors.
+*/
+
+// dummy implementation for derived classes which have Npar ==0;
+void Gtransfo::ParamDerivatives(const Point &Where, double *Derivatives) const
+{
+  if (&Where && Derivatives) {}; // warning killer
+  if (Npar() == 0)
+    std::cerr << "Gtransfo::ParamDerivatives should never be called" 
+	      << std::endl; 
+}
+
+
+// not dummy : what it does is virtual because ParamRef is virtual.
+void Gtransfo::GetParams(double *Params) const
+{
+  int npar = Npar();
+  for (int i=0; i<npar ; ++i) Params[i] = ParamRef(i);
+}
+
+
+void Gtransfo::SetParams(const double *Params)
+{
+  int npar = Npar();
+  for (int i=0; i<npar ; ++i) ParamRef(i) = Params[i];
+}  
+
+double Gtransfo::ParamRef(const int i) const
+{
+  if (i) {} // warning killer;
+  return 0; 
+}
+
+double &Gtransfo::ParamRef(const int i)
+{
+  if (i) {} // warning killer;
+  return *(double *)(NULL); 
+}
+
+
 
 ostream & operator << (ostream &stream, const Gtransfo & T)
            {T.dump(stream); return stream;}
@@ -180,8 +228,7 @@ public:
 
   void dump(ostream &stream) const;
 
-  double fit(const StarMatchList &List, const Gtransfo *PriorTransfo = NULL ,
-	     const Gtransfo *PosteriorTransfo = NULL);
+  double fit(const StarMatchList &List);
 
   virtual Gtransfo *Clone() const;
 
@@ -284,12 +331,12 @@ void GtransfoInverse::dump(ostream &stream) const
 	 << *direct << endl;
 }
 
-double GtransfoInverse::fit(const StarMatchList &List, 
-			    const Gtransfo *PriorTransfo,
-			    const Gtransfo *PosteriorTransfo)
+double GtransfoInverse::fit(const StarMatchList &List)
 {
-  if ( &List && PriorTransfo && PosteriorTransfo) {} // warning killer 
-  cerr << " Trying to fit a GtransfoInverse... try to use StarMatchList::inverseTransfo instead " << endl;
+  if (&List) {} // warning killer  
+  std::cerr << " Trying to fit a GtransfoInverse... \
+try to use StarMatchList::inverseTransfo instead " 
+	    << std::endl;
   return -1;
 }
 
@@ -327,10 +374,10 @@ void GtransfoComposition::dump(ostream &stream) const
 first->dump(stream); second->dump(stream);
 }
 
-double GtransfoComposition::fit(const StarMatchList &List, const Gtransfo *PriorTransfo, const Gtransfo *PosteriorTransfo)
+double GtransfoComposition::fit(const StarMatchList &List)
 {
   /* fits only one of them. could check that first can actually be fitted... */
-return first->fit(List, PriorTransfo, PosteriorTransfo);
+  return first->fit(List);
 }
 
 Gtransfo *GtransfoComposition::Clone() const
@@ -450,13 +497,75 @@ Gtransfo* GtransfoLin::InverseTransfo(const double Precision,
   return new GtransfoLin(this->invert());
 }
 
+void GtransfoLin::dump(ostream &stream) const
+{
+  ios::fmtflags  old_flags =  stream.flags(); 
+  int oldprec = stream.precision();
+  stream << resetiosflags(ios::scientific) ;
+  stream << setiosflags(ios::fixed) ;
+  stream << setprecision(8);
+  stream << " newx = " << dx ;
+  stream << " + " << a11 << "*x + " << a12 << "*y" << endl ;
+  stream << " newy = " << dy ;
+  stream << " + " << a21 << "*x + " << a22 << "*y" << endl ;
+  stream << " Determinant = " << Determinant() << endl;
+  stream.flags(old_flags);
+  stream << setprecision(oldprec) ;
+}
 
-#include "vutils.h" /* for SymMatInv */
+
+
+double GtransfoLin::ParamRef(const int i) const
+{
+  return this->*(Params[i].Item);
+}
+
+double &GtransfoLin::ParamRef(const int i)
+{
+  return this->*(Params[i].Item);
+}
+
+void GtransfoLin::ParamDerivatives(const Point &Where, double *Derivatives) const
+{
+  Derivatives[0] = Derivatives[9]  = 1;
+  Derivatives[1] = Derivatives[10] = Where.x;
+  Derivatives[2] = Derivatives[11] = Where.y;
+  for (int i=3; i<9; ++i) Derivatives[i] = 0;
+}
+
+/* the ordering in the following array and the above routine are 
+   linked together! */
+
+GtransfoLin::LinParams GtransfoLin::Params[6] =
+{{&GtransfoLin::dx}, {&GtransfoLin::a11}, {&GtransfoLin::a12},
+ {&GtransfoLin::dy}, {&GtransfoLin::a21}, {&GtransfoLin::a22}};
+
+  
 #include "starmatch.h"
 
-int GtransfoLin::do_the_fit(double &Chi2, const StarMatchList &List, 
-			    const Gtransfo *PriorTransfo, 
-			    const Gtransfo *PosteriorTransfo)
+
+//used by fitting routines to set <x>=<y>=0, to limit numerical troubles.
+static GtransfoLinShift ShiftToCenter(const StarMatchList &List)
+{
+  double xav=0;
+  double yav=0;
+  double count=0;
+  for (StarMatchCIterator it = List.begin(); it != List.end(); ++it)
+    {
+      const StarMatch &a_match = *it;
+      const Point &point1 = a_match.point1;
+      xav += point1.x;
+      yav += point1.y;
+      count++;
+    }
+  if (count==0) count = 1;
+  return GtransfoLinShift(-xav/count, -yav/count);
+}
+  
+
+#include "vutils.h" /* for SymMatInv */
+
+double GtransfoLin::fit(const StarMatchList &List)
 {
 #define NPAR 6
 double a[NPAR][NPAR]; double b[NPAR]; double hx[NPAR]; double hy[NPAR];
@@ -470,16 +579,16 @@ for (i=0; i < NPAR; i++)
 
 double sumr2 = 0; /* used to compute chi2 without relooping */
 /* loop on pairs  and fill a and b */
+
+GtransfoLinShift shift_to_center = ShiftToCenter(List);
+
 StarMatchCIterator it;
-GtransfoIdentity ident;
-if (!PriorTransfo) PriorTransfo = &ident;
-if (!PosteriorTransfo) PosteriorTransfo = &ident;
 
 for (it = List.begin(); it != List.end(); ++it)
   {
   const StarMatch &a_match = *it;
-  Point point1 = PriorTransfo->apply(a_match.point1);
-  Point point2 = PosteriorTransfo->apply(a_match.point2);
+  Point point1 = shift_to_center.apply(a_match.point1);
+  const Point &point2 = a_match.point2;
   hx[0] = point1.x;
   hx[1] = point1.y;
   hx[4] = 1.0;
@@ -499,7 +608,7 @@ for (it = List.begin(); it != List.end(); ++it)
 //for (i=0; i<NPAR; i++) for (j=0; j<i; j++ ) a[i][j] = a[j][i];
 
 /* solve */
-if (!SymMatInv(&a[0][0],NPAR))   return 0;
+if (!SymMatInv(&a[0][0],NPAR))   return -1;
 
 double res[NPAR];
 MatVec(&a[0][0], NPAR, NPAR, b, res);
@@ -510,15 +619,16 @@ a21 = res[2];
 a22 = res[3]; 
 dx  = res[4];
 dy  = res[5];
+ (*this) =  (*this) * shift_to_center;
 /* compute chi2 */
-Chi2 = (sumr2 - ScalProd(res,b,NPAR));
-return 1;
+return (sumr2 - ScalProd(res,b,NPAR));
 }
 
 #undef NPAR
 
 
-double  GtransfoLin::fit(const StarMatchList &List, const Gtransfo *PriorTransfo, const Gtransfo *PosteriorTransfo)
+#ifdef OLD_STUFF
+double  GtransfoLin::fit(const StarMatchList &List)
 {
 int npairs = List.size();
 if (List.size()< 3)
@@ -526,15 +636,12 @@ if (List.size()< 3)
   cerr << " GTransfoLin::fit  : trying to fit a linear transfo with only " << npairs << " matches " << endl;
   return -1;
   }
-GtransfoIdentity ident;
-if (!PriorTransfo) PriorTransfo = &ident;
-if (!PosteriorTransfo) PosteriorTransfo = &ident;
 
 
 /* do the job twice in case of numerical problem the first time */
 GtransfoLin firstLoop, secondLoop;
 double chi2;
-firstLoop.do_the_fit(chi2, List, PriorTransfo, PosteriorTransfo);
+firstLoop.do_the_fit(chi2, List);
 
 Gtransfo *globalTransfo = GtransfoCompose(&firstLoop,PriorTransfo);
 
@@ -544,8 +651,10 @@ secondLoop.do_the_fit( chi2, List, globalTransfo, PosteriorTransfo);
 delete globalTransfo;
 return chi2;
 }
+#endif /* OLD_STUFF */
 
-double  GtransfoLinRot::fit(const StarMatchList &List, const Gtransfo *PriorTransfo, const Gtransfo *PosteriorTransfo)
+
+double  GtransfoLinRot::fit(const StarMatchList &List)
 {
 int npairs = List.size();
 if (List.size()< 3)
@@ -564,17 +673,16 @@ double a[NPAR][NPAR]; double b[NPAR]; double hx[NPAR]; double hy[NPAR];
 int i,j;
 for (i=0; i < NPAR; i++) { b[i] =0; for (j=0; j<NPAR; j++) a[i][j] = 0.;}
 
+GtransfoLinShift shift_to_center = ShiftToCenter(List);
+
 double sumr2 = 0; /* used to compute chi2 without relooping */
 /* loop on pairs  and fill a and b */
 StarMatchCIterator it;
-GtransfoIdentity ident;
- if (!PriorTransfo) PriorTransfo = &ident;
- if (!PosteriorTransfo) PosteriorTransfo = &ident;
 for (it = List.begin(); it != List.end(); it++)
   {
   const StarMatch &a_match = *it;
-  Point point1 = PriorTransfo->apply(a_match.point1);
-  Point point2 = PosteriorTransfo->apply(a_match.point2);
+  Point point1 = shift_to_center.apply(a_match.point1);
+  const Point &point2 = a_match.point2;
   hx[0] = point1.x;
   hx[1] = -point1.y;
   hx[2] = 1.0;
@@ -613,7 +721,7 @@ return (sumr2 - (res[0]*b[0]+res[1]*b[1]+res[2]*b[2]+res[3]*b[3]));
 #undef NPAR
 
 
-double  GtransfoLinShift::fit(const StarMatchList &List, const Gtransfo *PriorTransfo, const Gtransfo *PosteriorTransfo)
+double  GtransfoLinShift::fit(const StarMatchList &List)
 {
 int npairs = List.size();
 if (npairs < 3)
@@ -628,18 +736,12 @@ double sumr2 = 0; /* used to compute chi2 without relooping */
 /* loop on pairs  and fill */
 double sDeltaX = 0;
 double sDeltaY = 0;
-GtransfoIdentity ident;
- if (!PriorTransfo) PriorTransfo = &ident;
- if (!PosteriorTransfo) PosteriorTransfo = &ident;
 double s1 =0;
 StarMatchCIterator it;
 for (it = List.begin(); it != List.end(); it++)
   {
-  const StarMatch &a_match = *it;
-  Point point1 = PriorTransfo->apply(a_match.point1);
-  Point point2 = PosteriorTransfo->apply(a_match.point2);
-  double deltax = point2.x - point1.x;
-  double deltay = point2.y - point1.y;
+  double deltax = it->point2.x - it->point1.x;
+  double deltay = it->point2.y - it->point1.y;
   sDeltaX += deltax;
   sDeltaY += deltay;
   s1 += 1;
@@ -699,19 +801,14 @@ dx = a_point.x - dx; dy = a_point.y - dy;
 
 GtransfoQuad::GtransfoQuad(const GtransfoLin & Lin)
 {
-  dx = Lin.dX();
-  dy = Lin.dY();
-  a11 = Lin.A11();
-  a12 = Lin.A12();
-  a21 = Lin.A21();
-  a22 = Lin.A22();
-  a1x2 = 0;
-  a1xy = 0;
-  a1y2 = 0;
-  a2x2 = 0;
-  a2xy = 0;
-  a2y2 = 0;
+  const GtransfoCub *c = dynamic_cast<const GtransfoCub *>(&Lin);
+  if (c) {*this = *c; return;}
+  const GtransfoQuad *q = dynamic_cast<const GtransfoQuad *>(&Lin);
+  if (q) { GtransfoQuad &tq = *this;  tq = *q; return;}
+  GtransfoLin &tl = *this;
+  tl = Lin;
 }
+
 
 Gtransfo *GtransfoQuad::ReduceCompo(const Gtransfo *Right) const
 {
@@ -743,29 +840,38 @@ void GtransfoQuad::dump(ostream &stream) const
 }
 
 
-
-//used by fitting routines to set <x>=<y>=0, to avoid numerical troubles.
-static GtransfoLinShift ShiftToCenter(const StarMatchList &List, 
-				      const Gtransfo *PriorTransfo)
+double GtransfoQuad::ParamRef(const int i) const
 {
-  double xav=0;
-  double yav=0;
-  double count=0;
-  for (StarMatchCIterator it = List.begin(); it != List.end(); ++it)
-    {
-      const StarMatch &a_match = *it;
-      Point point1 = PriorTransfo->apply(a_match.point1);
-      xav += point1.x;
-      yav += point1.y;
-      count++;
-    }
-  if (count==0) count = 1;
-  return GtransfoLinShift(-xav/count, -yav/count);
+  return this->*(Params[i].Item);
 }
-  
+
+double &GtransfoQuad::ParamRef(const int i)
+{
+  return this->*(Params[i].Item);
+}
+
+void GtransfoQuad::ParamDerivatives(const Point &Where, double *Derivatives) const
+{
+  Derivatives[0] = Derivatives[18]  = 1;
+  Derivatives[1] = Derivatives[19] = Where.x;
+  Derivatives[2] = Derivatives[20] = Where.y;
+  Derivatives[3] = Derivatives[21] = Where.x * Where.x;
+  Derivatives[4] = Derivatives[22] = Where.x * Where.y;
+  Derivatives[5] = Derivatives[23] = Where.y * Where.y;
+  for (int i=6; i<24; ++i) Derivatives[i] = 0;
+}
+
+/* the ordering in the following array and the above routine are 
+   linked together! */
+
+GtransfoQuad::QuadParams GtransfoQuad::Params[12] =
+{{&GtransfoQuad::dx},   {&GtransfoQuad::a11},  {&GtransfoQuad::a12},
+ {&GtransfoQuad::a1x2}, {&GtransfoQuad::a1xy}, {&GtransfoQuad::a1y2},
+ {&GtransfoQuad::dy},   {&GtransfoQuad::a21},  {&GtransfoQuad::a22},
+ {&GtransfoQuad::a2x2}, {&GtransfoQuad::a2xy}, {&GtransfoQuad::a2y2},};
 
 
-double  GtransfoQuad::fit(const StarMatchList &List, const Gtransfo *PriorTransfo, const Gtransfo *PosteriorTransfo)
+double  GtransfoQuad::fit(const StarMatchList &List)
 {
   int npairs = List.size();
   if (List.size()< 3)
@@ -790,18 +896,14 @@ double  GtransfoQuad::fit(const StarMatchList &List, const Gtransfo *PriorTransf
   memset(a,0,sizeof(double)*NPAR*NPAR);
   memset(bx,0,sizeof(double)*NPAR);
   memset(by,0,sizeof(double)*NPAR);
-  GtransfoIdentity ident;
-  if (!PriorTransfo) PriorTransfo = &ident;
-  if (!PosteriorTransfo) PosteriorTransfo = &ident;
   
-  GtransfoLinShift shift_to_center = ShiftToCenter(List,PriorTransfo);
-  Gtransfo *globalPrior = GtransfoCompose(&shift_to_center, PriorTransfo);
+  GtransfoLinShift shift_to_center = ShiftToCenter(List);
 
   for (StarMatchCIterator it = List.begin(); it != List.end(); ++it)
     {
       const StarMatch &a_match = *it;
-      Point point1 = globalPrior->apply(a_match.point1);
-      Point point2 = PosteriorTransfo->apply(a_match.point2);
+      Point point1 = shift_to_center.apply(a_match.point1);
+      const Point &point2 = a_match.point2;
       double h[NPAR];
       h[0] = 1.0;
       h[1] = point1.x;
@@ -855,7 +957,6 @@ double  GtransfoQuad::fit(const StarMatchList &List, const Gtransfo *PriorTransf
 
   // compute and return chi2 for the two fits
   *this = *this * shift_to_center;
-  delete globalPrior;
 
   return (sumr2 - ScalProd(paramx,bx,NPAR) - ScalProd(paramy,by,NPAR));
 
@@ -1013,6 +1114,7 @@ GtransfoCub::GtransfoCub(const GtransfoLin & Lin)
   tl = Lin;
 }
 
+// isn't this routine useless?, the one above does the right job.
 GtransfoCub::GtransfoCub(const GtransfoQuad & Quad)
 {
   identity(); // sets almost everything to zero
@@ -1181,25 +1283,66 @@ void GtransfoCub::dump(ostream &stream) const
 }
 
 
-static double  ComputeChi2(const StarMatchList &List, const Gtransfo *PriorTransfo, 
-			   const Gtransfo *JustFitted, const Gtransfo* PosteriorTransfo)
+double GtransfoCub::ParamRef(const int i) const
+{
+  return this->*(Params[i].Item);
+}
+
+double &GtransfoCub::ParamRef(const int i)
+{
+  return this->*(Params[i].Item);
+}
+
+void GtransfoCub::ParamDerivatives(const Point &Where, double *Derivatives) const
+{
+  Derivatives[0] = Derivatives[30]  = 1;
+  Derivatives[1] = Derivatives[31] = Where.x;
+  Derivatives[2] = Derivatives[32] = Where.y;
+  double x2 = Where.x *Where.x;
+  Derivatives[3] = Derivatives[33] = x2;
+  Derivatives[4] = Derivatives[34] = Where.x * Where.y;
+  double y2 = Where.y * Where.y;
+  Derivatives[5] = Derivatives[35] = y2;
+  Derivatives[6] = Derivatives[36] = x2 * Where.x;
+  Derivatives[7] = Derivatives[37] = x2 * Where.y;
+  Derivatives[8] = Derivatives[38] = Where.x * y2;
+  Derivatives[9] = Derivatives[39] = Where.y * y2;
+  for (int i=10; i<30; ++i) Derivatives[i] = 0;
+}
+
+/* the ordering in the following array and the above routine are 
+   linked together! */
+
+GtransfoCub::CubParams GtransfoCub::Params[20] =
+{{&GtransfoCub::dx},   {&GtransfoCub::a11},  {&GtransfoCub::a12},
+ {&GtransfoCub::a1x2}, {&GtransfoCub::a1xy}, {&GtransfoCub::a1y2},
+ {&GtransfoCub::a1x3 },{&GtransfoCub::a1x2y},{&GtransfoCub::a1xy2},
+ {&GtransfoCub::a1y3 },
+
+ {&GtransfoCub::dy},   {&GtransfoCub::a21},  {&GtransfoCub::a22},
+ {&GtransfoCub::a2x2}, {&GtransfoCub::a2xy}, {&GtransfoCub::a2y2},
+ {&GtransfoCub::a2x3 },{&GtransfoCub::a2x2y},{&GtransfoCub::a2xy2},
+ {&GtransfoCub::a2y3 }
+};
+
+
+static double  ComputeChi2(const StarMatchList &List,
+			   const Gtransfo *JustFitted)
 {
   double chi2 = 0;
-  Gtransfo *globalTransfo = GtransfoCompose(JustFitted,PriorTransfo);
   
   for (StarMatchCIterator it = List.begin(); it != List.end(); ++it)
     {
     const StarMatch &a_match = *it;
-    Point point1 = globalTransfo->apply(a_match.point1);
-    Point point2 = PosteriorTransfo->apply(a_match.point2);
+    Point point1 = JustFitted->apply(a_match.point1);
+    const Point &point2 = a_match.point2;
     chi2 += point1.Dist2(point2);
     }
-  delete globalTransfo;
   return chi2;
 }
     
       
-double  GtransfoCub::fit(const StarMatchList &List, const Gtransfo *PriorTransfo, const Gtransfo *PosteriorTransfo)
+double  GtransfoCub::fit(const StarMatchList &List)
 {
 int npairs = List.size();
 if (List.size()< 10)
@@ -1226,20 +1369,16 @@ StarMatchCIterator it;
 memset(a,0,sizeof(double)*NPAR*NPAR);
 memset(bx,0,sizeof(double)*NPAR);
 memset(by,0,sizeof(double)*NPAR);
-GtransfoIdentity ident;
- if (!PriorTransfo) PriorTransfo = &ident;
- if (!PosteriorTransfo) PosteriorTransfo = &ident;
 
  // trick to overcome numerical problems (in case the averaage of x and y are way off 0)
  // we fit in an offset frame and transform back the result at the end.
- GtransfoLinShift shift_to_center= ShiftToCenter(List, PriorTransfo);
- Gtransfo *globalPrior = GtransfoCompose(&shift_to_center, PriorTransfo);
+ GtransfoLinShift shift_to_center= ShiftToCenter(List);
 
  for (it = List.begin(); it != List.end(); ++it)
     {
     const StarMatch &a_match = *it;
-    Point point1 = globalPrior->apply(a_match.point1);
-    Point point2 = PosteriorTransfo->apply(a_match.point2);
+    Point point1 = shift_to_center.apply(a_match.point1);
+    const Point &point2 = a_match.point2;
     h[0] = 1.0;
     h[1] = point1.x;
     h[2] = point1.y;
@@ -1306,8 +1445,8 @@ GtransfoIdentity ident;
 
  // go back to the original frame.
  *this = *this * shift_to_center;
- double chi2 = ComputeChi2(List, PriorTransfo, this, PosteriorTransfo);
- delete globalPrior;
+ double chi2 = ComputeChi2(List, this );
+
  // compute and return chi2 for the two fits
  return chi2; // (sumr2 - ScalProd(paramx,bx,NPAR) - ScalProd(paramy,by,NPAR));
 
@@ -1322,7 +1461,7 @@ static struct { const char *name; GtransfoCubItem value; }
 
 #ifndef __CINT__
 
-GtransfoCub::CubAssoc GtransfoCub::GtransfoCubOldNames [] = 
+GtransfoCub::CubAssoc GtransfoCub::WCS3Names [] = 
   {
 
     {"DX",    &GtransfoCub::dx   },
@@ -1344,22 +1483,12 @@ GtransfoCub::CubAssoc GtransfoCub::GtransfoCubOldNames [] =
     {"A2X3",  &GtransfoCub::a2x3 },
     {"A2X2Y", &GtransfoCub::a2x2y},
     {"A2XY2", &GtransfoCub::a2xy2},
-    {"A2Y3",  &GtransfoCub::a2y3 }
+    {"A2Y3",  &GtransfoCub::a2y3 },
+    {"end",NULL}
 };
 
 
-
-/* 
-   This mapping of the polynomial coefficients was proposed in a draft
-   paper about distorions handling in WCS's (Calbretta and Greisen),
-   but it disappeared in a later version.  It is no longer in the
-   current version (by May 03) of the paper (which is really a draft).
-   The actual mapping adopted is the one from Astrometrix (described
-   in the documentation of the package), see http://terapix.iap.fr/soft/.
-*/
-
-
-   GtransfoCub::CubAssoc GtransfoCub::GtransfoCubNames [] = {
+   GtransfoCub::CubAssoc GtransfoCub::DJNames [] = {
 
     {"1_0",    &GtransfoCub::dx   },
     {"2_0",    &GtransfoCub::dy   },
@@ -1380,42 +1509,102 @@ GtransfoCub::CubAssoc GtransfoCub::GtransfoCubOldNames [] =
     {"2_7",  &GtransfoCub::a2x3 },
     {"2_8", &GtransfoCub::a2x2y},
     {"2_9", &GtransfoCub::a2xy2},
-    {"2_10",  &GtransfoCub::a2y3 }
+    {"2_10",  &GtransfoCub::a2y3 },
+    {"end",NULL}
 };
 
-#define NCubData (sizeof(GtransfoCub::GtransfoCubNames)/sizeof(GtransfoCub::GtransfoCubNames[0]))
 
 
-void GtransfoCub::GetValues(vector<NamedValue> &Values, const OldOrNew WhichNames) const
+/* 
+   This mapping of the polynomial coefficients was proposed in a draft
+   paper about distorions handling in WCS's (Calbretta and Greisen),
+   but it disappeared in a later version.  It is no longer in the
+   current version (by May 03) of the paper (which is really a draft).
+   The actual mapping adopted is the one from Astrometrix (described
+   in the documentation of the package), see
+   http://terapix.iap.fr/soft/.
+
+   The difference with the "DJ" stuff is that for the second polynomial
+   (the DV2_# keys), the role of x and y are swapped with respect to the 
+   first polynomial.
+
+*/
+
+
+   GtransfoCub::CubAssoc GtransfoCub::DVNames [] = {
+
+    {"1_0",    &GtransfoCub::dx   },
+    {"2_0",    &GtransfoCub::dy   },
+    {"1_1",   &GtransfoCub::a11  },
+    {"1_2",   &GtransfoCub::a12  },
+    {"2_1",   &GtransfoCub::a22  },
+    {"2_2",   &GtransfoCub::a21  },
+    {"1_4",  &GtransfoCub::a1x2 },  /* 1_3 and 2_3 are coeffs for r */
+    {"1_5",  &GtransfoCub::a1xy },
+    {"1_6",  &GtransfoCub::a1y2 },
+    {"2_4",  &GtransfoCub::a2y2 },
+    {"2_5",  &GtransfoCub::a2xy },
+    {"2_6",  &GtransfoCub::a2x2 },
+    {"1_7",  &GtransfoCub::a1x3 },
+    {"1_8", &GtransfoCub::a1x2y},
+    {"1_9", &GtransfoCub::a1xy2},
+    {"1_10",   &GtransfoCub::a1y3 },
+    {"2_7",  &GtransfoCub::a2y3 },
+    {"2_8", &GtransfoCub::a2xy2},
+    {"2_9", &GtransfoCub::a2x2y},
+    {"2_10",  &GtransfoCub::a2x3 },
+    {"end",NULL}
+};
+
+
+void GtransfoCub::GetValues(vector<NamedValue> &Values, const string &KeyHeader) const
 {
   Values.clear();
-  GtransfoCub::CubAssoc *assoc = (WhichNames == Old) ? GtransfoCubOldNames : GtransfoCubNames;
-  for (unsigned int i=0; i< NCubData; ++i)
+  GtransfoCub::CubAssoc *assoc = NULL;
+  if (KeyHeader == "DJ") assoc = DJNames;
+  else if (KeyHeader == "DV" || KeyHeader == "PV") assoc = DVNames;
+  else if (KeyHeader == "WCS3") assoc = WCS3Names;
+  else
+    {
+      cerr << "GtransfoCub::GetValues : unknown key Mapping scheme : "<< KeyHeader  << endl;
+      return;
+    }
+  for (unsigned int i=0; assoc[i].value != NULL ; ++i)
     {
       Values.push_back(NamedValue(assoc[i].name, this->*(assoc[i].value)));
     }
 }
 
 
-void GtransfoCub::SetValues(vector<NamedValue> &Values)
+void GtransfoCub::SetValues(vector<NamedValue> &Values, const string &KeyHeader)
 {
-  for (unsigned int i=0; i<Values.size() ; ++i)
+  GtransfoCub::CubAssoc *assoc = NULL;
+  if (KeyHeader == "DJ") assoc = DJNames;
+  else if (KeyHeader == "DV" || KeyHeader == "PV") assoc = DVNames;
+  else if (KeyHeader == "WCS3") assoc = WCS3Names;
+  else
+    {
+      cerr << "GtransfoCub::SetValues : unknown key Mapping scheme : "<< KeyHeader  << endl;
+      return;
+    }
+  for (unsigned int i=0; i < Values.size(); ++i)
     {
       string name = Values[i].name;
       unsigned int j;
-      for (j=0; j< NCubData; ++j)
+      for (j=0; assoc[j].value != NULL ; ++j)
         {
-	  if (GtransfoCubNames[j].name == name) break;
-	  if (GtransfoCubOldNames[j].name == name) break;
+	  if (assoc[j].name == name) break;
 	}
-      if (j == NCubData)
+      if (assoc[j].value == NULL)
 	{
 	  cerr << " GtransfoCub::SetValues : no item named " << name << endl;
 	  continue;
 	}
-      this->*(GtransfoCubNames[j].value) = Values[i].value;
+      this->*(assoc[j].value) = Values[i].value;
     }
 }
+
+
 
 GtransfoLin *GtransfoToLin(const Gtransfo* transfo)
 {
@@ -1643,9 +1832,7 @@ void TanPix2RaDec::dump(ostream &stream) const
 }
 
 
-double  TanPix2RaDec::fit(const StarMatchList &List, 
-			  const Gtransfo *PriorTransfo, 
-			  const Gtransfo *PosteriorTransfo)
+double  TanPix2RaDec::fit(const StarMatchList &List)
 { 
   /* OK we could implement this routine, but it is
      probably useless since to do the match, we have to
@@ -1655,7 +1842,7 @@ double  TanPix2RaDec::fit(const StarMatchList &List,
      sphere (and reproject to fit...). Anyway if this
      message shows up, we'll think about it.
   */
-  if (&List || PriorTransfo || PosteriorTransfo) {} // warning killer
+  if (&List) {} // warning killer
   cerr << "TanPix2RaDec::fit is NOT implemented (although it is doable) " << endl;
   return -1;
 }
@@ -1749,14 +1936,46 @@ Gtransfo *TanRaDec2Pix::Clone() const
   return new TanRaDec2Pix(*this);
 }
 
-double TanRaDec2Pix::fit(const StarMatchList &List, 
-			 const Gtransfo *PriorTransfo,
-			 const Gtransfo *PosteriorTransfo)
+double TanRaDec2Pix::fit(const StarMatchList &List)
 {
-  if (PriorTransfo || PosteriorTransfo || &List) {} // warning killer
+  if (&List) {} // warning killer
   cerr << " no way yet to fit TanRaDec2Pix (because it seemed useless!)" << endl;
   return -1;
 }
+
+/*************  a "run-time" transfo, that does not require to 
+modify this file */
+
+UserTransfo::UserTransfo(GtransfoFun &Fun, const void *UserData):
+  userFun(Fun), userData(UserData) 
+{}
+
+void UserTransfo::apply(const double Xin, const double Yin, 
+			double &Xout, double &Yout) const
+{
+  userFun(Xin,Yin,Xout,Yout, userData);
+}
+
+void UserTransfo::dump(ostream &stream) const
+{
+  stream << "UserTransfo with user function @ " << userFun  
+	 << "and userData@ " << userData << endl;
+}
+
+double UserTransfo::fit(const StarMatchList &List)
+{
+  if (&List) {} // warning killer
+  cerr << " no UserTransfo::fit  function defined " << endl;
+  return -1;
+}
+
+Gtransfo *UserTransfo::Clone() const
+{
+  return new UserTransfo(*this);
+}
+
+
+/*************************************************************/
 
 #ifdef USE_ROOT
 

@@ -14,6 +14,8 @@ static double sqr(double x){return x*x;}
 #define     M_PI            3.14159265358979323846  /* pi */
 #endif
 
+//#define DEBUG
+
 struct DatDet{
   double nRadAper;
   double nRadWeight;
@@ -153,6 +155,10 @@ DetectionProcess::DetectionProcess(const string &ImageName,
 				   const string &WeightName, 
 				   const double Seeing, const double SigFilter)
 {
+  
+#ifdef DEBUG
+  cout << "DetectionProcess::DetectionProcess" << endl;
+#endif
   seeing = Seeing;
   sigFilter = SigFilter;
   weightName = WeightName;
@@ -172,6 +178,11 @@ DetectionProcess::DetectionProcess(const string &ImageName,
 
 void DetectionProcess::SetCuts(const int ToPrint)
 {
+  
+#ifdef DEBUG
+  cout << "DetectionProcess::SetCuts" << endl;
+#endif
+
   //collect cuts in datacards
   DatDet datdet(DefaultDatacards());
   if (ToPrint & PrintDatacards) datdet.Print();
@@ -336,6 +347,7 @@ void DetectionProcess::ImagesConvolve()
   // default value for imagecv/weightcv when weightcv =0;
   Pixel defaultVal = meanIm/meanW;
 
+  
   // compute expression (2)
   Pixel *pw = weightcv.begin();
   Pixel *pend = imagecv->end();
@@ -356,19 +368,20 @@ void DetectionProcess::ImagesConvolve()
   // write it somewhere for later use
   SaveNormalizedSig();
 
+  
   // normalize imagecv : imagecv *= sqrt(weightcv);
   weightcv.ApplyFun(sqrt);
   *imagecv *= weightcv;
 
-  // write image for studies
+  // write image for studies 
   if (getenv ("SAVECV")) { FitsImage toto("savecv.fits",*imagecv);}
-
+  
   Pixel mean, sig;
   imagecv->SkyLevel(imFrame, &mean, &sig);
   cvImageNormalizedMean = mean;
   cout << " compute the mean and sigma of img*sqrt(weight) : "  
        << mean << ' ' << sig << endl;
-
+  
 }
 
 #ifdef STORAGE
@@ -591,6 +604,9 @@ void DetectionProcess::RefineDetectionPosition(Detection &Det) const
 // computes everything but the position
 void DetectionProcess::SetDetectionScores(Detection &Det) const
 {
+#ifdef DEBUG
+  //cout << "DetectionProcess::SetDetectionScores" << endl;
+#endif
   int tx = image->Nx();
   int ty = image->Ny();
   int d = (int) ((radWeight + 1.));
@@ -826,7 +842,7 @@ void DetectionProcess::DoDetection(DetectionList &List)
 
   cout << " number of detections after removal of neighbours " 
        << List.size() << endl;
-
+  
   // fill the scores
   for (DetectionIterator i = List.begin(); i != List.end(); ++i)
     SetDetectionScores(*(*i));
@@ -895,7 +911,6 @@ void DetectionProcess::DetectionScoresFromPositions(const BaseStarList & Pos,
 void DetectionProcess::SetScoresFromRef(DetectionList &List, 
 					const ReducedImage &Ref)
 {
-  cout << "setting ref scores from image " << imageName << endl;
   SetCuts(PrintCuts);
   SEStarList RefList(Ref.CatalogName());
   FastFinder finder(*SE2Base(&RefList));
@@ -911,7 +926,7 @@ void DetectionProcess::SetScoresFromRef(DetectionList &List,
 	 quality cuts... */
       if (Det.fluxRef>0) Det.prctInc = Det.flux/Det.fluxRef;
       else Det.prctInc = 100;
-      const BaseStar *neighbour = finder.FindClosest(Det,20.);
+      const SEStar *neighbour = (const SEStar *) finder.FindClosest(Det,20.);
       if (neighbour)
 	{
 	  Det.fluxObjRef = neighbour->flux;
@@ -975,9 +990,20 @@ void Detection::read_it(istream& r, const char * Format)
     >> fluxRef
     >> prctInc
     >> xObj >> yObj
-    >> fluxObjRef >> distObjRef
+     >> fluxObjRef >> distObjRef
     ;
   int format = DecodeFormat(Format, "Detection");
+  /* the test that comes just after is far from being full proof: the
+     actual format was changed w/o changing the label. What shows the
+     format change is the presence of "fwhmref" in the file header. 
+     We don't have a routine that checks for that yet, and XML I/Os 
+     make this question obsolete.
+  */
+  if (format < 2)
+    {
+      double fwhmRef, shapeRef;
+      r >> fwhmRef >> shapeRef;
+    }
   if (format >=1)
     r >> localback ;
 }
@@ -1017,7 +1043,7 @@ std::string Detection::WriteHeader_(ostream & stream, const char*i) const
   	 << "# varxy"<< i <<" : pos variance" << endl
   	 << "# area"<< i <<" : number of pixels used in aperflux" << endl
   	 << "# nbad"<< i <<" : number of bad pixels use in flux" << endl
-	 << "#distbad" << i << " : distance to nearest bad pix" << endl
+	 << "# distbad" << i << " : distance to nearest bad pix" << endl
     	 << "# mxx"<< i <<" : shape param" << endl 
     	 << "# myy"<< i <<" : shape param" << endl 
     	 << "# mxy"<< i <<" : shape param" << endl
@@ -1032,10 +1058,12 @@ std::string Detection::WriteHeader_(ostream & stream, const char*i) const
 	 << "# yobj"<<i<<" : y pos of nearest object " << endl
 	 << "# fobjref"<<i<<" : flux of nearest object " << endl
 	 << "# distobj"<<i<<" : distance to nearest object " << endl
+    //	 << "# fwhmref" <<i << " : FWHM of the nearest object"  << endl
+    // << "# shaperef" << i << " : -2.5*log10(flux/fluxmax) of the nearest objet" << endl
 	 << "# back"<<i<<" : local background " << endl
 	      
     ;
-  return baseStarFormat + " Detection 1 "; 
+  return baseStarFormat + " Detection 2 "; 
 }
 
 #include <iomanip>
@@ -1062,7 +1090,8 @@ void Detection::writen(ostream &s) const
     << fluxRef << ' '
     << prctInc << ' '
     << xObj << ' ' << yObj << ' ' 
-    << fluxObjRef << ' ' << distObjRef << ' ' << ' ' << localback << ' '
+    << fluxObjRef << ' ' << distObjRef
+    << ' ' << localback << ' '
     ;
   s.flags(old_flags);
 }
@@ -1127,6 +1156,14 @@ bool MatchedDetection::CompatibleSig2Noise(const double &Fact) const
   for (unsigned k=0; k<others.size(); ++k)
       if (Fact*others[k]->Sig2Noise() < Sig2Noise())
 	  return false;
+  return true;
+}
+
+bool MatchedDetection::CompatiblePosition(const double &DistMax) const
+{
+  for (size_t k=0; k<others.size(); ++k)
+    if (Distance(*others[k]) < DistMax)
+      return false;
   return true;
 }
 

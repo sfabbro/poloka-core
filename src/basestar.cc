@@ -16,13 +16,23 @@ So when we read, we subtract 1, when we write, we add 1. In order to
 be able to locate all occurences of this shift, we #define MEMPIX2DISK 1*/
 
 
+/* comment to the comment :
+this prooves to be a bad idea : BaseStar's may contain coordinates
+which do NOT represent pixels. It could be degrees for example.
+In this case subtracting 1 is a very bad idea. So it is no longer the case.
+Old files (BaseStar format = 1) are correctly interpreted, but we no
+longer use this trick of having different coordinate origins on disk and
+in memory.
+*/
+
+
 void BaseStar::read_it(istream & rd, const char *format)
 {
  int formatValue = 0;
  if (format) 
    formatValue = DecodeFormat(format,"BaseStar");
  rd >> x >> y >> flux;
- if (formatValue >= 1) // only shift back if shifted when written
+ if (formatValue == 1) // only shift back if shifted when written
    {
      x -= MEMPIX2DISK;
      y -= MEMPIX2DISK;
@@ -44,7 +54,7 @@ string BaseStar::WriteHeader_(ostream & stream, const char*i) const
   stream << "# x"<< i <<" : x position (pixels)" << endl 
 	 << "# y"<< i <<" : y position (pixels)" << endl 
 	 << "# flux"<< i <<" : flux en unites du pixel" << endl ;
-  return " BaseStar 1 "; 
+  return " BaseStar 2 "; 
 }
 
 void BaseStar::WriteHeader(ostream & stream) const
@@ -57,7 +67,7 @@ void BaseStar::WriteHeader(ostream & stream) const
 
 void BaseStar::writen(ostream &s) const 
 {
-  s << x + MEMPIX2DISK << " " << y + MEMPIX2DISK << " " << flux << " " ;
+  s << x << " " << y << " " << flux << " " ;
 }
 
 

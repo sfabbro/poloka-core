@@ -124,7 +124,7 @@ RollingStarList::RollingStarList(const NStarMatchList & nstml, const ReducedImag
     } 
 }
   
-void RollingStar::WriteHeader(ostream & pr)
+void RollingStar::WriteHeader(ostream & pr) const
 {
   pr << "# x : x position of the canidate (pixels)" << endl 
      << "# y : y position of the canidate (pixels)" << endl ;

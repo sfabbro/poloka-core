@@ -1,4 +1,6 @@
 #include <iomanip>
+#include <fstream>
+
 #include "fileutils.h"
 #include "detection.h"
 #include "nstarmatch.h"

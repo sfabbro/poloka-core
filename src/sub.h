@@ -11,9 +11,6 @@
 
 
 
-//class DataCards;
-
-
 
 class SENearStarList;
 class ImageSum;
@@ -22,15 +19,18 @@ class ReducedImage;
 #include "imagesubtraction.h"
 
 
+typedef enum StackType { RegularKind = 0, SwarpKind = 1};
+
 class NewStack : public StringList {
 public :
   string name;
   string Name() const { return name;}
   ReducedImageRef newStack;
   ImageSubtractionRef sub;
+  StackType stackType;
 
   NewStack(const string &Name = "")
-  { name = Name;}
+  { name = Name; stackType = RegularKind;}
 
   // this class will not work if you copy objects after having assigned the
   // pointers newStack and sub.
@@ -45,10 +45,11 @@ public :
 class Sub {
   
 
-  /* there are no pointers to ReducedImage's in this class but CountedRef's
-     ro ReducedImage (called ReducedImageRef and co), so that 
-     destructors (eg ~ImageSum()) are automatically called when needed,
-     in practise by ~Sub */
+  /* there are no pointers to ReducedImage's in this class but
+     CountedRef's ro ReducedImage (called ReducedImageRef and co), so
+     that destructors (eg ~ImageSum()) are automatically called when
+     needed, in practise by ~Sub 
+  */
 
 private :
   StringList Ref;
@@ -84,8 +85,11 @@ public :
   void SubstituteName(const string &Original, const string &Substitution);
   int  DoIt();
   int  ExpectedMagLim();
-  ReducedImage* DoOneStack(StringList Components, 
-			   const string &StackName, int ToDo);
+  ReducedImage* DoOneStack(const StringList &Components, 
+			   const string &StackName, 
+			   const int ToDo,
+			   const StackType ST= RegularKind);
+
   void FindGeometricReference();
   int  CheckNewNames();
 

@@ -182,6 +182,16 @@ typedef SolList::iterator SolIterator;
 };
 
 
+static void dump_input_list(const BaseStarList &L, const int NStars, 
+			      const Gtransfo &Tin, const std::string FileName)
+{
+  BaseStarList list;
+  L.ExtractHead(list,NStars);
+  list.ApplyTransfo(Tin);
+  list.write(FileName);
+}
+  
+
 
 
 /* This one searches a general transformation by histogramming the relative size and orientation
@@ -317,6 +327,14 @@ static StarMatchList *ListMatchupRotShift_New(BaseStarList &L1, BaseStarList &L2
 { 
   SegmentList sList1(L1, Conditions.NStarsL1, Tin); 
   SegmentList sList2(L2, Conditions.NStarsL2, GtransfoIdentity());
+
+ if (getenv("DUMP_INPUT_LISTS"))
+   {
+     dump_input_list(L1, Conditions.NStarsL1, Tin, "input1.list");
+     dump_input_list(L2, Conditions.NStarsL2, GtransfoIdentity(), "input2.list");
+   }
+
+
 
   /* choose the binning of the histogram so that 
      1: ratio = 1 and rotation angle = n * (pi/2) are bin centers. since 
@@ -533,6 +551,7 @@ GtransfoLin *ListMatchupShift(const BaseStarList &L1, const BaseStarList &L2, co
   else nx = int(2*MaxShift/BinSize+0.5);
 
   Histo2d histo(nx, -MaxShift, MaxShift, nx, -MaxShift, MaxShift);
+  double binSize = 2*MaxShift/nx;
   
   BaseStarCIterator s1;
   FastFinder finder(L2);
@@ -559,10 +578,13 @@ GtransfoLin *ListMatchupShift(const BaseStarList &L1, const BaseStarList &L2, co
       histo.Fill(dx,dy,-count); // zero the maxbin
       GtransfoLinShift shift(dx,dy);
       Gtransfo *newGuess = GtransfoCompose(&shift, &Tin);
-      StarMatchList *matches = ListMatchCollect(L1, L2, newGuess, 3);
+      StarMatchList *raw_matches = ListMatchCollect(L1, L2, newGuess, binSize);
       delete newGuess;
+      StarMatchList *matches = new StarMatchList;
+      raw_matches->ApplyTransfo(*matches, &Tin);
+      delete raw_matches;
       matches->SetTransfoOrder(1);
-      matches->RefineTransfo(3., &Tin);
+      matches->RefineTransfo(3.);
       //      cout << *matches->Transfo() << endl;
       Solutions.push_back(matches);
     }
@@ -670,6 +692,42 @@ StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,c
   return matches;
 }
 
+
+StarMatchList *CollectAndFit(const BaseStarList &L1, const BaseStarList &L2,
+			     const Gtransfo *Guess, const double MaxDist)
+{
+  const Gtransfo *bestTransfo = Guess;
+  StarMatchList *prevMatch = NULL;
+  while (true)
+    {
+      StarMatchList *m = ListMatchCollect(L1,L2,bestTransfo, MaxDist);
+      m->SetTransfo(bestTransfo);
+      m->RefineTransfo(3.);
+      cout << " iterating : resid " << m->Residual() 
+	   << ' ' << " size " << m->size() << endl;
+      if (!prevMatch || 
+	  (prevMatch 
+	   && m->Residual() < prevMatch->Residual()*0.999
+	   && m->Chi2()>0)
+	  )
+	{
+	  if (prevMatch) delete prevMatch;
+	  prevMatch = m;
+	  bestTransfo = m->Transfo();
+	}
+      else 
+	{
+	  delete m;
+	  break;
+	}
+    }
+  return prevMatch;
+}
+  
+
+
+
+
 StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2, const double MaxDist)
 {
   StarMatchList *matches = new StarMatchList;
@@ -745,30 +803,7 @@ StarMatchList *ListMatchCollectWU(const BaseStarList &L1, const BaseStarList &L2
 #endif
 
 
-#ifdef STORAGE /* old matchup strategy of the Berkeley code */
-void ListMatchup(BaseStarList &L1, BaseStarList &L2, Gtransfo *Guess, MatchConditions &Conditions)
-{
-list<Neighborhood> l1,l2;
-BaseStarList *shortList, *longList;
-if (L1.size() < L2.size())
-  {
-  shortList = &L1;
-  longList  = &L2;
-  }
-else { shortList = &L2; longList = &L1;}
-int nShort = shortList->size();
 
-/* loop in parallel on StarLists */
-BaseStarIterator p1,p2;
-p1 = shortList->begin();
-p2 = longList->begin();
-for (int i=0 ; i<nShort; i++, p1++, p2++)
-  {
-  l1.push_back(Neighborhood(shortList,*p1, Conditions.NNeighbors));
-  l2.push_back(Neighborhood(longList ,*p2, Conditions.NNeighbors));  
-  }
-}
-#endif
 
 
 /*

@@ -41,14 +41,20 @@ static string frame_to_string( const Frame &AFrame, int &Imin, int &Imax)
 static void ShiftWCSOrigin(const FitsHeader &In, FitsHeader &Out,
 			   const int Dx, const int Dy)
 {
-  /* should not modify CRPIX{1,2} : cfitsio deos it on the fly when 
-     adressing the image via fileName[xmin:xmax, ymin:ymax]. this is done 
-     in fits_select_image_section. So we do not put this routine (specific
-     from the way we use cfitsio) in wcsutils.cc */
-  CopyWCS(In, Out);
+  /* should not modify CRPIX{1,2} : cfitsio does it on the fly when
+     adressing the image via fileName[xmin:xmax, ymin:ymax]. this is
+     done in fits_select_image_section. So we do not put this routine
+     (specific from the way we use cfitsio) in wcsutils.cc */
+  /* To make a long story short, there is nothing to do about WCS's
+     after cfitsio, except if distortion corrections apply in the
+     pixel space : the only example we know about is the WCS3 private
+     toads keywords */
+  
+
   GtransfoCub cubCorr;
   if (WCS3TransfoFromHeader(In, cubCorr, false))
     {
+      CopyWCS(In, Out);
       GtransfoLinShift shift(Dx, Dy);
       cubCorr = cubCorr * shift;
       cubCorr = shift.invert() * cubCorr;
@@ -187,6 +193,9 @@ bool SubImage::MakeCatalog()
 	i = inList.erase(i);
       else ++i;
     }
+
+  GtransfoLinShift shift(-subFrame.xMin, -subFrame.yMin);
+  inList.ApplyTransfo(shift);
 
   inList.write(CatalogName());
   return true;

@@ -8,6 +8,9 @@ class FitsHeader;
 class GtransfoLin;
 class TanPix2RaDec;
 class GtransfoCub;
+class Gtransfo;
+class Frame;
+class StringList;
 
 /*! \file
     \brief World Coordinate Transfo  read and write
@@ -62,7 +65,10 @@ bool WCSTransfoBetweenHeader(const FitsHeader &Header1, const FitsHeader &Header
 bool HasLinWCS(const FitsHeader &Header);
 
 //! remove entirely a WCS transfo from a header
-void RemoveWCS(FitsHeader &Header);
+// void RemoveWCS(FitsHeader &Header);
+
+//! returns key names that describe the WCS in this header
+void WCSKeyList(const FitsHeader &Head, StringList &KeyNames);
 
 //! copy entirely a WCS transfo from a header to another header
 bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader);

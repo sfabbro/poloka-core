@@ -15,6 +15,7 @@ using namespace std;
 #define DoWeight 16
 #define DoCosmic 32
 #define DoSatellite 64
+#define DoSpikes 128
 
 #define PutVar 1
 #define PutCosmic 2
@@ -148,6 +149,11 @@ Usefull in case of artificially smoothed images
 			    const double dist=2);
   //! produce cosmic image
   virtual bool MakeCosmic();
+  //! add in satur image the diffraction spike with a clustering method  
+  virtual bool FlagDiffractionSpikes();
+
+  
+
 
   //! produce satellite image
   virtual bool MakeSatellite();
@@ -386,7 +392,7 @@ Usefull in case of artificially smoothed images
   double MultiplyGain();
 
   //!
-  virtual ReducedImage* Clone() const { return new ReducedImage(*this);}
+  virtual ReducedImage* Clone() const;
 
 #ifdef USE_ROOT
 #ifndef SWIG

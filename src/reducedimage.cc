@@ -9,7 +9,8 @@
 #include "sestar.h"
 #include "cluster.h"
 #include "gtransfo.h"
-
+#include "cluster2.h"
+#include "imagebinning.h"
 
 /* it seems that a constructor cannot call another constructor:
    hence put a routine that both call */
@@ -28,6 +29,21 @@ ReducedImage::ReducedImage(const string &Name) : DbImage(Name)
 {
   init();
 } 
+
+
+ReducedImage *ReducedImage::Clone() const
+{
+  string storedTypeName = TypeName();
+  if (TypeName() != storedTypeName)
+    {
+      std::cerr << " you are Cloning() " << Name() << " of type " 
+		<< storedTypeName << " using ReducedImage::Clone() " 
+		<< std::endl
+		<< " May be class " << storedTypeName 
+		<< " misses a Clone() method?" << std::endl;
+    }
+  return new ReducedImage(*this);
+}
 
 
 bool ReducedImage::MakeFits()
@@ -50,6 +66,11 @@ bool ReducedImage::MakeFits()
 */
 
 void 
+
+
+#define SATUR_COEFF 0.95
+
+
 ReducedImage::FillSExtractorData(ForSExtractor & data, 
 				 bool  fond_deja_soustrait, bool sauver_fond,
 				 bool use_sigma_header)
@@ -88,8 +109,7 @@ ReducedImage::FillSExtractorData(ForSExtractor & data,
     {
       cout << "Weighting from " << FitsWeightName() << endl ;
       data.FitsWeightName = FitsWeightName();
-      MakeBad();
-      if ( HasBad() )
+      if (MakeBad())
 	data.FitsMaskName = FitsBadName(); // flag image for SExtractor process
       else
 	data.FitsMaskName = "" ;
@@ -284,7 +304,6 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   // we re-flag for saturation here
   int nsat = FlagSaturatedStars(stlse, data.saturation);
   cerr << nsat << " stars flagged as saturated. " << endl ;
-  stlse.write("check_se.list");
 
   if (pmasksat) 
     { 
@@ -338,18 +357,28 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 
   stlse.write(CatalogName());
 
+  
+  //if((!savemasksat) && HasSatur()) {
+  //FlagDiffractionSpikes(); 
+  //} 
+
   return(status);
 }
 
 
 bool ReducedImage::MakeCatalog() 
-{ 
+{
+  // if there is a satur map, it may be the result of e.g
+  // stacking. Then there is no point in remaking one.
+  bool savemasksat = !HasSatur();
   bool ok = MakeCatalog(/*redo_from_beg=*/ false, 
 			/* overwrite = */ false, 
-			/*savemasksat= */ true,
+			savemasksat,
 			/*pas_sub_fond= */false,
 			/*use_sigma_header= */  false);
-  MakeCosmic();
+
+  // why should we call MakeCosmic() here?
+  // MakeCosmic();
   return(ok);
 }
 
@@ -558,20 +587,28 @@ bool ReducedImage::MakeWeight()
   if (pweights) delete pweights;
   return(true);
 }
-
+#include "fitsslice.h"
 
 bool ReducedImage::MakeBad()
 { 
-  if (HasWeight())
+  if (MakeWeight())
     {
       cout << " making " << FitsBadName() << endl;
-      FitsImage weight(FitsWeightName());
+      // use "slicing" code in order to accomodate large images:
+      FitsInOutParallelSlices inOut(FitsWeightName(),
+				    FitsBadName());
+      // BITPIX, BSCALE, BZERO are copied by default from in to out
+      // So overwrite them here:
+      inOut.out.AddOrModKey("BITPIX",8);
+      inOut.out.AddOrModKey("BSCALE",1); 
+      inOut.out.AddOrModKey("BZERO",0);
 
-      Image &bad = weight;
-      bad.Simplify(0,0,1);// set to 0 what is > 0 and to 1 otherwise
-      FitsHeader head(FitsWeightName());      
-      FitsImage imBad(FitsBadName(), head, bad);
-      imBad.ModKey("BITPIX",8);
+      do
+	{
+	  Image &out = inOut.out; // handler
+	  out = inOut.in; // copy
+	  out.Simplify(0,0,1); // set to 0 what is > 0 and to 1 otherwise
+	} while (inOut.LoadNextSlice());      
       return true ;
     }
   else
@@ -580,7 +617,9 @@ bool ReducedImage::MakeBad()
 
 bool ReducedImage::MakeSatur()
 {
+  if (HasSatur()) return true;
   cerr << "  ReducedImage::MakeSatur() should in principle never be called .... " << endl;
+  std::cerr << " it was called for image " << Name () << std::endl;
 // because it is done when making the catalog.. we could however have a rescue routine..
   return false;
 }
@@ -628,13 +667,11 @@ bool ReducedImage::MakeCosmic()
     clock_t tstart = clock();
   {
     FitsHeader head(FitsName());
-    if (head.HasKey("COMBINET"))
+    if ("Swarp" == string(head.KeyVal("TOADINST")))
       {
-	string combinet = head.KeyVal("COMBINET");
-	if (strstr(combinet.c_str(),"MEDIAN"))
-	  {
+	{
 	    cout << " image " << head.FileName() 
-		 << " was obtained by median combination" << endl;
+		 << " was assembled by Swarp : it already has cosmics in the weights" << endl;
 	    cout << " no cosmic frame needed " << endl;
 	    return false;
 	  }
@@ -781,6 +818,7 @@ bool  ReducedImage::Execute(const int ToDo)
   if (ToDo & DoCosmic) status &= MakeCosmic();
   if (ToDo & DoSatellite) status &= MakeSatellite();
   if (ToDo & DoWeight) status &= MakeWeight();
+  if (ToDo & DoSpikes) status &= FlagDiffractionSpikes();
   return status;
 }
 
@@ -1569,6 +1607,93 @@ ReducedImage::~ReducedImage()
   writeEverythingElse();
 }
 
+//! enlarge satured clusters in order to get rid of diffraction spikes (aigrettes en francais)
+//! method:
+//! * rebin satur image (see imagebinning.h)
+//! * make clusters (see cluster2.h)
+//! * rebin image (calibrated.fits)
+//! * set it to 1 if > N*sigma else 0
+//! * enlarge clusters using this new image
+//! * save cluster in an image, unbin it back to orginal size and save it as satur.fits.gz 
+bool ReducedImage::FlagDiffractionSpikes() {
+  
+  cout << "Entering ReducedImage::FlagDiffractionSpikes" << endl;
+
+  int rebin = 4;
+  bool debug = false;
+  
+  if(!HasSatur())
+    return false;
+  
+  std::list<mycluster> saturatedclusters;
+  
+  // read satur and make cluster list
+  {
+    FitsImage satur(FitsSaturName());
+    
+   if(rebin>1) {      
+     rebin_image(satur,rebin,rebin);
+   }
+   
+   // find clusters in saturated image
+   findclusters(satur,saturatedclusters);
+   //saturatedclusters.sort(&DecreasingClusterSize);
+   if(debug) {
+     cout << "list of saturated clusters = " << saturatedclusters.size() << endl;
+     std::list<mycluster>::iterator cluster = saturatedclusters.begin();
+     std::list<mycluster>::iterator endcluster = saturatedclusters.end();
+     for(;cluster!=endcluster;++cluster) {
+       cout << "size " << cluster->size() << endl;
+     }
+   }
+ }
+ 
+ // copy initial image
+  FitsImage initial_image(FitsName());
+  Image newimage =  initial_image;
+ 
+ 
+ 
+  // now rebin image by a factor rebin
+  if(rebin>1) {      
+    rebin_image(newimage,rebin,rebin);
+  }
+  // skylev
+  Pixel mean,sigma;
+  newimage.SkyLevel(&mean, &sigma);
+  // pix = 1 if signal greater than 1.5 sigma
+  newimage.Simplify(1.5*sigma,1,0);
+  
+  // now enlarge satured clusters using this image
+  std::list<mycluster>::iterator cluster = saturatedclusters.begin();
+  std::list<mycluster>::iterator endcluster = saturatedclusters.end();
+  if(debug)
+    cout << "list of enlarged clusters" << endl;
+  for(;cluster!=endcluster;++cluster) {
+    cluster->enlarge(newimage);
+    if(debug)
+     cout << "size " << cluster->size() << endl;
+  }
+  
+  // save pixels in clusters in a binary image 
+  saveclustersinimage(saturatedclusters,newimage);
+  
+  // un bin image to input size
+  if(rebin>1) {   
+    unbin_image(newimage,initial_image.Nx(),initial_image.Ny(),rebin,rebin);
+  }
+  
+  // save new image as satur
+  {
+    FitsImage im(FitsSaturName(),(const FitsHeader&)initial_image,newimage);
+    im.AddCommentLine("This satur file was modified by ReducedImage::FlagDiffractionSpikes");
+  }
+  cout << "Ending ReducedImage::FlagDiffractionSpikes" << endl;
+  return true;
+  
+}
+
+
 
 //! sniffs if gain multiplied (by simply checking if gain is 1) and 
 //! if not, multiplies it 
@@ -1695,6 +1820,8 @@ bool BoolImageAnd(ReducedImageList &List,
     }
   double cut = List.size()-0.5;
   sum->Simplify(cut);
+
+
   FitsImage out(OutFitsName, FitsHeader(firstName), *sum);
   delete sum;
   out.ModKey("BITPIX",8);

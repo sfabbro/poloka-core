@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "countedref.h"
+#include "countedref.h"
 
 //#include "rootstuff.h"
 

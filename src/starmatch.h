@@ -140,13 +140,19 @@ class StarMatchList : public list<StarMatch> {
 
   public :
 
+  void RefineTransfo(const double &NSigmas);
+
+
+  //! enables to get a transformed StarMatchList. Only positions are transformed, not attached stars. const routine: "this" remains unchanged.
+  void ApplyTransfo(StarMatchList &Transformed, 
+		    const Gtransfo *PriorTransfo,
+		    const Gtransfo *PosteriorTransfo = NULL) const;
 
   /* constructor */
   StarMatchList() : nused(0), order(0), chi2(0){};
 
   //!carries out a fit with outlier rejection 
 
-  void RefineTransfo(const double &NSigmas, const Gtransfo* PriorTransfo = NULL);
 
   //! enables to access the fitted transformation. 
   /*! Clone it if you want to store it permanently */
@@ -175,14 +181,11 @@ class StarMatchList : public list<StarMatch> {
   //! returns the average residual. 
   double Residual() const { if (nused != 0) return sqrt(chi2/nused); else return -1;}
 
-  int Cleanup(double DistanceCut, const Gtransfo &Transfo);
 
   /*! cleans up the list of pairs for pairs that share one of their stars, keeping the closest one.
      The distance is computed using Transfo. */
   int RemoveAmbiguities(const Gtransfo &Transfo);
   
-  //! calculates the median of the distance squares of pair lists 
-  double MedianDist2() const;
   
   //! sets a transfo between the 2 lists and deletes the previous or default one.  No fit.
   void SetTransfo(const Gtransfo *Transfo) { transfo = Transfo->Clone();}
@@ -227,12 +230,21 @@ class StarMatchList : public list<StarMatch> {
 
     private:
 
+  int Cleanup(double DistanceCut, const Gtransfo &Transfo);
+
+
+  //! calculates the distance squares of pair lists 
+  double* Dist2() const;
+
   StarMatchList(const StarMatchList&); // copies nor properly handled 
   void operator=(const StarMatchList&);
 
 
 };
 
+//! r.m.s of 1 dim residual plots (corrected for fit d.o.f)
+double FitResidual(const double Chi2, const StarMatchList &S, const Gtransfo &T);
+			
 
 
 #endif /* STARMATCH__H */
