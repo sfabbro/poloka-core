@@ -43,13 +43,18 @@ AC_CHECK_LIB([nsl], [main])
 AM_PATH_XML2(2.6.2)
 
 # Use CMT to link packages, see cmt/configure.in
-CHECK_CMT
+AC_ARG_ENABLE(cmt,
+[AC_HELP_STRING([--enable-cmt],[use cmt to find external software (default is NO)])],
+[CHECK_CMT],
+[ # else put here the additionnal software to check
+CHECK_CFITSIO(2.470)
+CHECK_SEX
+CHECK_LAPACK
+])
 
-# Link other packages
-#CHECK_CFITSIO(2.470)
+# Check cernlib anyway
 CHECK_CERNLIB
-#CHECK_SEX
-#CHECK_LAPACK
+
 
 
 # Checks for header files.
