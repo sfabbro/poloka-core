@@ -134,14 +134,15 @@ void SimFitPhot::operator() (LightCurve& Lc)
     cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
 #endif
     zeFit.FitInitialGalaxy(); // first fit inital galaxy
-    zeFit.write("sn_init0",dir,WriteGalaxy|WriteVignetsInfo);
+    zeFit.write("sn_init0",dir,WriteGalaxy|WriteVignetsInfo|WriteMatrices);
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
 #endif
     zeFit.SetWhatToFit(FitFlux); // then flux
     zeFit.UseGalaxyModel(true);  
     zeFit.DoTheFit();
-    zeFit.write("sn_init1",dir,WriteLightCurve|WriteVignetsInfo);
+    zeFit.write("sn_init1",dir,WriteLightCurve|WriteVignetsInfo|WriteMatrices);
+    
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
@@ -157,7 +158,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
      cout << " ============= SimFitPhot::operator() refit FitFlux | FitPos | FitGal =============" << endl;
 #endif	
      zeFit.DoTheFit();
-     zeFit.write("sn",dir, WriteLightCurve|WriteGalaxy|WriteResid|WriteData|WriteVignetsInfo);
+     zeFit.write("sn",dir, WriteLightCurve|WriteGalaxy|WriteResid|WriteData|WriteVignetsInfo|WriteMatrices);
      ofstream lstream((string(dir+"/lc.dat")).c_str());
      Lc.write_short((ostream&)lstream);
      lstream.close();

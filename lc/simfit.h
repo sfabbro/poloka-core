@@ -32,6 +32,7 @@ const unsigned int WritePsf  = 16;
 const unsigned int WriteWeight  = 32;
 const unsigned int WriteKernel  = 64;
 const unsigned int WriteVignetsInfo  = 128;
+const unsigned int WriteMatrices  = 256;
 
 
 
@@ -57,7 +58,8 @@ private:
   Vect Vec;            // vector r.h.s and Params when solved
   Mat PMat;            // matrix l.h.s then covariance matrix when inverted
   Mat MatGal;         // gal-gal matrix part to avoid refilling
-  
+  Mat NightMat;      // see fillNightMat
+
   // indices
   int fluxstart, fluxend; // start and end indices for flux parameters in Mat and Vec
   int xind,yind;          // indices for positional parameters in Mat and Vec
@@ -148,8 +150,18 @@ public:
   void UseGalaxyModel(bool useit = true) {use_gal = useit;};
   
   //! fit initial galaxy using only vignets without burning star
-  void SimFit::FitInitialGalaxy();
+  void FitInitialGalaxy();
   
+  //! fill a boolean matrix
+  //        nights
+  //      <----------->
+  // i   |   1 
+  // m   |   1
+  // a   |   1
+  // g   |    1
+  // e   |    1
+  // s   |     1 ...  
+  void fillNightMat(LightCurve& Lc);
 
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);

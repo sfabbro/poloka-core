@@ -7,43 +7,6 @@
 #include "simfitvignet.h"
 #include "simfit.h"
  
-extern "C" {
-  void dposv_(char *, int *, int *, double *, int *, double *, int *, int *);
-  void dpotri_(char *, int *, double *, int *, int *);
-};
-
-static int cholesky_solve(double *a, double *b, int n)
-{
-#ifdef FNAME
-  cout << " >  cholesky_solve" << endl;
-#endif  
-  int nhrs = 1, info = 0;
-
-  dposv_("U", &n, &nhrs, a, &n, b, &n, &info);
-
-  if (info != 0) 
-    cerr << " cholesky_solve(" << a << "," << b << "," << n
-	 << ") : Warning: Cholesky factorization failure . info =" 
-	 << info <<  " (>0 is not pos.def)" << endl;
-
-  return info;
-}
-
-static int cholesky_invert(double *a, int n)
-{  
-  int info = 0;
-
-  //  Now invert using the factorization done in dposv_
-
-  dpotri_("U", &n, a, &n, &info);
-
-  if (info != 0) 
-    cerr << " cholesky_invert(" << a << "," << n
-	 << ") : Warning: inversion failure . info =" 
-	 << info <<  " (>0 is not pos.def)" << endl;
-
-  return info;
-}
 
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   :::::::::::::::::: SimFit stuff   ::::::::::::::::::::::::::
@@ -144,6 +107,8 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
       cerr << " SimFit::Load() : Error : trying to load a LightCurve of different size \n";
       return;
     }
+  
+  fillNightMat(Lc);
   
   // define the size of the reference vignet
   
@@ -1201,7 +1166,7 @@ double SimFit::oneNRIteration(double OldChi2)
 #endif
   FillMatAndVec();
 
-  solved = (cholesky_solve(PMat.NonConstData(),Vec.NonConstData(),Vec.Size()) == 0);
+  solved = (cholesky_solve(PMat,Vec,"L") == 0);
   //#include <vutils.h>
   //solved = MatSolve(Mat,nparams,Vec);
   if (!solved) return 1e29;
@@ -1294,7 +1259,7 @@ bool SimFit::GetCovariance()
   
   // someday we should recompute the covariance ala MINOS
 
-  int status = cholesky_invert(PMat.NonConstData(),PMat.SizeX());
+  int status = cholesky_invert(PMat,"L");
   
   if (status != 0) 
     {      
@@ -1417,8 +1382,9 @@ void SimFit::DoTheFit()
 
 void SimFit::write(const string& StarName,const string &DirName, unsigned int whattowrite) 
 {
+#ifdef FNAME
   cout << " SimFit::write(" << StarName << ")" << endl;
-  
+#endif
   // write lc
   if(whattowrite & WriteLightCurve) {
     ofstream lstream(string(DirName+"/lightcurve_"+StarName+".dat").c_str());
@@ -1472,6 +1438,90 @@ void SimFit::write(const string& StarName,const string &DirName, unsigned int wh
   if(whattowrite & WriteKernel)
     for (SimFitVignetIterator it=begin(); it != end() ; ++it)
       (*it)->Kern.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_kern.fits");
+
+  //write matrices
+  if(whattowrite & WriteMatrices) {
+    PMat.writeFits(DirName+"/pmat_"+StarName+".fits");
+    
+    int i=0;
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+      if((*it)->FitFlux)
+	i++;
+    Mat vm(1,i);
+    i=0;
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+      if((*it)->FitFlux) {
+	vm(0,i)= (*it)->Star->flux;
+	i++;
+      }
+    vm.writeFits(DirName+"/vec_"+StarName+".fits");
+    
+    // create matrix of Nights and Images
+    NightMat.writeFits(DirName+"/nightmat_"+StarName+".fits");
+  }
+  
+
+}
+
+void SimFit::fillNightMat(LightCurve& Lc) {
+#ifdef FNAME
+  cout << " > SimFit::fillNightMat" << endl;
+#endif
+  
+  
+      
+  LightCurve::const_iterator itLc = Lc.begin();
+  LightCurve::const_iterator endLc = Lc.end();
+  double jd; // julian day
+  vector<double> nightdates;
+  bool isinnight;
+  double timediff = 10./24.; // 10 hours
+  int nimages = 0;
+  for (;itLc != endLc; ++itLc) {
+    jd = (*itLc)->Image()->JulianDate();
+    if(Lc.Ref->IsVariable(jd)) {
+      nimages++;
+      isinnight=false;
+      for(unsigned int day=0;day<nightdates.size(); ++day) {
+	if(fabs(jd-nightdates[day])<timediff) {
+	  isinnight = true;
+	  break;
+	}
+      }
+      if(!isinnight) {
+	nightdates.push_back(jd);
+      }
+    }
+  } 
+  int nnights = nightdates.size(); // number of nights for this lightcurve
+  NightMat.allocate(nnights,nimages); // szie of matrix
+  // now we fill this matrix
+    //        nights
+  //      <----------->
+  // i   |   1 
+  // m   |   1
+  // a   |   1
+  // g   |    1
+  // e   |    1
+  // s   |     1 ...  
+  itLc = Lc.begin();
+  int im = 0;
+  for (;itLc != endLc; ++itLc) {
+    jd = (*itLc)->Image()->JulianDate();
+    if(Lc.Ref->IsVariable(jd)) {
+      for(unsigned int day=0;day<nightdates.size(); ++day) {
+	if(fabs(jd-nightdates[day])<timediff) {
+	  NightMat(day,im)=1;
+	  break;
+	}
+      }
+      im++;
+    }
+  }
+  
+  cout << "========= NightMat ==========" << endl;
+  cout << NightMat << endl;
+  return;
 }
 
 ostream& operator << (ostream& Stream, const CountedRef<SimFitVignet> &Vig)
