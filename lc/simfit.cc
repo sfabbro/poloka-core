@@ -3,7 +3,6 @@
 #include <iomanip>
 #include <iterator>
 #include <ctime>
-
 #include "simfitvignet.h"
 #include "simfit.h"
 
@@ -107,22 +106,55 @@ void SimFit::CreateAndLoad(LightCurve& LC)
   const double rad = 4.*2.3548;
 
 #ifdef DEBUG
-  cout << " Creating VignetRef with image " <<  LC.RefImage->Name() << endl;
+  cout << " Creating VignetRef with image " <<  LC.Ref->Image()->Name() << endl;
 #endif 
   // reference vignette (loaded at creation)
-  VignetRef = SimFitRefVignet(LC.Ref, LC.RefImage, int(ceil(LC.RefImage->Seeing()*rad)));
+  const ReducedImage *RefImage = LC.Ref->Image();
+
+#ifdef DEBUG
+  cout << " Checking RefImage ... " << endl;
+  cout << RefImage << endl;
+  cout << RefImage->Name() << endl;
+  cout << RefImage->Seeing() << endl;
+#endif
+
+  VignetRef = SimFitRefVignet(LC.Ref,RefImage, int(ceil(RefImage->Seeing()*rad)));
 #ifdef DEBUG
   cout << " Checking PSF ... " << endl;
   cout << " TYPE = " << VignetRef.psf->Type() << endl;
   VignetRef.psf->dump(cout);
-  
   cout << endl;
 #endif
+
 
   if(fit_gal)
     VignetRef.makeInitialGalaxy(); // make Galaxy image 
   VignetRef.UpdatePsfResid();
+ 
+#ifdef DEBUG
+  cout << " Creating Vignets for " << LC.size() << " images" << endl;
+#endif 
+  // now create other vignettes
+  double worstSeeing = -1e29;
   
+  for(LightCurve::const_iterator lcp = LC.begin() ; lcp != LC.end() ; ++lcp) {
+#ifdef DEBUG
+    cout << " Adding vignet for image " << (*lcp)->Image()->Name() << " ..." << endl;
+#endif
+    const double curSeeing = (*lcp)->Image()->Seeing();
+    SimFitVignet *vig = new SimFitVignet(LC.Ref, (*lcp)->Image(),RefImage , int(ceil(curSeeing*rad)));
+    if      (( fit_pos) && ( fit_gal)) vig->UpdatePsfResid(VignetRef);
+    else if (( fit_pos) && (!fit_gal)) vig->UpdatePsfResid(VignetRef.Psf);
+    else if ((!fit_pos) && ( fit_gal)) vig->UpdateResid(VignetRef.Galaxy);
+    else                               vig->UpdateResid();
+    push_back(vig);
+    if (worstSeeing < curSeeing) worstSeeing = curSeeing;
+  }
+
+
+  //FindMinimumScale(worstSeeing);
+
+ 
 #ifdef DEBUG
   cout << "=======  SimFit::CreateAndLoad done  =======" << endl;
 #endif
