@@ -3,8 +3,8 @@
 // \file gtransfo.h
 // \brief Geometrical transformations (of 2D points)
 // 
-// Last modified: $Date: 2004/02/20 10:48:37 $
-// By:            $Author: nrl $
+// Last modified: $Date: 2004/02/25 16:42:06 $
+// By:            $Author: guy $
 // 
 #ifndef GTRANSFO_H
 #define GTRANSFO_H
@@ -35,6 +35,9 @@ class GtransfoLin;
     The classes also provide derivation and linear approximation.
 
 */
+
+
+
 class Gtransfo{
 public:
   
@@ -101,19 +104,8 @@ public:
 
   virtual ~Gtransfo() {};
 
-#ifdef USE_ROOT
-  int root_write(const char*FileName, const char *FileStatus = "RECREATE", const char* ObjectName=NULL);
-
-  ClassDef(Gtransfo,1)
-
-#endif /*USE_ROOT */
-
 };
 
-#ifdef USE_ROOT
-//! The virtual constructor from a root_file
-Gtransfo *GtransfoRead(const char* FileName, const char* ObjectName = NULL);
-#endif /* USE_ROOT */
 
 //! allows 'stream << Transfo;' (by calling T.dump(stream)). 
 ostream & operator << (ostream &stream, const Gtransfo & T);
@@ -263,7 +255,7 @@ class GtransfoLin : public Gtransfo {
     int do_the_fit(double &Chi2, const StarMatchList &List, 
 		   const Gtransfo *PriorTransfo = NULL, 
 		   const Gtransfo* PosteriorTransfo = NULL);
-
+ 
     //    ClassDef(GtransfoLin,1)
 };
 
@@ -405,9 +397,8 @@ struct NamedValue {
 };
 
 
-#ifndef __CINT__
 #include <vector>
-#endif /*__CINT__ */
+
 
 
 /* GtransfoCub*/
@@ -450,7 +441,7 @@ class GtransfoCub : public GtransfoQuad {
     Gtransfo* Clone() const { return new GtransfoCub(*this);}
     Gtransfo* ReduceCompo(const Gtransfo *Right) const;
 
-#ifndef __CINT__    
+
     
     double dX() const { return dx ;};
     double dY() const { return dy ;}; 
@@ -483,7 +474,7 @@ class GtransfoCub : public GtransfoQuad {
 
     virtual int Degree() const {return 3;}
 
-#endif /* __CINT __ */
+
 
 protected:
     //    double dx,dy; //2
@@ -497,13 +488,13 @@ protected:
 
 private:
 
-#ifndef __CINT__
+
   // arrays used to associate names to class data members once for all.
     typedef double GtransfoCub::*GtransfoCubItem;
     typedef struct { const char *name; GtransfoCubItem value; }  CubAssoc;
     static CubAssoc GtransfoCubNames [];
     static CubAssoc GtransfoCubOldNames [];
-#endif /* __CINT __ */
+
 
     double x_tr3(const double Xin, const double Yin) const 
 	{ return  dx + a11*Xin + a12*Yin + a1x2*Xin*Xin + a1xy*Xin*Yin + a1y2*Yin*Yin +
@@ -645,8 +636,8 @@ class TanRaDec2Pix : public Gtransfo
 //! probably obsolete. use LinearApproximation instead
 GtransfoLin *GtransfoToLin(const Gtransfo* transfo);
 
-#ifdef __CINT__
-#include "gtransfocomposition.h"
-#endif /* __CINT__ */
+
+//#include "gtransfocomposition.h"
+
 
 #endif /* GTRANSFO__H */

@@ -148,7 +148,11 @@ static KernelFit* init_and_do_the_fit(const BaseStarList& objectsUsedToFit,
 
   // Variance for the Chi2
   Pixel mean,sigma;
-  fit->WorstImage->SkyLevel(&mean, &sigma);
+
+  Frame dataRegionW(FitsHeader(worst->FitsName()));
+  Frame dataRegionB(FitsHeader(best->FitsName()));
+  fit->DataFrame = dataRegionW*dataRegionB;
+  fit->WorstImage->SkyLevel(dataRegionW,&mean,&sigma);
   fit->SkyVarianceWorstImage = sigma*sigma;
   fit->WorstImageGain = worst->Gain();
   if (fit->WorstImageGain == 0)
@@ -202,6 +206,7 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   // for all d3 subtractions from mars 2003 to june 2003
   // it represents 3% of the cases. As it is just a question of CPU
   // we can live with that
+
   if (!direct_fit || direct_fit->chi2 > 4.)
     {
       cout << " bad_direct_fit : trying swapped one (best<->worst)" << endl;
@@ -366,12 +371,15 @@ bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
     {
       cout << " Subtracting " << worst->Name() << " - " << best->Name() << endl;
       double factor = 1/photomRatio; // "*" is far faster than "/"
-      theSubtraction = (*(fit->WorstImage) - *(fit->ConvolvedBest))*factor;
+      theSubtraction = *(fit->WorstImage);
+      theSubtraction -= *(fit->ConvolvedBest);
+      theSubtraction *=factor;
     }
   else /* new was concolved and ConvolvedBest natches Ref photometry  */
     {
       cout << " Subtracting " << best->Name() << " - " << worst->Name() << endl;
-      theSubtraction = *(fit->ConvolvedBest) - *(fit->WorstImage);
+      theSubtraction = *(fit->ConvolvedBest);
+      theSubtraction -= *(fit->WorstImage);
     }  
   // force 16 bits when we have 32 images (eg swarped)
   subImage.SetWriteAsFloat();
@@ -381,6 +389,7 @@ bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
   string datenew = New()->Date();
   subImage.AddOrModKey("TOADDATE",datenew," Date in UTC of last obs");
   if (!KeepConvolvedBest) fit->DeleteConvolvedBest();
+  fit->DeleteWorstDiffBkgrdSubtracted();
 
   intersection.WriteInHeader(subImage);
   string worstpsfname = worst->ImagePsfName();

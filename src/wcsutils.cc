@@ -798,76 +798,6 @@ bool UpdateRaDec(FitsHeader &Header)
 }
 
 
-
-bool WCSTransfoFromHeader(const string &FitsImageName, GtransfoLin &Pix2RaDec)
-{
-  FitsHeader header(FitsImageName);
-  return  WCSTransfoFromHeader(header, Pix2RaDec);
-}
-
-
-bool WCSTransfoFromHeader(const FitsHeader& Header, GtransfoLin &Pix2RaDec)
-{
-  if (!HasLinWCS(Header)) return false;
-  string ctype1 = Header.KeyVal("CTYPE1");
-  if ( ctype1 != "RA---TAN")
-    {
-      cerr << " bad WCS type :" << ctype1 << "don\'t know yet how to read this " << endl;
-      return false;
-    }
-
-  // ("CTYPE2", "DEC--TAN");
-
-  double ra,dec;
-  GetRaDecInDeg(Header, ra, dec);
-  double cosdec = cos(dec*M_PI/180.);
-  double ra_rot = Header.KeyVal("CRVAL1");
-  double dec_rot = Header.KeyVal("CRVAL2");
-  double x_rot = Header.KeyVal("CRPIX1");
-  double y_rot = Header.KeyVal("CRPIX2");
-  /* we want a WCS to be interpreted in TOADs ccordinates, i.e.
-   starting at (0,0). So
-    - if the WCS was NOT written by Toads, it misses cubic corrections
-    - if it was wriiten by Toads, then we have to shift only if the WCS
-    was written afetr the "normalization" */
-  //  if (!HasCubCorr(Header) ||  Header.HasKey("FITSCONV"))
-  //    {
-  //      x_rot -= MEMPIX2DISK;
-  //      y_rot -= MEMPIX2DISK;
-  //    }
-
-  double a11,a12,a21,a22;
-  // aij are sometime absent (e.g. from swarp resampled images)
-  if (Header.HasKey("CD1_1") && Header.HasKey("CD1_2") &&
-      Header.HasKey("CD2_1") && Header.HasKey("CD2_2"))
-    {
-      a11 = double(Header.KeyVal("CD1_1"))/cosdec;
-      a12 = double(Header.KeyVal("CD1_2"))/cosdec;
-      a21 = Header.KeyVal("CD2_1");
-      a22 = Header.KeyVal("CD2_2");
-    }
-  else if (Header.HasKey("CDELT1") && Header.HasKey("CDELT2"))
-    {
-      a11 = double(Header.KeyVal("CDELT1"))/cosdec;
-      a22 = Header.KeyVal("CDELT2");
-      a12 = 0;
-      a21 = 0;
-    }
-  else return false;
-
-  GtransfoLin rotateur(ra_rot, dec_rot, -a11, -a12, -a21, -a22);
-  Point rotpix(x_rot, y_rot);
-  Point delta = rotateur(rotpix);
-
-  Pix2RaDec = GtransfoLin(delta.x, delta.y, a11, a12, a21, a22);
-  return true;
-}
-
-
-
-
-
-
 #ifdef STORAGE /* REShuffled routines after improvement of WCS's, but in the meantime Seb rewrote them */
 double sqr(const double x) {return x*x;}
 
@@ -944,7 +874,6 @@ double Arcmin2Overlap(const FitsHeader& Head1,const FitsHeader& Head2)
     area=intersect.Area()*3600;
   return area;
 }
-
 #endif
 
 

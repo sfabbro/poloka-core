@@ -1,4 +1,4 @@
-//#ifdef IS_IT_USEFUL
+#ifdef IS_IT_USEFUL
 #include "defs.h"
 #include <cstdio>
 #include <cstdlib>
@@ -16,8 +16,6 @@
 # define EXPO exp
 //#define EXPO tabFExp
 #define MINEXPM (100.)
-
-using namespace std;
 
 //================================================================
 // GeneralFunction 2D pour PSF pixel taille 1x1
@@ -56,7 +54,7 @@ GeneralPSF2D::GeneralPSF2D(unsigned int nPar)
 //--
 : GeneralFunction(2,nPar), VolEps(1.e-4)
 {
-  //DBASSERT( nPar>0 );
+DBASSERT( nPar>0 );
 }
 
 GeneralPSF2D::~GeneralPSF2D()
@@ -212,9 +210,9 @@ GenMultiPSF2D::GenMultiPSF2D(GeneralPSF2D* psf2d,unsigned int nstar)
   : GeneralPSF2D((psf2d!=NULL) ? 3*nstar+4+psf2d->NPar()-7: 0)
   , mPsf2D(psf2d), mNStar(nstar)
 {
-  //DBASSERT( nstar>0 && psf2d!=NULL );
+DBASSERT( nstar>0 && psf2d!=NULL );
 mNForme = mPsf2D->NPar() - 7;
-//DBASSERT( mNForme>=0 );
+DBASSERT( mNForme>=0 );
 mNParm = mPsf2D->NPar();
 mParm = new double[mNParm];
 mDer = new double[mNParm];
@@ -1500,7 +1498,7 @@ void MofRhInt2D::DefaultParam(double *parm)
 }
 
 
-#ifdef IS_IT_USEFUL
+//#ifdef IS_IT_USEFUL
 #undef _sigx_
 #undef _sigy_
 #undef _rho_
@@ -1543,7 +1541,7 @@ X2_GauRho2D::~X2_GauRho2D()
 
 double X2_GauRho2D::Value(GeneralFitData& data, double* parm, int& ndataused)
 {
-  // DBASSERT( data.NVar()==2 );
+ DBASSERT( data.NVar()==2 );
  double x[2],z;
 
  double c2 = 0.;
@@ -1560,7 +1558,7 @@ double X2_GauRho2D::Value(GeneralFitData& data, double* parm, int& ndataused)
 
 double X2_GauRho2D::Derivee2(GeneralFitData& data, int i,int j, double* parm)
 {
-  // DBASSERT( data.NVar()==2 && i<7 && j<7);
+ DBASSERT( data.NVar()==2 && i<7 && j<7);
  double x[2],dparm[7];
 
  double d2c2 = 0.;

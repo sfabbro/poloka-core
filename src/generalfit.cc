@@ -40,10 +40,10 @@ GeneralFunction::GeneralFunction(unsigned int nVar, unsigned int nPar)
 //--
   : mNVar(nVar), mNPar(nPar)
 {
-  // DBASSERT( nVar > 0 && nPar > 0 );
+ DBASSERT( nVar > 0 && nPar > 0 );
  deltaParm = new double[nPar];
  tmpParm   = new double[nPar];
- // END_CONSTRUCTOR
+ END_CONSTRUCTOR
 }
 
 //++
@@ -85,7 +85,7 @@ void GeneralFunction::SetDeltaParm(int numPar, double d)
 //	pour calculer la derivee automatiquement.
 //--
 {
-  // DBASSERT(numPar >= 0 && numPar < mNPar);
+ DBASSERT(numPar >= 0 && numPar < mNPar);
  deltaParm[numPar] = d;
 }
 
@@ -225,9 +225,9 @@ GeneralXi2::GeneralXi2(unsigned int nPar)
 //--
   : mNPar(nPar)
 { 
-  // DBASSERT( nPar>0 );
+ DBASSERT( nPar>0 );
  deltaParm = new double[nPar];
- // END_CONSTRUCTOR
+ END_CONSTRUCTOR
 }
 
 //++
@@ -306,7 +306,7 @@ void GeneralXi2::SetDeltaParm(int numPar, double d)
 //	pour calculer la derivee automatiquement.
 //--
 {
-  // DBASSERT(numPar >= 0 && numPar < mNPar);
+ DBASSERT(numPar >= 0 && numPar < mNPar);
   
  deltaParm[numPar] = d;
 }
@@ -374,8 +374,8 @@ GeneralFit::GeneralFit(GeneralFunction* f)
     C             (f->NPar()),
     D             (f->NPar())
 {
-  // DBASSERT(mNVar>0 && mNPar>0);
-  // DBASSERT(mNPar<1000000);
+ DBASSERT(mNVar>0 && mNPar>0);
+ DBASSERT(mNPar<1000000);
 
  TRY {
    General_Init();
@@ -417,8 +417,8 @@ GeneralFit::GeneralFit(GeneralXi2* f)
     C             (f->NPar()),
     D             (f->NPar())
 {
-  // DBASSERT( mNPar>0 );
-  // DBASSERT( mNPar < 1000000 );
+ DBASSERT( mNPar>0 );
+ DBASSERT( mNPar < 1000000 );
 
  TRY {
    General_Init();
@@ -572,7 +572,7 @@ void GeneralFit::SetEps(int n,double ep)
 //	Precision des calculs pour le parametre n.
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  Eps(n) = (ep<=0.) ? EPS_FIT_MIN: ep;
  if(debugLevel>0) cout<<"SetEps("<<n<<") = "<<Eps(n)<<endl;
 }
@@ -615,10 +615,10 @@ void GeneralFit::SetFunction(GeneralFunction* f)
 //	a un fit sur un GeneralXi2 sans recreer la classe).
 //--
 {
-  // DBASSERT( mFuncXi2  == NULL );
-  // DBASSERT( f != NULL );
-  // DBASSERT( f->NVar() == mNVar );
-  // DBASSERT( f->NPar() == mNPar );
+ DBASSERT( mFuncXi2  == NULL );
+ DBASSERT( f != NULL );
+ DBASSERT( f->NVar() == mNVar );
+ DBASSERT( f->NPar() == mNPar );
  mFunction = f;
  if(debugLevel>0) cout<<"SetFunction "<<mFunction<<endl;
 }
@@ -631,9 +631,9 @@ void GeneralFit::SetFuncXi2(GeneralXi2* f)
 //	a un fit sur un GeneralXi2 sans recreer la classe).
 //--
 {
-  // DBASSERT( mFunction == NULL );
-  // DBASSERT( f != NULL );
-  // DBASSERT( f->NPar() == mNPar );
+ DBASSERT( mFunction == NULL );
+ DBASSERT( f != NULL );
+ DBASSERT( f->NPar() == mNPar );
  mFuncXi2  = f;
  if(debugLevel>0) cout<<"SetFuncXi2 "<<mFuncXi2<<endl;
 }
@@ -645,7 +645,7 @@ void GeneralFit::SetData(GeneralFitData* data)
 //	Pour connecter une structure de donnees.
 //--
 {
-  // DBASSERT( data->NVar()==mNVar || mFunction==NULL );
+ DBASSERT( data->NVar()==mNVar || mFunction==NULL );
  mData = data;
  mNddl = mData->NDataGood() - mNParFree;
  if(debugLevel>0)
@@ -660,7 +660,7 @@ void GeneralFit::SetParam(int n,double value,double step
 //	Definition du parametre "n" a fitter.
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
 
  Param(n)     = value;
  if(step>0.) {
@@ -687,7 +687,7 @@ void GeneralFit::SetParam(int n, string const& name
 //	Definition du parametre "n" a fitter
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  SetParam(n,value,step,min,max);
  nameParam[n] = name;
  if(debugLevel) {cout<<"Set_Param "; PrintParm(n);}
@@ -699,7 +699,7 @@ void GeneralFit::SetParam(int n,double value)
 //	Definition du parametre "n" a fitter
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  Param(n) = value;
  if(debugLevel) {cout<<"Set_Param "; PrintParm(n);}
 }
@@ -712,7 +712,7 @@ void GeneralFit::SetStep(int n,double step)
 //	Si negatif ou nul, parametre fixe.
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  if(step>0.) {
    if( fixParam[n] ) { fixParam[n]=0; mNParFree++;}
  } else {
@@ -733,7 +733,7 @@ void GeneralFit::SetMinStepDeriv(int i,double val)
 //	par l'utilisateur.
 //--
 {
-  // DBASSERT(i>=0 && i<mNPar);
+ DBASSERT(i>=0 && i<mNPar);
  if(val<0.) minStepDeriv(i) = Eps(i);
    else     minStepDeriv(i) = val;
  if(debugLevel>0) cout<<"SetMinStepDeriv("<<i<<") = "<<minStepDeriv(i)<<endl;
@@ -758,7 +758,7 @@ void GeneralFit::SetBound(int n, double min, double max)
 //	Si max<=min, parametre non-borne.
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar && max>min);
+ DBASSERT(n>=0 && n<mNPar && max>min);
 
  minParam(n)  = min;
  maxParam(n)  = max;
@@ -777,7 +777,7 @@ void GeneralFit::SetBound(int n)
 //	Pour re-borner le parametre "n" aux bornes par defaut
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar && maxParam(n)>minParam(n));
+ DBASSERT(n>=0 && n<mNPar && maxParam(n)>minParam(n));
  SetBound(n,minParam(n),maxParam(n));
 }
 
@@ -787,7 +787,7 @@ void GeneralFit::SetUnBound(int n)
 //	Pour ne plus borner le parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
 
  if( boundParam[n] ) {
    boundParam[n] = 0;
@@ -813,7 +813,7 @@ void GeneralFit::SetFix(int n,double v)
 //	Pour fixer le parametre "n" a la valeur "v"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
 
  Param(n) = v;
  if( ! fixParam[n] ) {
@@ -832,7 +832,7 @@ void GeneralFit::SetFix(int n)
 //	Pour fixer le parametre "n" a la valeur par defaut
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  SetFix(n,Param(n));
 }
 
@@ -842,7 +842,7 @@ void GeneralFit::SetFree(int n)
 //	Pour liberer le parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
 
  if( fixParam[n] ) {
    fixParam[n] = 0;
@@ -872,7 +872,7 @@ double GeneralFit::GetParm(int n)
 //	Retourne la valeur du parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  return Param(n);
 }
 
@@ -891,7 +891,7 @@ double GeneralFit::GetParmErr(int n)
 //	Retourne la valeur de l'erreur du parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  return errParam(n);
 }
 
@@ -901,7 +901,7 @@ double GeneralFit::GetCoVar(int i,int j)
 //	Retourne la covariance pour les parametre `i' et `j'
 //--
 {
-  // DBASSERT(i>=0 && i<mNPar && j>=0 && j<mNPar);
+ DBASSERT(i>=0 && i<mNPar && j>=0 && j<mNPar);
  return ATGA(i,j);
 }
 
@@ -912,7 +912,7 @@ double GeneralFit::GetStep(int n)
 //	Retourne la valeur du pas du parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  return stepParam(n);
 }
 
@@ -922,7 +922,7 @@ double GeneralFit::GetMax(int n)
 //	Retourne la valeur de la borne superieure du parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  return maxParam(n);
 }
 
@@ -932,7 +932,7 @@ double GeneralFit::GetMin(int n)
 //	Retourne la valeur de la borne inferieure du parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
  return minParam(n);
 }
 
@@ -985,7 +985,7 @@ void GeneralFit::PrintParm(int n)
 //	Impression des informations relatives au parametre "n"
 //--
 {
-  // DBASSERT(n>=0 && n<mNPar);
+ DBASSERT(n>=0 && n<mNPar);
 
  cout<<"Par["<<n<<"] "<<nameParam[n]
      <<" F"<<fixParam[n]
@@ -1622,15 +1622,15 @@ void GeneralFit::TryXi2(Vector& par,Vector& par_tr)
 //////////////////////////////////////////////////////////////////////
 void GeneralFit::CheckSanity()
 {
-  //  DBASSERT( mData != NULL );
-  //  DBASSERT( mFunction != NULL || mFuncXi2 != NULL );
+  DBASSERT( mData != NULL );
+  DBASSERT( mFunction != NULL || mFuncXi2 != NULL );
   if( mFunction != NULL ) {
-    //    DBASSERT( mFunction->NVar() == mNVar );
-    //    DBASSERT( mData->NVar() == mNVar );
+    DBASSERT( mFunction->NVar() == mNVar );
+    DBASSERT( mData->NVar() == mNVar );
   }
-  //  DBASSERT( mNParFree > 0 && mNParFree <= mNPar );
-  //  DBASSERT( mNParBound >= 0 && mNParBound <= mNPar );
-  //  DBASSERT( mNParFree <= mData->NDataGood() );
+  DBASSERT( mNParFree > 0 && mNParFree <= mNPar );
+  DBASSERT( mNParBound >= 0 && mNParBound <= mNPar );
+  DBASSERT( mNParFree <= mData->NDataGood() );
 }
 
 //////////////////////////////////////////////////////////////////////

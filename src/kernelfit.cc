@@ -25,9 +25,105 @@ for (int i=0; i<nblock; ++i)
 return sum;
 }  
 
+
+class Mat
+{
+  double *data;
+  int d1,d2;
+public :
+  Mat(const int D1, const int D2) : d1(D1),  d2(D2)
+  { data = new double[d1*d2]; memset(data,0,sizeof(double)*d1*d2); };
+  ~Mat() { delete [] data;}
+  double operator () (const int i, const int j) const { return data[i*d1+j];}
+  double& operator () (const int i, const int j) { return data[i*d1+j];}
+};
+
+class Vect
+{
+  double *data;
+  int d;
+public :
+  Vect(const int D): d(D)
+  { data = new double[d]; memset(data,0,sizeof(double)*d); };
+  ~Vect() { delete [] data;}
+  double operator () (const int i) const { return data[i];}
+  double& operator () (const int i) { return data[i];}
+};
+
+
+int KernelFit::FitDifferentialBackground(const double NSig)
+{  
+   
+  if (optParams.SepBackVar.Degree == -1) return 0;
+
+  int nterms = optParams.SepBackVar.Nterms;
+
+  diffbackground = new double[nterms];
+  WorstDiffBkgrdSubtracted = new Image(WorstImage->Nx(),WorstImage->Ny()); 
+  
+
+  Mat A(nterms,nterms);
+  Vect B(nterms);
+  Vect monom(nterms);
+
+  Pixel bestMean,bestSig,worstMean,worstSig;
+  BestImage->SkyLevel(DataFrame,&bestMean, &bestSig);
+  WorstImage->SkyLevel(DataFrame,&worstMean, &worstSig);
+  
+  double cut1  = NSig*bestSig;
+  double cut2  = NSig*worstSig;
+
+  int ibeg,iend,jbeg,jend;
+  ibeg = int(DataFrame.xMin);
+  iend = int(DataFrame.xMax);
+  jbeg = int(DataFrame.yMin);
+  jend = int(DataFrame.yMax);
+
+  int jump = 10;
+  for (int j=jbeg ; j< jend ; j+= jump)
+  for (int i=ibeg ; i< iend ; i+= jump)
+    {
+      Pixel p1 = (*WorstImage)(i,j);
+      if (fabs(p1-bestMean) > cut1) continue;
+      Pixel p2 = (*BestImage)(i,j);
+      if (fabs(p2-worstMean) > cut2) continue;
+      for (int q1=0; q1<nterms; ++q1)
+	{
+	  monom(q1) = optParams.SepBackVar.Value(double(i), double(j),q1);
+
+	  for (int q2 = q1; q2<nterms; ++q2) A(q1,q2) += monom(q1)*monom(q2);
+	  B(q1) += monom(q1)*p1;
+	}
+    }
+  /* symetrize */
+  for (int q1=0; q1<nterms; ++q1) 
+    for (int q2 = q1+1; q2<nterms; ++q2) A(q2,q1) = A(q1,q2); 
+  if (!MatSolve(&A(0,0),nterms,&B(0)))
+    {
+      cerr << " could not compute differential background !!!!" << endl;
+      return 0;
+    }
+  
+  cout << setprecision(10);
+  cout << " separately fitted differential background " << endl;
+  cout << " ----------------------------------------- " << endl;
+  for (int q1=0; q1< nterms; ++q1) cout << B(q1) << " " ;
+  cout << endl;
+
+  for (int q1=0; q1<nterms; ++q1)
+      diffbackground[q1] = B(q1);
+
+  for (int j=jbeg ; j< jend ; ++j)
+  for (int i=ibeg ; i< iend ; ++i)
+    {
+      (*WorstDiffBkgrdSubtracted)(i,j) = (*WorstImage)(i,j) - BackValue(i,j);
+    }
+  return 1;
+}
+
+
+
 #define OPTIMIZED /* means pushing pointers by hand ... */
-
-
 
 // #define DO3(I) I;I;I;
 // #define DO9(I) DO3(DO3(I))
@@ -112,10 +208,11 @@ for (int irx = 0; irx < nxregions; ++irx)
 /* account for differential background. We do it for the whole image, including
    side bands where the convolution did not go but where anyway initialized
    to the input value. TODO : correct side bands for photometric ratio */
+
  int sx = ConvolvedBest->Nx();
  int sy = ConvolvedBest->Ny();
  for (int j=0; j < sy; ++j) for (int i=0; i < sx ; ++i)
-   (*ConvolvedBest)(i,j) += BackValue(i,j) + WorstImageBack;
+  (*ConvolvedBest)(i,j) += BackValue(i,j) + WorstImageBack;
 
 clock_t tend = clock();
 cout << " CPU for convolution " << float(tend-tstart)/float(CLOCKS_PER_SEC) << endl;
@@ -438,7 +535,17 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
       /* compute contributions to b */
 
       /* kernel terms */
-   double bintegral = image_scal_prod(convolutions[ik], WorstImage, WorstImageBack, AStamp.xc - hConvolvedSize, AStamp.yc - hConvolvedSize);
+   const Image *worst;
+   if (optParams.SepBackVar.Nterms != 0)
+     {
+       worst = WorstDiffBkgrdSubtracted;
+     }
+   else
+     {
+      worst = WorstImage;
+     }
+   
+   double bintegral = image_scal_prod(convolutions[ik], worst, WorstImageBack, AStamp.xc - hConvolvedSize, AStamp.yc - hConvolvedSize);
    for (int is =0; is < optParams.KernVar.Nterms; ++is)
      {
      int im = KernIndex(ik,is);
@@ -554,6 +661,7 @@ HKernelSize = 9;
 MaxStamps = 150;
 KernVar.SetDegree(2); // degree of spatial variations of the kernel 
 BackVar.SetDegree(2); //degree of spatial variations of the background
+SepBackVar.SetDegree(-1); //degree of spatial variations of the background if you want to fit it separately
  NSig = 4;
  string dataCardsName = DefaultDatacards();
  if (FileExists(dataCardsName))
@@ -592,7 +700,12 @@ BackVar.SetDegree(2); //degree of spatial variations of the background
      if (cards.HasKey("KFIT_BACKVAR_DEG")) 
        {
 	 int deg = cards.IParam("KFIT_BACKVAR_DEG");
-	 BackVar.SetDegree(deg); // degree of spatial variations of the kernel 
+	 BackVar.SetDegree(deg); // degree of spatial variations of the background
+       }
+     if (cards.HasKey("KFIT_SEPBACKVAR_DEG")) 
+       {
+	 int deg = cards.IParam("KFIT_SEPBACKVAR_DEG");
+	 SepBackVar.SetDegree(deg); // degree of spatial variations of the background
        }
    } // if (has datacards)
 }
@@ -609,8 +722,8 @@ double kernSig = max(sqrt(WorstSeeing*WorstSeeing - BestSeeing*BestSeeing),0.4);
 HKernelSize = max(int( ceil (NSig * kernSig)),4);
  for (int i=0; i<NGauss; ++i) Sigmas[i] *= kernSig;
 /* convolvedStampSize is the size of the stamps that enter the chi2. 2 is added
-to get some area to estimate the differential background */
-int convolvedStampSize = int(ceil(NSig * WorstSeeing))+2;
+to get some area to estimate the differential background. */
+int convolvedStampSize = int(ceil(NSig * WorstSeeing)) + 2;
 HStampSize = HKernelSize + convolvedStampSize;
  cout << setprecision(oldprec);
 }
@@ -706,7 +819,34 @@ sigma = sigma/double(nval) - mean*mean;
 if (sigma>0)  sigma = sqrt(sigma); else sigma = 0;
 }
 
+double KernelFit::StampChi2(Stamp &stamp, double VSky, double InvGain)
+{
+Kernel kern(optParams.HKernelSize, optParams.HKernelSize);
+int  xc = stamp.xc;
+int  yc = stamp.yc;
+KernCompute(kern, xc, yc);
+int convolvedSize = optParams.ConvolvedSize(); /* should be odd */
+int hConvolvedSize = convolvedSize/2;
+DImage R_conv_K(convolvedSize,convolvedSize);
+Convolve(R_conv_K, stamp.source, kern);
+double chi2 = 0;
+int xs = xc - hConvolvedSize; 
+int ys = yc - hConvolvedSize;
+for (int j=0; j< convolvedSize; ++j)
+for (int i=0; i< convolvedSize; ++i)
+  {
+  double w_value = (*WorstImage)(i+xs, j + ys);
+  double res = R_conv_K(i,j) - w_value + WorstImageBack + BackValue(i + xs,j + ys); 
+  // from the computation of chi2 , why chi2<0 are due to bad columns? (see above comment)
+  // it looks like it is more due to a negative fluctuation.
+  // furthermore, although we weight for chi2, we don't seem to weight 
+  // for the matrix-vector filling.
 
+  chi2 += res*res/(InvGain*w_value+VSky);
+  }
+stamp.chi2 = chi2;
+return chi2;
+}
 
 
 /* removal of stamps which are found different after kernel fit, convolution and subtraction */
@@ -778,38 +918,6 @@ void KernelFit::FilterStamps()
   
 delete [] chi2s;
 }
-
-
-double KernelFit::StampChi2(Stamp &stamp, double VSky, double InvGain)
-{
-Kernel kern(optParams.HKernelSize, optParams.HKernelSize);
-int  xc = stamp.xc;
-int  yc = stamp.yc;
-KernCompute(kern, xc, yc);
-int convolvedSize = optParams.ConvolvedSize(); /* should be odd */
-int hConvolvedSize = convolvedSize/2;
-DImage R_conv_K(convolvedSize,convolvedSize);
-Convolve(R_conv_K, stamp.source, kern);
-double chi2 = 0;
-int xs = xc - hConvolvedSize; 
-int ys = yc - hConvolvedSize;
-for (int j=0; j< convolvedSize; ++j)
-for (int i=0; i< convolvedSize; ++i)
-  {
-  double w_value = (*WorstImage)(i+xs, j + ys);
-  double res = R_conv_K(i,j) - w_value + WorstImageBack + BackValue(i + xs,j + ys); 
-  // from the computation of chi2 , why chi2<0 are due to bad columns? (see above comment)
-  // it looks like it is more due to a negative fluctuation.
-  // furthermore, although we weight for chi2, we don't seem to weight 
-  // for the matrix-vector filling.
-
-  chi2 += res*res/(InvGain*w_value+VSky);
-  }
-stamp.chi2 = chi2;
-return chi2;
-}
-
-
 
 
 #define CONST_INTEGRAL
@@ -891,7 +999,7 @@ KernCompute(kernel_at_center, BestImage->Nx()/2, BestImage->Ny()/2);
      cout << setprecision(10);
      cout << " differential background " << endl;
      for (int ib=0; ib< optParams.BackVar.Nterms; ++ib) cout << solution[BackIndex(ib)] << " " ;
-     cout << endl; 
+     cout << endl;
    }
 
  double vx,vy,vxy; kernel_at_center.moments(vx,vy,vxy);
@@ -904,12 +1012,25 @@ KernCompute(kernel_at_center, BestImage->Nx()/2, BestImage->Ny()/2);
 
 double KernelFit::BackValue(const double&x, const double &y) const
 {
-double val= solution[BackIndex(0)]; /* the constant in the polynomial .. */
-for (int ib=1; ib < optParams.BackVar.Nterms; ++ib)
-  {
-  val += solution[BackIndex(ib)]*optParams.BackVar.Value(x,y,ib);
-  }
-return val;
+  double val=0.0;
+
+  if (optParams.BackVar.Nterms==0)
+    {
+      val= diffbackground[0]; /* the constant in the polynomial .. */
+      for (int ib=1; ib < optParams.SepBackVar.Nterms; ++ib)
+	{
+	  val += diffbackground[ib]*optParams.SepBackVar.Value(x,y,ib);
+	}
+    }
+  else
+    {
+      val= solution[BackIndex(0)]; /* the constant in the polynomial .. */
+      for (int ib=1; ib < optParams.BackVar.Nterms; ++ib)
+	{
+	  val += solution[BackIndex(ib)]*optParams.BackVar.Value(x,y,ib);
+	}
+    }
+  return val;
 }
 
 
@@ -957,6 +1078,8 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
       << " convolved Stamp size " << optParams.ConvolvedSize() << endl; 
  cout << " with " << BestImageStamps->size() << " stamps." << endl;
   clock_t tstart = clock();
+
+  FitDifferentialBackground(3.0);
 
   KernelsFill();
 
