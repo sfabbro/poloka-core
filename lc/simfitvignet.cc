@@ -8,7 +8,8 @@
 #include "typemgr.h"
 
 
-#define VALCUTOFF 0.
+
+//#define VALCUTOFF 0.
 
 TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
   : Kernel(Radius), Dx(Radius), Dy(Radius)
@@ -618,6 +619,7 @@ void SimFitVignet::UpdateResid_psf_gal()
 	  *ppsf = sump;
 	  *ppdx = sumx;
 	  *ppdy = sumy;
+#ifdef VALCUTOFF
 	  if(*pw == 0)
 	    *pow = 0;
 	  else {
@@ -626,6 +628,9 @@ void SimFitVignet::UpdateResid_psf_gal()
 	    else
 	      *pow = *pw;
 	  }
+#else
+	  *pow = *pw;
+#endif
 	  ++pdat;
 	}
     }
@@ -680,6 +685,7 @@ void SimFitVignet::UpdateResid_psf()
 	  *ppsf = sump;
 	  *ppdx = sumx;
 	  *ppdy = sumy;
+#ifdef VALCUTOFF
 	   if(*pw == 0)
 	    *pow = 0;
 	   else {
@@ -688,6 +694,9 @@ void SimFitVignet::UpdateResid_psf()
 	     else
 	       *pow = *pw;
 	   }
+#else
+	   *pow = *pw;
+#endif
 	   ++pdat;
 	}
     }
@@ -738,6 +747,7 @@ void SimFitVignet::UpdateResid_gal()
 	    }
 	  val = Star->flux* *ppsf + sumg + Star->sky;
 	  *pres = *pdat - val;
+#ifdef VALCUTOFF
 	  if(*pw == 0)
 	    *pow = 0;
 	  else {
@@ -746,6 +756,9 @@ void SimFitVignet::UpdateResid_gal()
 	    else
 	      *pow = *pw;
 	  }
+#else
+	  *pow = *pw;
+#endif
 	  ++pdat;  ++ppsf; 
 	}
     }
@@ -768,6 +781,7 @@ void SimFitVignet::UpdateResid()
     {
       val = Star->flux * *ppsf + Star->sky;
       *pres = *pdat - val;
+#ifdef VALCUTOFF
        if(*pw == 0)
 	 *pow = 0;
        else {
@@ -776,6 +790,9 @@ void SimFitVignet::UpdateResid()
 	 else
 	   *pow=*pw;
        }
+#else
+       *pow=*pw;
+#endif
        ++pres; ++pdat; ++ppsf; ++pw; ++pow;
     }
    resid_updated = true;
