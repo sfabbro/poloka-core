@@ -23,6 +23,7 @@ static void usage(const char *pgname)
   cerr << pgname << " <dbimage1> <dbimage2> <dbimage3> ... -r <referenceimage> -c <catalog>" << endl ;
   cerr << "options:"<< endl;
   cerr << "     -o <catalog> : output catalog name (default is calibration.list)" << endl;
+  cerr << "     -n # : max number of images (default is unlimited)" << endl;
   exit(1);
 }
 
@@ -51,7 +52,8 @@ int main(int argc, char **argv)
   string catalogname = "";
   string matchedcatalogname = "calibration.list";
   vector<string> dbimages;
-  
+  int maxnimages = 0;
+
   if (argc < 7)  {usage(argv[0]);}
   for (int i=1; i<argc; ++i)
     {
@@ -65,6 +67,7 @@ int main(int argc, char **argv)
 	case 'r' : referencedbimage = argv[++i]; break;
 	case 'c' : catalogname = argv[++i]; break;
 	case 'o' : matchedcatalogname = argv[++i]; break;
+	case 'n' : maxnimages = atoi(argv[++i]); break;
 	default : 
 	  cerr << "unknown option " << arg << endl;
 	  usage(argv[0]);
@@ -78,13 +81,15 @@ int main(int argc, char **argv)
   }
   cout << "catalog          = " << catalogname << endl;
   cout << "referencedbimage = " << referencedbimage << endl;
-  cout << "n. dbimages      = " << dbimages.size() << endl;
-  
+  cout << "n. dbimages      = " << dbimages.size();
+  if( maxnimages > 0 && dbimages.size() > maxnimages) cout << " limited to " << maxnimages;
+  cout << endl;
 
   // put all of this info in a LightCurveList which is the food of the photometric fitter
   LightCurveList lclist;
   lclist.RefImage = new ReducedImage(referencedbimage);
   for (unsigned int im=0;im<dbimages.size();++im) {
+    if ( maxnimages > 0 && im >=  maxnimages ) break;
     lclist.Images.push_back(new ReducedImage(dbimages[im]));
   }
   
@@ -205,7 +210,7 @@ int main(int argc, char **argv)
   // now we want to write many many things, let's make a list
   ofstream stream(matchedcatalogname.c_str());
   stream << "@NSTARS " << count_ok << endl;
-  stream << "@NIMAGES " << dbimages.size() << endl;
+  stream << "@NIMAGES " << lclist.Images.size() << endl;
   stream << "#x :" << endl;
   stream << "#y :" << endl;
   stream << "#flux :" << endl;
