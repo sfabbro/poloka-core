@@ -560,7 +560,7 @@ int Sub::DoIt()
       string newName = stack.Name();
       RemovePattern(newName, "new");
       string subName = "sub"+newName;
-      stack.sub = new ImageSubtraction(subName, *RefStack, *stack.newStack);
+      stack.sub = new ImageSubtraction(subName, RefStack, stack.newStack);
       stack.sub->Execute(DoFits+DoWeight);
       if (detectOnAllSub) stack.sub->MakeCatalog();
     }
@@ -586,7 +586,7 @@ int Sub::DoIt()
 	}
       GlobalNew = new ImageSum("new",allAlignedNew, RefStack);
       GlobalNew->Execute(DoFits + DoCatalog);
-      GlobalSub = new ImageSubtraction("sub", *RefStack, *GlobalNew);
+      GlobalSub = new ImageSubtraction("sub", RefStack, GlobalNew);
       GlobalSub->Execute(DoFits+DoWeight);
     }
   else // only one subtraction
