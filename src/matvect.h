@@ -85,7 +85,9 @@ class Mat {
   int readFits(const std::string &FitsName);
   int writeFits(const std::string &FitsName) const;
   int readASCII(std::istream& Stream);
+  int readASCII(const std::string &FileName);
   int writeASCII(std::ostream& Stream) const;
+  int writeASCII(const std::string &FileName) const;
   
   void Symmetrize(const char* UorL = "L");
   
@@ -139,6 +141,10 @@ class Vect {
 
   const double* Data() const {return data;};
   double* NonConstData() {return data;};
+
+   int writeASCII(std::ostream& Stream) const;
+   int readASCII(std::istream& Stream);
+
 
   void dump(std::ostream& Stream) const;
   friend std::ostream& operator << (std::ostream &stream, const Vect &v)

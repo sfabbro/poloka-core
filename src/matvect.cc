@@ -1,4 +1,6 @@
 #include <iostream>
+#include <iomanip> // for setprecision()
+#include <fstream>
 #include <matvect.h>
 #include <fitsio.h>
 
@@ -150,8 +152,24 @@ double& Mat::operator () (const unsigned int i, const unsigned int j) {
   return data[i+j*nx];
 }
 
+int Mat::writeASCII(const std::string &FileName) const
+{
+  std::ofstream S(FileName.c_str());
+  if (!S)
+    {
+      cout << " Mat::writeASCII() : cannot open " << FileName << endl;
+      return 0;
+    }
+  int status = writeASCII(S);
+  S.close();
+  return status;
+}
+
+
 int Mat::writeASCII(ostream& Stream) const {
   Stream << nx << " " << ny << endl;
+  int oldprec = Stream.precision();
+  Stream << setprecision(10);
   for(unsigned int j=0;j<ny;j++) {
     //Stream << "0.." << nx-1 << "," << j << ": ";
     for(unsigned int i=0;i<nx;i++) {
@@ -159,8 +177,23 @@ int Mat::writeASCII(ostream& Stream) const {
     }
     Stream << endl;
   }
+  Stream << setprecision(oldprec);
   return 0;
 }
+
+int Mat::readASCII(const std::string &FileName)
+{
+  std::ifstream S(FileName.c_str());
+  if (!S)
+    {
+      cout << " Mat::readASCII() : cannot open " << FileName << endl;
+      return 0;
+    }
+  int status = readASCII(S);
+  S.close();
+  return status;
+}
+
 
 int Mat::readASCII(istream& Stream) {
   unsigned int  fnx,fny;
@@ -598,6 +631,26 @@ double& Vect::operator () (const unsigned int i) {
   }
 #endif
   return data[i];
+}
+
+int Vect::writeASCII(ostream& Stream) const {
+  Stream << n << endl;
+  for(unsigned int i=0;i<n;i++) {
+    Stream << float((*this)(i)) << endl;
+  }
+  return 0;
+}
+
+int Vect::readASCII(istream& Stream)  {
+  unsigned int fn;
+  Stream >> fn;
+  allocate(fn);
+  double val;
+  for(unsigned int i=0;i<n;i++) {
+    Stream >> val;
+    (*this)(i) = val;
+  }
+  return 0;
 }
 
 void Vect::dump(ostream& Stream) const {
