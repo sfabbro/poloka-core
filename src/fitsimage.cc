@@ -784,6 +784,7 @@ int FitsHeader::AddOrModCard(const string &KeyName, const string &Card)
   char card[256];
   strncpy(card,Card.c_str(),80);
   int status = 0;
+  // in fact, fits_update_card adds or updates
   fits_update_card(fptr, keyName, card, &status);
   CHECK_STATUS(status, "fits_update_card",);
   return (!status);
@@ -842,7 +843,8 @@ bool FitsHeader::CopyKey(const std::string &KeyName, FitsHeader &To) const
   strncpy(keyName, KeyName.c_str(), 80);
   // copy everything verbatim (name ,value, comment)
   fits_read_card(fptr, keyName, card, &status);
-  fits_write_record(To.fptr, card, &status);
+
+  To.AddOrModCard(KeyName, card);
   CHECK_STATUS(status,"CopyKey", );
   return (status == 0);
 }
