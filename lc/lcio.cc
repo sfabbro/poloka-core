@@ -13,7 +13,7 @@ static RefStar* read_object(const string& line)
 {
   vector<string> words;
   DecomposeString(words, line);
-  if (words.size() < 2 || words.size() > 5)
+  if (words.size() < 2 || words.size() > 6)
     {
       cerr << " read_object(" << line << ") : Error: \n";
       cerr << "    format is wrong " << endl;
@@ -21,6 +21,7 @@ static RefStar* read_object(const string& line)
     }
 
   RefStar* star = new RefStar;
+  star->type=0; // defalut is star+galaxy
   star->x = atof(words[0].c_str());
   star->y = atof(words[1].c_str());
   vector<string>::const_iterator it=words.begin();
@@ -32,6 +33,7 @@ static RefStar* read_object(const string& line)
       if      (option[0]=="DATE_MIN") star->jdmin = JulianDay(option[1]);
       else if (option[0]=="DATE_MAX") star->jdmax = JulianDay(option[1]);
       else if (option[0]=="NAME")     star->name  = option[1];
+      else if (option[0]=="TYPE")     star->type  = atoi(option[1].c_str());
       else cerr << " read_object(" << line << ") : Error: \n" 
 		<< " unknown argument :'" << option[0] << "'\n";
     }

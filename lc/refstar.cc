@@ -41,7 +41,7 @@ string RefStar::WriteHeader_(ostream & Stream, const char* Num) const
 {
   if (!Num) Num = "";
   Stream << "# name : star name \n"
-	 << "# type : star type (0:sn+gal, 1:star, 2:star) \n"
+	 << "# type : star type (0:sn+gal, 1:star, 2:gal) \n"
 	 << "# jdmin : julian date of birth \n"
 	 << "# jdmax : julian date of death \n"
 	 << "# ra :  right ascension (J2000) \n"
