@@ -181,6 +181,8 @@ public:
   //! auto resize vignet according to the size of vignetref and call Update()
   void AutoResize();
 
+  //! use Vignet::Chi2 with additionnal debugging info
+  double Chi2() const;
 
   //! enable "cout << SimFitVignet << endl"
   friend ostream& operator << (ostream & stream, const SimFitVignet& myVignet);

@@ -151,6 +151,10 @@ SimFitRefVignet::SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, 
 // allocate if needed
 void SimFitRefVignet::Resize(const int Hx, const int Hy)
 {
+#ifdef FNAME
+  cout << " > SimFitRefVignet::Resize(const int Hx, const int Hy)" << endl;
+#endif
+  
   if  (Hx < 0 || Hy < 0) 
     {
       cerr << " SimFitRefVignet::Resize(" << Hx << "," << Hy << ") : impossible \n";
@@ -370,14 +374,17 @@ void SimFitVignet::BuildKernel()
     if(FileExists(kernelpath)) 
       {
 	KernelFit *kernel = new KernelFit();
+	cout << "   Reading kernel " << kernelpath << " ..." << endl;
 	obj_input<xmlstream> oi(kernelpath);
 	oi >> *kernel;
 	oi.close();
+	cout << "   done" << endl;
 	psfmatch.SetKernelFit(kernel);
+	cout << "   kernel loaded" << endl;
       }
     else
       {
-	cerr << " SimFitVignet::BuildKernelPsf() : cannot find kernel " 
+	cout << " SimFitVignet::BuildKernelPsf() : cannot find kernel " 
 	     << kernelpath << ", so we do it" << endl;
 	psfmatch.FitKernel(false);
 	obj_output<xmlstream> oo(kernelpath);
@@ -432,10 +439,21 @@ void SimFitVignet::UpdateResid_psf_gal()
 		}
 	    }
 	  
+	  if( (!(sump>0)) && (!(sump<0))) {
+	    cout << "ERROR nan with sump in UpdateResid_psf_gal" << sump << endl;
+	    cout << "Ref.Psf Kern 0 0 = " 
+		 << Ref.Psf(0,0) << " " 
+		 << Kern(0,0) << endl;
+	    abort();
+	  }
+
 	  *pres = *pdat - Star->flux*sump - sumg - Star->sky;
 	  *ppsf = sump;
 	  *ppdx = sumx;
 	  *ppdy = sumy;
+
+	  
+
 	  ++pdat;
 	}
     }
@@ -566,6 +584,22 @@ ostream& operator << (ostream& Stream, const SimFitVignet &Vig)
 	 << "     Kernel: " << Vig.Kern     << endl;
   return Stream;
 }
+
+double SimFitVignet::Chi2() const {
+  double chi2 = Vignet::Chi2();
+  if(chi2>=0)
+    return chi2;
+
+  // now debug 
+  cout << " star flux = " << Star->flux << endl;
+  cout << " galaxy(0,0) = " << VignetRef->Galaxy(0,0) << endl;
+  cout << " Data(0,0) = " << Data(0,0) << endl;
+  cout << " Psf(0,0) = " << Psf(0,0) << endl;
+  cout << " quit ..." << endl;
+  abort();
+}
+ 
+
 
 
 //=============================================================
