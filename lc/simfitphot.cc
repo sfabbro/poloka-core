@@ -116,7 +116,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
       zeFit.SetWhatToFit(FitFlux);
       zeFit.UseGalaxyModel(false);
       zeFit.DoTheFit();
-      zeFit.SetWhatToFit(FitFlux | FitSky | FitPos);
+      zeFit.SetWhatToFit(FitFlux  | FitPos);
       zeFit.UseGalaxyModel(false);
       break;
     case 2: //galaxy 
@@ -135,14 +135,14 @@ void SimFitPhot::operator() (LightCurve& Lc)
     cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
 #endif
     zeFit.FitInitialGalaxy(); // first fit inital galaxy
-    zeFit.write("sn_init0",dir,WriteGalaxy|WriteVignetsInfo|WriteMatrices);
+    //zeFit.write("sn_init0",dir,WriteGalaxy|WriteVignetsInfo|WriteMatrices);
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
 #endif
     zeFit.SetWhatToFit(FitFlux); // then flux
     zeFit.UseGalaxyModel(true);  
     zeFit.DoTheFit();
-    zeFit.write("sn_init1",dir,WriteLightCurve|WriteVignetsInfo|WriteMatrices);
+    //zeFit.write("sn_init1",dir,WriteLightCurve|WriteVignetsInfo|WriteMatrices);
     
 #ifdef DEBUG
     cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
