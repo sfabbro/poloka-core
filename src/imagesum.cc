@@ -207,6 +207,19 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
   for (ReducedImageIterator i = Images.begin(); i!= Images.end(); ++i)
     {
       ReducedImage *ri = *i;
+      bool ok = true ;
+      if (! FileExists(ri->FitsName())) 
+	{
+	  ok =  ri->MakeFits(); 
+	  cerr << " Building " <<ri->FitsName() << endl ;
+	}
+      if (!ok) continue ;
+      if ( ! ri->HasCatalog() )
+	{
+	  ok =  ri->MakeCatalog(); 
+	  cerr << " Building " << ri->CatalogName() << endl ;
+	}
+      if (!ok) continue ;
       double err;
       double phRatio = QuickPhotomRatio(*ri,*photomReference,err);
       Component current(ri,phRatio, weightingMethod);
@@ -738,6 +751,7 @@ void ImageSum::FitsHeaderFill()
 
   SetOriginalSkyLevel(originalskylevel);
   flatnoise = sqrt(flatnoise)/originalskylevel;
+  cerr << "Flatnoise " << flatnoise << endl ;
   SetFlatFieldNoise(flatnoise);
 
   SetOriginalSaturation(originalsatur);
