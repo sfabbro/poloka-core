@@ -93,7 +93,7 @@ int cholesky_invert(Mat &A, char* UorL)
 Mat::Mat(const unsigned int NX, const unsigned int NY) { 
  data=NULL;
  nx=ny=0;
- if(NX<=0 || NY<=0) {
+ if(NX<0 || NY<0) {
    cout << "Mat::Mat ERROR NX,NY =" << NX << "," << NY <<  endl;
  }else{
    allocate(NX,NY);
@@ -108,7 +108,7 @@ Mat::Mat(const Mat& other) {
 }
 
 void Mat::allocate(const unsigned int NX, const unsigned int NY) {
-  if(NX<=0 || NY<=0) {
+  if(NX<0 || NY<0) {
     cout << "Mat::allocate ERROR NX,NY =" << NX << "," << NY <<  endl;
   }
   if(nx!=NX || ny!=NY) {
@@ -116,7 +116,10 @@ void Mat::allocate(const unsigned int NX, const unsigned int NY) {
     ny=NY; 
     if (data) 
       delete [] data;
-    data = new double[nx*ny];
+    if(nx*ny>0)
+      data = new double[nx*ny];
+    else
+      data = 0;
   } 
   Zero();
 }
@@ -544,7 +547,7 @@ int Mat::SymMatInvert() {
 Vect::Vect(const unsigned int N) {
   data = NULL; 
   n=0;
-  if(N<=0) {
+  if(N<0) {
     cout << "Vect::Vect ERROR N = " << N <<  endl;
   }else{
     allocate(N);
@@ -559,14 +562,17 @@ Vect::Vect(const Vect& other) {
 }
 
 void Vect::allocate(const unsigned int N) {
-  if(N<=0) {
+  if(N<0) {
     cout << "Vect::allocate ERROR N = " << N <<  endl;
   }
   if(n!=N) {
     n=N;
     if (data) 
       delete [] data;
-    data = new double[n];
+    if(n>0)
+      data = new double[n];
+    else
+      data = 0;
   }
   Zero();
 };

@@ -222,7 +222,9 @@ void DImage::readFits(const string &FitsName)
 
 void DImage::readFromImage(const string& FitsFileName, const Window &Rect, DPixel value_when_outside_fits)
 {
+#ifdef DEBUG
   cout << "Rect : " << Rect.Nx() << " " <<  Rect.Ny() << endl;
+#endif
   Allocate(Rect.Nx(), Rect.Ny());
   
   
@@ -272,7 +274,9 @@ void DImage::readFromImage(const string& FitsFileName, const Window &Rect, DPixe
     long trc[] = {Rect.xend, Rect.yend};
     char fitsname[256];
     sprintf(fitsname ,"%s[%ld:%ld,%ld:%ld]",FitsFileName.c_str(),lbc[0],trc[0],lbc[1],trc[1]);
-    cout << string(fitsname) << endl;
+#ifdef DEBUG
+    cout << fitsname << endl;
+#endif
     FitsImage floatImg(fitsname);
     // promote to double
     for (int j=0; j < ny; ++j) for (int i=0; i<nx; ++i) (*this)(i,j) = floatImg(i,j);
@@ -646,9 +650,11 @@ void ConvolveKernels(Kernel &Result, const Kernel &Psf, const Kernel &Kern)
   int hry = hpy-hky;
   if ((Result.HSizeX() != hrx) || (Result.HSizeY() != hry)) 
     { 
+#ifdef DEBUG
       cout << " Changing result size in ConvolveKernels: " << endl;
       cout << "   hx : " << Result.HSizeX() << " -> " << hrx << endl
 	   << "   hy : " << Result.HSizeY() << " -> " << hry << endl;
+#endif
       Result = Kernel(hrx,hry);
     }
 
