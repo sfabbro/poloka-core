@@ -2,12 +2,12 @@ EXTRA_DIST = slasub.c alltelinst.cc alltelinst.h wcs_defines.h
 
 
 AM_CPPFLAGS = -I../objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@ @CMT_INCLUDES@ 
-AM_LDFLAGS = -L../objio -ltoadio @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@
+AM_LDFLAGS = -L../objio -ltoadio @XML_LIBS@ @SEX_LDFLAGS@ @CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CMT_LDFLAGS@ @CERNLIB_LDF4	LAGS@
 
 AM_YFLAGS = -l -d
 
 %_dict.cc : %.h
-	../objio/dictgen2 -o $@ $<
+	../objio/dictgen -o $@ $<
 
 
 #  psf.cc                      psf.h            
@@ -34,9 +34,8 @@ libtoads_la_SOURCES = \
   histo1d_dict.cc \
   histo2d_dict.cc \
   histo4d_dict.cc \
-  image_dict.cc \
-  dimage_dict.cc \
   detection_dict.cc \
+  gtransfo_dict.cc \
  \
   vutils.cc                   vutils.h         \
   wcscon.c                    wcscon.h         \
@@ -125,7 +124,7 @@ libtoads_la_SOURCES = \
 
 #  simulation.cc               simulation.h                       
 
-
+# suppression de image_dict.cc dimage_dict.cc
 
 
 # psf.h 
