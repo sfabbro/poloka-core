@@ -35,10 +35,11 @@ that Stars being inserted in the list have to be
 obtained using 'new'. The corresponding
 'delete' are invoked in the destructor. */
 
+// define_template_args StarList<Star>
 template<class Star> class StarList : public list <CountedRef<Star> >  {
 
-  // CLASS_VERSION(StarList,1);
-  //#define StarList__is__persistent
+  CLASS_VERSION(StarList,1);
+  #define StarList__is__persistent
  
 public:
 typedef CountedRef<Star> Element;
@@ -166,9 +167,10 @@ public :
 };
 
   //! enables \verbatim  cout << my_list; \endverbatim
+#ifndef SWIG
 template <class Star>  ostream & operator <<(ostream &stream, const StarList<Star> &List) 
     {List.dump(stream); return stream; };
-
+#endif 
 
 
 #ifdef USE_ROOT
