@@ -12,12 +12,12 @@ bin_PROGRAMS = \
  preptoads removeback selection \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
- fitnight invertdeadmap
+ fitnight invertdeadmap install_image
 
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
-AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio  -L$(top_builddir)/lc -L$(top_builddir)/dao -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff -L@libdir@  -ltoads -ltoadio  -lcernstuff -llapack -lblas @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
+AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio  -L$(top_builddir)/lc -L$(top_builddir)/dao -L$(top_builddir)/cern_stuff -L@libdir@  -ltoads -ltoadio  -lcernstuff -llapack -lblas @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
 
 
@@ -43,6 +43,7 @@ testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
+install_image_SOURCES = install_image.cc
 invertdeadmap_SOURCES = invertdeadmap.cc
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
