@@ -129,6 +129,7 @@ AC_CONFIG_FILES([Makefile
                  objio/Makefile
                  src/Makefile
   		 lc/Makefile
+	         mc/Makefile
                  telinst/Makefile
                  utils/Makefile
 		 cern_utils/Makefile
