@@ -14,17 +14,20 @@ bin_PROGRAMS = \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
- compute
+ compute enlargeimage
+
+# extinction readagain_extinction
+
 
 ### CPPFLAGS for all programs
 AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
 AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio  -L$(top_builddir)/lc -L$(top_builddir)/dao  -L$(top_builddir)/mc -L$(top_builddir)/cern_stuff -L@libdir@  -ltoads -ltoadio  -lcernstuff -llapack -lblas @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
+
 ### Programs depending on mc and dao
 makesub_SOURCES = makesub.cc
 makesub_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/mc $(AM_CPPFLAGS)
 makesub_LDFLAGS =  -ltoadsmc -ltoadsdao
-
 
 ### Programs depending on dao and lc
 make_lightcurve_SOURCES = make_lightcurve.cc
@@ -53,7 +56,9 @@ testdao_SOURCES = testdao.cc
 testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
 testdao_LDFLAGS =  -ltoadsdao
 
-
+enlargeimage_SOURCES = enlargeimage.cc
+#readagain_extinction_SOURCES = readagain_extinction.cc
+#extinction_SOURCES = extinction.cc
 compute_SOURCES = compute.cc
 wrapswarp_SOURCES = wrapswarp.cc
 joinlist_SOURCES = joinlist.cc

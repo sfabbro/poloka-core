@@ -40,7 +40,7 @@ int main(int nargs, char **args)
   
   // now transform image
   TransformedImage transformed(newimagename,*refimage,&transfo);
-  transformed.MakeFits();
+  transformed.Execute(DoFits | DoCatalog | DoSatur | DoWeight);
   
   
   return 0;

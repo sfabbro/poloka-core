@@ -47,7 +47,7 @@ int main(int nargs, char **args)
   ReducedImage geoRef(geoName);
   ReducedImageList aligned;
   ImagesAlign(toAlign, geoRef, aligned, DoFits | DoCatalog | DoSatur | DoWeight);
-
+  
   return EXIT_SUCCESS;
 }
 
