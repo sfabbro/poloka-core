@@ -72,29 +72,33 @@ class RollingStar : public BaseStar {
 };
 
 
-typedef list<RollingStar*>::const_iterator RollingStarCIterator;
-typedef list<RollingStar*>::iterator RollingStarIterator;
 
-//#include "starlist.h"
-class RollingStarList : public list<RollingStar*> 
-{
+
+#include "starlist.h"
+//class RollingStarList : public list<RollingStar*> 
+class RollingStarList : public StarList<RollingStar> 
+ 
+{ 
+  CLASS_VERSION(RollingStarList,1);
+  #define RollingStarList__is__persistent
  private:
   int Nlists;
  public:
 
   void  write(const string &FileName) ;
   
-
+  RollingStarList(){Nlists=0;}; // for persistence
   RollingStarList(const NStarMatchList & nstml, const ReducedImage &ImRef);
   
-  ~RollingStarList()
-    { for (RollingStarIterator s=begin(); s!=end(); ++s)
-      {delete *s; s=erase(s);}
-    }
+/*   ~RollingStarList() */
+/*     { for (RollingStarIterator s=begin(); s!=end(); ++s) */
+/*       {delete *s; s=erase(s);} */
+/*     } */
 
 };
 
-
+typedef RollingStarList::const_iterator RollingStarCIterator;
+typedef RollingStarList::iterator RollingStarIterator;
 
 
 //BaseStarList * Rolling2Base(RollingStarList * This);
