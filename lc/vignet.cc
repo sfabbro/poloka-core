@@ -194,19 +194,23 @@ void Vignet::KillOutliers(const double& nsigma) {
     sf += *pw * (*pres);
     sf2 += *pw * (*pres) * (*pres);
   }
-  double mean = sf/sw;
-  double sigma = sqrt(sf2/sw-mean*mean);
-  double thres = nsigma*sigma;
-  pw=Weight.begin();
-  pres=Resid.begin();
-  int nbad = 0;
-  for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
-    if (fabs(*pres-mean)>thres) {
-      *pw = 0;
-      nbad ++;
+  if(sw>0) {
+    double mean = sf/sw;
+    double sigma = sqrt(sf2/sw-mean*mean);
+    double thres = nsigma*sigma;
+    pw=Weight.begin();
+    pres=Resid.begin();
+    int nbad = 0;
+    for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
+      if (fabs(*pres-mean)>thres) {
+	*pw = 0;
+	nbad ++;
+      }
     }
+    cout << "   in Vignet::KillOutliers " << Image()->Name() << " nbad,mean,sigma = " << nbad << ","  << mean << ","  << sigma << endl;
+  }else{
+    cout << "   in Vignet::KillOutliers " << Image()->Name() << " null weights " << endl;
   }
-  cout << "   in Vignet::KillOutliers, nbad,mean,sigma = " << nbad << ","  << mean << ","  << sigma << endl;
 }
 
 void Vignet::RobustifyWeight(const double& alpha, const double& beta)

@@ -167,10 +167,12 @@ void SimFitPhot::operator() (LightCurve& Lc)
 #endif
      for (SimFitVignetIterator itVig = zeFit.begin(); itVig != zeFit.end(); ++itVig) {
        (*itVig)->KillOutliers();
+       (*itVig)->CheckWeight();
      }
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() refit FitFlux | FitPos | FitGal =============" << endl;
 #endif	
+     zeFit.SetWhatToFit(FitFlux | FitGal | FitPos | FitSky);
      zeFit.DoTheFit(30);
   }else{
     zeFit.DoTheFit(); 
