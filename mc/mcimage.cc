@@ -7,6 +7,7 @@
 #include "simsnstar.h"
 #include "fitsimage.h"
 #include "reducedimage.h"
+#include "daophotpsf.h"
 #include "daophotutils.h"
 #include "agaussian.h"
 
