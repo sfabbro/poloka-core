@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cmt.m4,v 1.2 2004/03/04 12:15:52 guy Exp $
+# $Id: cmt.m4,v 1.3 2004/03/09 17:01:36 guy Exp $
 # 
 # autoconf macro to check  cmt
 # 
@@ -54,12 +54,6 @@ CMT_LDFLAGS=`cd cmt; cmt show macro_value use_linkopts | sed 's/-Wl,-rpath/-R/g'
 # save these values for usage in Makefile.am
 AC_SUBST(CMT_INCLUDES)
 AC_SUBST(CMT_LDFLAGS)
-
-# new includes and ldflags for cmt
-# need to be modified in order to link to installed and uninstalled software
-THISPWD=`\pwd`
-CMT_NEW_INCLUDES="$THISPWD/src"
-CMT_NEW_LDFLAGS="$LDFLAGS -L$THISPWD/src/.libs -ltoads -R $THISPWD/src/.libs"
 
 AC_SUBST(CMT_NEW_INCLUDES)
 AC_SUBST(CMT_NEW_LDFLAGS)

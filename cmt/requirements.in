@@ -10,5 +10,5 @@ use lapack v1.1a
 
 macro prefix "@prefix@"
 macro exec_prefix "@exec_prefix@"
-include_dirs "@CMT_NEW_INCLUDES@ @includedir@"
-macro testconfig_linkopts "@CMT_NEW_LDFLAGS@  -L@libdir@ @LIBS@" 
+include_dirs "@includedir@"
+macro @PACKAGE@_linkopts   "-L@libdir@ -ltoads -ltoadio -lcernstuff" 
