@@ -12,7 +12,7 @@ class dict;
 class dict_writer_base {
 public:
   dict_writer_base(std::string const& filename) : filename_(filename) {}
-  ~dict_writer_base() {}
+  virtual ~dict_writer_base() {}
   
   std::string       filename() const { return filename_; }
   virtual void      write(dict const&)=0;

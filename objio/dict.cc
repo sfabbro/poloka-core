@@ -133,7 +133,7 @@ dict::member_t::member_t()
   : name(""), type(""),
     isPointer(false), isStatic(false),
     isTemplate(false), complexType(false),
-    isPersistent(false), isReference(false)
+    isReference(false), isPersistent(false)
 {
 }
 
@@ -205,7 +205,7 @@ void dict::update(templateInstantiation const& ti)
   
   // copy the list of symbolic types
   symbolicTypes_.clear();
-  int i,sz;
+  int i;
   for(i=0;i<ti.nTemplateArgs();i++)
     symbolicTypes_.push_back(ti.templateSymbolicArg(i));
 }
@@ -218,7 +218,7 @@ void dict::instantiate(templateInstantiation const& ti)
   symName_ = ti.fullSymbolicName(); 
   realName_ = ti.fullRealName(); // to avoid the >> 
   
-  int i,j,sz=size();
+  int i,sz=size();
   std::string sym;
   
   for(i=0;i<sz;i++) {

@@ -3,6 +3,7 @@
 // file codegen.cc
 // 
 // 
+#include <stdio.h>
 #include <sstream>
 #include <map>
 #include "codegen.h"
@@ -234,7 +235,7 @@ void codegen::classPersisterDecl_(CppClass const& cppclass)
     string ctn=cleanTypeName(cppclass.member(i).type().cppTypeName());
     
     cleanTypeList(cppclass.member(i).type().cppTypeName(),clean_list);
-    for(int j=0;j<clean_list.size();++j) {
+    for(j=0;j<clean_list.size();++j) {
     std::string &ctn = clean_list[j];
       it = types_.find(ctn);
       if(it == types_.end() ) {
@@ -652,7 +653,7 @@ int codegen::readOneTemplateInstantiation_(std::string const& classname,std::str
   int pos = 0;
   while(true){
     pos = findNextComaOutsideBracket(content,pos);
-    if(pos<0 || pos > content.size()) { 
+    if(pos<0 || (unsigned int)(pos) > content.size()) { 
       string oneclass = content;
       ti.realTypes_.push_back(content);
       sprintf(symbolicstring,"%c",symbolicchar++);
@@ -739,15 +740,15 @@ void codegen::checkTemplateInstantiation_(std::string const& className, std::vec
     ifs.getline(buff, 2048);
     sbuff=buff;
     int pos = sbuff.find(keyword);
-    if(pos<0 || pos>=sbuff.size())
+    if(pos<0 || (unsigned int)(pos)>=sbuff.size())
       continue;
     int pos2 = sbuff.find(className);
-    if(pos2<0 || pos2>=sbuff.size())
+    if(pos2<0 || (unsigned int)(pos2)>=sbuff.size())
       continue;
     sbuff.erase(pos,keyword.size());
     
     pos = sbuff.find("//");
-    if(pos>=0 && pos<sbuff.size())
+    if(pos>=0 && (unsigned int)(pos)<sbuff.size())
       sbuff.erase(pos,2);
     
     findRecursivelyTemplateInstantiation_(sbuff,className,tvec);
@@ -759,7 +760,7 @@ void codegen::classPersisterDecl_(dict const& dict_)
 {
   if(!dict_.isPersistent()) { return; }
   
-  unsigned int i,j;
+  unsigned int i;
   std::string nm;
   
   // the includes 

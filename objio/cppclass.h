@@ -1,10 +1,10 @@
 // -*- C++ -*-
-// $Id: cppclass.h,v 1.4 2004/03/09 10:36:27 nrl Exp $
+// $Id: cppclass.h,v 1.5 2004/05/19 08:15:48 guy Exp $
 // 
 // \file cppclass.h
 // 
-// Last modified: $Date: 2004/03/09 10:36:27 $
-// By:            $Author: nrl $
+// Last modified: $Date: 2004/05/19 08:15:48 $
+// By:            $Author: guy $
 // 
 // POTENTIAL PROBLEMS:
 //  * no way to know how many template args a class has. 
@@ -31,7 +31,7 @@ public:
 	   bool isTemplate=false);
   ~CppClass();
   
-  int                           size() const { return memberList_.size(); }
+  unsigned int                           size() const { return memberList_.size(); }
   CppClassMember const&         baseClass(int i) const { return baseList_[i]; }
   std::vector<CppClassMember> const&  baseList() const { return baseList_; }
   CppClassMember const&         member(int i) const { return memberList_[i]; }

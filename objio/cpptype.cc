@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: cpptype.cc,v 1.4 2004/03/08 09:20:29 guy Exp $
+// $Id: cpptype.cc,v 1.5 2004/05/19 08:15:48 guy Exp $
 // \file cpptype.cc
 // 
 // 
@@ -58,7 +58,7 @@ CppType CppType::instantiate(CppTemplateInstance const& ti) const
   //    return ret;
   //  }
   
-  int i,idx,sz=tok_.size();
+  int i,sz=tok_.size();
   for(i=0;i<sz;i++) {
     if(ti.hasSymName(tok_[i])) 
       ret.tok_[i]=ti.realName(tok_[i]);

@@ -14,7 +14,7 @@
 class dict_reader_base {
 public:
   dict_reader_base(std::string const& filename) : filename_(filename) {}
-  ~dict_reader_base() {}
+  virtual ~dict_reader_base() {}
   
   virtual unsigned int size() const=0;
   std::string          filename() const { return filename_; }
