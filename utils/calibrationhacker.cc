@@ -70,6 +70,7 @@ int main(int argc, char **argv)
     const BaseStar * bs = finder.FindClosest(point,MaxDist);
     if(!bs) {
       entry = inputdicstarlist.erase(entry);
+      continue;
     }
     nok++;
     const DicStar* calibratedstar = dynamic_cast<const DicStar *>(bs);
