@@ -33,7 +33,7 @@ swig_dict_reader::swig_dict_reader(std::string const& filename)
   doc_ = xmlParseFile(filename_.c_str());
   ptr_ = xmlDocGetRootElement(doc_);
   ctx_ = xmlXPathNewContext(doc_);
-  res_ = xmlXPathEvalExpression((xmlChar*)"/top/include/class|/top/include/template",  ctx_);
+  res_ = xmlXPathEvalExpression((xmlChar*)"/top/include/include/class|/top/include/include/template",  ctx_);
   sz_ = res_->nodesetval->nodeNr;
 }
 

@@ -17,6 +17,9 @@
 #include "xmlexceptions.h"
 #include "xmlstream.h"
 
+#define CLASS_VERSION(className,id) \
+static const unsigned short __version__=id;\
+template<class U,class V>friend class persister;\
 
 #endif
 

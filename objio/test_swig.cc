@@ -17,7 +17,6 @@
 #include "test_swig_dict.h"
 
 
-
 struct Toto {
   double x;
   double y;

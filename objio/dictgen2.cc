@@ -36,6 +36,8 @@ static struct option dictgen2_options[] = {
 };
 
 
+std::string runSwig(string const& headerName, bool verbose=false);
+
 
 void usage()
 {
@@ -109,18 +111,10 @@ main(int argc, char** argv)
   if(optind>=argc) usage();
   headerName=argv[optind];
   
-  std::string cmd;
-  std::string tmp_name;  
-  std::stringstream sstrm;
-  sstrm << getpid();
-  tmp_name = "dictgen_" + sstrm.str() + (std::string)".xml";  
-  cmd = "swig -c++ -xml -w401 -module persist -o " 
-    + tmp_name + " " + headerName;
-  if(verbose)
-    std::cout << cmd << std::endl;
-  system(cmd.c_str());
+  std::string swig_xml_output_filename;
+  swig_xml_output_filename = runSwig(headerName, verbose>0);
   
-  swig_dict_reader dr(tmp_name);
+  swig_dict_reader dr(swig_xml_output_filename);
   xmlschema_dict_writer xsdw(xmlSchemaOutputFileName);
   codegen cg(headerName);
   if(generate_persisters) {
@@ -142,11 +136,11 @@ main(int argc, char** argv)
       cg.generatePersister(d);
   }
   
-  if(tmp_name!="" && !generate_swig_stuff) 
-    remove(tmp_name.c_str());
+  if(swig_xml_output_filename!="" && !generate_swig_stuff) 
+    remove(swig_xml_output_filename.c_str());
   
   if(generate_swig_stuff)
-    rename(tmp_name.c_str(), swigOutputFileName.c_str());
+    rename(swig_xml_output_filename.c_str(), swigOutputFileName.c_str());
   
   if(generate_persisters)
     cg.closeOutputFiles();
@@ -183,6 +177,36 @@ main(int argc, char** argv)
 
 
 
+std::string  runSwig(string const& headerName, bool verbose)
+{
+  std::string cmd, swig_xml_output_name, config_file_name;
+  std::stringstream sstrm;
+  sstrm << getpid();
+  
+  // actually, we need to generate a real config file
+  config_file_name = "dictgen2_" + sstrm.str() + ".swig_config";
+  ofstream ofs_config(config_file_name.c_str());
+  ofs_config << "%module test" << std::endl
+	     << "%{" << std::endl
+	     << "%}" << std::endl
+	     << "%define CLASS_VERSION(className,id) " 
+	     << "static const unsigned short __version__=id; template<class ZZ1,class ZZ2> friend class persister;" << std::endl
+	     << "%enddef" << std::endl
+	     << "%include \"" << headerName << "\"" << std::endl;
+  ofs_config.close();
+  
+  swig_xml_output_name = "dictgen2_" + sstrm.str() + (std::string)".xml";  
+  cmd = "swig -c++ -xml -w401 -module persist -o " 
+    + swig_xml_output_name + " " + config_file_name;
+  if(verbose) std::cout << cmd << std::endl;
+  
+  system(cmd.c_str());
+  
+  remove(config_file_name.c_str());
+  return swig_xml_output_name;
+}
+
+
 
 
 
@@ -204,3 +228,16 @@ main(int argc, char** argv)
 
 //  std::string cmd = "swig -c++ -xmllite -xml -module persist -o " 
 //    + tmp_name + " " + headerName;
+
+
+  //  std::string cmd;
+  //  std::string tmp_name;  
+  //  std::stringstream sstrm;
+  //  sstrm << getpid();
+  //  tmp_name = "dictgen_" + sstrm.str() + (std::string)".xml";  
+  //  cmd = "swig -c++ -xml -w401 -module persist -o " 
+  //    + tmp_name + " " + headerName;
+  //  if(verbose)
+  //    std::cout << cmd << std::endl;
+  //  system(cmd.c_str());
+  
