@@ -7,6 +7,7 @@
 #include "reducedimage.h"
 #include "frame.h"
 #include "rootstuff.h"
+#include "countedref.h"
 
 class Image;
 class FitsImage;
@@ -14,12 +15,11 @@ class FitsImage;
 
 /* a (virtual) class for generic image transformation */
 
-class ImageTransfo 
+class ImageTransfo : public RefCount
 {
  protected:
     string SourceName();
   public :
-
 
 //!
   virtual bool IsValid() const = 0;
@@ -53,31 +53,41 @@ class ImageTransfo
 
 };
 
+typedef CountedRef<ImageTransfo> ImageTransfoRef;
 
 
 /*! geometric transfo of a reduced image.  */
 
+#include "persistence.h"
+
 class ImageGtransfo : public ImageTransfo {
  private:
+
+CLASS_VERSION(ImageGtransfo,1)
+#define ImageGtransfo_is_persistent
+
+
+
   string geomRefName; 
-  CountedRef<Gtransfo> transfoFromRef;
-  CountedRef<Gtransfo> transfoToRef;
+  GtransfoRef transfoFromRef;
+  GtransfoRef transfoToRef;
   double scaleFactor; // 1d scale factor (== sqrt(jacobian))
   Frame outputImageSize; // the frame on which we want the input image to be resampled.
   
 public:
+
   //!
-  ImageGtransfo(const Gtransfo *TransfoFromRef, const Gtransfo* TransfoToRef, const Frame &OutputImageSize, const string &GeomRefName );
+  ImageGtransfo(const Gtransfo* TransfoFromRef, const Gtransfo* TransfoToRef, const Frame &OutputImageSize, const string &GeomRefName );
   //! the output image size is the one of the Ref. Finds the transfo(s).
   ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign);
   //!
   ImageGtransfo();
   //!
-  const Gtransfo *TransfoFromRef() const {return &(*transfoFromRef);}
+  const GtransfoRef TransfoFromRef() const {return transfoFromRef;}
   //!
-  const Gtransfo *TransfoToRef() const {return &(*transfoToRef);}
+  const GtransfoRef TransfoToRef() const {return transfoToRef;}
   //!
-  const Gtransfo* FromRef() const;
+  const GtransfoRef FromRef() const;
 
   //!
   string GeomRefName() const { return geomRefName;}
@@ -103,6 +113,7 @@ public:
 
 };
 
+typedef CountedRef<ImageGtransfo> ImageGtransfoRef;
 
 
 //! class that operates the transformation of a ReducedImage (image(s) + list) 
@@ -112,10 +123,14 @@ To geometrically align a set of images on the same reference, use
   ImagesAlign(). If you want to sum them, uses ImagesAlignAndSum() */
 class TransformedImage : public ReducedImage {
  private:
-  ImageTransfo *transfo;
+
+CLASS_VERSION(TransformedImage,1)
+#define TransformedImage_is_persistent
+
+  ImageTransfoRef transfo;
   string sourceName;
-  ReducedImage *source;  //!
-  ReducedImage *geomRef; //!
+  ReducedImageRef source;  //!
+  //ReducedImageRef geomRef; //!
   void init(const ReducedImage &Source,const ImageTransfo *Transfo);
 
 
@@ -131,28 +146,33 @@ class TransformedImage : public ReducedImage {
   //! assumes that the TransformedImage already exists
     TransformedImage(const string &Name);
 
-  TransformedImage();
+  //! createur vide pour persister
+  TransformedImage(){};
 
   //! Original (untransformed) image name
   string  SourceName() const { return sourceName;}
 
   //! Original (untransformed) image.
-  ReducedImage *Source() const;
+  ReducedImageRef Source() const;
+
+
+#ifdef STORAGE // pas utilise
+  //! Geometric reference (only applicable if ImageTransfo is ImageGtransfo)
+  ReducedImageRef GeometricReference();
 
   //! Geometric reference name (only applicable if ImageTransfo is ImageGtransfo)
   string GeomRefName()const ;
+#endif
 
-  //! Geometric reference (only applicable if ImageTransfo is ImageGtransfo)
-  ReducedImage *GeometricReference();
 
   //! involved transformation.
-  const ImageTransfo *Transfo() const {return transfo;};
+  const ImageTransfoRef Transfo() const {return transfo;};
 
   //! Gtransfo from reference to transformed image. Assumes that ImageTransfo is an ImageGtransfo.
   const Gtransfo* FromRef() const;
 
 //! ImageGtransfo from reference to transformed image. Assumes that ImageTransfo is an ImageGtransfo.
-  const  ImageGtransfo* IMAGEGTransfo() const ;
+  const  ImageGtransfoRef IMAGEGTransfo() const ;
 
 
   virtual void dump(ostream& s = cout) const;
@@ -172,15 +192,13 @@ class TransformedImage : public ReducedImage {
   // TransformedImage(string &ImageTransfoName, ReducedImage &Source, string Name); 
   ~TransformedImage();
 
-#ifdef USE_ROOT
-  ClassDef(TransformedImage,1)
-#endif /* USE_ROOT */
-
 };
 
 #include "imagelist.h"
 //! a handy typedef
-//#ifdef STORAGE why in storage ? (DH)
+//#ifdef STORAGE : en storage jusque la parce que
+// les routines genre ImageSum manipulent des ReducedImageList
+// et non des TransformedImageList.
 typedef ImageList<TransformedImage> TransformedImageList;
 typedef TransformedImageList::iterator       TransformedImageIterator;
 typedef TransformedImageList::const_iterator TransformedImageCIterator;

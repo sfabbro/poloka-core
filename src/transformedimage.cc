@@ -19,8 +19,12 @@ string TransformedName(const string &ToTransform, const string &Ref)
 
 #include "imagematch.h"
 
-ImageGtransfo::ImageGtransfo(const Gtransfo *TransfoFromRef, const Gtransfo *TransfoToRef, 
-			     const Frame &OutputImageSize, const string &GeomRefName)
+
+
+ImageGtransfo::ImageGtransfo(const Gtransfo *TransfoFromRef, 
+			     const Gtransfo *TransfoToRef, 
+			     const Frame &OutputImageSize, 
+			     const string &GeomRefName)
 {
   geomRefName = GeomRefName;
   transfoFromRef = (TransfoFromRef) ? TransfoFromRef->Clone() : NULL ;
@@ -31,7 +35,7 @@ ImageGtransfo::ImageGtransfo(const Gtransfo *TransfoFromRef, const Gtransfo *Tra
     {scaleFactor = 1./sqrt(fabs(transfoFromRef->Jacobian(outputImageSize.Nx()/2, outputImageSize.Ny()/2)));}
 }
 
-const Gtransfo* ImageGtransfo::FromRef() const
+const GtransfoRef ImageGtransfo::FromRef() const
 {
   return transfoFromRef;
 }
@@ -40,7 +44,7 @@ const Gtransfo* ImageGtransfo::FromRef() const
 ImageTransfo* ImageGtransfo::Clone() const
 {
   return new ImageGtransfo(transfoFromRef, transfoToRef, outputImageSize, geomRefName);
-}
+  }
 
 ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign)
 {
@@ -360,7 +364,7 @@ void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Tran
 
 ImageGtransfo::~ImageGtransfo()
 {
- 
+
 }
 
 
@@ -372,7 +376,6 @@ void TransformedImage::init(const ReducedImage &Source,
   source = Source.Clone();
   sourceName = Source.Name();
   transfo = Transfo->Clone();
-  geomRef = NULL;
 }
 
 TransformedImage::TransformedImage(const string &TransformedName, 
@@ -393,12 +396,7 @@ TransformedImage::TransformedImage(const string &TransformedName,
 }
 
 
-TransformedImage::TransformedImage()
-{
-  source = NULL;
-  transfo = NULL;
-  geomRef = NULL;
-}
+
 
 bool TransformedImage::Create(const string &Where)
 {
@@ -411,9 +409,6 @@ return true;
 
 TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 {
-  transfo = NULL;
-  source = NULL;
-  geomRef = NULL;
   string fileName =   EverythingElseFileName();
   if (FileExists(fileName))
     {
@@ -423,8 +418,8 @@ TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 
 
 
-
-ReducedImage *TransformedImage::Source() const
+#ifdef STORAGE //?? c'est quoi ???
+ReducedImageRef TransformedImage::Source() const
 { 
   if (!source)
     { /* to have a const routine that changes the object: */
@@ -433,6 +428,7 @@ ReducedImage *TransformedImage::Source() const
     }
   return source;
 }
+#endif
 
 void TransformedImage::dump(ostream& s) const
 {
@@ -442,37 +438,39 @@ void TransformedImage::dump(ostream& s) const
 }
 
 
-
-const  ImageGtransfo* TransformedImage::IMAGEGTransfo() const
-{
-  ImageGtransfo *igt = dynamic_cast<ImageGtransfo*>(transfo);
-  if (!igt) { cerr << "Dynamic cast failed in TransformedImage::GTransfo " << endl ; return NULL;}
-  return igt;
+const  ImageGtransfoRef TransformedImage::IMAGEGTransfo() const
+{ 
+  // transfo est elle une ImageGtransfo ?
+  const ImageGtransfo *test = transfo; // par la classe template.
+  if (!test) { cerr << "Dynamic cast failed in TransformedImage::GTransfo " << endl ; return ImageGtransfoRef();} // ie NULL
+  ImageGtransfoRef gref(test);
+  return(gref);
 }
 
 
 const Gtransfo* TransformedImage::FromRef() const
 {
-  const ImageGtransfo *igt = IMAGEGTransfo();
-  if (!igt) return NULL;
-  return igt->FromRef();
+  const ImageGtransfoRef gref = IMAGEGTransfo();
+  if (gref == NULL ) return NULL;
+  return gref->FromRef();
 }
 
-
-ReducedImage *TransformedImage::GeometricReference()
+#ifdef STORAGE
+ReducedImageRef TransformedImage::GeometricReference()
 {
-  const ImageGtransfo *igt = IMAGEGTransfo();
-  if (!igt) return NULL;
-  geomRef = ReducedImageRead(igt->GeomRefName());
+  const ImageGtransfoRef gref = IMAGEGTransfo();
+  if (gref == NULL ) return CountedRef<ReducedImage>(); // soit = NULL
+  geomRef = ReducedImageRead(gref->GeomRefName());
   return geomRef;
 }
 
 string TransformedImage::GeomRefName() const
 {
-  const ImageGtransfo *igt  = IMAGEGTransfo();
-  if (!igt) return NULL;
-  return (igt->GeomRefName());
+   const ImageGtransfoRef gref = IMAGEGTransfo();
+  if (gref == NULL) return NULL;
+  return (gref->GeomRefName());
 }
+#endif
 
 bool  TransformedImage::MakeCatalog() 
 {
@@ -604,8 +602,6 @@ ReducedImage *TransformedImage::Clone() const
 TransformedImage::~TransformedImage()
 {
   writeEverythingElse();
-  if (source) delete source;
-  if (transfo) delete transfo;
 }
 
 
