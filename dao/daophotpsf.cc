@@ -105,6 +105,14 @@ double DaoPsf::Value(const int i, const int j, const double &Xc, const double &Y
   // dx,dy are the distance from the center of the pixel to the center of the star
   float dx = i-Xc;
   float dy = j-Yc;
+  
+  // we need this check otherwise we get overflow in USEPSF
+  if(fabs(dx)>radius || fabs(dy)>radius) {
+    //cout << "return 0" << endl;
+    DpDx=0;
+    DpDy=0;
+    return 0;
+  }
 
   // see a fortran example of use of usepsf in ../dao_stuff/addstar.f
   // there is no Xc-1 because Xc in in TOADS coordinate system (but xpsf is in daophot system)
@@ -120,11 +128,16 @@ double DaoPsf::Value(const int i, const int j, const double &Xc, const double &Y
 		      &npsf, &npar, &nexp, &nfrac, &deltax, &deltay, 
 		      &dvdxc, &dvdyc);  
 
+   
   // normalize daophot from internal cooking (see manual)
   double scale = pow(10, 0.4*(psfmag-DAOPHOT_APER_ZP));
   
   DpDx = dvdxc*scale;
   DpDy = dvdyc*scale;
+
+  //if(!((val*scale)>0)) {
+  // cout << "DaoPsf::Value val,psfmag,scale " << val << "," << psfmag << "," << scale << endl;
+  //}
 
   return val*scale;
 }

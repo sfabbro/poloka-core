@@ -1161,7 +1161,8 @@ C
       INTEGER MAXPSF, MAXPAR, MAXEXP
 C      PARAMETER (MAXPSF=207, MAXPAR=6, MAXEXP=10)
 C
-      REAL PAR(*), PSF(MAXPSF,MAXPSF,*), JUNK(MAXEXP)
+c      REAL PAR(*), PSF(MAXPSF,MAXPSF,*), JUNK(MAXEXP)
+      REAL PAR(MAXPAR), PSF(MAXPSF,MAXPSF,MAXEXP), JUNK(MAXEXP)
 C
       REAL PROFIL, BICUBC
 C
@@ -1178,6 +1179,7 @@ c     type*,1,usepsf,bright,dx,dy,(par(k),k=1,5)
       DVDYC = BRIGHT*DVDYC
       IF (NTERM .LT. 0) RETURN
       MIDDLE = (NPSF+1)/2
+      
 C
 C The PSF look-up tables are centered at (MIDDLE, MIDDLE).
 C
@@ -1216,11 +1218,23 @@ C     END IF
       LX = INT(XX)
       YY = 2.*DY+MIDDLE
       LY = INT(YY)
+
 C
 C This point in the stellar profile lies between columns LX and LX+1,
 C and between rows LY and LY+1 in the look-up tables.
 C
       DO K=1,NTERM
+
+c     julien check bounds
+         IF (LX-1.LE.0 .OR. LX-1.GT.MAXPSF ) THEN ! JG
+            PRINT*,'OUT OF BOUNDS LX ', LX-1,MAXPSF ! JG
+         ELSE! JG
+         IF (LY-1.LE.0 .OR. LY-1.GT.MAXPSF ) THEN ! JG
+            PRINT*,'OUT OF BOUNDS LY ', LY-1,MAXPSF ! JG
+         ELSE! JG
+         IF (K.LE.0 .OR.K.GT.MAXEXP ) THEN! JG
+            PRINT*,'OUT OF BOUNDS K ', K,MAXEXP ! JG
+         ELSE! JG
          CORR = BICUBC(PSF(LX-1,LY-1,K), MAXPSF, 
      .        XX-REAL(LX), YY-REAL(LY), DFDX, DFDY)
 c     type*,2,junk(k),corr
@@ -1228,6 +1242,9 @@ c     type*,2,junk(k),corr
 c     type*,3,usepsf
          DVDXC = DVDXC-JUNK(K)*DFDX
          DVDYC = DVDYC-JUNK(K)*DFDY
+         ENDIF! JG
+         ENDIF! JG
+         ENDIF! JG
       END DO
       RETURN
       END!
