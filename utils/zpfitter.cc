@@ -15,6 +15,8 @@ static void usage(const char *pgname)
   cerr << pgname << " -c <dicstarlist>" << endl;
   cerr << "options:  -m <keyofreferencemagnitude> (default is \"mag\")"<< endl;
   cerr << "          -f <keyofflux>               (default is \"flux\")" << endl ;
+  cerr << "          -o <output ASCII file>       (default is zpfitter.dat)" << endl ;
+  
   exit(1);
 }
 
@@ -24,6 +26,7 @@ int main(int argc, char **argv)
   string catalogname = "";
   string magkey = "mag";
   string fluxkey = "flux";
+  string outputfilename = "zpfitter.dat";
   
   if (argc < 3)  {usage(argv[0]);}
   for (int i=1; i<argc; ++i)
@@ -39,6 +42,7 @@ int main(int argc, char **argv)
 	case 'm' : magkey = argv[++i]; break;
 	case 'c' : catalogname = argv[++i]; break;
 	case 'f' : fluxkey = argv[++i]; break;
+	case 'o' : outputfilename = argv[++i]; break;
 	default : 
 	  cerr << "unknown option " << arg << endl;
 	  usage(argv[0]);
@@ -83,7 +87,7 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
   double zp,rms;
-  FILE *file = fopen("zpfitter.dat","w");
+  FILE *file = fopen(outputfilename.c_str(),"w");
   
   // gaussian
   zp = gaussianfit(values,count,zp,rms,3.,true);
