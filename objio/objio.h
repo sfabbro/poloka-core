@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.18 2004/04/15 11:42:17 guy Exp $
+// $Id: objio.h,v 1.19 2004/06/01 16:11:31 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/04/15 11:42:17 $
+// Last modified: $Date: 2004/06/01 16:11:31 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -426,7 +426,7 @@ public:
       abort();
     }
     
-    
+    delete p;
     return const_cast< T* >(add);
  }
   
@@ -439,6 +439,7 @@ public:
     T* pt = dynamic_cast<T*>(check_address_(addr));
     if(!pt) {
       pt = read_next_object<T>();
+      cout << " read_next_object pt=" << pt << endl;
       register_address_(addr,pt);
     }
     r = pt;

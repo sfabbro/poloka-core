@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: typemgr.h,v 1.4 2004/03/08 17:41:02 guy Exp $
+// $Id: typemgr.h,v 1.5 2004/06/01 16:11:31 guy Exp $
 // 
 // \file typemgr.h
 // 
@@ -27,13 +27,13 @@ public:
     typename std::map<std::string,persister_base<IOS>*>::const_iterator it;
     it = persisterMap_rtti_->find(obj_rttiname);
     if(it==persisterMap_rtti_->end()) return 0;
-    return it->second;
+    return it->second->clone();
   }
   static persister_base<IOS>*   getPersister_xml(std::string const& obj_xmlname) {
     typename std::map<std::string,persister_base<IOS>*>::const_iterator it;
     it = persisterMap_xml_->find(obj_xmlname);
     if(it==persisterMap_xml_->end()) return 0;
-    return it->second;
+    return it->second->clone();
   }
   
 private:
