@@ -37,6 +37,10 @@ DatSim::Read(const string &FileName, string const & filter)
 // Reads the parameters for the simulation
 void DatSim::LitDataCards(DataCards &Data, string const & filter)
 {
+  hasZeroPoint = Data.HasKey("ZERO_POINT");
+  if (hasZeroPoint) zeroPoint = Data.DParam("ZERO_POINT");
+  else zeroPoint = 99;
+
   Methode = Random;
   string line = Data.SParam("GENERATION_METHOD");
   if (strstr(line.c_str(),"FAKES_INHOST"))
@@ -110,9 +114,15 @@ void DatSim::LitDataCards(DataCards &Data, string const & filter)
 	  maxGalMag = i_maxGalMag ;
 	  cerr << "Unrecognized filter : " << filter << ", choosing i filter specification." << endl ;
 	}
-  
 
+#define  ASSIGN_IF_PRESENT(Variable,Cards,TAG) \
+    if (Cards.HasKey(TAG)) Variable = Cards.DParam(TAG)
+  ASSIGN_IF_PRESENT(minMag, Data,"MIN_FAKE_MAG");
+  ASSIGN_IF_PRESENT(maxMag, Data,"MAX_FAKE_MAG");
+  ASSIGN_IF_PRESENT(LimGalMag, Data,"LIM_GAL_MAG");
+  ASSIGN_IF_PRESENT(maxGalMag, Data,"MAX_GAL_MAG");
 }
+
 void DatSim::Print()
 {
   cout << " ** DatSim ** " << endl ;
@@ -249,7 +259,7 @@ void SaveModel(SEStarList & stl, Image const & ref, string nom )
  // model stars/galaxies are not saved each time. 
  if ( ! FileExists(name) )
    {
-     Image test(ref.Nx(),ref.Ny() );
+     FitsImage test(name,ref.Nx(),ref.Ny() );
      {
        GtransfoIdentity identity;
        for (SEStarCIterator c = stl.begin() ; c != stl.end() ; c++)
@@ -258,10 +268,8 @@ void SaveModel(SEStarList & stl, Image const & ref, string nom )
 	   model.AddToImage(ref, test,(Gtransfo *) &identity);
 	 }
      }
-     
-     FitsImage tt(name,test);
    }
-}  
+}
 
 static
 void SaveModel(SEStarList & stl, 
@@ -274,10 +282,10 @@ void SaveModel(SEStarList & stl,
 
 
 
-static
+
 void 
 PreSelectModelStars(SEStarList const &starList, 
-		    SEStarList &BellesEtoiles, Image * model)
+		    SEStarList &BellesEtoiles, const Image &model)
 {
 
   // Vire les objets a problemes 
@@ -285,15 +293,13 @@ PreSelectModelStars(SEStarList const &starList,
   starList.CopyTo(stl);
   cout << "List size for stars selection: " << stl.size() << endl;
   RemoveNonOKObjects(stl);
- cout << "List size after good objetcs selection: " << stl.size() << endl;
+  cout << "List size after good objets selection: " << stl.size() << endl;
   // On cherche les belles etoiles dans l'image
   SEStarList etoiles;
   StarFinder(stl,etoiles);
   // On vire les etoiles en dessous d'un certain signal sur bruit 
   cout << "List size after stars selection: " << etoiles.size() << endl;
 
-  SaveModel(etoiles,*model,"etoiles");
-  
   int n = 0 ;
   BaseStarList *lb = ( BaseStarList *) &etoiles;
   for (SEStarIterator it= etoiles.begin(); it!= etoiles.end(); ++it )
@@ -302,14 +308,11 @@ PreSelectModelStars(SEStarList const &starList,
       SEStar *mystar = *it;
       double STNoise = mystar->flux / mystar->EFlux();
       bool no_neigbor = ! (mystar->HasBigCloseNeighbor(*lb, 1.5*mystar->StampSize(), 1.e-3)) ;
-      bool checkflux = true ;
-      if ( model != NULL )
-	{
-	  double sumflux = model->SumPixels(mystar->x, mystar->y, mystar->StampSize());
-	  double error = abs( (mystar->flux - sumflux) / mystar->flux ) ;
+      double sumflux = model.SumPixels(mystar->x, mystar->y, 
+				       mystar->StampSize());
+      double error = abs( (mystar->flux - sumflux) / mystar->flux ) ;
 	  // ok if | error | < 0.2 on model image, supposed to be very clean. 
-	  checkflux = ( error < 0.2 ) ;
-	}
+      bool checkflux = ( error < 0.2 ) ;
       if ( checkflux && no_neigbor && (STNoise > 75 )) // convient pour SNLS
 	{
 	  BellesEtoiles.push_back(new SEStar(*mystar));
@@ -323,9 +326,9 @@ PreSelectModelStars(SEStarList const &starList,
 
 // short utilitaries used in PrefIll Constructor
 
-void 
+static void 
 SelectionOfModelStars(SEStarList const &starList,
-		      SEStarList &BellesEtoiles, Image * model)
+		      SEStarList &BellesEtoiles, const Image &model)
 {
   unsigned int MaxNumber = 100 ;
   PreSelectModelStars(starList, BellesEtoiles, model);
@@ -402,9 +405,10 @@ bool SelectStarsInList(ReducedImageList & imglist, SEStarList & stl)
 
 bool 
 SelectModelStars(ReducedImageList & imglist, SEStarList const &stlref,
-		 SEStarList &BellesEtoiles, Image * model)
+		 SEStarList &BellesEtoiles, const Image &model)
 {
   PreSelectModelStars(stlref,BellesEtoiles,model);
+  SaveModel(BellesEtoiles,model,"etoiles");
   cerr << "Number of selected stars : " << BellesEtoiles.size() << endl ;
   bool ok = SelectStarsInList(imglist, BellesEtoiles);
   if (!ok)  return false ;
@@ -476,7 +480,12 @@ void
 ForSim::Fill(ReducedImage const & RefImage)
 {
  
-  zero_point = RefImage.AnyZeroPoint() ;
+  if (datsim.HasZeroPoint())
+    zero_point = datsim.ZeroPoint();
+  else 
+    zero_point = RefImage.AnyZeroPoint() ;
+
+  cout << " using zero point " << zero_point << endl;
 
   XCCD = 0 ;
   YCCD = 0 ;
@@ -496,16 +505,20 @@ ForSim::Fill(ReducedImage const & RefImage)
 	   << YCCD << endl;
     }
  
- 
+  // to generate in galaxies, we nned a galaxy list
   if (datsim.Methode == InHost || datsim.Methode == AdaptedToHost)
-    {
-      SEStarList liste(RefImage.CatalogName());
-      cerr << "Image de selection des Galaxies :" << RefImage.Name() 
-       << " Zero Point : " << zero_point << endl ;
-      SelectHostGalaxies(datsim, BellesGal, liste, zero_point );
-      SaveModel(BellesGal, RefImage, "galaxies" );
-    }
+    // if it was already set, don't overwrite it
+    if (BellesGal.size() == 0)
+      {
+	SEStarList liste(RefImage.CatalogName());
+	cerr << "Image de selection des Galaxies :" << RefImage.Name() 
+	     << " Zero Point : " << zero_point << endl ;
+	SelectHostGalaxies(datsim, BellesGal, liste, zero_point );
+	SaveModel(BellesGal, RefImage, "galaxies" );
+      }
+    else cerr << " user already provided a galaxy list " << endl;
 }
+
 
 ForSim::ForSim(ReducedImage const & RefImage)
 {
@@ -675,17 +688,26 @@ ForSimWModel::Fill(ReducedImage const & RefImage,
 
 
 ForSimWModel::ForSimWModel(ReducedImage const & RefImage,
-	       SEStarList const & ListForModelStars, 
-	       const ImageGtransfo* tf)
+			   SEStarList const & ListForModelStars, 
+			   const ImageGtransfo* tf)
 {
- 
-  // datacard lue dans le default
   string band = RefImage.Band();
   datsim.Read(DefaultDatacards(), band);
   datsim.Print();
   Fill(RefImage,ListForModelStars,tf);
 }
 
+ForSimWModel::ForSimWModel(ReducedImage const & RefImage, 
+			   const SEStarList &ListForModelStars,
+			   const SEStarList &ListForGalaxies,
+			   const ImageGtransfo* tf)
+{
+  string band = RefImage.Band();
+  datsim.Read(DefaultDatacards(), band);
+  datsim.Print();
+  ListForGalaxies.CopyTo(BellesGal);
+  Fill(RefImage,ListForModelStars,tf);
+}
 
 
 
@@ -740,6 +762,3 @@ ForSimWModel::MakeListSNWModel(SimSNWModelStarList & SNList)
 	}
     } 
 }
-
-
-
