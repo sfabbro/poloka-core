@@ -50,7 +50,12 @@ PsfMatch::PsfMatch(const ReducedImageRef Ref, const ReducedImageRef New, const P
   photomRatio=1;
   seeing = worst->Seeing();
   sigmaBack = 0;
-  intersection = Ref->UsablePart() * New->UsablePart();
+  intersection = Ref->UsablePart() * New->UsablePart(); 
+
+  if (APreviousMatch) {
+    photomRatio= APreviousMatch->PhotomRatio() ;
+    sigmaBack = APreviousMatch->SigmaBack() ;
+  }
 }
 
 #ifdef STORAGE // specialement moche
@@ -434,7 +439,7 @@ bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
   if (ref_is_best)
     {
       cout << " Subtracting " << worst->Name() << " - " << best->Name() << endl;
-      double factor = 1/photomRatio; // "*" is far faster than "/"
+      double factor = 1./photomRatio; // "*" is far faster than "/"
       theSubtraction = *(fit->WorstImage);
       theSubtraction -= *(fit->ConvolvedBest);
       theSubtraction *=factor;
