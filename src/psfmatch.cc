@@ -19,17 +19,19 @@ PsfMatch::PsfMatch(const ReducedImage &Ref, const ReducedImage &New, const PsfMa
   newName = New.Name();
   if (APreviousMatch) { fit = APreviousMatch->fit; shouldNotDeleteFit = true;}
   else fit = NULL;
-  ref_is_best = (Ref.Seeing() <= New.Seeing());
-  if (ref_is_best)
-    {
-      best = &Ref;
-      worst = &New;
-    }
-  else
-    {
-      best = &New;
-      worst = &Ref;
-    }
+  if(false) { // we don't want to change this
+    ref_is_best = (Ref.Seeing() <= New.Seeing());
+    if (ref_is_best)
+      {
+	best = &Ref;
+	worst = &New;
+      }
+    else
+      {
+	best = &New;
+	worst = &Ref;
+      }
+  }
   cout << " PsfMatch between " << Ref.Name() << "(ref) and " << New.Name() << " (new) : " 
        << best->Name()  << " is the best one" << endl;
   photomRatio=1;
@@ -95,7 +97,7 @@ int PsfMatch::FilterStarList(const double MaxDist)
        << " stars " << endl;
   //star list selection
   SEStarList worstStarList(worst->ImageCatalogName());
-  double satfactor = 0.95;
+  double satfactor = 0.5;//0.95;
   double saturLevBest = best->Saturation() * satfactor;
   double saturLevWorst = worst->Saturation() * satfactor;  
   double bfactor = 0.2;
@@ -195,7 +197,12 @@ bool PsfMatch::FitKernel(const bool KeepImages)
     }
 
   objectsUsedToFit.sort(DecreasingFlux);
-  if (getenv("DUMP_FIT_LIST"))
+  //int count=0;
+  // i remove the 50 brightest
+  //for(BaseStarIterator it = objectsUsedToFit.begin(); it != objectsUsedToFit.end() && count < 50 ; ++it, ++count) {
+  //it = objectsUsedToFit.erase(it);
+  //}
+  if(getenv("DUMP_FIT_LIST"))
     objectsUsedToFit.write(best->Name()+worst->Name()+".fit.list");
   cout << " Frame limits for the fit: " << intersection;
 
