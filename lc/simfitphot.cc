@@ -178,6 +178,9 @@ void SimFitPhot::operator() (LightCurve& Lc)
   lstream.close();
   Lc.write_xml((string(dir+"/lc.xml")).c_str()); 
   }
+
+  Lc.chi2= zeFit.Chi2();
+  Lc.ndf = zeFit.Dof();
 }
 
 

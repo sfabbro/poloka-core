@@ -16,12 +16,21 @@ class LightCurve : public list<CountedRef<Fiducial<PhotStar> > > {
 #define LightCurve__is__persistent
 
 public:
+  
+  //! chi2 of the fit
+  double chi2; 
 
+  //! number of degrees of freedom
+  int ndf; 
+  
+  //! chi2 per degree of freedom
+  double chi2ndf() const {if(ndf==0) return 0.; return chi2/ndf;};
+  
   //! empty constructor does strictly nothing
-  LightCurve() {};
+  LightCurve() {ndf=0;chi2=0.;};
 
   //! load the Ref with a RefStar, does not contain any measurements
-  LightCurve(const RefStar *Star) : Ref(Star) {};
+  LightCurve(const RefStar *Star) : Ref(Star) {ndf=0;chi2=0.;};
 
   // default destructor, copy constructor and assigning operator are OK  
 

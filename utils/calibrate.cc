@@ -216,6 +216,7 @@ int main(int argc, char **argv)
   stream << "#z : from catalog" << endl;
   stream << "#img : image number" << endl;
   stream << "#star : start number in the catalog" << endl;
+  stream << "#chi2pdf : chi2 of PSF photometry" << endl;
   stream << "#end" <<endl;
   stream << setprecision(12);
   // first let's try to compute the ZP
@@ -229,6 +230,7 @@ int main(int argc, char **argv)
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
     //cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
     int count_img=0;
+    double chi2pdf=ilc->chi2ndf();
     for (LightCurve::const_iterator it = ilc->begin(); it != ilc->end(); ++it) { // loop on points
       count_img++;
       const Fiducial<PhotStar> *fs = *it;
@@ -256,7 +258,8 @@ int main(int argc, char **argv)
       stream << cstar.i << " ";
       stream << cstar.z << " ";
       stream << count_img << " "; 
-      stream << cstar.id << " ";     
+      stream << cstar.id << " "; 
+      stream << chi2pdf << " ";      
       stream << endl;
       
       if(fs->flux<=0) continue;

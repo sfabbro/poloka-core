@@ -136,7 +136,7 @@ public:
   double Chi2() const { return chi2; }
 
   //! returns the number of degrees of freedom of the current fit
-  int Dof() const { return nparams-ndata; }
+  int Dof() const { return ndata-nparams; }
 
   //! returns the current used scale factor for vignets
   double Scale() const { return scale; }
