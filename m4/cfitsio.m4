@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cfitsio.m4,v 1.3 2004/02/23 02:00:01 nrl Exp $
+# $Id: cfitsio.m4,v 1.4 2004/02/23 12:32:03 nrl Exp $
 # 
 # autoconf macro to check the cfitsio installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -33,6 +33,7 @@ AC_DEFUN([CHECK_CFITSIO],[
  CFITSIO_LDFLAGS=""
  CPPFLAGS_sav="$CPPFLAGS"
  LDFLAGS_sav="$LDFLAGS"
+ LIBS_sav="$LIBS"
 
  cfitsio_vreq=[$1]
  cfitsio_major=`echo $cfitsio_vreq | sed -e 's/\([[0-9]]*\)\.\([[0-9]]*\)/\1/'`
@@ -136,6 +137,7 @@ AC_DEFUN([CHECK_CFITSIO],[
 
  CPPFLAGS="$CPPFLAGS_sav"
  LDFLAGS="$LDFLAGS_sav"
+ LIBS="$LIBS_sav"
  AC_SUBST(CFITSIO_CPPFLAGS)
  AC_SUBST(CFITSIO_LDFLAGS)
 ]

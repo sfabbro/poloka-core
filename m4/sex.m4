@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: sex.m4,v 1.4 2004/02/23 10:39:24 nrl Exp $
+# $Id: sex.m4,v 1.5 2004/02/23 12:32:03 nrl Exp $
 # 
 # autoconf macro to check the sextractor installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -33,6 +33,7 @@ AC_DEFUN([CHECK_SEX],[
  SEX_LDFLAGS=""
  CPPFLAGS_sav="$CPPFLAGS"
  LDFLAGS_sav="$LDFLAGS"
+ LIBS_sav="$LIBS"
 
  sex_vreq=[$1]
  sex_major=`echo $sex_vreq | sed -e 's/\([[0-9]]*\)\.\([[0-9]]*\)/\1/'`
@@ -49,9 +50,9 @@ AC_DEFUN([CHECK_SEX],[
  fi
  CPPFLAGS="$CPPFLAGS $SEX_CPPFLAGS"
 
- AC_CHECK_HEADER(fitsio.h,,
+ AC_CHECK_HEADER(define.h,,
   [
-   echo "*** Header file fitsio.h not found.                                 "
+   echo "*** Header file define.h not found.                                 "
    echo "*** If sextractor is not installed on your system, install it first."
    echo "*** You may retrieve it from:                                       "
    echo "***    ftp://??????????????????????                                 "
@@ -84,32 +85,33 @@ AC_DEFUN([CHECK_SEX],[
  LDFLAGS="$LDFLAGS $SEX_LDFLAGS"
 
 # FIXME: seems to break the type checks. Investigate.
-# AC_CHECK_LIB(sex,main,,
-#  [echo "*** Library libsex not found.                                   "
-#   echo "*** If sextractor is not installed on your system, install it first."
-#   echo "*** You may retrieve it from:                                       "
-#   echo "***    ftp://??????                                                 "
-#   echo "***                                                                 "
-#   echo "*** Keep in mind that ./configure looks for sextrator in the following"
-#   echo "*** standard locations:                                             "
-#   echo "***    /, /usr, /usr/local, \$SEXHOME, \$FROGSHOME and <install prefix>"
-#   echo "***                                                                 "
-#   echo "*** If you choose to install sextrator someplace else, you will have"
-#   echo "*** to specify its install prefix using one or more of the following"
-#   echo "*** configure options:                                              "
-#   echo "***  --with-sex=                                                    "
-#   echo "***  --with-sex-headers=                                            "
-#   echo "***  --with-sex-libs=                                               "
-#   echo "***                                                                 "
-#   echo "*** Please check your sextrator installation and try again.         "
-#  AC_MSG_ERROR(aborting.)
-#  ])
+ AC_CHECK_LIB(sex,main,,
+  [echo "*** Library libsex not found.                                   "
+   echo "*** If sextractor is not installed on your system, install it first."
+   echo "*** You may retrieve it from:                                       "
+   echo "***    ftp://??????                                                 "
+   echo "***                                                                 "
+   echo "*** Keep in mind that ./configure looks for sextrator in the following"
+   echo "*** standard locations:                                             "
+   echo "***    /, /usr, /usr/local, \$SEXHOME, \$FROGSHOME and <install prefix>"
+   echo "***                                                                 "
+   echo "*** If you choose to install sextrator someplace else, you will have"
+   echo "*** to specify its install prefix using one or more of the following"
+   echo "*** configure options:                                              "
+   echo "***  --with-sex=                                                    "
+   echo "***  --with-sex-headers=                                            "
+   echo "***  --with-sex-libs=                                               "
+   echo "***                                                                 "
+   echo "*** Please check your sextrator installation and try again.         "
+  AC_MSG_ERROR(aborting.)
+  ])
 
  # FIXME: check the version
 
 
  CPPFLAGS="$CPPFLAGS_sav"
  LDFLAGS="$LDFLAGS_sav"
+ LIBS="$LIBS_sav"
  AC_SUBST(SEX_CPPFLAGS)
  AC_SUBST(SEX_LDFLAGS)
 ]
