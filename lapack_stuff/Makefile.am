@@ -22,6 +22,16 @@ liblapackstuff_la_SOURCES = \
 		  ieeeck.f  \
 		  ilaenv.f  \
 		  lsame.f   \
+	dsysv.f \
+	dsytrf.f \
+	dsytrs.f \
+	dswap.f \
+	dlasyf.f \
+	dcopy.f \
+	idamax.f \
+	dger.f \
+	dsytf2.f \
+	dsyr.f \
 		  xerbla.f  
 
 ######## auto symbolic link #########
