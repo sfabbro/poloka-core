@@ -152,11 +152,11 @@ CLASS_VERSION(TransformedImage,1)
   //! Original (untransformed) image name
   string  SourceName() const { return sourceName;}
 
+#ifdef STORAGE // pas utilise
+
   //! Original (untransformed) image.
   ReducedImageRef Source() const;
 
-
-#ifdef STORAGE // pas utilise
   //! Geometric reference (only applicable if ImageTransfo is ImageGtransfo)
   ReducedImageRef GeometricReference();
 
