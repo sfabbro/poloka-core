@@ -233,15 +233,22 @@ void codegen::classPersisterDecl_(CppClass const& cppclass)
   
   // the includes 
   std::map<std::string,bool> types_;
+  std::vector<std::string> clean_list; 
   for(i=0;i<cppclass.size();i++) {
     std::map<std::string,bool>::iterator it;
+    
     string ctn=cleanTypeName(cppclass.member(i).type().cppTypeName());
-    it = types_.find(ctn);
-    if(it == types_.end() ) {
-      class_ofs_h_ << "#ifdef " << ctn << "__is__persistent" << std::endl
-		   << "#include \"" << ctn << "__persister.h\"" << std::endl
-		   << "#endif" << std::endl;
+    
+    cleanTypeList(cppclass.member(i).type().cppTypeName(),clean_list);
+    for(int j=0;j<clean_list.size();++j) {
+    std::string &ctn = clean_list[j];
+      it = types_.find(ctn);
+      if(it == types_.end() ) {
+	class_ofs_h_ << "#ifdef " << ctn << "__is__persistent" << std::endl
+		     << "#include \"" << ctn << "__persister.h\"" << std::endl
+		     << "#endif" << std::endl;
       types_[ctn]=true;
+      }
     }
   }
   class_ofs_h_ << std::endl << std::endl;
@@ -454,7 +461,51 @@ string codegen::cleanTypeName(string const& tname)
   return ret;
 }
 
-
+void codegen::cleanTypeList(string const& tname,vector<string> &cleanlist)
+{
+  vector<string> tok;
+  
+  CppType::tokenize(tname, tok, "<>()[],:*&\t ", true);
+  int i,sz=tok.size();
+  vector<string> known_containers;
+  known_containers.push_back("list");
+  known_containers.push_back("vector");
+  known_containers.push_back("map");
+  known_containers.push_back("pair");
+  known_containers.push_back("CountedRef");
+  cleanlist.resize(0);
+  
+  for(i=0;i<sz;i++) {
+    if(tok[i]==">" ||
+       tok[i]=="<" ||
+       tok[i]=="(" || 
+       tok[i]==")" ||
+       tok[i]=="[" || 
+       tok[i]=="]" ||
+       tok[i]=="*" ||
+       tok[i]=="&" ||
+       tok[i]==":" ||
+       tok[i]=="," ) {
+      //ret = ret + "_";
+      continue;
+    }
+    if(atoi(tok[i].c_str())!=0)//heu this begins with an int, let's forget about that
+      continue;
+    int size=tok[i].size();
+    if(size==0)
+      continue;
+    bool tosave = true;
+    for(unsigned int k=0;k< known_containers.size();k++) {
+      int index = tok[i].find(known_containers[k]);
+      if(index>=0 && index<size) { // we know this stuff so we do not put it in the output list
+	tosave=false;
+	break;
+      }
+    }
+    if(tosave)
+      cleanlist.push_back(tok[i]);
+  }
+}
 
 
 string codegen::cleanTemplateArgList(CppClass const& c)

@@ -29,6 +29,7 @@ public:
   void  generatePersister(CppClass const&);
   
   static std::string cleanTypeName(std::string const&);
+  static void cleanTypeList(std::string const&,vector<string> &cleanlist);
   static std::string cleanTemplateArgList(CppClass const&);
   
 private:
