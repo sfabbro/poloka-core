@@ -1,12 +1,10 @@
 #include <iomanip>
-#include <iterator>
 #include <fstream>
-
 #include <reducedimage.h>
 
 #include "daophotoption.h"
 
-//***************************** Utilities  ************************
+//***************************** Stream Utilities  *******************
 ostream& operator << (ostream &stream, const DaoOption& opt)
 {
   size_t oldp = stream.precision();
@@ -20,6 +18,16 @@ ostream& operator << (ostream &stream, const DaoOption& opt)
 ostream& writeDaoOption(const DaoOption& opt, ostream &stream)
 {
   stream << opt.ShortName() << "=" << opt.Value() << endl;
+  return stream;
+}
+
+ostream& operator << (ostream &stream, const DaophotOptions& Options) 
+{
+  vector<DaoOption>::const_iterator opend = Options.end();
+  for (vector<DaoOption>::const_iterator it = Options.begin(); it != opend; it +=2) 
+    {
+      stream << *it << "    " << *(it+1) << endl;
+    }
   return stream;
 }
 
@@ -127,7 +135,7 @@ float* DaophotOptions::GetArray(const int NoptDaophot) const
   return opt;
 }
 
-bool DaophotOptions::write(const string FileName) const 
+bool DaophotOptions::write(const string& FileName) const 
 {
   ofstream stream(FileName.c_str());
   if (!stream) 
@@ -140,7 +148,7 @@ bool DaophotOptions::write(const string FileName) const
   return true;
 }
 
-bool  DaophotOptions::read(const string FileName) 
+bool DaophotOptions::read(const string& FileName) 
 {
   ifstream stream(FileName.c_str());
   if (!stream) 
@@ -166,20 +174,10 @@ bool  DaophotOptions::read(const string FileName)
     }
   return true;
 }
-  
-ostream& operator << (ostream &stream, const DaophotOptions& Options) 
-{
-  vector<DaoOption>::const_iterator opend = Options.end();
-  for (vector<DaoOption>::const_iterator it = Options.begin(); it != opend; it +=2) 
-    {
-      cout << *it << "    " << *(it+1) << endl;
-    }
-  return stream;
-}
 
-
+//***************************** Aperture options ******************************  
 bool WriteDaoAperOpt(vector<double> &Radius, double& InnerSky, 
-		     double& OutterSky, const string FileName)
+		     double& OutterSky, const string& FileName)
 {
   ofstream stream(FileName.c_str());
   if (!stream) 

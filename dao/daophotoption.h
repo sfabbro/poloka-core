@@ -56,13 +56,13 @@ public:
 	    const float&  Max,  const float& Default);
  
   //! use this function to set the option value, it checks against limits
-  bool   SetValue(const float& Value);
+  bool SetValue(const float& Value);
 
   //! the current value of the option
-  float& Value() { return value;}
+  float& Value() { return value; }
 
   //! the current value of the option
-  const float&  Value() const { return value;}
+  const float& Value() const { return value; }
 
   //! the first two letter of the option name
   string ShortName() const;
@@ -97,10 +97,10 @@ public:
   float *GetArray(const int NoptDaophot=20) const;
 
   //! write on disk daophot style
-  bool write(const string FileName="daophot.opt") const;
+  bool write(const string& FileName="daophot.opt") const;
 
   //! read the daophot style option file
-  bool read(const string FileName="daophot.opt");
+  bool read(const string& FileName="daophot.opt");
 
   //! enable dumping of all options, ala daophot 
   friend ostream& operator << (ostream &stream, const DaophotOptions& Options);
@@ -109,7 +109,7 @@ public:
 
 //! a simple routine to write a daophot aperture option file to be read from Daophot aperture photometry
 bool WriteDaoAperOpt(vector<double> &Radius, double& InnerSky, 
-		     double& OutterSky , const string FileName="photo.opt");
+		     double& OutterSky , const string& FileName="photo.opt");
 
 
 #endif // DAOPHOTOPTION__H
