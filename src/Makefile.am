@@ -120,10 +120,12 @@ libtoads_la_SOURCES = \
                               convtemplate.h \
   kernelfit.cc                kernelfit.h \
   psfmatch.cc                 psfmatch.h  \
-  swarpstack.cc		      swarpstack.h
+  swarpstack.cc		      swarpstack.h \
+  dicstar.cc                  dicstar.h
 
 
 include_HEADERS = \
+dicstar.h \
 vutils.h         \
 wcsutils.h       \
 toadscards.h     \
