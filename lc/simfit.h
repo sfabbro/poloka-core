@@ -146,7 +146,7 @@ public:
   
   ostream& DumpMatrices(ostream& Stream=cout) const; 
   
-  void UseGalaxyModel(bool useit = true) {use_gal = useit;};
+  void UseGalaxyModel(bool useit = true);
   
   //! fit initial galaxy using only vignets without burning star
   void FitInitialGalaxy();

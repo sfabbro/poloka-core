@@ -74,18 +74,18 @@ public:
   void makeInitialGalaxy();
 
   //! empty constructor allocate nothing
-  SimFitRefVignet() { DaoPsf *p = 0; psf = p; }
+  SimFitRefVignet(bool usegal=true) { DaoPsf *p = 0; psf = p; UseGal = usegal; }
   
   //! does not do much
-  SimFitRefVignet(const ReducedImage *Rim);
+  SimFitRefVignet(const ReducedImage *Rim, bool usegal=true);
 
   //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels.
   //! also initialize Psf if any, but assumes Kern not present.
-  SimFitRefVignet(const ReducedImage *Rim, const int Radius);
+  SimFitRefVignet(const ReducedImage *Rim, const int Radius, bool usegal=true);
 
   //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels.
   //! also initialize Psf if any, but assumes Kern not present.
-  SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius);
+  SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius, bool usegal=true);
 
   // default destructor, copy constructor and assigning operator are OK
 
@@ -99,9 +99,7 @@ public:
   void UpdatePsfResid();
 
 
-  void SetStar(const PhotStar *RefStar) {
-    Star = RefStar;
-  }
+  void SetStar(const PhotStar *RefStar);
   //!
   void Load(const PhotStar *RefStar);
 
@@ -109,6 +107,8 @@ public:
 
   //! enable "cout << SimFitRefVignet << endl"
   //friend ostream& operator << (ostream& stream, const SimFitRefVignet& myVignet);
+
+   bool UseGal;
 
 };
 
@@ -148,7 +148,7 @@ public:
   bool CanFitPos; //  do we need to fit the position
   bool CanFitSky; // do we need to fit the sky bg
   bool DontConvolve;
-  
+  bool forceresize;
   double inverse_gain;
 
   //! a kernel to convolve a reference to match the current vignet
@@ -164,12 +164,7 @@ public:
   CountedRef<SimFitRefVignet> VignetRef;
   
   
-  void SetStar(const PhotStar *RefStar) {
-    Star = RefStar;
-    kernel_updated = false;
-    psf_updated = false;
-    resid_updated = false;
-  } 
+  void SetStar(const PhotStar *RefStar);
   
   //! resize vignet and call Update()
   void Resize( int Hx_new,  int Hy_new);

@@ -24,6 +24,13 @@ SimFit::SimFit()
   dont_use_vignets_with_star = false;
 }
 
+void SimFit::UseGalaxyModel(bool useit) {
+  use_gal = useit;
+  for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
+    (*itVig)->UseGal = use_gal;
+  }
+}
+
 void SimFit::SetWhatToFit(unsigned int ToFit)
 {
   bool resize = false;
@@ -115,8 +122,6 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
       return;
     }
   
-  //fillNightMat(Lc);
-  
   // define the size of the reference vignet
   
   // get worst seeing to set the size of reference vignette
@@ -157,7 +162,7 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
   // the VignetRef has already been build
   if(!keepstar)
     VignetRef->SetStar(Lc.Ref); // just set the star
-  VignetRef->Resize(radius,radius); // now resize, this reloads data, update psf, and makeInitialGalaxy
+  VignetRef->Resize(radius,radius); // now resize, this reloads data, update psf, and makeInitialGalaxy if usegal
 #ifdef DEBUG
   SimFitRefVignet *toto = VignetRef;
   cout << " in SimFit::Load,  VignetRef     = " << toto << endl;
@@ -192,24 +197,24 @@ void SimFit::Resize(const double& ScaleFactor)
   int hrefx = VignetRef->Hx();
   int hrefy = VignetRef->Hy();
   
-  if(true) {
-  //if(fabs(ScaleFactor-1)>0.01) {
-  if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
-    {
-      cerr << " SimFit::Resize(" << ScaleFactor 
-	   << ") : Warning: nothing to fit, not resizing. " << endl;
-      return;
-    }
-  
-  cout << " SimFit::Resize(" << ScaleFactor << "): old scale = " << scale; 
-  scale = max(ScaleFactor, minscale);
-  cout << " new scale = " << scale << endl;
+  //if(true) {
+  if(fabs(ScaleFactor-1)>0.01) {
+    if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
+      {
+	cerr << " SimFit::Resize(" << ScaleFactor 
+	     << ") : Warning: nothing to fit, not resizing. " << endl;
+	return;
+      }
+    
+    cout << " SimFit::Resize(" << ScaleFactor << "): old scale = " << scale; 
+    scale = max(ScaleFactor, minscale);
+    cout << " new scale = " << scale << endl;
 
   
-  // resize vignets
-  
-  VignetRef->Resize(int(ceil(scale*double(VignetRef->Hx()))),
-		    int(ceil(scale*double(VignetRef->Hy()))));
+    // resize vignets
+    
+    VignetRef->Resize(int(ceil(scale*double(VignetRef->Hx()))),
+		      int(ceil(scale*double(VignetRef->Hy()))));
   }
   hrefx = VignetRef->Hx();
   hrefy = VignetRef->Hy();

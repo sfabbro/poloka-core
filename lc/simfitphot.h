@@ -9,10 +9,10 @@ private:
 
 public:
 
-  SimFitPhot(LightCurveList& Fiducials);
-
+  SimFitPhot(LightCurveList& Fiducials,bool usegal=true);
+  
   void operator() (LightCurve& Lc);
-
+  bool dowrite;
 };
 
 

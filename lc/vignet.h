@@ -71,7 +71,7 @@ public:
   Kernel Resid;
     
   //! initializer from a ReducedImage, loads the calibrated and weight vignets around a star
-  bool Load(const PhotStar *Star);
+  virtual void Load(const PhotStar *Star);
 
   //! resize the Vignet (attempt to modify hx and hy)
   void Resize(const int Hx, const int Hy);

@@ -11,7 +11,7 @@ void Vignet::Allocate()
   Resid.Allocate(Nx(),Ny());
 }
 
-bool Vignet::Load(const PhotStar *AStar)
+void Vignet::Load(const PhotStar *AStar)
 {    
 #ifdef FNAME
   cout << " > Vignet::Load(const PhotStar *AStar) AStar=" << AStar << endl;
@@ -22,11 +22,11 @@ bool Vignet::Load(const PhotStar *AStar)
   cout << "   rim->Name() = " << rim->Name() << endl;
 #endif
 
-  if (!AStar) return false;
+  if (!AStar) return;
   if (!rim->HasImage())
     {
       cerr << " Vignet::Load() : Error : " << rim->Name() << " does not have image" << endl;
-      return false;
+      return;
     } 
 
   Star = AStar;
@@ -52,7 +52,7 @@ bool Vignet::Load(const PhotStar *AStar)
     Weight.readFromImage(rim->FitsWeightName(), *this,0);
   
 
-  return true;
+  return;
 }
 
 
@@ -105,7 +105,9 @@ bool Vignet::ShiftCenter(const Point& Shift)
   // check if shift does not go a chaille
   if (!IsInside(*Star+Shift))
     {
-      cerr << " Vignet::ShiftCenter() : Error : " << Shift << " shift Star center outside of vignet \n";
+      cerr << " Vignet::ShiftCenter() : Error :  shift Star center outside of vignet \n";
+      cerr << "   Vignet= " << *this << endl;
+      cerr << "   Shift = " << Shift << endl;
       return false;
     }
   

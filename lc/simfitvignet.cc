@@ -89,6 +89,7 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius
   
   if(!(integrale>0.5)) {
     cout << "Very strange psf integral in TabulatedPsf::Tabulate (1) : " << integrale << endl;
+    cout << "hSizeX,hSizeX=" << hSizeX << "," << hSizeY << endl;
     cout << "better quit (first write psf as fits)" << endl;
     writeFits("psf_DEBUG.fits");
     abort();
@@ -129,6 +130,7 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Re
 
   if(!(integrale>0.5)) {
     cout << "Very strange psf integral in TabulatedPsf::Tabulate (2) : " << integrale << endl;
+    cout << "Rect=" << Rect << endl;
     cout << "better quit (first write psf as fits)" << endl;
     writeFits("psf_DEBUG.fits");
     abort();
@@ -167,28 +169,31 @@ void TabulatedPsf::Scale(const double& s)
 
 
 //=========================================================================================
-SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim)
+SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim,bool usegal)
   : Vignet(Rim), psf(new DaoPsf(*Rim))
 {
 #ifdef FNAME
   cout << " > SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim)" << endl;
 #endif
+  UseGal=usegal;
 }
 
-SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius)
+SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius,bool usegal)
   : Vignet(Rim, Radius), psf(new DaoPsf(*Rim))
 {
 #ifdef FNAME
   cout << " > SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius)" << endl;
 #endif
+  UseGal=usegal; 
 }
 
-SimFitRefVignet::SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius)
+SimFitRefVignet::SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius,bool usegal)
   : Vignet(Star, Rim, Radius), psf(new DaoPsf(*Rim)), Psf(*Star, *psf, Radius)
 {
 #ifdef FNAME
   cout << " > SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius)" << endl;
 #endif
+  UseGal=usegal;
 }
 
 // make sure that psf, vignet and data have proper sizes.
@@ -208,12 +213,14 @@ void SimFitRefVignet::Resize(const int Hx, const int Hy)
   // resize Data, Weight, Resid if necessary
   Vignet::Resize(Hx,Hy);
   
-  // resize Psf, Psf.Dx, Psf.Dy if necessary
+  // resize Psf, Psf.Dx, Psf.Dy 
   Psf.Tabulate(*Star,*psf,*this);
 
   // resize Galaxy 
-  if(Galaxy.Nx()!=Data.Nx() || Galaxy.Ny()!=Data.Ny())
-    makeInitialGalaxy();
+  if(UseGal) {
+    if(Galaxy.Nx()!=Data.Nx() || Galaxy.Ny()!=Data.Ny())
+      makeInitialGalaxy();
+  }
 }
 
 void SimFitRefVignet::Load(const PhotStar *Star)
@@ -224,9 +231,13 @@ void SimFitRefVignet::Load(const PhotStar *Star)
   if (!Star) return;
   Vignet::Load(Star);
   
-  if (!psf) psf = new DaoPsf(*rim);
+  printf(" in SimFitRefVignet::Load x,y = %10.10g,%10.10g\n",Star->x,Star->y);
+  
+  if(!psf) psf = new DaoPsf(*rim);
   Psf.Tabulate(*Star, *psf, *this);
-  makeInitialGalaxy(); 
+  if(UseGal) {
+    makeInitialGalaxy(); 
+  }
   UpdatePsfResid();
 }
 
@@ -254,26 +265,55 @@ void SimFitRefVignet::makeInitialGalaxy()
 void SimFitRefVignet::UpdatePsfResid()
 {
 #ifdef FNAME
-  cout << " > SimFitVignet::UpdatePsfResid() : updating residuals with galaxy" << endl;
+  if(UseGal)
+    cout << " > SimFitVignet::UpdatePsfResid() : updating residuals with galaxy" << endl;
+  else
+    cout << " > SimFitVignet::UpdatePsfResid() : updating residuals without galaxy" << endl;
 #endif
   // re-allocate Resid if too small
-
-  DPixel *pdat = Data.begin(), *pres = Resid.begin(), *pgal = Galaxy.begin();
+  
+  DPixel *pdat = Data.begin(), *pres = Resid.begin();
   DPixel *ppsf = Psf.begin(), *ppdx = Psf.Dx.begin(), *ppdy = Psf.Dy.begin();
-
-
-  for (int j=ystart; j<yend; ++j)
-    for (int i=xstart; i<xend; ++i)
-      {
-	*ppsf = psf->Value(i, j, *Star, *ppdx, *ppdy); 
-	//*ppsf = psf->Value(i+ic, j+jc, *Star, *ppdx, *ppdy); 
-	*pres = *pdat - Star->flux * *ppsf - *pgal - Star->sky; // JG 
-	++ppsf; ++ppdx; ++ppdy; ++pres; ++pdat; ++pgal; // JG
-      }
+  
+  if(UseGal) {
+    DPixel  *pgal = Galaxy.begin();
+    for (int j=ystart; j<yend; ++j)
+      for (int i=xstart; i<xend; ++i)
+	{
+	  *ppsf = psf->Value(i, j, *Star, *ppdx, *ppdy); 
+	  //*ppsf = psf->Value(i+ic, j+jc, *Star, *ppdx, *ppdy); 
+	  *pres = *pdat - Star->flux * *ppsf - *pgal - Star->sky; // JG 
+	  ++ppsf; ++ppdx; ++ppdy; ++pres; ++pdat; ++pgal; // JG
+	}
     
+  }else{
+    for (int j=ystart; j<yend; ++j)
+      for (int i=xstart; i<xend; ++i)
+	{
+	  *ppsf = psf->Value(i, j, *Star, *ppdx, *ppdy); 
+	  *pres = *pdat - Star->flux * *ppsf - Star->sky;
+	  ++ppsf; ++ppdx; ++ppdy; ++pres; ++pdat;
+	}
+  }
+}
+  
+
+void SimFitRefVignet::SetStar(const PhotStar *RefStar) {
+  Star = RefStar;
+  cout << " in SimfitRefVignet::SetStar x,y=" << Star->x << "," << Star->y << endl;
 }
 
 //=========================================================================================
+void SimFitVignet::SetStar(const PhotStar *RefStar) {
+  Star = RefStar;
+  kernel_updated = false;
+  psf_updated = false;
+  resid_updated = false;
+   forceresize = true;
+  cout << " in SimfitVignet::SetStar x,y=" << Star->x << "," << Star->y << endl;
+} 
+
+
 SimFitVignet::SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref)
   : Vignet(Rim)
 {
@@ -284,6 +324,7 @@ SimFitVignet::SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref)
   FitFlux = false;
   FitPos = false;
   UseGal = false;
+  forceresize = true;
   inverse_gain = 1./Rim->Gain();
 }
 
@@ -300,6 +341,7 @@ SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimF
   FitFlux = false;
   FitPos = false;
   UseGal = false;
+  forceresize = true;
   inverse_gain = 1./Rim->Gain();
   //Update();
 }
@@ -419,7 +461,7 @@ void SimFitVignet::Resize( int Hx_new,  int Hy_new)
   if (!Star) return;
   
   // resize data, weight, resid if necessary
-  if(Hx()==Hx_new && Hy()==Hy_new) {
+  if(Hx()==Hx_new && Hy()==Hy_new && !forceresize) {
 #ifdef DEBUG
     cout << "    actually do not resize" << endl;
 #endif
@@ -433,6 +475,7 @@ void SimFitVignet::Resize( int Hx_new,  int Hy_new)
 #endif
     kernel_updated = false;
     resid_updated  = false;
+    forceresize = false;
   }
   Update();
 }
@@ -448,7 +491,10 @@ void  SimFitVignet::BuildPsf() {
     cout << "SimFitVignet::BuildPsf ERROR VignetRef has no psf" <<endl;
     abort();
   }
-  Psf.Tabulate(*Star,*(VignetRef->psf),*this);
+  // we jsut want to allocate size for this Psf
+  //Psf.Tabulate(*Star,*(VignetRef->psf),*this);
+  Psf.Resize(Hx(),Hy());
+
   // now scale this according to kernel integral
   if(!kernel_updated)
     BuildKernel();
