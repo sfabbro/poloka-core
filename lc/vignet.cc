@@ -1,8 +1,6 @@
 #include <iomanip>
 #include "vignet.h"
 
-//#define DEBUG
-
 void Vignet::Allocate(const int Nx, const int Ny)
 {
   Data.Allocate(Nx,Ny);
@@ -12,10 +10,11 @@ void Vignet::Allocate(const int Nx, const int Ny)
 
 bool Vignet::Load(const PhotStar *AStar)
 {    
+
 #ifdef DEBUG
   cout << " Vignet::Load(" << AStar<< ");" << endl;
-  cout << " rim->refCount() = " << rim->refCount() << endl;
-  cout << " rim->Name() = " << rim->Name() << endl;
+  cout << "   rim->refCount() = " << rim->refCount() << endl;
+  cout << "   rim->Name() = " << rim->Name() << endl;
 #endif
 
   if (!AStar) return false;
@@ -25,11 +24,13 @@ bool Vignet::Load(const PhotStar *AStar)
   int xc = int(Star->x);
   int yc = int(Star->y);
   
-  xstart = max(0, xc-Data.HSizeX());
-  ystart = max(0, yc-Data.HSizeY());
-  xend   = min(xc+Data.HSizeX()+1, rim->XSize());
-  yend   = min(yc+Data.HSizeY()+1, rim->YSize());
+  xstart = max(0, xc-hx);
+  ystart = max(0, yc-hy);
+  xend   = min(xc+hx+1, rim->XSize());
+  yend   = min(yc+hy+1, rim->YSize());
   
+  Allocate(Nx(), Ny());
+
   if (!rim->HasImage())
     {
       cerr << " Vignet::Load() : Error : " << rim->Name() << " does not have image" << endl;
@@ -40,62 +41,51 @@ bool Vignet::Load(const PhotStar *AStar)
 
   if (rim->HasWeight()) Weight.readFromImage(rim->FitsWeightName(), *this);
   
-#ifdef DEBUG
-  cout << " in Vignet::Load Data.HSizeX() = " << Data.HSizeX() << endl;
-  cout << " in Vignet::Load Data.HSizeY() = " << Data.HSizeY() << endl;
-#endif
   return true;
 }
 
 
-void Vignet::Resize(const int HNewX, const int HNewY)
+void Vignet::Resize(const int Hx, const int Hy)
 {
+
 #ifdef DEBUG
-  cout << " Vignet::Resize(" <<  HNewX << "," << HNewY << "); rim is " << rim->Name() << endl;
+  cout << " Vignet::Resize(" <<  Hx << "," << Hy << "); rim is " << rim->Name() << endl;
 #endif
 
-  if  (HNewX < 0 || HNewY < 0) 
+  if  (Hx < 0 || Hy < 0) 
     {
-      cerr << " Vignet::Resize(" << HNewX << "," << HNewY << ") : impossible \n";
+      cerr << " Vignet::Resize(" << Hx << "," << Hy << ") : Error : impossible \n";
       return;
     } 
 
-  hx = HNewX;
-  hy = HNewY;
+  xstart = 
+  hx = Vignet::Hx();
+  hy = Vignet::Hy();
+  Allocate(Nx(), Ny());
 
-  Allocate(2*hx+1,2*hy+1);
 #ifdef DEBUG
   cout << " in Vignet::Resize Data.HSizeX() = " << Data.HSizeX() << endl;
   cout << " in Vignet::Resize Data.HSizeY() = " << Data.HSizeY() << endl;
 #endif
+
 }
 
 void Vignet::Resize(const double &ScaleFactor)
 {
+
 #ifdef DEBUG
   cout << " Vignet::Resize(" << ScaleFactor << ");" << endl;
 #endif
-  
-  if (ScaleFactor*hx > Data.HSizeX() || ScaleFactor*hy > Data.HSizeY() || ScaleFactor < 0.)
+ 
+ if (ScaleFactor <0)
     {
-      cerr << " Vignet::Resize(" << ScaleFactor << ") : Error:  can't resize, max scale is " 
-	   << max(double(Data.HSizeX())/hx, double(Data.HSizeY())/hy) << endl;
+      cerr << " Vignet::Resize(" << ScaleFactor << ") : Error: impossible \n";
       return;
     }
   
-  hx = int(ceil(ScaleFactor*double(hx)));
-  hy = int(ceil(ScaleFactor*double(hy)));
+  Resize(int(ceil(ScaleFactor*double(hx))),
+	 int(ceil(ScaleFactor*double(hy))));
 
-  Allocate(2*hx+1,2*hy+1);
-}
-
-bool Vignet::IsInside(const Point& point) {
-  cerr << "Vignet::IsInside TO MODIFY !!!!!!!!!!!!!!" << endl;
-  // JG pas sur de lui
-  return (point.x >= xstart) 
-    && (point.x < xend)
-    && (point.y >= ystart)
-    && (point.y < yend);
 }
 
 bool Vignet::ShiftCenter(const Point& Shift)
@@ -125,6 +115,7 @@ void Vignet::RobustifyWeight(const double& alpha, const double& beta)
   cout << " Vignet::RobustifyWeight(" << alpha << "," << beta << ") : re-weight" << endl;
   
   DPixel *pw, *pres;
+
   for (int j=-hy; j<=hy; ++j)
     {
       pw   = &Weight(-hx,j);
@@ -137,6 +128,8 @@ void Vignet::RobustifyWeight(const double& alpha, const double& beta)
   
 double Vignet::Chi2() const
 {
+  if (Resid.IsEmpty() || Weight.IsEmpty()) return -1.;
+
   double chi2 = 0.;
   DPixel *pw, *pres;
   for (int j=-hy; j<=hy; ++j)
