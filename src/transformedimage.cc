@@ -132,16 +132,46 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   /* The update of the WCS consists in copying the WCS of the geomRef
      in the Transformed image, provided the first one is accurate */
   {
+    bool writtenOutWCS = false;
     ReducedImage geomRef(geomRefName);
     if (geomRef.IsValid() && geomRef.HasImage())
       {
 	FitsHeader geomHead(geomRef.FitsName());
-	CopyWCS(geomHead, Transformed);
+	writtenOutWCS = CopyWCS(geomHead, Transformed);
+      }
+    else
+      {
+	Gtransfo* wcsSource;
+	if (WCSFromHeader(Original, wcsSource))
+	  {
+	    Gtransfo* outWCS = GtransfoCompose(wcsSource, transfoFromRef);
+	    TanPix2RaDec *tanWCS = dynamic_cast<TanPix2RaDec *>(outWCS);
+	    if (tanWCS)
+	      {
+		TanWCS2Header(Transformed, *tanWCS);
+		writtenOutWCS = true;
+	      }
+	    if (outWCS) delete outWCS;
+	  }
+	if (wcsSource) delete wcsSource;
+      }
+    if (!writtenOutWCS)
+      {
+	cout << " NO WCS in output image for " 
+	     << Transformed.FileName() << std::endl;
       }
   }
   
   // update usable part
   frame.WriteInHeader(Transformed);
+
+  // write a correct DATASEC in header if any
+  if (Transformed.HasKey("DATASEC"))
+    {
+      char datasec[80];
+      sprintf(datasec,"[1:%d,1:%d]", nx_aligned,ny_aligned);
+      Transformed.AddOrModKey("DATASEC",string(datasec)," updated by ImageGtransfo");
+    }
 
   // update RA and DEC
   //  if we copy the WCS we should not update RA and Dec
