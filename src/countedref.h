@@ -58,20 +58,22 @@ template <class T> class CountedRef {
 
 
 class RefCount {
- private:
-  int refcount;
-  public :
-    RefCount() :refcount(0) {};
-  int& refCount()       {return refcount;}
-  //  int  refCount() const {return refcount;}
+public:
+  RefCount() : refcount(0) {}
   
   /* when a RefCount is copied, it means that the object itself is copied,
      hence the count sould be set to zero */
-  RefCount(const RefCount &Other) 
-    { 
-      if (&Other) {}; // warning killer
-      refcount = 0;
-    }
+  RefCount(const RefCount &Other) { 
+    if (&Other) {}; // warning killer
+    refcount = 0;
+  }
+  
+  virtual  ~RefCount() {}
+  
+  int& refCount()   { return refcount; }
+  //  int  refCount() const {return refcount;}
+  
+
 #ifndef SWIG
   void operator = (const RefCount & Right)
     {
@@ -79,7 +81,8 @@ class RefCount {
     }
 #endif
 
-
+private:
+  int refcount;
 };
 
 #endif /*COUNTEDREF__H */
