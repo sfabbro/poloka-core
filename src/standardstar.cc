@@ -306,7 +306,7 @@ StandardStarList* GetSelectedStandardStarList(const FitsHeader &header)
 {
   Frame W(header);
   GtransfoLin Pix2RaDec;
-  WCSTransfoFromHeader(header, Pix2RaDec);
+  WCSLinTransfoFromHeader(header, Pix2RaDec);
   Frame Wradec = W.ApplyTransfo(Pix2RaDec);
 
   StandardColor couleur = GetColor(header);
