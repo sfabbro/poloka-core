@@ -11,8 +11,10 @@
 
 
 //! enables to provide a datacards file name (a la swarp) that superseeds both swarp and toads internal defaults. syntax is the one from swarp (see doc or run swarp -d)
-void SetSwarpCardsName(const std::string &Name);
+bool SetSwarpCardsName(const std::string &Name);
 
+//! enables to overwrite by program defaults in the swarpstack module
+void AddSwarpDefaultKey(const std::string &Key, const std::string &Value);
 
 class Frame;
 
@@ -31,7 +33,9 @@ private:
   ReducedImageRef photomAstromReference;
   Frame photomAstromReferenceFrame;
 
-  const std::string SwarpPermDir() const { return Dir()+"/swarp_work/";};
+  
+
+  const std::string SwarpPermDir() const { return Dir()+"swarp_work/";};
 
   const std::string SwarpTmpDir();
 

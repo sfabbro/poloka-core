@@ -29,13 +29,6 @@
 #include <pair.h>
 
 
-static std::string SwarpCardsDefaultName;
-
-void SetSwarpCardsName(const std::string &Name)
-{
-  SwarpCardsDefaultName = Name;
-} 
-
 /* we do not use here datacards a la Peida (datacards.cc)
    but a simplified version of datacards a la swarp, so that
    standard swarp datacards can be used */
@@ -92,10 +85,38 @@ struct SwarpCards :  public list<pair<string,string> >
 
 };
 
+static std::string SwarpCardsDefaultName;
+
+bool SetSwarpCardsName(const std::string &Name)
+{
+  SwarpCardsDefaultName = Name;
+  if (!FileExists(SwarpCardsDefaultName))
+    {
+      std::cerr << " cannot find " << SwarpCardsDefaultName << std::endl;
+      return false;
+    }
+  // try them right now
+  SwarpCards trial;
+  return trial.write("/dev/null");
+} 
+
+
+static SwarpCards *DefaultSwarpCardsKeys = NULL;
+
+void AddSwarpDefaultKey(const std::string &Key, const std::string &Value)
+{
+  if (!DefaultSwarpCardsKeys) DefaultSwarpCardsKeys = new SwarpCards;
+  // last call wins:
+  DefaultSwarpCardsKeys->RmKey(Key);
+  DefaultSwarpCardsKeys->AddKey(Key,Value);
+}
+
+
 bool SwarpCards::write(const std::string &FileName)
 {
   std::string comment;
   std::string removed;
+  bool ok = true;
   
   if (SwarpCardsDefaultName  != "" && !FileExists(SwarpCardsDefaultName))
     {
@@ -120,6 +141,7 @@ bool SwarpCards::write(const std::string &FileName)
 			<< line << std::endl;
 	      std::cout << " non standard file for swarp " 
 			<<  SwarpCardsDefaultName << std::endl;
+	      ok = false;
 	      continue;
 	    }
 	  std::string key = string(first_word);
@@ -133,6 +155,16 @@ bool SwarpCards::write(const std::string &FileName)
       fclose(f);
       comment = "# read default keys from "+SwarpCardsDefaultName;
     }
+  // now consider eventual default keys set by program
+  if (DefaultSwarpCardsKeys)
+    for (KeyIterator i = DefaultSwarpCardsKeys->begin(); 
+	 i != DefaultSwarpCardsKeys->end(); ++i)
+      {
+	KeyIterator j = Where(i->first);
+	if (j!= end()) removed+= "#"+KeyLine(j->first)+"\n";
+	AddKey(i->first, i->second);
+      }
+  // write survivers and comments
   FILE *out = fopen(FileName.c_str(),"w");
   fprintf(out,"%s\n",comment.c_str());
   // keep track of overwritten keys
@@ -143,8 +175,12 @@ bool SwarpCards::write(const std::string &FileName)
   for (KeyIterator i= begin(); i != end(); ++i)
       fprintf(out,"%s    %s\n",i->first.c_str(),i->second.c_str());
   fclose(out);
-  return true;
+  return ok;
 }
+
+
+
+   
 	  
 
 /************* class AsciiHead *********************************/
@@ -217,6 +253,7 @@ public :
 
 /**********************  class Ccd, Shoot and Collection *******************/
 
+//! a ccd in an image
 struct Ccd
 {
   std::string name;
@@ -225,6 +262,7 @@ struct Ccd
   double sigmaBack;
   double fluxScale;
   std::string filter;
+  std::string refcat;
   //  std::string acqFileName;
   
 
@@ -234,7 +272,8 @@ struct Ccd
     FitsHeader head(R.FitsName());
     gain = head.KeyVal("TOADGAIN");
     chip = head.KeyVal("TOADCHIP");
-    filter = string(head.KeyVal("TOADFILT"));
+    filter = head.KeyVal("TOADFILT");
+    refcat = head.KeyVal("REFCAT");
     sigmaBack = R.SigmaBack();
     fluxScale = FluxScale;
   }
@@ -249,6 +288,7 @@ bool CcdCompareChip(const Ccd&C1, const Ccd&C2)
   return (C1.chip < C2.chip);
 }
 
+//! the ensemble of ccd's of a given shoot
 struct Shoot : public std::list<Ccd> // use list for sort
 {
   int odo;
@@ -263,6 +303,7 @@ struct Shoot : public std::list<Ccd> // use list for sort
   {
     return front().filter;
   }
+
 
   double AverageGain()
   {
@@ -328,6 +369,7 @@ bool ShootCompareOdo(const Shoot &S1, const Shoot &S2)
   return (S1.odo < S2.odo);
 }
 
+//! a set of Shoot's
 struct Collection : public list<Shoot>
 {
 
@@ -390,19 +432,23 @@ struct Collection : public list<Shoot>
   StringList FilterList() const
   {
     StringList l;
-    for (const_iterator i= begin(); i != end(); ++i)  
+    for (const_iterator i= begin(); i != end(); ++i) 
       l.push_back(i->Filter());
     l.sort(); l.unique(); // remove multiple entries
     return l;
   }
 
 
+  StringList RefcatList() const
+  {
+    StringList l;
+    for (const_iterator i= begin(); i != end(); ++i) // loop on Shoots
+      for (Shoot::const_iterator j = i->begin(); j!= i->end(); ++j) // CCd's
+	l.push_back(j->refcat);
+    l.sort(); l.unique(); // remove multiple entries
+    return l;
+  }
 };
-
-
-
-
-
 
 /*********************** class SwarpStack ***********************/
 
@@ -424,7 +470,10 @@ const std::string SwarpStack::SwarpTmpDir()
     {
       char *dir = getenv("IMAGE_TMP_DIR");
       if (dir) tmpDir = AddSlash(string(dir));
-      else tmpDir = SwarpPermDir();
+      else tmpDir = FullFileName(StandardPath(SwarpPermDir()));
+      cout << "SwarpPermDir() " << SwarpPermDir() << endl;
+      cout << "StandardPath(SwarpPermDir()) " << StandardPath(SwarpPermDir()) 
+	   << endl;
       cout << " for image " << Name() << ", using " << tmpDir
 	   << " to write temporary images " << endl;
     }
@@ -455,15 +504,6 @@ static string build_file_name(const std::string &Format, const std::string &ANam
   return link_name;
 }
 
-#ifdef STORAGE
-static bool link_file(const string &Target, const string &DbImageName, 
-		      const string &LinkPattern)
-{
-  
-  return MakeRelativeLink(Target.c_str(), 
-			  build_file_name(LinkPattern,DbImageName).c_str());
-}
-#endif
 
 bool extract_ascii_head(const std::string &InputHeadName,
 		       const Frame &SubFrame,
@@ -526,7 +566,8 @@ bool SwarpStack::MakeFits()
   std ::cout << " SwarpStack::MakeFits : making " << FitsName() << std::endl;
   /* link files in the "working directory ", and collect info about
      input images */
-  string fitsList;
+  string toRemove;
+  string inputFiles;
   double saturation = 1e30;
   // collect info on input stuff to assemble output header
   Collection collection; 
@@ -540,8 +581,7 @@ bool SwarpStack::MakeFits()
 	std::cerr << " cannot align photometrically on " << photomAstromReference->Name() 
 		  << " because we don't find it's zero point " << std::endl;
     }
-  // clear swarp inputs:
-  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.image.{,weight.}fits").c_str());
+
   // setup files for swarp input
   for (ReducedImageIterator i=images.begin(); i!= images.end(); ++i)
     {
@@ -555,12 +595,26 @@ bool SwarpStack::MakeFits()
 		    << std::endl;
 	  continue;
 	}
-      // make symbolic links to input images and weights in SwarpTmpDir
+      // build file names for swarp input files.
       std::string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
-      MakeRelativeLink(ri.FitsName(), imageSwarpName);
-      fitsList += " "+ri.Name()+".fits";
-      MakeRelativeLink(ri.FitsWeightName(), 
-		       build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name()));
+      if (!DecompressOrLinkImage(ri.FitsName(), imageSwarpName))
+	{
+	  std::cerr << " could not prepare " << imageSwarpName 
+		    << " for swarp " << std::endl;
+	  return false;
+	}
+      inputFiles += (" "+BaseName(imageSwarpName));
+      toRemove += " "+imageSwarpName;
+
+      std::string weightSwarpName = 
+	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
+      if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
+	{
+	  std::cerr << " could not prepare " << weightSwarpName 
+		    << " for swarp " << std::endl;
+	  return false;
+	}
+      toRemove += " "+weightSwarpName;
       // compute flux scale factor from ZP
       FitsHeader head(ri.FitsName());
       double fluxScale = 1;
@@ -593,8 +647,8 @@ bool SwarpStack::MakeFits()
   // setup datacards
   SwarpCards cards;
   // directly write image and weight in the right place
-  cards.AddKey("IMAGEOUT_NAME","../"+BaseName(FitsName()));
-  cards.AddKey("WEIGHTOUT_NAME","../"+BaseName(FitsWeightName()));
+  cards.AddKey("IMAGEOUT_NAME",FullFileName(FitsName()));
+  cards.AddKey("WEIGHTOUT_NAME",FullFileName(FitsWeightName()));
   /* 
      There are issues in how Swarp makes the interpolation from
      input pixels to output output projection (projapp.c):
@@ -624,16 +678,18 @@ bool SwarpStack::MakeFits()
   cards.AddKey("SUBTRACT_BACK","N");
   // cleanup?
   cards.AddKey("DELETE_TMPFILES","N");
-  // write them
+
+  // write cards
   string cardsName = "default.images.swarp";
   // write them in perm dir
   cards.write(SwarpPermDir()+cardsName);
-  // and make a pseudo copy in TmpDir
+  //link them in Tmp Directory
   MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
   
+  
 
-  string command = "cd "+SwarpTmpDir()+"; swarp -c " 
-    + cardsName + " *.image.fits";
+  string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName 
+    + inputFiles;
   if (my_tcsh_system(command.c_str())!=0)
     {
       cerr <<" something went wrong ... " << std::endl;
@@ -650,6 +706,16 @@ bool SwarpStack::MakeFits()
 	head.AddOrModKey("FILTERS", filtList.AllEntries());
       }
     else head.AddOrModKey("FILTER",filtList.front());
+    StringList refcatList = collection.RefcatList();
+    if (filtList.size() > 1)
+      {
+	std::cout << " Image " << Name() << " is made from components aligned "
+		  << "\n on different astro-photometric catalogs (REFCAT key)"
+		  << "\n hope you know what you are doing" << std::endl;
+	head.AddOrModKey("REFCATS", filtList.AllEntries());
+      }
+    else head.AddOrModKey("REFCAT",refcatList.front());
+    
     head.AddOrModKey("GAIN", collection.AverageGain()," averaged over the whole are, rather rough");
     head.AddOrModKey("BACK_SUB",true);
     head.AddOrModKey("ZP",stackZp);
@@ -668,8 +734,10 @@ bool SwarpStack::MakeFits()
   SetSaturation(saturation);
 
   // since we got here, swarp succeeded, so cleanup resamp files
-  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.image.resamp.{,weight.}fits").c_str());
 
+  // and cleanup input files (links or actual files depending if they were compressed)
+  RemoveFiles(toRemove);
+  RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
   return true;
 }
 
@@ -695,29 +763,6 @@ bool SwarpStack::MakeWeight()
   else return true;
 }
 
-#ifdef STORAGE
-bool uncompress_or_link(const std::string &InFileName,
-			const std::string &OutFileName,
-			std::string &ToGunzip,
-			std::string &ToDelete)
-{
-  if (IsZipped(InFileName))
-    {
-      MakeRelativeLink(InFileName, OutFileName+".gz");
-      ToGunzip += OutFileName+".gz ";
-      ToDelete += " "+OutFileName;
-      return true;
-    }
-  else if (FileExtension(InFileName) == "fz")
-    {
-      if (ImageCopy(InFileName, OutFileName))
-	ToDelete += " "+OutFileName;
-      else
-	return false;
-    }
-  else return MakeRelativeLink(InFileName, OutFileName);
-}
-#endif
 
 bool SwarpStack::MakeSatur()
 {
@@ -728,24 +773,23 @@ bool SwarpStack::MakeSatur()
   /* we need the header to align our satur frame on it */
   if (!HasImage()) MakeFits(); 
 
-  // cleanup before start
-  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.satur.{,weight.}fits").c_str());
 
-  string toRemove;
+  std::string toRemove;
+  std::string inputFiles;
   for (ReducedImageIterator i=images.begin(); i!= images.end(); ++i)
     {
       ReducedImage &ri = **i;
       std::string inputSatur = ri.FitsSaturName();
       std::string swarpInput = build_file_name(SwarpTmpDir()+"%s.satur.fits",
 					       ri.Name());
-      std::string swarpHead = build_file_name(SwarpTmpDir()+"%s.satur.head",
-					      ri.Name());
+      std::string swarpHead = SubstituteExtension(swarpInput,".head");
       if (!DecompressOrLinkImage(inputSatur,swarpInput))
 	{
 	  std::cerr << " could not prepare " << inputSatur << " for swarp " 
 		    << std::endl;
 	  return false;
 	}
+      inputFiles += " "+BaseName(swarpInput);
       // extract header of calibrated image
       toRemove += " "+swarpInput;
       extract_ascii_wcs(ri.FitsName(), swarpHead);
@@ -776,8 +820,7 @@ bool SwarpStack::MakeSatur()
   // and make a pseudo-copy in temp dir
   MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
 
-  string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName 
-    + " *.satur.fits";
+  string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName + inputFiles;
   if (my_tcsh_system(command.c_str())!=0)
     {
       cerr <<" something went wrong ... " << std::endl;
@@ -802,7 +845,7 @@ bool SwarpStack::MakeSatur()
   // remove temporary files
   remove(swarpOutName.c_str());
   RemoveFiles(toRemove);
-  my_tcsh_system(("rm -f "+SwarpTmpDir()+"*.satur.resamp.{,weight.}fits").c_str());
+  RemoveFiles(SubstitutePattern(toRemove,".satur.",".satur.resamp."));
 
   // we are done !
   return true;
