@@ -100,12 +100,13 @@ int main(int argc, char **argv)
     dy = j+hy;
     for(int i=-hx;i<=hx;++i) {
       if(true) {
-      //if(weight(i,j)>1.e-10) {
-	image(i+hx,dy)=galaxy(i,j);
-	v = galaxy(i,j) +fluxmax*vignet->Psf(i,j);
-	image(i+hx+(2*hx+1)+1,dy)=v;
-	if(v>vmax)
-	  vmax=v;
+	if(weight(i,j)>1.e-10) {
+	  image(i+hx,dy)=galaxy(i,j);
+	  v = galaxy(i,j) +fluxmax*vignet->Psf(i,j);
+	  image(i+hx+(2*hx+1)+1,dy)=v;
+	  if(v>vmax)
+	    vmax=v;
+	}
       }
     }
   }
