@@ -1210,7 +1210,8 @@ bool SimFit::Update(double Factor)
 	   << " -> " << VignetRef->Star->x+Vec(xind)*Factor << "," << VignetRef->Star->y+Vec(yind)*Factor ;
       
       if (!(VignetRef->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
-	abort();
+	cout << "  FATAL ERROR ShiftCenter failure " << endl;
+	return false;
       }
       VignetRef->UpdatePsfResid();
     }
@@ -1232,8 +1233,8 @@ bool SimFit::Update(double Factor)
       
       // update pos (not really required if not vignetref)
       if ((fit_pos) && !(vi->ShiftCenter(Point(Vec(xind)*Factor, Vec(yind)*Factor)))) {
-	cout << "FATAL ERROR ShiftCenter failure " << endl;
-	abort();
+	cout << "  FATAL ERROR ShiftCenter failure " << endl;
+	return false;
       }
       
       // update sky
@@ -1273,7 +1274,8 @@ double SimFit::oneNRIteration(double OldChi2)
     abort();
   }
 
-  Update(1.);  
+  if(!Update(1.)) return -12;
+  
   double curChi2 = computeChi2();
   const double minFact = 0.001;
   if (curChi2 > OldChi2) 
@@ -1287,9 +1289,9 @@ double SimFit::oneNRIteration(double OldChi2)
       double fact = 1.;
       while ((curChi2 > OldChi2) && (fact > minFact))
 	{
-	  Update(-fact);
+	  if(!Update(-fact)) return -12;
 	  fact *= 0.9;
-	  Update(fact);
+	  if(!Update(fact)) return -12;
 	  curChi2 = computeChi2();
 #ifdef DEBUG
 	  cout << " SimFit::oneNRIteration(" 
@@ -1300,7 +1302,7 @@ double SimFit::oneNRIteration(double OldChi2)
       // reducing corrections had no effect
       if (curChi2 > OldChi2)
 	{
-	  Update(-fact);
+	  if(!Update(-fact)) return -12;
 	  curChi2 = computeChi2();
 #ifdef DEBUG
 	  cout << " SimFit::oneNRIteration(" 
@@ -1325,6 +1327,10 @@ bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
     {
       oldchi2 = chi2;
       chi2 = oneNRIteration(oldchi2);
+      if(chi2<-10) {
+	cout << "   (in IterateAndSolve) Problem in oneNRIteration = problem in Update cause outside vignet, must quit " << endl;
+	return false;
+      }
       diff = fabs(chi2-oldchi2);
       cout << "   Iteration " << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;    
       //cout << "   diff = " << diff << endl;
@@ -1360,7 +1366,7 @@ bool SimFit::GetCovariance()
   if(sigscale<1) sigscale = 1;
   
   int fluxind = 0;
-  int skyind  = 0;
+  int skyind  = skystart;
   for (SimFitVignetIterator it=begin(); it != end(); ++it)
     {
       if ((fit_flux) && (*it)->FitFlux) {
@@ -1368,7 +1374,7 @@ bool SimFit::GetCovariance()
 	(*it)->Star->varflux = sigscale * PMat(fluxind,fluxind);
 	fluxind++;
       }
-      if (fit_sky) {  
+      if (fit_sky && (*it)->FitSky) {  
 	// (*it)->Star->varsky  = sigscale * PMat(skyind,skyind++); // DO NOT USE THIS
 	(*it)->Star->varsky  = sigscale * PMat(skyind,skyind);
 	skyind++;
@@ -1380,6 +1386,11 @@ bool SimFit::GetCovariance()
       VignetRef->Star->varx  = sigscale * PMat(xind,xind);
       VignetRef->Star->vary  = sigscale * PMat(yind,yind);
       VignetRef->Star->covxy = sigscale * PMat(xind,yind);
+      for (SimFitVignetIterator it=begin(); it != end(); ++it) {
+	(*it)->Star->varx  = sigscale * PMat(xind,xind);
+	(*it)->Star->vary  = sigscale * PMat(yind,yind);
+	(*it)->Star->covxy = sigscale * PMat(xind,yind);
+      }
     }
   
   return true;
@@ -1421,9 +1432,15 @@ void SimFit::DoTheFit(int MaxIter, double epsilon)
 #endif 
 
   Resize(1);
-  if (!IterateAndSolve(MaxIter,epsilon)) return;
-  if (!GetCovariance())    return;
-
+  if (!IterateAndSolve(MaxIter,epsilon) || !GetCovariance()) {
+    // set all fluxes to zero before quitting because of failure
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it) {
+      (*it)->Star->flux = 0;
+      (*it)->Star->varflux = 0;
+    }    
+    return;
+  }
+  
 #ifdef DEBUG
   clock_t tend = clock();
   cout << " SimFit::DoTheFit() : CPU comsumed : " 
