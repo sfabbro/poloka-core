@@ -9,6 +9,7 @@
 #include "basestar.h"
 #include "image.h"
 #include "dimage.h"
+#include "frame.h"
 
 /*! \class KernelFit
     \brief Kernel fitting by least squares. 
@@ -93,6 +94,9 @@ public :
   /* background */
   XYPower BackVar;
 
+  /* background separately fitted*/
+  XYPower SepBackVar;
+
   int HStampSize;
 
   int MaxStamps;
@@ -119,6 +123,8 @@ class KernelFit {
   const Image *BestImage; //!
 //! pointer to 'worst' image (larger seeing).
   const Image *WorstImage; //!
+//! data frame
+  Frame DataFrame; //!
 //! the value of the sky of the best image.
   double BestImageBack;
 //! the value of the sky of the worst image.
@@ -140,15 +146,18 @@ class KernelFit {
   DImage* convolutions;  //!
   DImage* backStamps;  //!
   OptParams optParams;
+  //! a pointer to the differential background image
+  Image *WorstDiffBkgrdSubtracted;
+
 
   int HKernelSizeX() { return optParams.HKernelSize;}
   int HKernelSizeY() { return optParams.HKernelSize;}
 
   int mSize; /* the size of the matrix m */
-  int backStart; /* where are the indices corresponding to differential background coefficients */
   double *m; //! /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */; 
   double *b; //! /* the normal equations (i.e. grad(chi2) = 0) right hand side */ 
   double *solution; //[mSize]/* the weights of various kernels */
+  double *diffbackground; //! /* the differential background coefficient when fitted separately */
 
 /* routines to compute an index in the solution array ... internal cooking */
 
@@ -156,13 +165,18 @@ class KernelFit {
   int BackIndex(int ib) const { return ib+Kernels.size()*optParams.KernVar.Nterms;}
 
 
-/* fitted differential background value */
-double BackValue(const double&x, const double &y) const ; 
+/* Fit the differential background separately from the kernel */
+  int FitDifferentialBackground(const double NSig);
 
- void DeleteConvolvedBest() { if (ConvolvedBest) delete ConvolvedBest; ConvolvedBest = NULL;}
+/* fitted differential background value */
+  double BackValue(const double&x, const double &y) const ; 
+
+  void DeleteConvolvedBest() { if (ConvolvedBest) delete ConvolvedBest; ConvolvedBest = NULL;}
+  void DeleteWorstDiffBkgrdSubtracted() { if (WorstDiffBkgrdSubtracted) delete WorstDiffBkgrdSubtracted; WorstDiffBkgrdSubtracted = NULL;}
 
     KernelFit() { BestImage = WorstImage = NULL; BestImageStamps = NULL; ConvolvedBest = NULL; 
-                       m = b = solution = NULL; convolutions = NULL;
+                       WorstDiffBkgrdSubtracted = NULL;
+		       m = b = solution = diffbackground = NULL; convolutions = NULL;
                        BestImageBack = WorstImageBack = 0;
                       }
 
@@ -170,7 +184,8 @@ double BackValue(const double&x, const double &y) const ;
                  if (convolutions) delete [] convolutions;
                  if (BestImageStamps) delete BestImageStamps;
                  if (ConvolvedBest) delete ConvolvedBest;
-                      }
+		 if (WorstDiffBkgrdSubtracted) delete WorstDiffBkgrdSubtracted;
+  }
 
 
 /* fitting routines */
