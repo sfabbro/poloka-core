@@ -2,7 +2,6 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <iomanip>
 
 #include "sestar.h"
 
@@ -294,11 +293,15 @@ SEStar::read_it(istream& r, const char * Format)
       r >> Flux_fixaper ()  ;
       r >> Eflux_fixaper()   ;
     }
+  /* I don't know why this is there, but in the absence of format, it just 
+     messes up the whole thing :
   if (format < 3)
     {
       x -= 1.0;
       y -= 1.0;
     }
+  */
+
   if (format >=4)
     {
       r >> N()  ;
@@ -748,6 +751,7 @@ void GalaxyFinder(SEStarList const & stlse,
     }
 
 }
+
 void HistoStarFinder(SEStarList const & stlse,  
 	       double & mfwhm, double & bin_fwhm, 
 	       double & mshape, double & bin_shape)
@@ -770,3 +774,83 @@ void HistoStarFinder(SEStarList const & stlse,
   return ;
 }
 
+
+
+#include <cmath>
+#include "matvect.h"
+
+static double sq(const double &x) { return x*x;}
+
+
+
+/* one more star finder:
+1) locate a peak (the maximum) in fwhm%log(flux/fluxmax) histogram
+
+2) try to figure out the span of the peak by looking at the bin contents
+   around the peak.
+
+3) "fit" a 2D gaussian on the data itself, using an iterative approach:
+
+   using a guess of the peak extension (vxx, vyy, vxy),
+   you may compute weighted second moments (sum(x**2*w)/sum(w)),
+   with a gaussian w. You don't get the right answer, but if w
+   has the same width as the data, the outcome is a variance
+   which is half of the true one. There are several inversions
+   of 2D symetric matrices done on the flight to switch from covariance 
+   to weight matrix. 
+
+
+   Once we have located the peak and its extension
+   in the plane, we can finally select objects whithin an elliptic
+   aperture around the star peak, and call them stars.
+   If you don't need the stars, you may however consider the Fwhm
+   that comes out from this routine: it is somehow better that the
+   clipped average done in seeing_box.cc
+
+*/
+
+
+#include "histopeakfinder.h"
+
+void RoughStarFinder(const SEStarList &In, double &Fwhm,
+		     const double SigCut, SEStarList *Out)
+{
+
+  Histo2d histo(100,0,10.,30,2.,6.);
+  StarScoresList scores;
+  for (SEStarCIterator i = In.begin(); i != In.end(); ++i)
+    {
+      const SEStar &s = **i;
+      if (s.Flag() !=0 || s.FlagBad() != 0) continue;
+      if (s.flux < 10*s.EFlux()) continue; // no resolution on shape
+      double xx = s.Fwhm();
+      double yy = log(s.flux/s.Fluxmax());
+      histo.Fill(xx,yy, s.Fluxmax());
+      scores.push_back(new StarScores(xx,yy, &s));
+    }
+  double fwhmMax, shapeMax;
+  histo.MaxBin(fwhmMax, shapeMax);
+  Ellipse ellipse;
+  if (!HistoPeakFinder(scores, histo, fwhmMax, shapeMax, ellipse))
+    {
+      cout << " WARNING : HistoPeakFinder did not work properly and " 
+	   << " RoughStarFinder does not handle it " << endl;
+    }
+
+  double meanShape;
+  ellipse.GetCenter(Fwhm, meanShape);
+
+  if (Out)
+    {
+      Out->clear();
+      for (StarScoresCIterator i = scores.begin(); i != scores.end(); ++i)
+	{
+	   const StarScores &star = **i;
+	   if (star.nSig<SigCut) // it lies within the star cluster
+	     {
+	       const SEStar &s = dynamic_cast< const SEStar &>(*star.star);
+	       Out->push_back(&s);
+	     }
+	}
+    }
+}

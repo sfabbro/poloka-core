@@ -15,7 +15,7 @@ class Histo1d {
   float scalex;
 
  public:
-  Histo1d() {}
+  Histo1d() { data=NULL;}
   Histo1d(int Nx, float Minx, float Maxx);
   void Fill(float X, float weight=1.)
       {int bin = int(floor((X - minx)*scalex)); 
@@ -36,7 +36,7 @@ class Histo1d {
   friend ostream& operator << (ostream &stream, const Histo1d &h)
     { h.dump(stream); return stream;}
   
-  ~Histo1d() { delete [] data;}
+  ~Histo1d() { if (data) delete [] data;}
 };
 
 #endif /* HISTO1D__H */

@@ -22,7 +22,9 @@ class DicStar : public BaseStar {
   DicStar(double xx, double yy, double ff); 
   DicStar(const std::vector<string>& firstKeys, const std::vector<string>& newkeys); 
 
-  double getval(const string& key);
+  void AddKey(const string &KeyName, const double &Val);
+
+  double getval(const string& key) const;
   int setval(const string& key,double val);
 
   //! to read once the object is created 
@@ -60,6 +62,8 @@ class DicStar : public BaseStar {
    std::vector<double> val;
 
 
+   friend class DicStarList;
+
 #ifdef USE_ROOT
   ClassDef(DicStar,1) // Root's stuff
 #endif 
@@ -71,11 +75,12 @@ class DicStar : public BaseStar {
 
 /* what concerns the DicStarList's : */
 #include "starlist.h"
-#include "fitsimage.h"
 
 
 class DicStarList : public  StarList<DicStar> {
  public: 
+
+  DicStar *EmptyStar() const;
   DicStarList() {};
   ~DicStarList() {};
   DicStarList(const string &FileName);

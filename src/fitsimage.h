@@ -367,7 +367,7 @@ FitsImage(const string &FileName, const Image& an_image);
   FitsImage(const string &FileName, const int Nx, const int Ny);
 
 //! Extract and replaces the trimed Image into a FitsImage 
-void Trim(const Frame &Region);
+bool Trim(const Frame &Region);
 
   //! This routine is to be called if one wants to preserve the value of 0 on I/O. Assumes contents >=0, as it is Used for weight maps.
   void PreserveZeros();

@@ -1,126 +1,92 @@
-// This may look like C code, but it is really -*- C++ -*-
-
-#include <iostream>
-#include <iterator>
-#include <list>
-#include <string>
-
-#include "point.h"
-#include "basestar.h"
-#include "gtransfo.h"
 #ifndef  NSTARMATCH__H 
 #define  NSTARMATCH__H
+// This may look like C code, but it is really -*- C++ -*-
 
+#include "basestar.h"
+#include "gtransfo.h"
 
-template <class T> class Table2D
+/*! May be used to transform coordinates of lists (e.g. for matches)
+   without overwriting original ones */
+class TStar : public BaseStar
 {
+  BaseStarRef original;
 
-private :
-  int nx;
-  int ny;
-  T* data;
+public:
+  TStar(const BaseStar &B, const Gtransfo &T) : BaseStar(B), original(&B) 
+  {
+    (Point &) *this = T.apply(B);
+  }
 
-public :
-
-  Table2D(const int Nx,const int Ny):nx(Nx), ny(Ny){data= new T[nx*ny];};
-  Table2D(const int Nx,const int Ny, T init_val):nx(Nx), ny(Ny)
-  {data= new T[nx*ny]; for (int i=0; i<nx*ny; ++i) data[i] = init_val;};
-  T operator () (const int i, const int j) const {return data[i+j*nx];};
-  T& operator() (const int i, const int j) {return data[i+j*nx];};
-  ~Table2D() {delete [] data;};
-  
+  TStar(const BaseStar &ActualStar, const BaseStar &JustForPos) : BaseStar(JustForPos), original(&ActualStar) {}
 };
+    
 
 
+#include <vector>
 
+//! this is hanger of matched objects
 class NStarMatch : public BaseStar {
 
-friend class NStarMatchList;
+  vector<CountedRef<BaseStar> > stars;
+  int nm;
 
-  public :
+public:
+  NStarMatch() : nm(0) {};
 
-  // Because we try to match n lists and because not necessary all stars will have a representant 
-  // in each list, we need 2 numbers :
-  int npointers;
-  int actualMatches; 
-  // int ref;
-  Point* points;
-  const BaseStar** star;
-//! The distance will be calculated from observation i to the first observation.
-  public :
+  //! add one entry into the match at a given index. Position gets updated
+  void AddMatch(const BaseStar &Match, const unsigned Index);
 
-  NStarMatch(int n);
+  //! removes one entry into the match at a given index. Position gets updated
+  void DropMatch(const unsigned Index);
 
- 
-  NStarMatch(const BaseStar *Star, const int i, const int n);
 
-  bool StarExist(const int i) const {if (!star[i]) return false; return true;}
+  //! get actual number of matches
+  int NumberOfMatches() const { return nm;}
 
-  double x(const int i) const {return star[i]->x;}
 
-  double y(const int i) const {return star[i]->y;}
+  //! returns the match entered before (if any)
+  const BaseStar *GetMatch(const unsigned Index) const;
 
-  double flux(const int i) const {return star[i]->flux;}
 
-  double Distance(const int i, const int j, const Gtransfo &T) const 
-  { if (star[i] && star[j]) return  points[j].Distance(T.apply(points[i]));
-  else return 1e8;};
-
-  // these 2 routines become useless if C++ vectors are used instead of
-  // "manual" arrays
-  ~NStarMatch();
-  NStarMatch(const NStarMatch &O);
-
-  // private:
-
+  friend class NStarMatchList;
 
 };
 
-/* =================================== NStarMatchList ============================================================ */
-
-typedef list<NStarMatch>::iterator NStarMatchIterator;
-typedef list<NStarMatch>::const_iterator NStarMatchCIterator;
-
-class NStarMatchList : public list<NStarMatch> {
+/* ============ NStarMatchList ========================= */
 
 
-private :
-  int nlists;
-  Table2D<int> nused;
-  Table2D<int> order;
-  Table2D<double> chi2;
-  Table2D<Gtransfo*> transfo;
+class NStarMatchList : public StarList<NStarMatch> {
 
-  BaseStarList AllStars;
-  NStarMatchList(const NStarMatchList&); // to forbid copies
-  const BaseStar **emptyStar;
+ private:
+
+  vector<BaseStarRef> emptyStars;
+  vector<string> tags; // output tags for tuple entry names
 
 public :
 
+  int MatchAnotherList(const BaseStarList &List,
+		       const double MaxDist, 
+		       const BaseStar *EmptyStar,
+		       const string &Tag = "");
 
-  //  void operator=(const StarMatchList&);
+  int  write(const string &FileName) const;
 
-  /* constructor */
-  NStarMatchList(const int n);
+  int Nlists() const { return int(emptyStars.size());}
+
+  void ApplyCountCut(const int MinCount);
+
+  //! return the tag of the i-th list
+  string const&   getTag(int i) const { return tags[i]; }
+  
+  //! return the tag vector
+  vector<string> const& getTags() const { return tags; }
 
 #ifdef STORAGE
-  NStarMatchList(int n, BaseStarList &List) : nlists(n),nused(n,n),order(n,n),chi2(n,n),transfo(n,n,NULL)
-  {
-    for (BaseStarCIterator si = List.begin(); si != List.end(); ++si)
-      {
-	NStarMatch nstrm(*si,0,n);
-	push_back(nstrm);
-      }
-  }
-#endif 
+  /* constructor */
 
-  //! enables to access the fitted transformation. 
-  /*! Clone it if you want to store it permanently */
-  Gtransfo* Transfo(int i, int j) const { return transfo(i,j);}
-  Gtransfo*& Transfo(int i, int j) { return transfo(i,j);}
 
   //! access to the number of lists. 
-  int Nlists() const { return nlists;}
+
 
   //! access to the chi2 of the last fit. 
   double Chi2(int i, int j) const { return chi2(i,j);}
@@ -133,7 +99,7 @@ public :
 
   //! returns the average residual. 
   double Residual(int i, int j) const { if (nused(i,j) != 0) return sqrt(chi2(i,j)/nused(i,j)); else return -1;}
-
+  
   //! sets a transfo between the 2 lists and deletes the previous or default one.  No fit.
   void SetTransfo(const Gtransfo *Transf, const int i, const int j) 
   { 
@@ -151,7 +117,7 @@ public :
   
   /*! EmptyStar is only used by write. It has to be of the same type as
     the stars in List. The default constructor is usually OK. */
-  void MatchAnotherList(const BaseStarList &List, const int rank, const double MaxDist, const BaseStar *EmptyStar );
+
   void MatchAnotherList2(const BaseStarList &List, const int rank, const double MaxDist, const BaseStar *EmptyStar );
   
   ~NStarMatchList()
@@ -173,7 +139,13 @@ public :
   friend ostream& operator << (ostream &stream, const NStarMatchList &List)
       { stream << " number of elements " << List.size() << endl; copy(List.begin(), List.end(), ostream_iterator<NStarMatch>(stream)); return stream;} 
 
-  void dump(ostream & stream = cout) const { stream << cout; }
+#endif 
 };
+
+
+typedef NStarMatchList::iterator NStarMatchIterator;
+typedef NStarMatchList::const_iterator NStarMatchCIterator;
+
+
 
 #endif /* NSTARMATCH__H */

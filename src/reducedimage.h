@@ -135,6 +135,9 @@ Usefull in case of artificially smoothed images
 //! Produce the Saturated stars pixels mask, subtract the image background, detect with the SExtractor computed sigma. search the cosmics, and update catalog and weight for cosmics. No free coffee.
   virtual bool MakeCatalog();
 
+
+  //! produces aperture photometry on the objects from the SE catalog
+  virtual bool MakeAperCat();
   
 //! MakeCatalog_ImageBizarre() is for sum-images, or convolved images, for which we do not want to subtract the background map, nor compute the saturated pixels map, and for which we provide the value of the sigmabackground. overwrite is set to true.
   bool MakeCatalog_ImageBizarre(){ 

@@ -14,6 +14,8 @@
 // premier probleme, quelle est la fraction de pixel couverte par un disque de rayon R ?
 // x_pix, y_pix coord du centre du pixel (de taille 1x1 par convention)
 
+static double sq(const double x) {return x*x;}
+
 static double fraction(double x_centre, double y_centre, double R, double x_pix, double y_pix)
 {
   double x_min, x_max;
@@ -44,11 +46,11 @@ static double fraction(double x_centre, double y_centre, double R, double x_pix,
 #endif
 	// si la distance entre centre et bord inf gauch du pix est > R, le pixel est dehors (faux pour R petit)
 
-	if (pow(x_centre,2.)+pow(y_centre,2.) > pow(R,2.)) return 0.;
+	if (sq(x_centre)+sq(y_centre) > pow(R,2.)) return 0.;
 
 	// si la distance entre centre et bord sup droit du pix est < R, le pixel est dedans (faux pour R petit)
 
-	if (pow(x_centre-1.,2.)+pow(y_centre-1.,2.) < pow(R,2.)) return 1.;
+	if (sq(x_centre-1.)+sq(y_centre-1.) < R*R) return 1.;
 
 	// L'equation du cercle est y = y_centre + sqrt(R^2-(x-x_centre)^2)
 	
@@ -59,8 +61,8 @@ static double fraction(double x_centre, double y_centre, double R, double x_pix,
 		
 	// en quels points du bord inferieur du pixel passe le cercle.
 
-	x_min = x_centre - sqrt(pow(R,2.) - pow(y_centre,2.));
-	x_max = x_centre + sqrt(pow(R,2.) - pow(y_centre,2.));
+	x_min = x_centre - sqrt(R*R - sq(y_centre));
+	x_max = x_centre + sqrt(R*R - sq(y_centre));
 
 	if (x_min > x_max) { double prov = x_min; x_min=x_max; x_max=prov;}
 	
@@ -75,7 +77,7 @@ static double fraction(double x_centre, double y_centre, double R, double x_pix,
 	// Si le point UL du pixel n'est pas dans le cercle, il suffit de calculer l'integrale
 
 	double complement;
-	if (pow(x_centre,2.)+pow(y_centre+1.,2.) < pow(R,2.))
+	if (sq(x_centre)+sq(y_centre+1.) < R*R)
 	  {
 #ifdef DEBUG
 	    cout << "cas 1 : complement = 0" << endl;
@@ -85,8 +87,8 @@ static double fraction(double x_centre, double y_centre, double R, double x_pix,
 	else
 	// Sinon il faut recalculer x_min, le point ou le cercle coupe le bord sup du pixel
 	  {
-	    double x_min1 = x_centre - sqrt(pow(R,2.) - pow(y_centre-1.,2.));
-	    double x_min2 = x_centre + sqrt(pow(R,2.) - pow(y_centre-1.,2.));
+	    double x_min1 = x_centre - sqrt(R*R - sq(y_centre-1.));
+	    double x_min2 = x_centre + sqrt(R*R - sq(y_centre-1.));
 
 #ifdef DEBUG
 	    cout << "intersections bord sup : " << x_min1 << " " << x_min2 << endl;
@@ -102,10 +104,10 @@ static double fraction(double x_centre, double y_centre, double R, double x_pix,
 
 	//int(sqrt(R^2-x^2),x) = 1/2 x sqrt(R^2-x^2) + 1/2 R^2 arcsin (x/R)
 
-	double integrale = (x_max-x_centre) * sqrt(pow(R,2.) - pow(x_max-x_centre,2.))/2. 
-	  + pow(R,2.)* asin ((x_max-x_centre)/R)/2. + y_centre*(x_max-x_centre);
-	integrale -= (x_min-x_centre) * sqrt(pow(R,2.) - pow(x_min-x_centre,2.))/2. 
-	  + pow(R,2.)* asin ((x_min-x_centre)/R)/2. + y_centre*(x_min-x_centre);
+	double integrale = (x_max-x_centre) * sqrt(R*R - sq(x_max-x_centre))/2. 
+	  + R*R* asin ((x_max-x_centre)/R)/2. + y_centre*(x_max-x_centre);
+	integrale -= (x_min-x_centre) * sqrt(R*R - sq(x_min-x_centre))/2. 
+	  + R*R* asin ((x_min-x_centre)/R)/2. + y_centre*(x_min-x_centre);
 	integrale += complement;
 	  
 #ifdef DEBUG
@@ -137,9 +139,9 @@ bool AperturePhotomSEStar::FillFlux(FitsImage& fitsimage, FitsImage& fitsweight,
 
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin<=1.)
-      ||( (x+delta_x+xmax+1.) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.) >= fitsimage.Nx())
       ||(y+delta_y+ymin <= 1.)
-      ||(y+delta_y+ymax+1. >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1. >= fitsimage.Ny()))
     return false;
 
   float provmax = 0.;
@@ -187,9 +189,9 @@ bool AperturePhotomSEStar::FillFlux_noweight(FitsImage& fitsimage, double mean, 
 
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin+dec_x<=1.)
-      ||( (x+delta_x+xmax+1.+dec_x) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.+dec_x) >= fitsimage.Nx())
       ||(y+delta_y+ymin+dec_y <= 1.)
-      ||(y+delta_y+ymax+1.+dec_y >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1.+dec_y >= fitsimage.Ny()))
     return false;
 
   float provmax = 0.;
@@ -229,8 +231,8 @@ bool AperturePhotomSEStar::FillFlux_noweight(FitsImage& fitsimage, double mean, 
 bool AperturePhotomSEStar::ComputeBarycenter(FitsImage& fitsimage, FitsImage& fitsweight)
 {
   bool valid=true;
-  float total = 0.;
-  float x_moyen = 0., y_moyen=0.;
+  double total = 0.;
+  double x_moyen = 0., y_moyen=0.;
 
   int dec_x = 32;
   int dec_y = 1;
@@ -242,9 +244,9 @@ bool AperturePhotomSEStar::ComputeBarycenter(FitsImage& fitsimage, FitsImage& fi
 
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin+dec_x<=1.)
-      ||( (x+delta_x+xmax+1.+dec_x) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.+dec_x) >= fitsimage.Nx())
       ||(y+delta_y+ymin +dec_y<= 1.)
-      ||(y+delta_y+ymax+1.+dec_y >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1.+dec_y >=  fitsimage.Ny()))
     return false;
 
   for (int yy = ymin; yy <= ymax; ++yy)
@@ -252,7 +254,7 @@ bool AperturePhotomSEStar::ComputeBarycenter(FitsImage& fitsimage, FitsImage& fi
       {
 	float val_pixel =  fitsimage((int) (xx+x+delta_x+dec_x), (int) (yy+y+delta_y+dec_y));
 	if  (fitsweight((int) (xx+x+delta_x+dec_x), (int) (yy+y+delta_y+dec_y))==0.)  valid=false;
-	float frac = fraction(0., 0., rayon[5], xx, yy);
+	double frac = fraction(0., 0., rayon[5], xx, yy);
 	total += frac*val_pixel;
 	x_moyen += frac*val_pixel*xx;
 	y_moyen += frac*val_pixel*yy;
@@ -278,9 +280,9 @@ bool AperturePhotomSEStar::ComputeBarycenter_noweight(FitsImage& fitsimage, int 
 
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin+dec_x<=1.)
-      ||( (x+delta_x+xmax+1.+dec_x) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.+dec_x) >= fitsimage.Nx())
       ||(y+delta_y+ymin +dec_y<= 1.)
-      ||(y+delta_y+ymax+1.+dec_y >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1.+dec_y >= fitsimage.Ny()))
     return false;
 
   for (int yy = ymin; yy <= ymax; ++yy)
@@ -315,7 +317,7 @@ float AperturePhotomSEStar::compute_platitude()
   for (int i_rayon=i_debut; i_rayon<nb_rayons; ++i_rayon)
     {
       mean += aperture_flux[i_rayon];
-      var += pow(aperture_flux[i_rayon],(float) 2.);
+      var += sq(aperture_flux[i_rayon]);
     }
   mean /= (nb_rayons-i_debut);
   var /= (nb_rayons-i_debut);
@@ -324,27 +326,51 @@ float AperturePhotomSEStar::compute_platitude()
 }
 
 
+
+
+
 void AperturePhotomSEStar::write(ostream& s, const bool write_header)
 {
   if (write_header)
     {
       WriteHeader_(s);
-      s << "# ra : "   << endl
-	<< "# dec : "  << endl
-	<< "# r3 : "   << endl
-	<< "# r6 : "   << endl
-	<< "# r10 : "  << endl
-	<< "# r19 : "  << endl
-	<< "# f3 : "   << endl
-	<< "# f6 : "   << endl
-	<< "# f10 : "  << endl
-	<< "# f19 : "  << endl
-	<< "# plat : " << endl
-	<< "# end" << endl;
+      s << "# eFlux : " << endl
+	<< "# ra : "    << endl
+	<< "# dec : "   << endl
+	<< "# fmax : "  << endl
+	<< "# fmax2 : " << endl
+	<< "# fwhm : "  << endl
+	<< "# r3 : "    << endl
+	<< "# r6 : "    << endl
+	<< "# r10 : "   << endl
+	<< "# r19 : "   << endl
+	<< "# f3 : "    << endl
+	<< "# f6 : "    << endl
+	<< "# f10 : "   << endl
+	<< "# f19 : "   << endl
+	<< "# plat : "  << endl
     }
     else
       {
-	writen(s);
+	BaseStar::writen(s);
+      s << flux << " "
+	<< EFlux() << " "
+	<< ra << " "
+	<< dec << " "
+	
+	<< fluxmax << " "
+	<< fluxmax2 << " "
+	<< Fwhm() << " "
+	<< rayon[3] << " " 
+	<< rayon[6] << " " 
+	<< rayon[10] << " " 
+	<< rayon[19] << " " 
+	<< aperture_flux[3] << " " 
+	<< aperture_flux[6] << " " 
+	<< aperture_flux[10] << " " 
+	<< aperture_flux[19] << " " 
+	<< compute_platitude() << " ";
+
 	s << ra << " " 
 	  << dec << " "
 	  << rayon[3] << " " 
@@ -366,43 +392,10 @@ void AperturePhotomSEStar::write_short(ostream& s, const bool write_header)
   if (write_header)
       s << "# x : "     << endl 
 	<< "# y : "     << endl
-	<< "# ra : "    << endl
-	<< "# dec : "   << endl
-	<< "# flux : "  << endl
-	<< "# eFlux : " << endl
-	<< "# fmax : "  << endl
-	<< "# fmax2 : " << endl
-	<< "# fwhm : "  << endl
-	<< "# r3 : "    << endl
-	<< "# r6 : "    << endl
-	<< "# r10 : "   << endl
-	<< "# r19 : "   << endl
-	<< "# f3 : "    << endl
-	<< "# f6 : "    << endl
-	<< "# f10 : "   << endl
-	<< "# f19 : "   << endl
-	<< "# plat : "  << endl
-	<< "# end"      << endl;
   else
     s << x << " "
       << y << " "
-      << ra << " "
-      << dec << " "
-      << flux << " "
-      << EFlux() << " "
-      << fluxmax << " "
-      << fluxmax2 << " "
-      << Fwhm() << " "
-      << rayon[3] << " " 
-      << rayon[6] << " " 
-      << rayon[10] << " " 
-      << rayon[19] << " " 
-      << aperture_flux[3] << " " 
-      << aperture_flux[6] << " " 
-      << aperture_flux[10] << " " 
-      << aperture_flux[19] << " " 
-      << compute_platitude() << " " 
-      << endl;
+
   return;
 }
 
@@ -463,11 +456,12 @@ bool AperturePhotomBaseStar::FillFlux(FitsImage& fitsimage, FitsImage& fitsweigh
   int ymin = -1 - (int) rayon_max;
   int ymax = 1 + (int) rayon_max;
 
+
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin<=1.)
-      ||( (x+delta_x+xmax+1.) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.) >= fitsimage.Nx())
       ||(y+delta_y+ymin <= 1.)
-      ||(y+delta_y+ymax+1. >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1. >= fitsimage.Ny()))
     return false;
 
   float provmax = 0.;
@@ -525,9 +519,9 @@ bool AperturePhotomBaseStar::FillFlux_noweight(FitsImage& fitsimage, double mean
 
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin<=1.)
-      ||( (x+delta_x+xmax+1.) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.) >= fitsimage.Nx())
       ||(y+delta_y+ymin <= 1.)
-      ||(y+delta_y+ymax+1. >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1. >= fitsimage.Ny()))
     return false;
 
   float provmax = 0.;
@@ -572,8 +566,8 @@ bool AperturePhotomBaseStar::FillFlux_noweight(FitsImage& fitsimage, double mean
 bool AperturePhotomBaseStar::ComputeBarycenter(FitsImage& fitsimage, FitsImage& fitsweight)
 {
   bool valid=true;
-  float total = 0.;
-  float x_moyen = 0., y_moyen=0.;
+  double total = 0.;
+  double x_moyen = 0., y_moyen=0.;
 
   cout << "(" << x << "," << y << ") ";
 
@@ -584,9 +578,9 @@ bool AperturePhotomBaseStar::ComputeBarycenter(FitsImage& fitsimage, FitsImage& 
 
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin<=1.)
-      ||( (x+delta_x+xmax+1.) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.) >= fitsimage.Nx())
       ||(y+delta_y+ymin <= 1.)
-      ||(y+delta_y+ymax+1. >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1. >= fitsimage.Ny()))
     return false;
 
   for (int yy = ymin; yy <= ymax; ++yy)
@@ -623,9 +617,9 @@ bool AperturePhotomBaseStar::ComputeBarycenter_noweight(FitsImage& fitsimage)
 
   // Si on est trop près du bord on arrete
   if ((x+delta_x+xmin<=1.)
-      ||( (x+delta_x+xmax+1.) >= (double) fitsimage.KeyVal("NAXIS1"))
+      ||( (x+delta_x+xmax+1.) >= fitsimage.Nx())
       ||(y+delta_y+ymin <= 1.)
-      ||(y+delta_y+ymax+1. >= (double) fitsimage.KeyVal("NAXIS2")))
+      ||(y+delta_y+ymax+1. >= fitsimage.Ny()))
     return false;
 
   for (int yy = ymin; yy <= ymax; ++yy)
@@ -654,14 +648,15 @@ bool AperturePhotomBaseStar::ComputeBarycenter_noweight(FitsImage& fitsimage)
 //
 // ==============================
 
-float AperturePhotomBaseStar::compute_platitude(double &mean, double &var, int i_debut)
+double AperturePhotomBaseStar::compute_platitude(double &mean, double &var, 
+						int i_debut) const
 {
   mean = 0.; var = 0.;
   
   for (int i_rayon=i_debut; i_rayon<nb_rayons; ++i_rayon)
     {
       mean += aperture_flux[i_rayon];
-      var += pow(aperture_flux[i_rayon],(float) 2.);
+      var += sq(aperture_flux[i_rayon]);
     }
   mean /= (nb_rayons-i_debut);
   var /= (nb_rayons-i_debut);
@@ -669,14 +664,14 @@ float AperturePhotomBaseStar::compute_platitude(double &mean, double &var, int i
   else return -1;
 }
 
-float AperturePhotomBaseStar::compute_platitude(int i_debut)
+double AperturePhotomBaseStar::compute_platitude(int i_debut) const
 {
   double mean = 0., var = 0.;
   return compute_platitude(mean, var, i_debut) ;
 }
 
 
-float AperturePhotomBaseStar::compute_indep_platitude(double &mean, double &var, int i_debut)
+double AperturePhotomBaseStar::compute_indep_platitude(double &mean, double &var, int i_debut) const
 {
   mean = 0.; var = 0.;
   double flux_diff[nb_rayons];
@@ -697,7 +692,7 @@ float AperturePhotomBaseStar::compute_indep_platitude(double &mean, double &var,
       flux_diff[i_rayon] = (aperture_flux[i_rayon] - aperture_flux[i_rayon-1])
 	/(i_rayon*i_rayon*M_PI - (i_rayon-1.)*(i_rayon-1.)*M_PI) ;
       mean += flux_diff[i_rayon];
-      var += pow(flux_diff[i_rayon], 2.);
+      var += sq(flux_diff[i_rayon]);
       //cout << i_rayon << " " <<  flux_diff[i_rayon] << endl;
     }
   
@@ -713,43 +708,46 @@ float AperturePhotomBaseStar::compute_indep_platitude(int i_debut)
   return compute_indep_platitude(mean, var, i_debut);
 }
 
-
-void AperturePhotomBaseStar::write(ostream& s, const bool write_header)
+string  AperturePhotomBaseStar::WriteHeader_(ostream & stream, 
+					     const char*i) const
 {
-  if (write_header)
-    {
-      WriteHeader_(s);
-      s << "# ra : "   << endl
-	<< "# dec : "  << endl
-	<< "# r3 : "   << endl
-	<< "# r6 : "   << endl
-	<< "# r10 : "  << endl
-	<< "# r19 : "  << endl
-	<< "# f3 : "   << endl
-	<< "# f6 : "   << endl
-	<< "# f10 : "  << endl
-	<< "# f19 : "  << endl
-	<< "# plat : " << endl
-	<< "# end" << endl;
-    }
-    else
-      {
-	writen(s);
-	s << ra << " " 
-	  << dec << " "
-	  << rayon[3] << " " 
-	  << rayon[6] << " " 
-	  << rayon[10] << " " 
-	  << rayon[19] << " " 
-	  << aperture_flux[3] << " " 
-	  << aperture_flux[6] << " " 
-	  << aperture_flux[10] << " " 
-	  << aperture_flux[19] << " " 
-	  << compute_platitude() << " "
-	  << endl;
-      }
-  return;
+  if (i==NULL) i = "";
+  string format = BaseStar::WriteHeader_(stream);
+  stream << "# ra"<< i << ":"   << endl
+	 << "# dec" << i << ":" << endl
+	 << "# r3"  << i << ":" << endl
+	 << "# r6"  << i << ":" << endl
+	 << "# r10" << i << ":" << endl
+	 << "# r19" << i << ":" << endl
+	 << "# f3"  << i << ":" << endl
+	 << "# f6"  << i << ":" << endl
+	 << "# f10" << i << ":" << endl
+	 << "# f19" << i << ":" << endl
+	 << "# plat"<< i << ":" << endl;
+
+  return format+" AperturePhotomBaseStar 1 ";   
 }
+
+
+void AperturePhotomBaseStar::write(ostream& s) const
+{
+  
+  BaseStar::writen(s);
+  int oldprec = s.precision();
+  s << setprecision(10);// set precision for ra and dec
+  s << ra << " " 
+    << dec << " " << setprecision(oldprec) 
+    << rayon[3] << " " 
+    << rayon[6] << " " 
+    << rayon[10] << " " 
+    << rayon[19] << " " 
+    << aperture_flux[3] << " " 
+    << aperture_flux[6] << " " 
+    << aperture_flux[10] << " " 
+    << aperture_flux[19] << " " 
+    << compute_platitude() << " ";
+}
+
 
 void AperturePhotomBaseStar::write_short(ostream& s, const bool write_header)
 {
@@ -913,7 +911,7 @@ float MultiMeasuredStar::compute_mean2(int i_rayon)
     {
       if (mesures[measurement].valid) 
 	{
-	  mean2 += pow(mesures[measurement].measured_aperture_flux[i_rayon],(float) 2.);
+	  mean2 += sq(mesures[measurement].measured_aperture_flux[i_rayon]);
 	  ++nb;
 	}
     }
@@ -921,9 +919,11 @@ float MultiMeasuredStar::compute_mean2(int i_rayon)
   else return -1.;
 }
 
-float MultiMeasuredStar::compute_platitude(int measurement)
+
+
+double MultiMeasuredStar::compute_platitude(int measurement) const
 {
-  float mean = 0., var = 0.;
+  double mean = 0., var = 0.;
   
   if (! mesures[measurement].valid) return -1.;
   
@@ -931,7 +931,7 @@ float MultiMeasuredStar::compute_platitude(int measurement)
   for (int i_rayon=i_debut; i_rayon<nb_rayons; ++i_rayon)
     {
       mean += mesures[measurement].measured_aperture_flux[i_rayon];
-      var += pow(mesures[measurement].measured_aperture_flux[i_rayon],(float) 2.);
+      var += sq(mesures[measurement].measured_aperture_flux[i_rayon]);
     }
   mean /= (nb_rayons-i_debut);
   var /= (nb_rayons-i_debut);
@@ -1113,7 +1113,7 @@ bool MultiMeasuredStar::match_aps(const SEStarList& laliste,  Gtransfo * pix2rad
       
       pix2radec->apply(x0, y0, ra, dec);
 
-      double distance = sqrt( pow(ra1 - ra,2.)+pow(dec1 - dec,2.));
+      double distance = sqrt( sq(ra1 - ra)+sq(dec1 - dec));
       
       if (distance < ASSOCIATION_LANDOLT_DISTANCE) 
 	{

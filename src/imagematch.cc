@@ -379,7 +379,7 @@ bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2,
       StarMatchList *allMatch = ListMatchCollect(bl1, bl2, One2Two, 2.5);
       string name = DbImage1.Name()+"."+DbImage2.Name()+".match.list";
       cout << " writing match list " << name << endl;
-      allMatch->write(*One2Two,name);
+      allMatch->write(name, One2Two);
     }
 
   return true;

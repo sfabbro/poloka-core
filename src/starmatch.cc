@@ -192,18 +192,17 @@ for (si = begin(); si != end() && count < NKeep; ++count, ++si);
 erase(si, end());
 }
 
+#ifdef STORAGE
 void StarMatchList::write(ostream & pr) const
 {
 
-  StarMatchCIterator itu= begin();
-  StarMatch starm = *itu ; 
-  GtransfoIdentity identity;
-  if ( itu == end() )
+  if ( empty() )
     {
-      cerr << " Pas d'Ecriture de StarMatchList vide " << endl ;
+      cerr << " Can't write empty StarMatchList " << endl ;
       return ;
     }
 
+  const StarMatch &starm = front(); 
   (starm.s1)->WriteHeader_(pr,"1");
   (starm.s2)->WriteHeader_(pr,"2");
   pr << "# dx : diff in x" << std::endl;
@@ -226,55 +225,56 @@ void StarMatchList::write(ostream & pr) const
       pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy);
       pr << endl ;
     }
-
-
 }
-void StarMatchList::write_wnoheader(ostream & pr) const
+#endif
+
+
+void StarMatchList::write_wnoheader(ostream & pr, const Gtransfo* Transfo) const
 {
 
-  StarMatchCIterator itu= begin();
-  StarMatch starm = *itu ; 
-  GtransfoIdentity identity;
-  if ( itu == end() )
+  if ( empty() )
     {
-      cerr << " Pas d'Ecriture de StarMatchList vide " << endl ;
+      cerr << " Can't write empty StarMatchList " << endl ;
       return ;
     }
-    
+
   ios::fmtflags  old_flags =  pr.flags(); 
   pr  << resetiosflags(ios::scientific) ;
   pr  << setiosflags(ios::fixed) ;
   int oldprec = pr.precision();
-  pr<< setprecision(8);
+  pr<< setprecision(10);
   for (StarMatchCIterator it= begin(); it!= end(); it++ )
     {
       StarMatch starm = *it ;
-      starm.SetDistance(identity);
 
       (starm.s1)->writen(pr);
       pr << " " ;
+      // transformed coordinates
+      Point p1 = *starm.s1;
+      if (Transfo) p1=Transfo->apply(p1);
+      pr << p1.x << ' ' << p1.y << ' ';
+
       (starm.s2)->writen(pr);
-      double dx = starm.s1->x - starm.s2->x;
-      double dy = starm.s1->y - starm.s2->y;
+
+      // compute offsets here  because they can be rounded off by paw.
+      double dx = p1.x - starm.s2->x;
+      double dy = p1.y - starm.s2->y;
       pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy);
       pr << endl ;
     }
   pr.flags(old_flags);
   pr << setprecision(oldprec);
-
-
 }
-void StarMatchList::write(const Gtransfo  &tf, ostream & pr) const
-{
 
-  StarMatchCIterator itu= begin();
-  StarMatch starm = *itu ; 
-  if ( itu == end() )
+void StarMatchList::write(ostream &pr, const Gtransfo *tf) const
+{
+  if ( empty() )
     {
-      cerr << " Pas d'Ecriture de StarMatchList vide " << endl ;
+      cerr << " Can't write empty StarMatchList " << endl ;
       return ;
     }
 
+  const StarMatch &starm = front(); 
   (starm.s1)->WriteHeader_(pr, "1");
   pr << "# x1tf: coordonnees x1 transformee "  << endl ; 
   pr << "# y1tf: coordonnees y1 transformee "  << endl ; 
@@ -285,41 +285,23 @@ void StarMatchList::write(const Gtransfo  &tf, ostream & pr) const
   pr << "# dass : association distance"  << endl ; 
   pr << "# end " << endl ;
 
- 
-  for (StarMatchCIterator it= begin(); it!= end(); it++ )
-    {
-      const StarMatch &starm = *it ;
-
-      (starm.s1)->writen(pr);
-      pr << " " ; 
-      double xi = (starm.s1)->x ;
-      double yi = (starm.s1)->y ;
-      double xo, yo ;
-      tf.apply(xi,yi,xo,yo);
-      pr << xo << " " << yo << " " ;
-      (starm.s2)->writen(pr);
-      pr << " " << xo - starm.s2->x << ' ' 
-	 << yo - starm.s2->y << ' ' 
-	 << starm.Distance(tf) ;
-      pr << endl ;
-    }
-
-
+  write_wnoheader(pr, tf);
 }
 
 void
-StarMatchList::write(const Gtransfo & tf, const string &filename) const
+StarMatchList::write(const string &filename, const Gtransfo *tf) const
 {
   ofstream pr(filename.c_str()) ;
-  write(tf, pr);
+  write(pr, tf);
   pr.close();
 }
 
+#ifdef STORAGE
 void
 StarMatchList::write(const string &filename) const
 {
   ofstream pr(filename.c_str()) ;
-  cerr <<"Writing with fixed precision " << endl ;
+  //  cerr <<"Writing with fixed precision " << endl ;
   pr  << resetiosflags(ios::scientific) ;
   pr  << setiosflags(ios::fixed) ;
   int oldprec = pr.precision();
@@ -327,7 +309,7 @@ StarMatchList::write(const string &filename) const
   write(pr);
   pr.close();
 }
-
+#endif
 
 
 

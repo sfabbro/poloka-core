@@ -9,12 +9,14 @@ bin_PROGRAMS = \
  make_catalog make_cosmic make_phot \
  make_dead makefringe \
  joinlist \
- makesub make_weight matchNimages matchradec matchstandard matchusno \
+ makesub make_weight matchstandard matchusno \
  preptoads removeback selection \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
- compute enlargeimage calibrate coordfromimage enlargedead mask2dead safesex seeing
+ compute enlargeimage calibrate coordfromimage enlargedead mask2dead \
+ mkcat2 seeing mergelists
+
 
 
 ### CPPFLAGS for all programs
@@ -103,8 +105,8 @@ makefringe_SOURCES = makefringe.cc
 #make_mosaique_SOURCES = make_mosaique.cc
 #make_sub_SOURCES = make_sub.cc
 make_weight_SOURCES = make_weight.cc
-matchNimages_SOURCES = matchNimages.cc
-matchradec_SOURCES = matchradec.cc
+#matchNimages_SOURCES = matchNimages.cc
+#matchradec_SOURCES = matchradec.cc
 matchstandard_SOURCES = matchstandard.cc
 matchusno_SOURCES = matchusno.cc
 preptoads_SOURCES = preptoads.cc
@@ -114,11 +116,15 @@ skylev_SOURCES = skylev.cc
 sum_images_SOURCES = sum_images.cc
 trim_SOURCES = trim.cc
 valid_fits_SOURCES = valid_fits.cc
-safesex_SOURCES = safesex.cc
+#safesex_SOURCES = safesex.cc
+#essai_SOURCES = essai.cc
+mkcat2_SOURCES = mkcat2.cc
+#testphot_SOURCES = testphot.cc
+#testphot_LDFLAGS = `cernlib`
 enlargedead_SOURCES = enlargedead.cc
 mask2dead_SOURCES = mask2dead.cc
 seeing_SOURCES = seeing.cc
-
+mergelists_SOURCES = mergelists.cc
 
 
 

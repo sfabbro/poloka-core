@@ -31,28 +31,19 @@ char line[512];
 
 while (fgets(line,512,file))
   {
+  if (line[0] == '@') continue;
   char w1[512], w2[512];
   if (line[0] != '#')
     {
     printf(" header should end by '# end'\n"); return NULL;
     }
-  if (sscanf(line+1,"%s",w1) == 1 && strstr(w1,"end") == w1) break;
+  if (sscanf(line+1,"%s",w1) == 1 && strcmp(w1,"end") == 0) break;
   if (dim == MAXVAR) 
     { printf(" tuple truncated to %d variables\n",dim); continue;} 
-  if (sscanf(line +1 ,"%s %s",w1,w2) == 2)
+  if (sscanf(line+1," %[^: ] %s",w1,w2)==2  && w2[0] == ':' )
     {
-    char *p;
-    if (strstr(w2,":") == w2) /*    var1 : this is the variable 1... */ 
-      {
       tags[dim] = StringNew(w1);(dim)++;
       continue;
-      }
-    if ((p = strchr(w1,':')))/* var1: this is the variable 1 */ 
-      {
-      *p = '\0';
-      tags[dim] = StringNew(w1);(dim)++;
-      continue;
-      }
     }
   } /* end of input read */
 *Dim = dim;

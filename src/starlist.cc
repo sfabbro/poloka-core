@@ -21,12 +21,18 @@ template<class Star> StarList<Star>::StarList(const string &FileName) /* to be c
 template<class Star> int StarList<Star>::read(istream & r)
 {
   char c ;
-  char buff[400];
-  char *format = 0;
+  char buff[4096];
+  char format[512];
   ClearList();
   while( r >> c ) // to test eof
     {
       r.unget() ;
+      if ( (c == '@') ) 
+	{
+	  r.getline(buff,4096); 
+	  glob.ProcessLine(buff);
+	  continue;
+	}
       if ( (c == '#') ) // we jump over the line  (not always ...)
         {
 	  r.getline(buff,400);
@@ -34,12 +40,14 @@ template<class Star> int StarList<Star>::read(istream & r)
 	  char *p = strstr(buff,"format");
 	  if (p) /* this test is enough because the format is the last line of the header ... */
           {
-	    format = p + strlen("format");
+	    strncpy(format,p + strlen("format"),512);
           }
         }
       else
 	{
-	  Star* s = Star::read(r, format); 
+	  Star* s = Star::read(r, format);
+	  // read the end of line, in case there are some items left
+	  r.getline(buff,4096);
 	  if (!s) 
 	    {
 	      return 0;
@@ -68,7 +76,7 @@ StarList<Star>::ascii_read(const string &FileName)
   return read(rd);
 }
 
-template<class Star> int StarList<Star>::write(const string &FileName) /* const */
+template<class Star> int StarList<Star>::write(const string &FileName) const
 {
   ofstream pr(FileName.c_str());
   if (!pr)
@@ -91,6 +99,12 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
   pr  << setiosflags(ios::fixed) ;
   int oldprec = pr.precision();
   pr<< setprecision(8);
+
+  // write GlobalValues if any
+  vector<string> globs = glob.OutputLines();
+  for (unsigned k = 0; k < globs.size(); ++k)
+    pr << '@' << globs[k] << endl;
+
   // check pr a faire avant, close a faire tout seul
   const Star *theFirst = *(begin());
   // if (!theFirst) return 0;
@@ -106,16 +120,6 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
     }
   pr.flags(old_flags);
   pr << setprecision(oldprec);
- return 1;
-}
-
-template<class Star> int StarList<Star>::write_wnoheader(ostream & pr) const
-{
-  // check pr a faire avant, close a faire tout seul
-  for (StarCIterator it= begin(); it!=end() ; it++ )
-    {    
-      (*it)->Star::write(pr);
-    }
  return 1;
 }
 

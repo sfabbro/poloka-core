@@ -153,7 +153,7 @@ return stream;
 if (status)\
   {\
   cfitsio_report_error(status, message);\
-  cerr << " for file " << this->fileName << endl;\
+  cerr << " for file '" << this->fileName << "'" << endl;\
   return_statement;\
   }
 
@@ -1473,7 +1473,7 @@ if (IsValid() && FileMode() == RW)
 // fits_close_file(fptr, &status); in FitsHeader destructor;
 }
 
-void FitsImage::Trim(const Frame &Region)
+bool FitsImage::Trim(const Frame &Region)
 {
   cout << "Trimming the overscan region of " << FileName() << endl;
 
@@ -1487,7 +1487,7 @@ void FitsImage::Trim(const Frame &Region)
  if (Nx() == Nx_Image && Ny() == Ny_Image || (Region*wholeFrame != Region))
    {
      cout << "Image " << FileName () << " already trimed : nothing done." << endl ;
-     return;
+     return false;
    }
  *((Image *) this) = Subimage(X_0,Y_0,Nx_Image,Ny_Image);
  // Correct the WCS if any:
@@ -1505,7 +1505,8 @@ void FitsImage::Trim(const Frame &Region)
      else
        cout << " FitsImage::Trim : trimming a FITS image opened RO " << FileName() << endl;
    }
- 
+
+
  if (HasKey("DATASEC")) {
    if (FileMode() == RW) {
      char datasec[100];
@@ -1516,6 +1517,7 @@ void FitsImage::Trim(const Frame &Region)
    }
 
  }
+ return true;
 }
 
 

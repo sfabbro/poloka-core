@@ -5,6 +5,3 @@
 *.la
 Makefile
 Makefile.in
-.cvsignore
-.libs
-.deps

@@ -1,6 +1,7 @@
 #include "reducedutils.h"
 #include "starmatch.h"
 #include "listmatch.h"
+#include "vutils.h" // for DArrayMedian
 
 static bool SM_DecFluxMax(const StarMatch &S1, const StarMatch &S2)
 {
@@ -64,7 +65,9 @@ double QuickPhotomRatio(const SEStarList &CurList, const SEStarList &RefList,
   return sum / sumwt;
 }
 
-static double medianRatio(StarMatchList *matchlist)
+
+
+double MedianPhotomRatio(const StarMatchList *matchlist)
 {
   if (matchlist->empty()) 
     {
@@ -72,27 +75,24 @@ static double medianRatio(StarMatchList *matchlist)
       return -99.;
     }
 
-  matchlist->sort(&DecPhoRatio);
-  const size_t mid = matchlist->size() / 2;
-  size_t count = 0;
-  StarMatchCIterator it = matchlist->begin();
-  while ((it != matchlist->end()) && (count < mid)) { ++it; ++count; }
-  StarMatchCIterator itm = it;  itm--;
-  return (matchlist->size() & 1 ) ? 
-         it->s1->flux / it->s2->flux  : 
-         0.5 * ( (itm)->s1->flux / (itm)->s2->flux + it->s1->flux / it->s2->flux );
+
+  double *ratios = new double[matchlist->size()];
+  int count = 0;
+  for (StarMatchCIterator i = matchlist->begin(); i != matchlist->end(); ++i)
+    ratios[count++] = i->s1->flux/i->s2->flux;
+  double med = DArrayMedian(ratios,count);
+  delete [] ratios;
+  return med;
 }
 
 double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefList, const Gtransfo *Transfo)
 {
-  StarMatchList *matchlist = ListMatchCollect(CurList, RefList, Transfo, 1.);
-  return medianRatio(matchlist);
-}
-
-double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefList)
-{
-  StarMatchList *matchlist = ListMatchCollect(CurList, RefList, 1.);
-  return medianRatio(matchlist);
+  StarMatchList *matchlist;
+  if (!Transfo) matchlist = ListMatchCollect(CurList, RefList, 1.);
+  else matchlist = ListMatchCollect(CurList, RefList, Transfo, 1.);
+  double pr= MedianPhotomRatio(matchlist);
+  delete matchlist;
+  return pr;
 }
 
 string ImageSetName(const ReducedImage& AnImage)

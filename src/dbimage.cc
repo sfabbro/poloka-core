@@ -371,15 +371,17 @@ void DbConfigExample()
 string DbConfigFile::FindCatalog(const string &FileName, const bool Warn) const
 {
   if (FileName == "") return "";
-  string cand;
-  if (FileName[0] == '/') cand = FileName;
+  if (FileName[0] == '/')
+    {
+      if (FileExists(FileName)) return FileName;
+    }
   else for (unsigned i = 0; i < catalog_pathes.size(); ++i)
     {
-      cand = catalog_pathes[i]+FileName;
+      std::string cand = catalog_pathes[i]+FileName;
       if (FileExists(cand)) return cand;
     }
   if (Warn) std::cerr << "DbConfigFindCatalog :  cannot locate " << FileName << std::endl;
-  return cand;
+  return "";
 }
 
 // locator for catalogs
@@ -677,6 +679,11 @@ if (Kind == DaophotAp) return directory + "calibrated.ap";
 return "";
 }
 
+string DbImage::AperCatalogName() const
+{
+  return directory+"aperse.list";
+}
+
 string DbImage::ImagePsfName(const DbImagePsfKind Kind) const 
 {
 if (!IsValid()) return string("");
@@ -864,7 +871,7 @@ if (path_list.size() == 0)
   {  /* interpret it directly as a genuine file path, I am not sure it is 
          a very good idea */
   Path a_path(PathName,"toto",extract_date(PathName));
-  if (a_path.date != 0)   path_list.push_back(a_path); 
+  path_list.push_back(a_path); 
   }
 for (PathCIterator ipath = path_list.begin(); ipath != path_list.end(); ++ipath)
   {

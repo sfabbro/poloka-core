@@ -23,7 +23,7 @@ class Mat;
 // if you have filled matrix M parameters for which y>=x (with M(x,y)=...), use UorL="L"
 // else use UorL="U"
 // Matrix A is modified in this routine (also B which is at the end the solution X)
-int cholesky_solve(Mat &A, Vect &B, char* UorL = "L");
+int cholesky_solve(Mat &A, Vect &B, const char* UorL = "L");
 
 // Inverts matrix A using the factorization done in cholesky_solve
 // Uses lapack dpotri_
@@ -32,7 +32,7 @@ int cholesky_solve(Mat &A, Vect &B, char* UorL = "L");
 // for consistency).
 // This routine must be called after cholesky_solve, make sure the value of UorL
 // is the same as that used with dposv
-int cholesky_invert(Mat &A, char* UorL = "L"); // when cholesky_solve is called first
+int cholesky_invert(Mat &A, const char* UorL = "L"); // when cholesky_solve is called first
 
 
 // Mat and Vect classes

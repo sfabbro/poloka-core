@@ -12,14 +12,14 @@
 
 
 
-static void elixir_process(ReducedImage &Rim, bool old_fringe_method, bool always_defringe, bool never_defringe)
+static bool elixir_process(ReducedImage &Rim, bool old_fringe_method, bool always_defringe, bool never_defringe)
 {
   
   FitsImage *elixir = new FitsImage(Rim.ElixirName());
   if (!elixir->IsValid())
     {
       cerr << "elixir_to_toads : invalid file : "  << Rim.Name() << endl;
-      return;
+      return false;
     }
 
   // copy and forget the input
@@ -42,7 +42,7 @@ static void elixir_process(ReducedImage &Rim, bool old_fringe_method, bool alway
 	  FitsImage fringemap(Rim.FitsFringeName());
 	  if(!fringemap.IsValid()) {
 	    cout << "ERROR in elixir_to_toads , fringemap " << Rim.FitsFringeName() << " is not valid" << endl;
-	    return;
+	    return false;
 	  }
 	  RemoveFringes(image, fringemap, true);
 	  image.AddOrModKey("FRINGED","SUB","Fringe pattern subtracted");
@@ -64,7 +64,11 @@ static void elixir_process(ReducedImage &Rim, bool old_fringe_method, bool alway
     }
   }
 
+
+
   // find saturation level
+  // Why was this code copied from the library??
+  // this is a shame!
   float maxVal = image.MaxValue();   
   double saturation = maxVal, sat;
   double scale = 50.0;
@@ -121,6 +125,7 @@ static void elixir_process(ReducedImage &Rim, bool old_fringe_method, bool alway
     {
       cout << " this image does not look like a new born Elixir image : no sky statistics computed" << endl;
     }
+  return true;
 }
 
 void DumpHelp(const char *programname) {
@@ -166,6 +171,8 @@ int main(int argc,char **argv)
     filenames.push_back(filename);
   }
   
+
+  bool ok = true;
   int nimages = filenames.size();
   if(nimages<=0) {
     cout << "missing input image(s)" << endl;
@@ -173,9 +180,9 @@ int main(int argc,char **argv)
   }
   for(int im=0;im<nimages;im++) {
     ReducedImage im(filenames[im]);
-    elixir_process(im,old_fringe_method,always_defringe,never_defringe);
+    ok &= elixir_process(im,old_fringe_method,always_defringe,never_defringe);
   }
 
-  return EXIT_SUCCESS;
+  return (ok ? EXIT_SUCCESS: EXIT_FAILURE);
 }
 

@@ -373,6 +373,11 @@ static string toads_date(const string &FitsDate)
 #define SIMPLE_TRANSLATOR(RoutineName,KeyTag) \
        TRANSLATOR_DEC(RoutineName) { return Head.KeyVal(KeyTag,Warn);}
 
+#define SIMPLE_TRANSLATOR_WITHDEF(RoutineName,KeyTag,DefaultValue) \
+       TRANSLATOR_DEC(RoutineName) \
+      { if (Head.HasKey(KeyTag)) return Head.KeyVal(KeyTag,Warn);\
+        else return FitsKey(KeyTag,DefaultValue); }
+
 #define RETURN_A_VALUE(RoutineName,Value) \
         TRANSLATOR_DEC(RoutineName) { return FitsKey(#RoutineName,Value);}
 
@@ -418,13 +423,13 @@ public :
   // the default translators
   // if you change here, change also the documented default in ToadsKeys array...
   // I would advise NOT to change these defaults: derived classes rely on it
-  virtual SIMPLE_TRANSLATOR(TOADPIXS,"PIXSCALE")
+  virtual SIMPLE_TRANSLATOR_WITHDEF(TOADPIXS,"PIXSCALE",1.);
   virtual TRANSLATOR_DEC(TOADINST) { return FitsKey("TOADINST",TelInstName());}
   virtual TRANSLATOR_DEC(TOADTELE) { return FitsKey("TOADTELE",TelName());}
   virtual SIMPLE_TRANSLATOR(TOADFILT,"FILTER");
   virtual SIMPLE_TRANSLATOR(TOADEXPO,"EXPTIME");
-  virtual SIMPLE_TRANSLATOR(TOADGAIN,"GAIN");
-  virtual SIMPLE_TRANSLATOR(TOADRDON,"RDNOISE");
+  virtual SIMPLE_TRANSLATOR_WITHDEF(TOADGAIN,"GAIN",1.);
+  virtual SIMPLE_TRANSLATOR_WITHDEF(TOADRDON,"RDNOISE",0.);
   virtual SIMPLE_TRANSLATOR(TOADRASC,"RA");
   virtual SIMPLE_TRANSLATOR(TOADDECL,"DEC");
   virtual SIMPLE_TRANSLATOR(TOADEQUI,"EQUINOX");

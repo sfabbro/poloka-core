@@ -358,6 +358,11 @@ void HistoStarFinder(SEStarList const & stlse,
 	       double & mfwhm, double & bin_fwhm, 
 	       double & mshape, double & bin_shape ) ;
 
+void RoughStarFinder(const SEStarList &In, double &Fwhm, 
+		     const double SigCut = 4, 
+		     SEStarList *Stars = NULL);
+
+
 #endif //SESTAR_SEEN
 
 

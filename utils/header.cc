@@ -22,7 +22,10 @@ exit(EXIT_FAILURE);
 
 static void fits_header_process(const string &FileName, vector<char *> requested_keys, const string &line_start)
 {
-  if (!FileExists(FileName)) { cerr << FileName << " does not exist" << endl; return;}
+  /* checking here that the file exists forbids to use "file[1]",
+     which is a pity. If there is a problem FitsHeader::IsValid
+     returns false.*/
+  //  if (!FileExists(FileName)) { cerr << FileName << " does not exist" << endl; return;}
   //  if (!IsFits(FileName))     { cerr << FileName << " is not a fits file" << endl; return;}
   FitsHeader header(FileName);
   if (!header.IsValid()) return;

@@ -43,13 +43,14 @@ int main(int argc,char **args)
     {
 
       FitsImage image(args[i],RW);  
+      image.EnableWrite(false); // hold it
       if (!image.IsValid())
 	{
 	  cerr << " trim : invalid fits file : "  << args[i] << endl;
 	  continue;
 	}
       if (use_header) illu = TotalIlluRegion(image);
-      image.Trim(illu);
+      if (image.Trim(illu)) image.EnableWrite(true);
     }
   return EXIT_SUCCESS;
 }

@@ -1462,7 +1462,8 @@ void SimFit::write(const string& StarName,const string &DirName, unsigned int wh
     lstream << setiosflags(ios::fixed);
     front()->Star->WriteHeader(lstream);
     for (SimFitVignetIterator it=begin(); it != end() ; ++it) {
-      lstream << *((*it)->Star) << endl;
+      (*it)->Star->writen(lstream);
+      lstream << endl;
     }
     lstream.close();
   }

@@ -7,10 +7,19 @@ EXTRA_DIST =   datacards/default.conv  datacards/default.nnw      datacards/defa
 
 SUBDIRS = objio cern_stuff lapack_stuff telinst src dao lc mc utils datacards cern_utils
 
+
 #bindings doc  
 
-bin_SCRIPTS = repack-config
+bin_SCRIPTS = repack-config 
 BUILT_SOURCES = repack-config
-repack-config: repack-config.in
+repack-config: repack-config.in  my-installdirs
 
-include_HEADERS = config.h
+include_HEADERS = config.h 
+
+## certainly exists in automake but I just do it by hand
+
+install_dirs = @prefix@/bin @prefix@/lib @prefix@/include
+my-installdirs :
+	@for dir in $(install_dirs); do \
+	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
+	done

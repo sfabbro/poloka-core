@@ -13,9 +13,10 @@
 #include <fstream>
 #include "fileutils.h"
 #include "dbimage.h"
-#include <math.h>
+#include <cmath>
 #include "wcsutils.h"  // pour passer des coordonnees pixel aux RA-DEC
 #include "aperturephotometry.h"
+#include "frame.h"
 
 
 #ifndef M_PI
@@ -40,27 +41,31 @@ void wcs_to_pixel(Gtransfo *pix2radec, double ra, double dec, double &x, double 
 // =================================================================
 // =================================================================
 
+static void usage(const char *prog)
+{
+  std::cerr << "usage :" << std::endl
+	    << prog << " [options] <fitsimage>" << std::endl
+	    << "  process coordinates listed in ra-dec in list" << std::endl
+	    << "  extracts a rudimentary list if none is provided" << std::endl
+	    << " options: " << std::endl
+	    << "  -l <list>: do photometry of objects in this external catalogue" << std::endl
+	    << "  -p       : coordinates of external catalog in pixels" << std::endl
+	    << "  -r       : coordinates of external catalog in RA/Dec" << std::endl;
+    exit(1);
+}  
+
+
 int main(int argc, char ** argv)
 {
 
-  if (argc < 2)
-    {
-      std::cerr << "usage : myphotometry <fitsimage>" << std::endl;
-      std::cerr << "  process coordinates listed in ra-dec in list" << std::endl;
-      std::cerr << "  extracts a rudimentary list if none is provided" << std::endl;
-      std::cerr << " options: " << std::endl;
-      std::cerr << "  -l <list>: do photometry of objects in this external catalogue" << std::endl;
-      std::cerr << "  -p       : coordinates of external catalog in pixels" << std::endl;
-      std::cerr << "  -r       : coordinates of external catalog in RA/Dec" << std::endl;
-      //std::cerr << "  -o <filename> : output list name (default is )" << std::endl;
-      exit(1);
-    }
+  if (argc < 2) usage(argv[0]);
 
   // Je decortique les arguments, et je cherche l'image fits
 
   BaseStarList starlist;
   bool list_is_provided=false;
   char coordinate_system = 'n';
+  string fitsname;
 
   for (int i=1;  i<argc; ++i) // argv[0] is the executable name
     {      
@@ -76,154 +81,158 @@ int main(int argc, char ** argv)
 	      
 	    case 'r' : coordinate_system='r'; break;
 	    case 'p' : coordinate_system='p'; break;
+	    case 'h' : usage(argv[0]); break;
 
-	    default: std::cerr << "don't understand " << arg << std::endl; 
+	    default: std::cerr << "don't understand " << arg << std::endl;
+	      usage(argv[0]);
 	    }
 	}
       else
 	{
+	  fitsname = argv[i];
+	}
+    }
+  if (fitsname == "")
+    {
+      cerr << " I need a fitsimage !! " << endl;
+      usage(argv[0]);
+    }
 
-	  if ((coordinate_system!='r')&&(coordinate_system!='p')&&list_is_provided)
-	    {
-	      cerr << "you must specify the coordinate format for lists\nuse -r (radec) or -p (pixels) option" << endl;
-	    }
 
-	  if (!list_is_provided) coordinate_system='p';
+  if ((coordinate_system!='r')&&(coordinate_system!='p')&&list_is_provided)
+    {
+      cerr << "you must specify the coordinate format for lists\nuse -r (radec) or -p (pixels) option" << endl;
+    }
+  
+  if (!list_is_provided) coordinate_system='p';
 
-	  char *fitsname = argv[i];
 	  
-	  FitsImage fitsimage(fitsname);
-	  FitsHeader fitsheader(fitsname);
+  FitsImage fitsimage(fitsname);
+  FitsHeader fitsheader(fitsname);
+  
+  Gtransfo *pix2radec;
+  WCSFromHeader(fitsname, pix2radec);
 	  
-	  Gtransfo *pix2radec;
-	  WCSFromHeader(fitsname, pix2radec);
+  Pixel mean, sigma;
+  fitsimage.SkyLevel(&mean, &sigma);
 	  
-	  Pixel mean, sigma;
-	  fitsimage.SkyLevel(&mean, &sigma);
-	  
-	  //	  cout << "skylev : " << mean << " " << sigma << endl;
+  //	  cout << "skylev : " << mean << " " << sigma << endl;
 	  
 #define THRESHOLD 5
 	  
-	  //
-	  // Si pas de liste fournie, on va chercher les objets
-	  //
-	  
-	  if (!list_is_provided)
-	    {
-	      FitsImage masque_objets("mask.fits", fitsheader );
-	      for (int y=0; y<fitsimage.Ny(); ++y)
-		for (int x=0; x<fitsimage.Nx(); ++x)
+  //
+  // Si pas de liste fournie, on va chercher les objets
+  //
+  
+  if (!list_is_provided)
+    {
+      FitsImage masque_objets("mask.fits", fitsheader );
+      for (int y=0; y<fitsimage.Ny(); ++y)
+	for (int x=0; x<fitsimage.Nx(); ++x)
+	  {
+	    if ((masque_objets(x,y) < 0.5 )&&(fitsimage(x,y) > mean + THRESHOLD*sigma))
+	      {
+		BaseStar *star = new BaseStar();
+		
+		int npixels = burn_object(fitsimage,masque_objets,x,y,star,mean + THRESHOLD*sigma*0.5 );
+		
+		if (npixels>10)
 		  {
-		    if ((masque_objets(x,y) < 0.5 )&&(fitsimage(x,y) > mean + THRESHOLD*sigma))
-		      {
-			BaseStar *star = new BaseStar();
-
-			int npixels = burn_object(fitsimage,masque_objets,x,y,star,mean + THRESHOLD*sigma*0.5 );
-
-			if (npixels>10)
-			  {
-			    star->flux -= npixels*mean;
-			    starlist.push_back(star);
-			  }
-		      }
+		    star->flux -= npixels*mean;
+		    starlist.push_back(star);
 		  }
-	      BaseStarList starlist_radec;
-	      for (BaseStarCIterator bs = starlist.begin(); bs != starlist.end(); ++bs)
-		{
-		  const BaseStar *tagada = *bs;
-		  BaseStar *prov = new BaseStar(*tagada);
-		  double ra, dec;
-		  pix2radec->apply(prov->x, prov->y, ra, dec);
-		  prov->x = ra;
-		  prov->y = dec;
-		  starlist_radec.push_back(prov);
-		}
-	      starlist_radec.write("mylist_radec.list");
-	      starlist.write("mylist.list");
-	    }
+		else delete star;
+	      }
+	  }
+      
+      BaseStarList starlist_radec;
+      starlist.CopyTo(starlist_radec);
+      starlist_radec.ApplyTransfo(*pix2radec);
+      starlist_radec.write("mylist_radec.list");
+      starlist.write("mylist.list");
+    }
+  
+  //
+  // Je vais lire le seeing et le temps d'exposition de l'image
+  //
+  
+  
+  float seeing, exptime, phot_k, phot_c, airmass;
+  extract_seeing_exptime(fitsimage, seeing, exptime);
+  extract_airmass(fitsimage, phot_c, phot_k, airmass);
+  
+  seeing = 1.;
+  
+  ofstream output_file("test.list");
+  ofstream output_profile("test_profil.list");
+  AperturePhotomBaseStar apstarlist;
+  apstarlist.WriteHeader(output_file);
+  apstarlist.write_profile(output_profile, true);
+  
+  
+  Gtransfo *radec2pix = pix2radec->InverseTransfo(0.01,Frame(fitsheader));
+  for (BaseStarCIterator bs = starlist.begin(); bs != starlist.end(); ++bs)
+    {
+      const BaseStar *prov = *bs;
+      cout << *prov << endl;
+      AperturePhotomBaseStar pabs(*prov);
+      
+      //
+      // Si les coordonnees de la liste sont en radec, je les transforme en pixels
+      // Commenter la ligne suivante si la liste est en pixels
+      //
+      
+      if (coordinate_system=='r') pabs.Apply(*radec2pix);
+      
+      //	      cout << "pos in pix : " << pabs.x << " " << pabs.y << endl;
+      
+      pabs.SetSeeing(seeing);
+      
+      //
+      // Compute the aperture fluxes for this star
+      //
+      
+      bool valid = extract_noweight(fitsimage, seeing, mean, &pabs);
+      
+      // 
+      // teste si des objets de la liste sont en double... 
+      // obsolete avec l'agorithme burn-out
+      //
+      
+      // if (!list_is_provided && valid) valid = test_no_other_same(starlist,prov);
+      
+      if (valid||list_is_provided) 
+	{
+	  double ra, dec;
+	  pix2radec->apply(pabs.x, pabs.y, ra, dec);
+	  pabs.ra = ra;
+	  pabs.dec = dec;
+	  pabs.write(output_file);
+	  pabs.write_profile(output_profile);
 	  
-	  //
-	  // Je vais lire le seeing et le temps d'exposition de l'image
-	  //
-	  
-
-	  float seeing, exptime, phot_k, phot_c, airmass;
-	  extract_seeing_exptime(fitsimage, seeing, exptime);
-	  extract_airmass(fitsimage, phot_c, phot_k, airmass);
-
-	  seeing = 1.;
-
-	  ofstream output_file("test.list");
-	  ofstream output_profile("test_profil.list");
-	  AperturePhotomBaseStar apstarlist;
-	  apstarlist.write(output_file, true);
-	  apstarlist.write_profile(output_profile, true);
-	  
-	  
-	  for (BaseStarCIterator bs = starlist.begin(); bs != starlist.end(); ++bs)
-	    {
-	      const BaseStar *prov = *bs;
-	      AperturePhotomBaseStar pabs(*prov);
-
-	      //
-	      // Si les coordonnees de la liste sont en radec, je les transforme en pixels
-	      // Commenter la ligne suivante si la liste est en pixels
-	      //
-	      double xx=pabs.x,yy=pabs.y;
-	      if (coordinate_system=='r') wcs_to_pixel(pix2radec, prov->x, prov->y, xx, yy);
-	      pabs.x = xx;
-	      pabs.y = yy;
-
-	      //	      cout << "pos in pix : " << pabs.x << " " << pabs.y << endl;
-
-	      pabs.SetSeeing(seeing);
-	      
-	      //
-	      // Compute the aperture fluxes for this star
-	      //
-
-	      bool valid = extract_noweight(fitsimage, seeing, mean, &pabs);
-
-	      // 
-	      // teste si des objets de la liste sont en double... 
-	      // obsolete avec l'agorithme burn-out
-	      //
-	      
-	      // if (!list_is_provided && valid) valid = test_no_other_same(starlist,prov);
-
-	      if (valid||list_is_provided) 
-		{
-		  double ra, dec;
-		  pix2radec->apply(pabs.x, pabs.y, ra, dec);
-		  pabs.ra = ra;
-		  pabs.dec = dec;
-		  pabs.write(output_file);
-		  pabs.write_profile(output_profile);
-
-		  double local_mean, local_var;
-		  //		  float plat = pabs.compute_indep_platitude(local_mean, local_var);
-		  float plat = pabs.compute_platitude(local_mean, local_var);
-		  float mag_5 = phot_c + phot_k*(airmass-1.) - 2.5*log10(pabs.aperture_flux[5])+2.5*log10(exptime);		  
-		  float ZP = phot_c + phot_k*(airmass-1.) + 2.5*log10(exptime);
-		  float mag_10 = ZP - 2.5*log10(pabs.aperture_flux[10]);
-		  float mag_15 = ZP - 2.5*log10(pabs.aperture_flux[15]);		  
-		  float mag_18 = ZP - 2.5*log10(pabs.aperture_flux[18]);		  
-		  /*		  
-		  cout << setprecision(6) 
-		       << pabs.x  << " "
-                       << pabs.y << " "
-		       << setprecision(12) 
-		       << pabs.ra  << " " 
-		       << pabs.dec << " " 
-		       << setprecision(6) 
-		       << mag_5   << " " 
-		       << mag_10  << " " 
-		       << mag_15  << " " 
-		       << mag_18  << " " 
-		       << pabs.aperture_flux[10]  << " " 		    
-		       << pabs.fluxmax  << " " 		    
-		       << pabs.fluxmax2  << " " 
+	  double local_mean, local_var;
+	  //		  float plat = pabs.compute_indep_platitude(local_mean, local_var);
+	  float plat = pabs.compute_platitude(local_mean, local_var);
+	  float mag_5 = phot_c + phot_k*(airmass-1.) - 2.5*log10(pabs.aperture_flux[5])+2.5*log10(exptime);		  
+	  float ZP = phot_c + phot_k*(airmass-1.) + 2.5*log10(exptime);
+	  float mag_10 = ZP - 2.5*log10(pabs.aperture_flux[10]);
+	  float mag_15 = ZP - 2.5*log10(pabs.aperture_flux[15]);		  
+	  float mag_18 = ZP - 2.5*log10(pabs.aperture_flux[18]);		  
+	  /*		  
+			 cout << setprecision(6) 
+			 << pabs.x  << " "
+			 << pabs.y << " "
+			 << setprecision(12) 
+			 << pabs.ra  << " " 
+			 << pabs.dec << " " 
+			 << setprecision(6) 
+			 << mag_5   << " " 
+			 << mag_10  << " " 
+			 << mag_15  << " " 
+			 << mag_18  << " " 
+			 << pabs.aperture_flux[10]  << " " 		    
+			 << pabs.fluxmax  << " " 		    
+			 << pabs.fluxmax2  << " " 
 		       << plat<< " "
 		       << endl;
 		  */
@@ -247,17 +256,12 @@ int main(int argc, char ** argv)
 		  */
 		}
 	    }
-	  
-	  output_file.close();
-	  output_profile.close();
-
-	}
-	  
-    }
-
   
-  return 0;
+  output_file.close();
+  output_profile.close();
+  return 0;  
 }
+
 
 
 /* ================================================================== */
@@ -464,57 +468,4 @@ bool test_no_other_same(BaseStarList& starlist,const BaseStar *star)
 
 /* ================================================================== */
 
-void wcs_to_pixel(Gtransfo *pix2radec, double ra, double dec, double &x, double &y)
-{
-#define NPAS 30
 
-  double taille_x=2112.;
-  double taille_y=4644.;
-
-  double x_nearest=taille_x/2.;
-  double y_nearest=taille_y/2.;
-
-  for (int niter=1; niter<=NPAS; ++niter)
-    {
-      double x_11 = x_nearest;
-      double y_11 = y_nearest;
-      double d_nearest=10000.;
-
-      dist_corners(pix2radec,ra,dec,x_11-taille_x/2., y_11-taille_y/2., d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11-taille_x/2., y_11            , d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11-taille_x/2., y_11+taille_y/2., d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11            , y_11-taille_y/2., d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11            , y_11            , d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11            , y_11+taille_y/2., d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11+taille_x/2., y_11-taille_y/2., d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11+taille_x/2., y_11            , d_nearest, x_nearest, y_nearest);
-      dist_corners(pix2radec,ra,dec,x_11+taille_x/2., y_11+taille_y/2., d_nearest, x_nearest, y_nearest);
-
-      //      cout << "dist : " << d_nearest << " " << x_nearest << " " << y_nearest << endl;
-
-      taille_x *= 0.75;
-      taille_y *= 0.75;
-
-    }
-
-  x = x_nearest;
-  y = y_nearest;
-
-  return;
-}
-
-void dist_corners(Gtransfo *pix2radec, double ra, double dec, double x0, double y0, double &dist_seuil, double &x, double &y)
-{
-  double ra_0,dec_0;
-  pix2radec->apply(x0, y0, ra_0, dec_0);
-  double distance = sqrt( (ra_0-ra)*(ra_0-ra) + (dec_0-dec)*(dec_0-dec));
-  
-  if (distance < dist_seuil) 
-    {
-      x = x0;
-      y = y0;
-      dist_seuil = distance;
-    }
-  
-  return;
-}

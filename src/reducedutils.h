@@ -6,6 +6,7 @@
 #include "sestar.h"
 
 class Gtransfo;
+class StarMatchList;
 
 //! arrange and copy a list of ReducedImage into different sets of images
 void ArrangeByInstBandNight(const ReducedImageList &ImList, vector<ReducedImageList> &ImageSets);
@@ -33,10 +34,11 @@ double QuickPhotomRatio(const ReducedImage &CurImage, const ReducedImage &RefIma
 double QuickPhotomRatio(const SEStarList &CurList, const SEStarList &RefList, 
 			double &error, const Gtransfo *transfo);
 
-//! quick and robust photometric ratio between two BaseStarList's
-double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefList,  const Gtransfo *Transfo);
+//! //! quick and robust photometric ratio given a StarMatchList
+double MedianPhotomRatio(const StarMatchList *matchlist);
 
 //! quick and robust photometric ratio between two BaseStarList's
-double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefList);
+double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefList,  const Gtransfo *Transfo=NULL);
+
 
 #endif // REDUCEDUTILS__H

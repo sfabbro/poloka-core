@@ -29,10 +29,16 @@ DicStar::DicStar(const std::vector<string>& firstKeys, const std::vector<string>
 }
 
 
+void DicStar::AddKey(const string &KeyName, const double &Val)
+{
+  key.push_back(KeyName);
+  val.push_back(Val);
+}
 
-void DicStar::Set_to_Zero() {
-  
-  
+void DicStar::Set_to_Zero() 
+{
+  x = y = flux = 0;
+  for(unsigned int i=0;i<val.size();i++) val[i] = 0;
 }
 
 int DicStar::setval(const string &thekey,double newval) {
@@ -46,7 +52,7 @@ int DicStar::setval(const string &thekey,double newval) {
   return 0;
 }
 
-double DicStar::getval(const string &thekey) {
+double DicStar::getval(const string &thekey) const {
   for(unsigned int i=0; i<key.size() ;i++) {
     if(key[i]==thekey) {
       return val[i];
@@ -81,6 +87,7 @@ DicStar* DicStar::read( istream& r, const char *Format) {
   pstar->Read(r,Format);
   return(pstar);
 }
+
 void DicStar::dumpn(ostream& s) const {
   s << " x : " << x;
   s << " y : " << y;
@@ -149,7 +156,7 @@ DicStarList::DicStarList(const string &FileName) {
       return ;
     }
   char c ;
-  char buff[400];
+  char buff[4000];
   char onekey[400];
   char column[256];
   char *format = 0;
@@ -158,10 +165,17 @@ DicStarList::DicStarList(const string &FileName) {
   while( rd >> c ) // to test eof
     {
       rd.unget() ;
+      // nrl: we do not want to ignore the '@'s anymore 
+      if ( (c == '@') ) 
+	{ 
+	  rd.getline(buff,4000);
+	  GlobVal().ProcessLine(buff);
+	  continue;
+	}	  
       if ( (c == '#') ) // we jump over the line  (not always ...)
         {
 	  
-	  rd.getline(buff,400);
+	  rd.getline(buff,4000);
 	  line++;
 	  /* hack something reading " format <StarType> <integer>" to drive the decoding (in Star::read) */
 	  char *p = strstr(buff,"format");
@@ -170,8 +184,8 @@ DicStarList::DicStarList(const string &FileName) {
           else
 	    {
 	    //	    if(line>3)
-	    if(sscanf(buff,"# %s %s",onekey,column)==2 
-	       && column[0] == ':') 
+	    if(sscanf(buff+1," %[^: ] %s",onekey,column)==2 
+	       && column[0] == ':' ) 
 	      {
 		if (firstKey.size() <3) firstKey.push_back(onekey);
 		else  key.push_back(onekey);
@@ -197,20 +211,19 @@ DicStarList::DicStarList(const string &FileName) {
     }
 }
 
-#ifdef USE_ROOT
-template class StarListWithRoot<DicStar>;
-ClassImpT(StarListWithRoot,DicStar);
-
-/* comments to drive the Makefile part that runs rootcint
-RUN_ROOTCINT
-
-LINKDEF_CONTENT : #pragma link C++ class DicStar;
-LINKDEF_CONTENT : #pragma link C++ class list<DicStar*>;
-LINKDEF_CONTENT : #pragma link C++ class StarList<DicStar>-;
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream&, const StarList<DicStar>&);
-LINKDEF_CONTENT : #pragma link C++ class StarListWithRoot<DicStar>-;
-LINKDEF_CONTENT : #pragma link C++ class StarList<DicStar>::iterator;
-LINKDEF_CONTENT : #pragma link C++ typedef DicStarIterator;
-*/
-#include "root_dict/jimstardict.cc"
-#endif /* USE_ROOT */
+/* return an "empty" star which has the same fields as the 
+   o;er ones of the list */
+DicStar *DicStarList::EmptyStar() const
+{
+  if (empty())
+    {
+      cerr << " requested a DicStarList::EmptyStar() on an empty list"
+	   << " which is meaningless " << endl;
+      return NULL;
+    }
+  DicStar *empty = new DicStar(*front());
+  empty->Set_to_Zero();
+  return empty;
+}
+  
+  

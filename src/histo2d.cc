@@ -29,17 +29,21 @@ data = new float[nx*ny];
 memset(data, 0, nx*ny*sizeof(float));
 }
 
+bool Histo2d::indices(const double &X, const double &Y, int &ix, int &iy) const
+{
+  ix = (int) floor(( X - minx)*scalex);
+  if (ix <0 || ix >= nx) return false;
+  iy = (int) floor((Y - miny)*scaley);
+  return (iy >=0 && iy < ny);
+}
+  
 void Histo2d::Fill(float X, float Y, float Weight)
 {
-int ix, iy;
-ix = (int) floor(( X - minx)*scalex);
-if (ix <0 || ix >= nx) return;
-iy = (int) floor((Y - miny)*scaley);
-if (iy <0 || iy >= ny) return;
-data[iy + ny*ix] += Weight;
+  int ix, iy;
+  if (indices(X,Y,ix,iy)) data[iy + ny*ix] += Weight;
 }
 
-double Histo2d::MaxBin(double &X, double &Y)
+double Histo2d::MaxBin(double &X, double &Y) const 
 {
 float *p, *pend;
 int imax=0;
@@ -56,12 +60,17 @@ Y = miny + ((float)iy + 0.5)/scaley;
 return valmax;
 }
 
-void Histo2d::ZeroBins(double &X, double &Y)
+void Histo2d::ZeroBin(const double &X, const double &Y)
 {
   int ix, iy;
-  ix = (int) floor(( X - minx)*scalex);
-  if (ix <0 || ix >= nx) return;
-  iy = (int) floor((Y - miny)*scaley);
-  if (iy <0 || iy >= ny) return;
-  data[iy + ny*ix] = 0;
+  if (indices(X,Y,ix,iy)) data[iy + ny*ix] = 0;
+}
+
+
+double Histo2d::BinContent(const double &X, const double &Y) const
+{
+  int ix, iy;
+  if (indices(X,Y,ix,iy)) return data[iy + ny*ix];
+  std::cout << " Histo2D::BinContent outside limits requested " << std::endl;
+  return -1e30;
 }

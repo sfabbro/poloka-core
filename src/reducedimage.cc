@@ -375,6 +375,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 
 bool ReducedImage::MakeCatalog() 
 {
+  if (HasCatalog()) return true;
   // if there is a satur map, it may be the result of e.g
   // stacking. Then there is no point in remaking one.
   bool savemasksat = !HasSatur();
@@ -388,9 +389,166 @@ bool ReducedImage::MakeCatalog()
   // MakeCosmic();
   return(ok);
 }
+#include "apersestar.h"
+#include "datacards.h"
+#include "toadscards.h"
+
+/* routine steps
+
+   1) copy SEstarList to AperSEStarList
+   
+   2) compute positions and shapes using a gaussian filtering
+
+   3) compute seeing and read apertures
+
+   4) compute aperture fluxes
+
+   we do not do PositionsAndShapes in the same loop as 
+   aperture fluxes, because it may be of interest to set
+   zero weights for saturated pixels in the flux computation
+   (so that the number of bad pixels accounts for saturation),
+   but this cannot be done for shape computation
+
+*/
 
 
+static double sq(const double &x) {return x*x;}
 
+
+bool ReducedImage::MakeAperCat()
+{
+  string aperCatName = AperCatalogName();
+  if (FileExists(AperCatalogName())) return true;
+
+  if (!(MakeFits() && MakeWeight() && MakeCatalog()))
+    {
+      cerr << " cannot make aper catalogue for " << Name() << endl;
+      return false;
+    }
+
+  cout << " Entering MakeAperCat() for " << Name () << endl;
+
+  SEStarList seList(CatalogName());
+  if (seList.size() == 0)
+    {
+      cout << " empty SExtractor catalog for " << Name() 
+	   << ", no aper catalog " << endl;
+      return false;
+    }
+
+  FitsImage W(FitsWeightName());
+  FitsImage I(FitsName());
+  FitsImage C(FitsCosmicName());
+
+  if (!bool(I.KeyVal("BACK_SUB")))
+    {
+      cout << " this code cannot accomodate images with background left" << endl;
+      return false;
+    }
+
+
+  AperSEStarList apercat(seList);
+
+
+  for (AperSEStarIterator i = apercat.begin(); i != apercat.end(); ++i)
+    {
+      AperSEStar &s = **i;
+      s.ComputeShapeAndPos(I,W);
+    }
+
+
+  // set weight = 0 for saturated pixels ?
+  // yes. If not, saturated spikes within apertures may contribute
+  // to the flux without any notice.
+  {// open a block so that the satur image disappears after usage.
+    FitsImage satur(FitsSaturName());
+    Image &w = W;
+    w *= (1-satur);
+  }
+
+
+  //try to figure out a gain
+  double gain = I.KeyVal("TOADGAIN");
+  if (I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
+    {
+      double sexsky = I.KeyVal("SEXSKY");
+      double sexsigma = I.KeyVal("SEXSIGMA");
+      if (sexsky != 0) gain = sexsky/(sexsigma*sexsigma);
+    }
+  if (gain == 0)
+    {
+      cout << " cannot figure out a gain" << endl;
+      gain = 1;
+    }
+  cout << " Assuming a gain of " << gain << endl;
+
+  
+  // get aperture radius, either from datacards or provide defaults
+  vector<double> rads;
+  DataCards cards(DefaultDatacards());
+  if (cards.HasKey("APER_RADS"))
+    {
+      int n = cards.NbParam("APER_RADS");
+      for (int i=0; i < n ; ++i) rads.push_back(cards.DParam("APER_RADS",i));
+    }
+  else
+    {
+      cout << " no APER_RADS card in " << DefaultDatacards()  << endl
+	   << " resorting to internal defaults " << endl;
+      double def[] = {2.,2.5,3.,3.5,4.,5.,7.5,10.,15.,20.};
+      for (unsigned i =0; i < sizeof(def)/sizeof(def[0]); ++i)
+	rads.push_back(def[i]);
+    }
+
+
+  double seeing = Seeing();
+  double xSize, ySize, corr;
+  if (FindStarShapes(apercat, xSize, ySize, corr))
+    {
+      double mxx = sq(xSize);
+      double myy = sq(ySize);
+      double mxy = corr*xSize*ySize;
+      seeing = pow(mxx*myy-sq(mxy),0.25);
+    }
+  cout << Name() << " star shapes " << xSize << ' ' << ySize << ' ' 
+       << corr  << endl;
+  cout << Name () << ": old seeing " <<  Seeing() << " new " << seeing << endl;
+
+  unsigned nrads = rads.size();
+  for (unsigned k=0; k < nrads; ++k) rads[k] *= seeing;
+  double maxNeighborDist = rads[nrads-1];
+
+  apercat.SetNeighborScores(*AperSE2Base(&apercat),maxNeighborDist);
+
+  for (AperSEStarIterator i = apercat.begin(); i != apercat.end(); ++i)
+    {
+      AperSEStar &s = **i;
+      for (unsigned k = 0; k < nrads; ++k) s.ComputeFlux(I,W,C,gain,rads[k]);
+    }
+
+  // write some global stuff (radius and seeing, and neighbor cut)
+  
+  if (!apercat.empty())
+    {
+      vector<double> rads;
+      const vector<AperSEStar::Aperture> &a = apercat.front()->apers;
+      unsigned naper = a.size();
+      for (unsigned k =0; k < naper; ++k) rads.push_back(a[k].radius);
+            GlobalVal &glob = apercat.GlobVal();
+      glob.AddKey("RADIUS",rads);
+      glob.AddKey("SEEING",seeing);
+      vector<double> sh; 
+      sh.push_back(xSize); sh.push_back(ySize); sh.push_back(corr);
+      glob.AddKey("STARSHAPE", sh);
+      glob.AddKey("MAXNEIGHBOR_DIST",maxNeighborDist);
+    }
+
+  apercat.write(aperCatName);
+
+  return true;
+}
+		      
+  
 
 bool ReducedImage::IsToadsWeight()
 {

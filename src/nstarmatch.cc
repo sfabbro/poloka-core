@@ -8,144 +8,203 @@
 #include "fastfinder.h"
 
 
-NStarMatch::NStarMatch(int n)
+void NStarMatch::AddMatch(const BaseStar &Match, const unsigned Index)
 {
-  npointers=n; actualMatches = 1;
-  points= new Point[npointers];
-  star = new const BaseStar*[npointers];
-  for (int i=0; i<n; i++) star[i]=NULL;
+  // fill the array with NULLS up to Index-1
+  // since Index is unsigned, do not compute Index-1 !!!!
+  while (stars.size() + 1  <= Index )
+    {
+      stars.push_back(CountedRef<BaseStar>());
+    }
+  if (stars.size() > Index) // we may already have a match
+    {
+      DropMatch(Index);
+      stars[Index] = CountedRef<BaseStar>(&Match);
+    }
+  else stars.push_back(CountedRef<BaseStar>(&Match));
+  x = (nm*x+Match.x)/(nm+1);
+  y = (nm*y+Match.y)/(nm+1);
+  nm++;
 }
 
-NStarMatch::~NStarMatch()
+
+void NStarMatch::DropMatch(const unsigned Index)
 {
-  delete [] points;
-  delete [] star;
+  if (Index >= stars.size()) return;
+  BaseStarRef &toDrop = stars[Index];
+  if (toDrop == NULL) return;
+  // update position 
+  if (nm > 1)
+    {
+      x = (nm*x-toDrop->x)/(nm-1);
+      y = (nm*y-toDrop->y)/(nm-1);
+    }
+  // zero it
+  toDrop = CountedRef<BaseStar>();
+  nm--;
 }
 
-NStarMatch::NStarMatch(const NStarMatch &O) : BaseStar(*this)
+const BaseStar *NStarMatch::GetMatch(const unsigned Index) const
 {
-  npointers = O.npointers;
-  actualMatches = O.actualMatches;
-  points= new Point[npointers];
-  memcpy(points, O.points, npointers*sizeof(Point));
-  star = new const BaseStar*[npointers];
-  memcpy(star, O.star, npointers*sizeof(BaseStar*));
+  if (Index >= stars.size()) return NULL;
+  return stars[Index];
 }
 
-NStarMatch::NStarMatch(const BaseStar *Star, const int i, const int n) : BaseStar(*Star)
-{
-  npointers = n;
-  actualMatches = 1;
-  //ref=0;
-  points= new Point[n];
-  star = new const BaseStar*[n];
-  for (int k=0; k<n; k++) star[k]=NULL;
-  points[i]=(*Star);
-  star[i]=Star;
-}
+
+
 
 /************************* NStarMatchList ***********************/
 
-NStarMatchList::NStarMatchList(const int n)   : nlists(n),nused(n,n),order(n,n),chi2(n,n),transfo(n,n,NULL)
-{
-  emptyStar = new const BaseStar*[nlists]; 
-  for (int i=0; i< nlists; ++i) emptyStar[i] = NULL;
-}
 
-						   
+#include <algorithm> // for sort, binary_search
+#include <listmatch.h>
+#include <starmatch.h>
 
-Point NStarMatchList::ApplyTransfo(const int i, const int j, Point pt)
+int NStarMatchList::MatchAnotherList(const BaseStarList &ToMatch, 
+				     const double MaxDist, 
+				     const BaseStar *EmptyStar,
+				     const string &Tag)
 {
-  if (!(this->transfo(i,j)))
+  emptyStars.push_back(EmptyStar);
+  unsigned Index = emptyStars.size() - 1;
+
+  // construct a tag (used in write()) if not provided
+  string tag = Tag;
+  if (tag == "")
     {
-      //      Gtransfo transformation=GtransfoCompose(*this->transfo(j,0),*this->transfo(0,i));
-      SetTransfo(GtransfoCompose(this->transfo(j,0),this->transfo(0,i)),i,j);
+      char chi[80];
+      sprintf(chi,"%d",Index+1);
+      tag = chi;
     }
-    return this->transfo(i,j)->apply(pt);
-}
+  tags.push_back(tag);
 
-void NStarMatchList::MatchAnotherList(const BaseStarList &List, const int rank, const double MaxDist, const BaseStar *EmptyStar)
-{
-  FastFinder finder(List);
-  emptyStar[rank] = EmptyStar;
-  // this is complicated :
-  // We want to identify objects in List which will remain unmatched.
-  // since List is const, we store matchedObjects in a copy and find unmatched   
-  // objects at the end. We cannot work on a non const copy of List 
-  // since star pointers of NStarMatch's have to point to List, 
-  // and not to a copy.
-  // this is better :
-  // we just save the values of const BaseStar pointers
- 
-  //BaseStarList matchedObjects;
-  vector<const BaseStar*> matchedObjects;
-  for (NStarMatchIterator si = this->begin(); si != this->end(); ++si)
+  StarMatchList *sml = ListMatchCollect((const BaseStarList &)*this,
+					ToMatch,
+					MaxDist);
+  cout << " matches " << sml->size() << endl;
+
+  vector<const BaseStar *> matchedObjects;
+
+  for (StarMatchIterator  i = sml->begin(); i != sml->end(); ++i)
     {
-      for (int i =0; (i<this->nlists) && (i!=rank) ; i++)
-	{
-	  if (!(si->star[i])) continue;
-	  const Point *p1 = si->star[i];
-	  Point p2 = this->ApplyTransfo(i,rank,*p1);
-	  const BaseStar *neighbour = finder.FindClosest(p2,MaxDist);
-	  if (!neighbour) continue;
-	  bool ismatched = false;
-	  for (unsigned int ib=0;ib<matchedObjects.size();ib++) {
-	    if(neighbour==matchedObjects[ib]) {
-	      ismatched = true;
-	      break;
-	    }
-	  }
-	  if(ismatched) {
-	    // uncomment this and check if you have multi matches.
-	    // in any case, you'd better use the next routine  MatchAnotherList2
-	    //cout << "whao it was already matched !!" << endl;
-	    continue;
-	  }
-
-	  // store the match to identify later leftovers.
-          //matchedObjects.push_back(new BaseStar(*neighbour));
-          matchedObjects.push_back(neighbour);
-	  
-	  // handle the match
-	  si->star[rank] = neighbour;
-	  si->points[rank] = *neighbour;
-	  si->actualMatches++;
-	  break;
-	}
+      StarMatch &sm = *i;
+      NStarMatch &nsm = dynamic_cast<NStarMatch &>(*(sm.s1));
+      BaseStar &newMatch = *(sm.s2);
+      nsm.AddMatch(newMatch,Index);
+      matchedObjects.push_back(&newMatch);
     }
   
-//   FastFinder matchedFinder(matchedObjects);
-//   for (BaseStarCIterator si = List.begin(); si != List.end(); ++si)
-//     {
-//       const BaseStar *original = *si;
-//       const BaseStar *copy = matchedFinder.FindClosest(*original, MaxDist/100.);
-//       if (!copy) // original was never matched
-// 	{
-// 	  NStarMatch match(original, rank, nlists);
-// 	  push_back(match);
-// 	}
-//     } 
-  
-  // now we compare values of pointers to check if a detection object
-  // is already matched
-  for (BaseStarCIterator si = List.begin(); si != List.end(); ++si)
+  /* sort the vector of (pointers to) matches so that we can use a
+     binary search when looking for unmatched objects */
+  std::sort(matchedObjects.begin(), matchedObjects.end());
+
+  // loop on unmatchedobjects 
+  int unmatchCount = 0;
+  for (BaseStarCIterator i = ToMatch.begin(); i != ToMatch.end(); ++i)
     {
-      bool ismatched = false;
-      const BaseStar *original = *si;
-      for (unsigned int ib=0;ib<matchedObjects.size();ib++) {
-	if(original==matchedObjects[ib]) {
-	  ismatched = true;
-	  break;
-	}
+      const BaseStar *b = *i;
+      // was it matched?
+      if (binary_search(matchedObjects.begin(), matchedObjects.end(), b))
+	continue; /* yes */
+      /* no : add it as a single new object */
+      NStarMatch *newMatch = new NStarMatch();
+      newMatch->AddMatch(*b, Index);
+      push_back(newMatch);
+      unmatchCount ++;
+    }
+  cout << " unmatchCount " << unmatchCount << endl;
+  int nMatches = sml->size();
+  delete sml;
+  return nMatches;
+}
+
+/* cannot use the default StarList::write, because
+   NstarMatch may have "empty matches" (i.e. null pointers), 
+   and the way to write them is to substitute emptyStars,
+   user provided
+*/
+
+
+void  NStarMatchList::ApplyCountCut(const int MinCount)
+{
+  for (NStarMatchIterator i = begin(); i != end(); )
+    {
+      NStarMatch &m = **i;
+      if (m.NumberOfMatches() < MinCount)  i = erase(i);
+      else ++i;
+    }
+}
+
+#include <fstream>
+#include <iomanip>
+
+int  NStarMatchList::write(const string &FileName) const
+{
+  ofstream pr(FileName.c_str());
+  if (!pr)
+    {
+      cerr << " StarList::write : could not open " << FileName << endl;
+      return 0;
+    }
+  //  ios::fmtflags  old_flags =  pr.flags(); 
+  pr  << resetiosflags(ios::scientific) ;
+  // pr  << setiosflags(0) ;
+  pr  << setiosflags(ios::fixed) ;
+  pr<< setprecision(8);
+  string format;
+  for (unsigned k=0; k < emptyStars.size(); ++k)
+    {      
+      format += " "+emptyStars[k]->WriteHeader_(pr,tags[k].c_str());
+    }
+  /*  dx, dy & dass can be computed from x and y's, but
+      when using single precision, the results are poor, so
+     "pre" compute them
+  */
+  // add dx dy dass
+  for (unsigned k1=0; k1 < emptyStars.size(); ++k1)
+    for (unsigned k2=k1+1; k2 < emptyStars.size(); ++k2)
+      {
+	pr << "# dx"<< tags[k1] << tags[k2] << " : difference in x" << endl;
+	pr << "# dy"<< tags[k1] << tags[k2] << " : difference in y" << endl;
+	pr << "# dass"<< tags[k1] << tags[k2] << " : assoc distance" << endl;
       }
-      if (!ismatched) // original was never matched
+  pr << "# format " << format << endl ;
+  pr << "# end " << endl ;
+  for (NStarMatchCIterator i = begin(); i != end(); ++i)
+    {
+      const NStarMatch &nsm = **i;
+      for (unsigned k=0; k < emptyStars.size(); ++k)
 	{
-	  NStarMatch match(original, rank, nlists);
-	  push_back(match);
+	  const BaseStar *current = nsm.GetMatch(k);
+	  if (!current) 
+	    current = emptyStars[k];
+	  current->writen(pr);
+	  pr << " ";
 	}
+      // add dx dy dass
+      for (unsigned k1=0; k1 < emptyStars.size(); ++k1)
+	{
+	  const BaseStar *c1 = nsm.GetMatch(k1);
+	  for (unsigned k2=k1+1; k2 < emptyStars.size(); ++k2)
+	    {
+	      const BaseStar *c2 = nsm.GetMatch(k2);
+	      if (c1 && c2)
+		pr << c1->x-c2->x << ' ' << c1->y-c2->y << ' '
+		   << c1->Distance(*c2) << ' ';
+	      else
+		pr << " -1 -1 -1 ";
+	    }
+	}
+      // end of distances
+      pr << endl;
     }
+  pr.close();
+  return 1;
 }
 
+
+
+#ifdef STORAGE
 
 void NStarMatchList::MatchAnotherList2(const BaseStarList &List, const int rank, const double MaxDist, const BaseStar *EmptyStar)
 {
@@ -242,108 +301,5 @@ void NStarMatchList::MatchAnotherList2(const BaseStarList &List, const int rank,
 }
 
 
-void NStarMatchList::short_write(ostream & pr) const
-{
-  NStarMatchCIterator itu= begin();
-  NStarMatch Nstarm = *itu ; 
-  GtransfoIdentity identity;
-  if ( itu == end() )
-    {
-      cerr << " Pas d'Ecriture de StarMatchList vide " << endl ;
-      return ;
-    }
-
-  for (int i =0; i<this->nlists ; i++)
-    {
-      char chi[80];
-      sprintf(chi,"%d",i+1);
-      pr<< "# x"<< chi << " : x of star "<< chi <<endl;
-      pr<< "# y"<< chi << " : y of star "<< chi <<endl;
-      pr<< "# f"<< chi << " : flux of star "<< chi <<endl;
-    }
-  pr << "# end " << endl ;
- 
-  GtransfoIdentity id ;
-  for (NStarMatchCIterator it= begin(); it!= end(); it++ )
-    {
-      const NStarMatch &Nstarm = *it ;
-
-      if (!(Nstarm.StarExist(0)))
-	pr << "0.0 0.0 0.0";
-      else
-	pr << Nstarm.x(0)<< " " << Nstarm.y(0)<< " " << Nstarm.flux(0);
-      for (int i =1; i<this->nlists ; i++)
-	{
-	  if (!(Nstarm.StarExist(i)))
-	    pr << " 0.0 0.0 0.0";
-	  else
-	    pr << " " << Nstarm.x(i)<< " " << Nstarm.y(i)<< " " << Nstarm.flux(i);
-	}
-      pr << endl ;
-    }
-
-}
-
-void NStarMatchList::short_write(const string &filename) const
-{
-  ofstream pr(filename.c_str()) ;
-  short_write(pr);
-  pr.close();
-}
-
-void NStarMatchList::write(ostream & pr) const
-{
-  NStarMatchCIterator itu= begin();
-  if ( itu == end() )
-    {
-      cerr << " Cannot write an empty NStarMatchList " << endl ;
-      return ;
-    }
-
-  for (int i=0; i<nlists; ++i)
-    {
-      char chi[80];
-      sprintf(chi,"%d",i+1);
-      emptyStar[i]->WriteHeader_(pr,chi);
-    }
-
-   for (int i =0; i<this->nlists ; i++)
-     for (int j = i+1; j<this->nlists ; j++)
-	 pr << "# dass"<< i << j <<" : association distance for "
-	    <<i<<" and "<<j<< endl ; 
-
-   // 
-   pr << "# end " << endl ;
- 
-   int count = 0;
-   for (NStarMatchCIterator it= begin(); it!= end(); it++ )
-     {
-       const NStarMatch &Nstarm = *it ;
-
-       for (int i =0; i<this->nlists ; i++)
-	 {
-	   const BaseStar *current = Nstarm.star[i]; 
-	   if (!current) current = emptyStar[i];
-	   current->writen(pr);
-	   pr << " " ;
-	 }
-       for (int i =0; i<this->nlists ; i++)
-	 for (int j = i+1; j<this->nlists ; j++) {
-	   if(Transfo(i,j))
-	     pr << Nstarm.Distance(i,j, *Transfo(i,j))<< " " ;
-	   else
-	     pr << 0 << " " ;
-	 }
-      pr << endl ;
-      ++count;
-    }
-
-}
-
-void NStarMatchList::write(const string &filename) const
-{
-  ofstream pr(filename.c_str()) ;
-  write(pr);
-  pr.close();
-}
+#endif
 

@@ -10,7 +10,8 @@
 #include <iostream>
 
 #include "countedref.h"
-#include "point.h"     // NRL: 04/2004
+#include "point.h"    
+#include "globalval.h"
 
 
 using namespace std;
@@ -35,11 +36,15 @@ that Stars being inserted in the list have to be
 obtained using 'new'. The corresponding
 'delete' are invoked in the destructor. */
 
-// define_template_args StarList<Star>
+
+
 template<class Star> class StarList : public list <CountedRef<Star> >  {
 
-  CLASS_VERSION(StarList,1);
-  #define StarList__is__persistent
+
+  //  CLASS_VERSION(StarList,1);
+  // #define StarList__is__persistent
+
+  GlobalVal glob;
  
 public:
 typedef CountedRef<Star> Element;
@@ -49,7 +54,7 @@ typedef typename list<Element>::iterator StarIterator;
 
 /* constructors */
 //! : default constructor (empty list). 
-  StarList() : list<Element>() {};
+  StarList() {};
 
  //! reads a StarList from a file, 
   /*!
@@ -61,14 +66,21 @@ typedef typename list<Element>::iterator StarIterator;
 	class. It is unusable if the Star class does not 
 	provide this functionnality.
 	see BaseStar to see a possible implementation. 
-  not const because the write routines of Root are not*/
-  int  write(const string &FileName);
+  */
+
+  Star *EmptyStar() const { return new Star();}
+
+  int  write(const string &FileName) const;
 
   //! obvious meaning
   int read(const string &FileName);
 
+  //! enables to access global values (lines starting with '@' in ascii files)
+  GlobalVal &GlobVal() { return glob;}
 
-  void push_back(Star* t) {list<Element>::push_back(Element(t));} 
+  //! enables to access global values (lines starting with '@' in ascii files)
+  const GlobalVal &GlobVal() const { return glob;}
+
   /* the previous one hides the following one ?! */
   void push_back(const Element& e) {list<Element>::push_back(e);}
 
@@ -153,21 +165,12 @@ private :
 
   int read(istream & rd);
 
-  //!: with descriptor for l2tup 
-  int  write(ostream & pr) const;
-
-  //!: without descriptor for l2tup 
-  int  write_wnoheader(ostream & pr) const;
 
 public :
 
-  // NRL 02/2004 We need it for SWIG...
-  //  private :
-  // no implicit copies.
-#ifndef SWIG
-  //StarList(const StarList<Star>&);
-  // StarList& operator = (const StarList&);
-#endif
+  //!: with descriptor for l2tup 
+  int  write(ostream & pr) const;
+
 
 };
 

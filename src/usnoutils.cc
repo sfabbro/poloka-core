@@ -405,6 +405,26 @@ int UsnoRead(double minra, double maxra,
 }
 
 
+static double sq(const double &x){return x*x;}
+
+
+static bool check_guess(const GtransfoLin &Guess)
+{
+  //check that the matrix corresponds roughly to a rotation or a flip
+  double mod12 = sq(Guess.A11())+ sq(Guess.A12());
+  double mod22 = sq(Guess.A21())+ sq(Guess.A22());
+  // vectors of same size...
+  //  cout << (mod12-mod22)/(mod12+mod22) << endl;
+  if (fabs((mod12-mod22)/(mod12+mod22)) > 0.2) return false;
+  double cos_angle = (Guess.A11()*Guess.A21()+ Guess.A12()*Guess.A22())
+    /sqrt(mod12*mod22);
+  // ... and  roughly orthogonal
+  if (fabs(cos_angle)> 0.2) return false;
+  return true;
+}
+  
+
+
 
 //! Guesses the transfo from sestarlist to catalog.  
 /*! TangentPoint denote the tangent point used to project the USNO
@@ -482,7 +502,7 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
       double usnoWindowSizeInPix = usnoFrame.ApplyTransfo(UsnoToPix).Area();
       double imageSize = Frame(header).Area();
       
-      conditions.NStarsL1 = 60;
+      conditions.NStarsL1 = 80;
       conditions.NStarsL2 = 60;
       conditions.NStarsL2 = int (conditions.NStarsL1 * (usnoWindowSizeInPix/imageSize));
       
@@ -495,6 +515,13 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
   GtransfoLin guessCorr = *dynamic_cast<const GtransfoLin *>(match->Transfo());
   cout << " correction to guessed WCS, found using " << match->size() 
        << " pairs" << endl<< guessCorr << endl;
+  if (!check_guess(guessCorr))
+    {
+      cout << " the guess is really too far from a rotation " << endl
+	   << " giving up" << endl;
+      delete match;
+      return NULL;
+    }
   TanPix2RaDec newPix2RaDec = Pix2RaDec*guessCorr;
   cout << " updated lin WCS: " << endl << newPix2RaDec << endl;
 
@@ -565,7 +592,6 @@ static void match_clean(StarMatchList &List)
   cout << " count after satur removal " << List.size() << endl;
 }
 
-static double sq(const double &x) { return x*x;}
 
       
 
@@ -850,7 +876,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
   // here the usnoList and guessedMatch refer to coordinate 
   // in degrees in the tangent plane.
-
+  if (!guessedMatch) return false;
 
   if (guessedMatch->Nused() < 5)
     {
@@ -953,7 +979,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   char *matchFileName;
   if ((matchFileName = getenv("DUMP_MATCH")))
     {
-      accurateMatch->write(*accurateMatch->Transfo(),matchFileName);
+      accurateMatch->write(matchFileName, accurateMatch->Transfo());
       BaseStarList imageReducedList;
       for (StarMatchCIterator i=accurateMatch->begin(); i != accurateMatch->end(); ++i)
 	{

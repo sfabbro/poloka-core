@@ -39,7 +39,17 @@ public :
   FastFinder(const BaseStarList &List);
   ~FastFinder();
   //! -
-  const BaseStar *FindClosest(const Point &Where, const double MaxDist, bool (*SkipIt)(const BaseStar *) = NULL) const;
+  const BaseStar *FindClosest(const Point &Where, const double MaxDist, 
+			      bool (*SkipIt)(const BaseStar *) = NULL) const;
+
+
+  const BaseStar *SecondClosest(const Point &Where, 
+				const double MaxDist, 
+				const BaseStar* &Closest,
+  				bool (*SkipIt)(const BaseStar *)= NULL) const;
+
+
+
   void dump() const;  
 
   class Iterator {

@@ -106,9 +106,10 @@ class AperturePhotomBaseStar : public BaseStar
   float delta_y; // decalage en y (pixels) du barycentre de l'objet par rapport a la valeur sextractor
   
  public:
-  AperturePhotomBaseStar(){return;};
-  AperturePhotomBaseStar(const BaseStar &sestar) : BaseStar(sestar)
-    {delta_x=0.; delta_y=0.; };   //! constructor
+  AperturePhotomBaseStar(){};
+//! constructor
+  AperturePhotomBaseStar(const BaseStar &star) : BaseStar(star)
+    {delta_x=0.; delta_y=0.; };   
   ~AperturePhotomBaseStar(){};
   
   // initialisation des rayons d'ouverture, calcules en fonction du seeing
@@ -126,11 +127,13 @@ class AperturePhotomBaseStar : public BaseStar
   bool FillFlux_noweight(FitsImage& fitsimage, double, int i=0, int s=0);
   bool ComputeBarycenter(FitsImage& fitsimage, FitsImage& fitsweight);
   bool ComputeBarycenter_noweight(FitsImage& fitsimage);
-  float compute_platitude(double &mean, double &var, int i_debut = default_idebut);
-  float compute_platitude(int i_debut = default_idebut);
-  float compute_indep_platitude(double &mean, double &var, int i_debut = default_idebut);
+  double compute_platitude(double &mean, double &var, int i_debut = default_idebut) const;
+  double compute_platitude(int i_debut = default_idebut) const;
+  double compute_indep_platitude(double &mean, double &var, int i_debut = default_idebut) const;
   float compute_indep_platitude(int i_debut = default_idebut);
-  void write(ostream& s = cout, const bool write_header=false);
+  virtual string WriteHeader_(ostream & stream, 
+			      const char*i) const;
+  virtual void write(ostream& s = cout) const;
   void write_short(ostream& s = cout, const bool write_header=false);
   void write_profile(ostream& s = cout, const bool write_header=false);
 };
@@ -179,7 +182,7 @@ class MultiMeasuredStar : public BaseStar
   float compute_mean(int measurement);
   float compute_mean2(int measurement);
   void finalize(int measurement);
-  float compute_platitude(int measurement);
+  double compute_platitude(int measurement) const;
   void AddInfo(float rayon_mesure[], float aperture_flux[], float eflux, bool val, float fluxmax, float fluxmax2);
   void AddInfo(float rayon_mesure[], bool must_be_false);
   void AddInfo(bool must_be_false);

@@ -209,6 +209,10 @@ public :
     See FitsImageName for caution instructions*/
   string ImageCatalogName(const DbImageCatalogKind Kind=SExtractor) const ;
 
+
+  //! the aperture catalog.
+  string AperCatalogName() const;
+
   //! returns the name where the psf parameters and look-up table for residuals is stored
   string ImagePsfName(const DbImagePsfKind Kind=DaophotPsf) const; 
 

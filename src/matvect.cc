@@ -28,7 +28,7 @@ extern "C" {
   void dpotri_(char *, int *, double *, int *, int *);
 };
 
-int cholesky_solve(Mat &A, Vect &B, char* UorL)
+int cholesky_solve(Mat &A, Vect &B, const char* UorL)
 {
 #ifdef FNAME
   cout << " >  cholesky_solve" << endl;
@@ -50,8 +50,10 @@ int cholesky_solve(Mat &A, Vect &B, char* UorL)
   
   int n = B.Size();
   int nhrs = 1, info = 0;
+  char uorl[6]; strncpy(uorl,UorL,6);
 
-  dposv_(UorL, &n, &nhrs, a, &n, b, &n, &info);
+
+  dposv_(uorl, &n, &nhrs, a, &n, b, &n, &info);
 
   if (info != 0) 
     cerr << " cholesky_solve(" << a << "," << b << "," << n
@@ -61,7 +63,7 @@ int cholesky_solve(Mat &A, Vect &B, char* UorL)
   return info;
 }
 
-int cholesky_invert(Mat &A, char* UorL)
+int cholesky_invert(Mat &A, const char* UorL)
 {  
   if(A.SizeX() != A.SizeY() || A.SizeX()<=0) {
     cout << "error in matvect.cc, cholesky_invert Matrix A must be symmetric and you have nx,ny = "
@@ -75,7 +77,9 @@ int cholesky_invert(Mat &A, char* UorL)
 
   //  Now invert using the factorization done in dposv_
 
-  dpotri_(UorL, &n, a, &n, &info);
+  char uorl[6]; strncpy(uorl,UorL,6);
+
+  dpotri_(uorl, &n, a, &n, &info);
 
   if (info != 0) 
     cerr << " cholesky_invert(" << a << "," << n

@@ -84,7 +84,9 @@ void FastFinder::dump() const
     }
 }
 
-const BaseStar *FastFinder::FindClosest(const Point &Where, const double MaxDist, bool (*SkipIt)(const BaseStar *)) const
+const BaseStar *FastFinder::FindClosest(const Point &Where, 
+					const double MaxDist, 
+					bool (*SkipIt)(const BaseStar *)) const
 {
   if (count == 0) return NULL;
   FastFinder::Iterator it = begin_scan(Where, MaxDist);
@@ -101,6 +103,38 @@ const BaseStar *FastFinder::FindClosest(const Point &Where, const double MaxDist
   //  cout << "Distance " << minDist2 << " " << dist  << endl;
   return pbest;
 }
+
+const BaseStar *FastFinder::SecondClosest(const Point &Where, 
+					  const double MaxDist, 
+					  const BaseStar* &Closest,
+					  bool (*SkipIt)(const BaseStar *)) const
+{
+  Closest=NULL;
+  if (count == 0) return NULL;
+  FastFinder::Iterator it = begin_scan(Where, MaxDist);
+  if (*it == NULL) return NULL;
+  const BaseStar *pbest1 = NULL; // closest
+  const BaseStar *pbest2 = NULL; // second closest
+  double minDist1_2 = MaxDist*MaxDist;
+  double minDist2_2 = MaxDist*MaxDist;
+  for (      ; *it != NULL ; ++it)
+    {
+      const BaseStar *p = *it;
+      if (SkipIt && SkipIt(p)) continue;
+      double dist2 = Where.Dist2(*p);
+      if (dist2 < minDist1_2) 
+	{ 
+	  pbest2= pbest1;
+	  minDist2_2 = minDist1_2;
+	  pbest1 = p; 
+	  minDist1_2 = dist2;
+	}
+    }
+  Closest = pbest1;
+  //  cout << "Distance " << minDist2 << " " << dist  << endl;
+  return pbest2;
+}
+
      
 
 /* It is by no means clear the the 2 following routines are actually needed.

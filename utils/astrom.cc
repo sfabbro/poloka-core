@@ -142,7 +142,7 @@ int main(int argc, char **argv)
   FitsHeader head(fitsName);
   if (!WCSFromHeader(head, Pix2RaDec))
     {
-      cerr << " do not find the expected WCS in fitsName " << endl;
+      cerr << " do not find the expected WCS in " << fitsName  << endl;
       return 0;
     }
   if (verbose) cout << " WCS : " << endl << *Pix2RaDec << " ======= " << endl; 
@@ -160,11 +160,11 @@ int main(int argc, char **argv)
 	}
       else
 	{
-	  char line[512];
+	  char line[2048];
 	  char* remainder = NULL;
-	  while(fgets(line,512,list))
+	  while(fgets(line,2048,list))
 	    {
-	      if (line[0] == '#') {cout << line; continue;}
+	      if (line[0] == '#' || line[0] == '@') {cout << line; continue;}
 	      char *next_stuff = line;
 	      x = strtod(line, &next_stuff);
 	      if (next_stuff != line) y = strtod(next_stuff, &remainder);
