@@ -53,6 +53,8 @@ int main(int argc, char **argv)
       A(0,i)=1;
   }
   Mat Abis = A; // we save a copy for output 
+
+#ifdef DEBUG
   cout << "A before cleaning:"  << endl;
   cout << A << endl;
 
@@ -61,34 +63,39 @@ int main(int argc, char **argv)
   
   cout << "FluxCovarianceMat before cleaning:"  << endl;
   cout << FluxCovarianceMat << endl;
-  
+#endif 
 
   // ==== remove points without data ====
   for(unsigned int i=0; i< FluxVec.Size(); i++) {
     if(fabs(FluxVec(i))<1.e-30) {
-      cout << "removing " << i << " : ";
-      cout << FluxCovarianceMat.SizeX() << " => ";
+      //cout << "removing " << i << " : ";
+      //cout << FluxCovarianceMat.SizeX() << " => ";
       FluxCovarianceMat = FluxCovarianceMat.WithoutRows(i,i);
       FluxCovarianceMat = FluxCovarianceMat.WithoutColumns(i,i);
-      cout << FluxCovarianceMat.SizeX() << endl;
+      //cout << FluxCovarianceMat.SizeX() << endl;
       Mat mFluxVec = FluxVec;
       FluxVec = mFluxVec.WithoutRows(i,i);
       A = A.WithoutRows(i,i);
       i--;
     }
   }
+#ifdef DEBUG
   cout << "FluxVec after cleaning:"  << endl;
   cout << FluxVec << endl;
   cout << "A after cleaning:"  << endl;
   cout << A << endl;
   cout << "FluxCovarianceMat after cleaning:"  << endl;
   cout << FluxCovarianceMat << endl;
+#endif
   
   vector<int> suppressedfluxes;
   Vect flux_per_night;
   Mat AtWA_invert;
   Mat AtWA;
   Mat FluxWeightMat;
+
+  int noutliers = 0;
+
   while(true) {
   
     FluxWeightMat = FluxCovarianceMat;
@@ -98,20 +105,26 @@ int main(int argc, char **argv)
     AtWA = A.transposed()*FluxWeightMat*A;
     AtWA_invert = AtWA; AtWA_invert.SymMatInvert();
     flux_per_night = (AtWA_invert*(A.transposed()*FluxWeightMat))*FluxVec;
+
+#ifdef DEBUG
     cout << "Mean flux per night" << endl;
     cout << flux_per_night << endl;
     cout << "Covariance matrix" << endl;
     cout << AtWA_invert << endl;
-  
+#endif
+ 
     // now compute chi2
     Vect B = FluxVec - A*flux_per_night;
-    double chi2 = B.transposed()*FluxWeightMat*B;
-    cout << "chi2 = " << chi2 << endl;
-    
+
+    double chi2 = B.transposed()*FluxWeightMat*B;     
     int ndf = A.SizeY()-A.SizeX();
+
+#ifdef DEBUG
+    cout << "chi2 = " << chi2 << endl;   
     cout << "ndf = " << ndf << endl;
     cout << "chi2/ndf = " << chi2/ndf << endl;
-    
+#endif
+   
     if(chi2/ndf<1.5 || suppressedfluxes.size()>=6)
       break;
 
@@ -131,6 +144,7 @@ int main(int argc, char **argv)
     
     if(sqrt(chi2_max)<3.)
       break;
+    noutliers ++;
     suppressedfluxes.push_back(outlier);
     // on vire cet outlier de toutes les matrices
     A = A.WithoutRows(outlier,outlier);
@@ -145,7 +159,18 @@ int main(int argc, char **argv)
   
   // OUTPUT
   // ============================================================================================
-
+  
+  // compute chi2
+  Vect B = FluxVec - A*flux_per_night;
+  double chi2 = B.transposed()*FluxWeightMat*B;     
+  int ndf = A.SizeY()-A.SizeX();
+  
+  cout << "SUMMARY " 
+       << FluxVec.Size() << " " 
+       << flux_per_night.Size() << " "
+       << noutliers << " " 
+       << chi2/ndf << endl;
+  
 
   // save these results in ASCII files
   // ... TODO ...
@@ -217,7 +242,7 @@ int main(int argc, char **argv)
 
   // get zero point 
   double zp = lcpoints[0]->zeropoint;
-  cout << "zp=" << zp << endl;
+  //cout << "zp=" << zp << endl;
 
 
   ofstream outputlc("lc2fit_per_night.dat");
