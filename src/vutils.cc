@@ -211,12 +211,16 @@ static double sqr(double x) {
   return x*x;
 }
 
+#define DEBUG
 double gaussianfit(const double *values, int nval, double &mean, double &sigma, const double &k, bool first_evalutation)
 {
   if(first_evalutation) {
     double median;
     DConst_mean_median_sigma(values,nval,mean,median,sigma);
     mean=median;
+#ifdef DEBUG
+    cout << "gaussianfit::first_eval  " << nval << " " << mean << " " << sigma << endl; 
+#endif
   }
 
   // first count the number of entries in one sigma about mean histo
@@ -289,10 +293,10 @@ double gaussianfit(const double *values, int nval, double &mean, double &sigma, 
   for(int iteration=0;iteration<20;iteration++) {
     
     // init
-    for(int k=0;k<3;k++) {
-      B(k)=0;
+    for(int kk=0;kk<3;kk++) {
+      B(kk)=0;
       for(int l=0;l<3;l++) {
-	A(k,l)=0;
+	A(kk,l)=0;
       }
     }
     
@@ -305,10 +309,10 @@ double gaussianfit(const double *values, int nval, double &mean, double &sigma, 
       model=a*x2+b*x[i]+c; // the superbe model
       res = y[i]-model; // residual
       w[i] = exp(model); // re-evaluate weight according to model, w=1/sigma2=1/(dN/N)**2=N
-      for(int k=0;k<3;k++) {
-	B(k)+=w[i]*res*dRi[k];
+      for(int kk=0;kk<3;kk++) {
+	B(kk)+=w[i]*res*dRi[kk];
 	for(int l=0;l<3;l++) {
-	  A(k,l)+=w[i]*dRi[l]*dRi[k];
+	  A(kk,l)+=w[i]*dRi[l]*dRi[kk];
 	}
       }
     }
@@ -335,6 +339,19 @@ double gaussianfit(const double *values, int nval, double &mean, double &sigma, 
       b -= B(1)*0.95;
       c -= B(2)*0.95;
     }
+    
+    if (a>=0) {
+      cout << "gaussian fit failure (a=" << a << ")" << endl;
+      cout << "return a clipped mean" << endl;
+      double *newvalues = new double[nval];
+      for(int i=0;i<nval;i++)
+	newvalues[i]=values[i];
+      mean = clipmean(newvalues,nval,sigma,k);
+      sigma = -sigma ; // to check error
+      return mean;
+    }
+
+
     chi2=nchi2;
     nsigma=1./sqrt(-2*a);
     nmean=-b/2./a;

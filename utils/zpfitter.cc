@@ -91,9 +91,13 @@ int main(int argc, char **argv)
   
   // gaussian
   zp = gaussianfit(values,count,zp,rms,3.,true);
-  zp = gaussianfit(values,count,zp,rms,2.,false);
-  zp = gaussianfit(values,count,zp,rms,1.5,false);
-  zp = gaussianfit(values,count,zp,rms,1.,false);
+  if(rms>0) { 
+    zp = gaussianfit(values,count,zp,rms,2.,false);
+    zp = gaussianfit(values,count,zp,rms,1.5,false);
+    zp = gaussianfit(values,count,zp,rms,1.,false);
+  }else{
+    rms=-rms;
+  }
   fprintf(file,"@PSFZP %6.6f\n",zp);
   fprintf(file,"@PSFZPERROR %6.6f\n",rms);
   fprintf(file,"@NMEASUREMENTS %d\n",count);
