@@ -70,6 +70,83 @@ void Mat::dump(ostream& Stream) const {
     }
   }
 
+void Mat::Identity() {
+  if(nx!=ny) {
+    cout << "Mat::Identity ERROR nx!=ny" <<endl;
+    abort();
+  }
+  Zero();
+  for(unsigned int i=0;i<nx;++i)
+    (*this)(i,i)=1.;
+}
+
+static bool same_size(const Mat& m1, const Mat& m2)
+{
+  if ((m1.SizeX() == m2.SizeX()) && (m1.SizeX() == m2.SizeY())) return true;
+  cout << " matrices have different sizes" << endl;
+  abort(); // we should in fact throw an exception.
+  return false;
+}
+
+
+
+
+Mat Mat::operator +(const Mat& Right) const {
+  same_size(*this,Right);
+  Mat res = (*this);
+  res += Right;
+  return res;
+}
+
+Mat Mat::operator -(const Mat& Right) const {
+  same_size(*this,Right);
+  Mat res = (*this);
+  res -= Right;
+  return res;
+}
+
+void Mat::operator +=(const Mat& Right) const
+{
+  same_size(*this,Right);
+  double *a = data;
+  const double *b = Right.Data();
+  unsigned int size = nx*ny;
+  for(unsigned int i=0;i<size;++i, ++a, ++b)
+    *a += *b;
+}
+
+void Mat::operator -=(const Mat& Right) const
+{
+  same_size(*this,Right);
+  double *a = data;
+  const double *b = Right.Data();
+  unsigned int size = nx*ny;
+  for(unsigned int i=0;i<size;++i, ++a, ++b)
+    *a -= *b;
+}
+
+Mat Mat::operator *(const double Right) const 
+{
+  Mat res = (*this);
+  res *= Right;
+  return res;
+}
+
+Mat operator *(const double Left, const Mat &Right)
+{
+  Mat res = Right;
+  res *= Left;
+  return res;
+}
+ 
+void Mat::operator *=(const double Right)
+{
+  int size = nx*ny;
+  double *a = data;
+  for(int i=0;i<size;++i, ++a)
+    *a *= Right;
+}
+
 //=================================================================
 
 Vect::Vect(const unsigned int N) {

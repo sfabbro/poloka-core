@@ -30,13 +30,27 @@ class Mat {
   unsigned int SizeY() const { return ny;}
   
   void Zero() {memset(data, 0, nx*ny*sizeof(double));};
-  
+  void Identity();
+
   const double* Data() const {return data;};
   double* NonConstData() {return data;};
 
   void dump(std::ostream& Stream) const;
   friend std::ostream& operator << (std::ostream &stream, const Mat &m)
     { m.dump(stream); return stream;}
+
+  // operators
+  Mat operator +(const Mat& Right) const;
+  Mat operator -(const Mat& Right) const;
+  //Mat operator *(const Mat& Right) const;
+  
+  void operator +=(const Mat& Right) const;
+  void operator -=(const Mat& Right) const;
+  //void operator *=(const Mat& Right) const;
+  
+  Mat operator *(const double Right) const;
+  friend Mat operator *(const double Left, const Mat &Right);
+  void operator *=(const double Right);
 };
 
 class Vect {
