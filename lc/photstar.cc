@@ -50,7 +50,7 @@ PhotStar* PhotStar::read(istream & Stream, const char *Format)
 
 void PhotStar::dumpn(ostream &Stream) const
 {
-  BaseStar::dump(Stream);
+  BaseStar::dumpn(Stream);
   Stream << " sky " << sky << " varflux " << varflux << " varx " << varx << " vary " << vary 
 	 << " covxy " << covxy << " varsky " << varsky;
 }
