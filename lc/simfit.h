@@ -90,8 +90,10 @@ private:
   };
   
   double& fillMatGal(int i) {
-    if(i<0 || i>=nfx*nfy) {
-      cout << "fillMat ERROR i,nfx*nfy = " << i << "," << nfx*nfy << endl;
+    int n = nfx*nfy;
+    n*=n;
+    if(i<0 || i>=n) {
+      cout << "fillMatGal ERROR i,pow(nfx*nfy,2) = " << i << "," << n << endl;
       abort();
     }
     return  MatGal[i];
@@ -102,7 +104,7 @@ private:
   double computeChi2() const;
 
   // perform one Newton-Raphson iteration: fill system and solve, check decreasing of chi2
-  double oneNRIteration(const double& oldchi2);
+  double oneNRIteration(double oldchi2);
 
 public:
 
@@ -115,16 +117,16 @@ public:
   CountedRef<SimFitRefVignet> VignetRef;
 
   //! set what you want to fit
-  void SetWhatToFit(const unsigned int ToFit = FitFlux);
+  void SetWhatToFit(unsigned int ToFit = FitFlux);
 
   //! get worst seeing value in the list of images
   double GetWorstSeeing();
 
   //! get the minimum scaling factor to resize the vignets. WorstSeeing is in ReducedImage::Seeing() unit
-  void FindMinimumScale(const double &WorstSeeing);
+  void FindMinimumScale(double WorstSeeing);
 
   //! resize all the vignets of a scale factor, resize matrixes, and compute indices
-  void Resize(const double &ScaleFactor);
+  void Resize(double ScaleFactor);
 
   //! allow to change full data set to another star
   void Load(LightCurve& Lc);
@@ -133,13 +135,13 @@ public:
   void FillMatAndVec();
 
   //! iterate on solution and solve the system
-  bool IterateAndSolve(const int MaxIter=10, const double& Eps=0.001);
+  bool IterateAndSolve(int MaxIter=10, double Eps=0.00001);
 
   //! a procedure to fill up the covariance into the Mat and the proper SimFitVignets...
   bool GetCovariance();
 
   //! update the vignets with the current solution, possibily apply a scale factor to the solution
-  bool Update(const double &Factor=1.);
+  bool Update(double Factor=1.);
 
   //! fill, fit and shit: do everything
   void DoTheFit();

@@ -81,7 +81,7 @@ SimFit::SimFit()
   MatGal = 0;
 }
 
-void SimFit::SetWhatToFit(const unsigned int ToFit)
+void SimFit::SetWhatToFit(unsigned int ToFit)
 {
   fit_flux = (ToFit & FitFlux);
   fit_pos  = (ToFit & FitPos);
@@ -90,7 +90,7 @@ void SimFit::SetWhatToFit(const unsigned int ToFit)
   use_gal |= fit_gal; // use the galaxy if we fit it
 }
 
-void SimFit::FindMinimumScale(const double &WorstSeeing)
+void SimFit::FindMinimumScale(double WorstSeeing)
 {
 #ifdef FNAME
   cout << " > SimFit::FindMinimumScale(const double &WorstSeeing) WorstSeeing=" << WorstSeeing  << endl;
@@ -209,7 +209,7 @@ void SimFit::Load(LightCurve& Lc)
     }
 }
 
-void SimFit::Resize(const double &ScaleFactor)
+void SimFit::Resize(double ScaleFactor)
 {
 
 #ifdef DEBUG
@@ -301,7 +301,7 @@ void SimFit::Resize(const double &ScaleFactor)
 
   resize_vec(Vec, nparams);
   resize_mat(Mat, nparams, nparams);
-  resize_mat(MatGal, nfx,nfy);
+  resize_mat(MatGal, nfx*nfy,nfx*nfy);
 
 #ifdef DEBUG
   cout << "   nparams = " << nparams << endl;
@@ -903,7 +903,11 @@ void SimFit::fillGalGal()
   // we do not need to refill this part at each iteration
   if (!refill) 
     {
-      int ngal = galend-galstart+1;
+
+      int ngal = galend-galstart+1; 
+#ifdef DEBUG
+      cout << "     case notrefile " << endl;
+#endif
       for (int j=0; j<ngal; ++j) 
 	for (int i=j+1; i<ngal; ++i) {
 #ifdef CHECK_MAT_BOUNDS
@@ -1153,12 +1157,24 @@ void SimFit::fillSkySky()
 
 double SimFit::computeChi2() const
 {
+#ifdef FNAME
+  cout << " > SimFit::computeChi2()" << endl;
+#endif
   double c = 0.;
-  for (SimFitVignetCIterator it=begin(); it != end(); ++it) c += (*it)->Chi2();
+  int count = 0;
+  double ic = 0;
+  for (SimFitVignetCIterator it=begin(); it != end(); ++it) {
+    ic = (*it)->Chi2();
+    c += ic;
+    count ++;
+#ifdef DEBUG
+    cout << "   in SimFit::computeChi2() vignet " << count << " chi2 = " << ic << endl;
+#endif   
+  }
   return c;
 }
 
-bool SimFit::Update(const double& Factor)
+bool SimFit::Update(double Factor)
 {
   // update only if is fitted
   if (!solved) return false;
@@ -1191,21 +1207,27 @@ bool SimFit::Update(const double& Factor)
       if ((fit_flux) && (vi->FitFlux)) vi->Star->flux += Vec[fluxind++]*Factor;
 
       // update pos (not really required if not vignetref)
-      if ((fit_pos) && !(vi->ShiftCenter(Point(Vec[xind]*Factor, Vec[yind]*Factor)))) return false;
-      
+      if ((fit_pos) && !(vi->ShiftCenter(Point(Vec[xind]*Factor, Vec[yind]*Factor)))) {
+	cout << "ShiftCenter failure" << endl;
+	return false;
+      }
       // update sky
       if (fit_sky) vi->Star->sky += Vec[skyind++]*Factor;
-
+      
       // update residuals and convolved psf
       vi->ModifiedResid();
+      cout << "HELLO !!!!" << endl;
       vi->Update();
     }
 
   return true;
 }
 
-double SimFit::oneNRIteration(const double &OldChi2)
+double SimFit::oneNRIteration(double OldChi2)
 {
+#ifdef FNAME
+  cout << " > SimFit::oneNRIteration(double OldChi2)" << endl;
+#endif
   FillMatAndVec();
   solved = (cholesky_solve(Mat,Vec,nparams) == 0);
   if (!solved) return 1e29;
@@ -1251,10 +1273,10 @@ double SimFit::oneNRIteration(const double &OldChi2)
   return curChi2;
 }
 
-bool SimFit::IterateAndSolve(const int MaxIter, const double& Eps)
+bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
 {
 #ifdef FNAME
-  cout << " > SimFit::IterateAndSolve(const int MaxIter, const double& Eps): Start : \n"
+  cout << " > SimFit::IterateAndSolve(const int MaxIter, double Eps): " << MaxIter << " " << Eps << "  Start : \n"
        << (*this) << endl;
 #endif
   double oldchi2;
@@ -1266,8 +1288,14 @@ bool SimFit::IterateAndSolve(const int MaxIter, const double& Eps)
 	   << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;
       oldchi2 = chi2;
       chi2 = oneNRIteration(oldchi2);
-    }
-  while ((iter++ < MaxIter) && (chi2-oldchi2) > oldchi2*Eps);
+#ifdef DEBUG
+      cout << "   in SimFit::IterateAndSolve fabs(chi2-oldchi2)/((chi2+oldchi2)/2} = " << (fabs(chi2-oldchi2)/((chi2+oldchi2)/2)) << endl;
+#endif 
+    }while ((iter++ < MaxIter) && (fabs(chi2-oldchi2) > ((chi2+oldchi2)/2.*Eps)));
+  
+  cout << "   in SimFit::IterateAndSolve() : Iteration # " 
+       << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;
+ 
 
   cout << "   SimFit::IterateAndSolve(): Finish : \n"
        << (*this) << endl;
