@@ -1,8 +1,8 @@
 /* 
  * $Source: /cvs/snovae/toads/poloka/src/Attic/fringeutils.cc,v $
- * $Revision: 1.1 $
- * $Author: nrl $
- * $Date: 2004/02/20 10:48:37 $
+ * $Revision: 1.2 $
+ * $Author: guy $
+ * $Date: 2004/05/03 14:19:07 $
  * $Name:  $
  */
 
@@ -19,7 +19,7 @@
 #define VERBOSE 
 
 // get cvs version of the code
-#define CVSVERSION "$Revision: 1.1 $"
+#define CVSVERSION "$Revision: 1.2 $"
 
 
 int FringeUtils::GreatestCommonDivider(int a, int b) {
@@ -34,16 +34,23 @@ int FringeUtils::GreatestCommonDivider(int a, int b) {
   return 1;
 }
 
-bool  FringeUtils::IsSameSize(Image &Img1, Image &Img2) {
+bool  FringeUtils::IsSameSize(const Image &Img1, const Image &Img2) {
   return (Img1.Nx() == Img2.Nx()) && ( Img1.Ny() == Img2.Ny());
 }
 
 
-double FringeUtils::ScalarProduct(Image &Img1, Image &Img2, float nsigma) {
+
+double FringeUtils::ScalarProduct(Image &Img1, Image &Img2, float nsigma, const Image* deadimage) {
   if(!IsSameSize(Img1,Img2)) {
     cout << "ERROR fringefinder::ScalarProduct Images do not have the same size" << endl;
     return 0;
   }
+  if(deadimage)
+    if(!IsSameSize(Img1,*deadimage)) {
+      cout << "ERROR fringefinder::ScalarProduct Image and deadimage do not have the same size" << endl;
+      return 0;
+    }
+  
   Pixel mean1,sigma1,max1;
   Pixel mean2,sigma2,max2; 
   Pixel val1,val2;
@@ -59,22 +66,45 @@ double FringeUtils::ScalarProduct(Image &Img1, Image &Img2, float nsigma) {
   Pixel *pix1 = Img1.begin();
   Pixel *pix1end = Img1.end();
   Pixel *pix2 = Img2.begin();
+  Pixel *deadpix = 0;
+  if(deadimage)
+    deadpix = deadimage->begin();
   
   double sum = 0;
   unsigned int npix = 0;
-  if(nsigma <= 0) {
-    npix = Img1.Nx()*Img1.Ny();
-    for (; pix1 < pix1end; ++pix1, ++pix2) {
-      sum += (*pix1-mean1)*(*pix2-mean2);
-    }
-  } else { 
-    for (; pix1 < pix1end; ++pix1, ++pix2) {
-      val1 = *pix1-mean1;
-      val2 = *pix2-mean2;
-      if( (fabs(val1)<max1) && (fabs(val2)<max2) ) {
-	sum += val1*val2;
-	npix ++;
+  if(!deadimage) {
+    if(nsigma <= 0 ) {
+      npix = Img1.Nx()*Img1.Ny();
+      for (; pix1 < pix1end; ++pix1, ++pix2) {
+	sum += (*pix1-mean1)*(*pix2-mean2);
       }
+    } else { 
+      for (; pix1 < pix1end; ++pix1, ++pix2) {
+	val1 = *pix1-mean1;
+	val2 = *pix2-mean2;
+	if( (fabs(val1)<max1) && (fabs(val2)<max2) ) {
+	  sum += val1*val2;
+	  npix ++;
+	}
+      }
+    }
+  }else{
+    if(nsigma <= 0 ) {
+      for (; pix1 < pix1end; ++pix1, ++pix2, ++deadpix) {
+	if( (*deadpix==0)) {
+	  sum += (*pix1-mean1)*(*pix2-mean2);
+	  npix ++;
+	}
+      }
+    }else{
+      for (; pix1 < pix1end; ++pix1, ++pix2, ++deadpix) {
+	val1 = *pix1-mean1;
+	val2 = *pix2-mean2;
+	if( (*deadpix==0) && (fabs(val1)<max1) && (fabs(val2)<max2) ) {
+	  sum += val1*val2;
+	  npix ++;
+	}
+      } 
     }
   }
   
@@ -160,7 +190,7 @@ void  FringeUtils::SmoothFilter(Image &Img) {
   Img = temp;
 }
 
-double*  FringeUtils::ScalarProductMatrix(vector<string> &filelist) {
+double*  FringeUtils::ScalarProductMatrix(vector<string> &filelist, const Image* deadimage) {
   
   int nImages = filelist.size();
   if (nImages <2) {
@@ -189,7 +219,7 @@ double*  FringeUtils::ScalarProductMatrix(vector<string> &filelist) {
 #ifdef VERBOSE
       cout << "(" << i << "," << j << ") ("<< n << "/" << ntot << ") => " ;
 #endif 
-      scalarproduct = ScalarProduct(imagei,imagej,nsigma);
+      scalarproduct = ScalarProduct(imagei,imagej,nsigma,deadimage);
       spm[i+nImages*j]=scalarproduct;
       spm[j+nImages*i]=scalarproduct;
     }

@@ -1,8 +1,8 @@
 /* 
  * $Source: /cvs/snovae/toads/poloka/src/Attic/fringeutils.h,v $
- * $Revision: 1.1 $
- * $Author: nrl $
- * $Date: 2004/02/20 10:48:37 $
+ * $Revision: 1.2 $
+ * $Author: guy $
+ * $Date: 2004/05/03 14:19:07 $
  * $Name:  $
  */
 
@@ -25,13 +25,13 @@ class FringeUtils {
   ~FringeUtils(){};
   
   //! Checks whether images have same size or not
-  static bool IsSameSize(Image &Img1, Image &Img2);
+  static bool IsSameSize(const Image &Img1,const Image &Img2);
   
   //! Computes Scalar Product
   /*! \return 1/p*sum(Img1(i)*Img2(i)) for( Img1(i)>nsigma*sigma1i && Img2(i)>nsigma*sigma2i )
    * if nsigma<0 (default), no cut is applied 
    */
-  static double ScalarProduct(Image &Img1, Image &Img2,float nsigma);
+  static double ScalarProduct(Image &Img1, Image &Img2,float nsigma, const Image* deadimage=0);
   //! Smooth an image
   /*! Convolution of Image Img with a smoothing filter 3x3
    *  0.025, 0.100, 0.025
@@ -47,7 +47,7 @@ class FringeUtils {
    * \param  FitsFileSet set of images
    * \return double array[n*n] containing the matrix
    */
-  static double* ScalarProductMatrix(vector<string> &filelist);
+  static double* ScalarProductMatrix(vector<string> &filelist, const Image* deadimage=0);
   
   //! Clear an image 
   /*! Set pixels values to 0 if fabs(value-mean)>NSigma*rms 
