@@ -39,7 +39,7 @@ libtoads_la_SOURCES = \
   detection_dict.cc \
   gtransfo_dict.cc \
   kernelfit_dict.cc \
- \
+  matvect.cc                  matvect.h \
   vutils.cc                   vutils.h         \
   wcscon.c                    wcscon.h         \
   wcsutils.cc                 wcsutils.h       \
@@ -205,7 +205,8 @@ kernelfit.h \
 psfmatch.h  \
 swarpstack.h    \
 night.h     \
-nightelement.h 
+nightelement.h  \
+matvect.h
 
 
 
