@@ -417,7 +417,7 @@ void codegen::classPersisterCode_(CppClass const& cppclass)
   ofs_cc_ << "};" << std::endl;
   
   string ctn=cleanTypeName(cppclass.cppTypeName());
-  ofs_cc_ << "type_registrar<" << cppclass.cppTypeName() << ",xmlstream> __" << ctn << counter_++ << "__registration__;"
+  ofs_cc_ << "type_registrar<" << cppclass.cppTypeName() << ",xmlstream> __" << ctn << counter_++ << "__registration__(\"" << cppclass.cppTypeName() << "\");"
 	  << std::endl;
   
   ofs_cc_ << std::endl;

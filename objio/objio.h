@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: objio.h,v 1.13 2004/03/08 13:22:42 guy Exp $
+// $Id: objio.h,v 1.14 2004/03/08 17:41:02 guy Exp $
 // 
 // \file objio.h
 // 
-// Last modified: $Date: 2004/03/08 13:22:42 $
+// Last modified: $Date: 2004/03/08 17:41:02 $
 // by:            $Author: guy $
 // 
 #ifndef OBJIO_H
@@ -78,7 +78,7 @@ public:
   template<class T>
   void           write(T const* t, const char* name=0) {
     bool w = check_address_((void const*)t); // did we write this object already ?
-    persister<T,IOS>* b = (persister<T,IOS>*)typemgr<IOS>::getPersister(typeid(*t).name());
+    persister<T,IOS>* b = (persister<T,IOS>*)typemgr<IOS>::getPersister_rtti(typeid(*t).name());
     b->set_object(t);
     stream_.write_start_raw_pointer_tag(name);
     if(!w) {
@@ -132,7 +132,7 @@ public:
   void         write(CountedRef<T> const& r, const char* name=0) {
     T const* pt = &(*r);
     bool w = check_address_((void const*)(pt)); // did we write this object already ?
-    persister<T,IOS>* b = (persister<T,IOS>*)typemgr<IOS>::getPersister(typeid(*pt).name());
+    persister<T,IOS>* b = (persister<T,IOS>*)typemgr<IOS>::getPersister_rtti(typeid(*pt).name());
     b->set_object(pt);
     stream_.write_start_reference_tag(name, b->get_object_addr());
     if(!w) {
@@ -401,6 +401,30 @@ public:
     stream_.read_end_collection_tag();
   }
   
+ template<class T>
+  T* read_next_object() const{
+    unsigned int version;
+    std::string name;
+    stream_.read_start_object_tag(name, version); // may throw an exc. here
+    persister_base<IOS>* p = typemgr<IOS>::getPersister_xml(name);
+    if(!p) {
+      std::cerr << "cannot get persister for type \"" << name << "\"" << std::endl;
+      abort();
+    }
+    p->read_members(*this);
+    stream_.read_end_object_tag();
+    
+    //const T* add = dynamic_cast<const T*>(p->get_object_addr());
+    const T* add = (const T*)(p->get_object_addr());
+    if(!add) {
+      std::cerr << "objio::next_object(T* obj) Object type in file does not match requirement"
+		<< std::endl;
+      abort();
+    }
+    
+    
+    return const_cast< T* >(add);
+ }
   
   template<class T>
   void         read(CountedRef<T>& r) const {
@@ -408,11 +432,9 @@ public:
     cout << "about to read the reference tag:" << endl;
     stream_.read_start_reference_tag(addr);
     cout << "read CountedRef: addr=" << addr << endl;
-    //T* pt = dynamic_cast<T*>(check_address_(addr));
-    T* pt = (T*)(check_address_(addr));
+    T* pt = dynamic_cast<T*>(check_address_(addr));
     if(!pt) {
-      pt = new T;
-      *this >> *pt;
+      pt = read_next_object<T>();
       register_address_(addr,pt);
     }
     r = pt;
