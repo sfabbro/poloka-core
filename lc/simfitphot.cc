@@ -80,28 +80,21 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 #ifdef FNAME
   cout << " > SimFitPhot::SimFitPhot(LightCurveList& Fiducials)" << endl;
 #endif
-  init_phot(Fiducials);
+  //init_phot(Fiducials);
 #ifdef DEBUG
   cout << "  zeFit.reserve ... " << endl;
 #endif
   zeFit.reserve(Fiducials.Images.size());
   
-  // 4 fwhm maximum size vignets
-  const double rad = 4.*2.3548;
-
-  zeFit.VignetRef = SimFitRefVignet(Fiducials.RefImage, int(ceil(Fiducials.RefImage->Seeing()*rad)));
-  
-  double worstSeeing = -1e29;
-  
+  zeFit.VignetRef = SimFitRefVignet(Fiducials.RefImage); //  no data will be read cause no star is defined
   for (ReducedImageCIterator it=Fiducials.Images.begin(); it != Fiducials.Images.end(); ++it)
     {
-      const double curSeeing = (*it)->Seeing();
       SimFitVignet *vig = new SimFitVignet(*it);
       zeFit.push_back(vig);
-      if (worstSeeing < curSeeing) worstSeeing = curSeeing;
     }
- 
-  zeFit.FindMinimumScale(worstSeeing);
+  // cannot do this since we do not have any data loaded yet 
+  //zeFit.FindMinimumScale(worstSeeing);
+  
 }
 
 
