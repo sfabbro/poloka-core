@@ -22,7 +22,10 @@ public:
    double x,y;
 
   //! - contructor
-   Point(const double &xx=0, const double &yy=0) : x(xx), y(yy) {};
+   Point() : x(0), y(0) {};
+
+  //! - contructor
+   Point(const double &xx, const double &yy) : x(xx), y(yy) {};
 
   //! -
    double Distance(const Point& Other) const { return sqrt((x-Other.x)*(x-Other.x) + (y-Other.y)*(y-Other.y));};
