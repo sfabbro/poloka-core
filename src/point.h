@@ -13,8 +13,10 @@ using namespace std;
 
 //! A point in a plane.
 class Point {
+
   CLASS_VERSION(Point,1);
-  #define Point__is__persistent
+#define Point__is__persistent
+
 public:
   //! coordinate
    double x,y;

@@ -36,6 +36,9 @@ obtained using 'new'. The corresponding
 'delete' are invoked in the destructor. */
 
 template<class Star> class StarList : public list <CountedRef<Star> >  {
+
+  // CLASS_VERSION(StarList,1);
+  //#define StarList__is__persistent
  
 public:
 typedef CountedRef<Star> Element;

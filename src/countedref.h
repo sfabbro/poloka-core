@@ -1,6 +1,8 @@
 #ifndef COUNTEDREF__H
 #define COUNTEDREF__H
 
+#include <iostream>
+
 
 //! an implementation of "smart pointers" that counts references to an object. The obejct it "points" to has to derive from RefCount. 
 template <class T> class CountedRef {
@@ -45,7 +47,7 @@ template <class T> class CountedRef {
 
 #endif /* __CINT__ */
 
-  ~CountedRef() 
+  virtual ~CountedRef() 
     { 
       if (!p) return;
       (p->refCount())--;
@@ -63,17 +65,27 @@ public:
   
   /* when a RefCount is copied, it means that the object itself is copied,
      hence the count sould be set to zero */
-  RefCount(const RefCount &Other) { 
-    if (&Other) {}; // warning killer
-    refcount = 0;
-  }
+
+  RefCount(const RefCount &Other) 
+    { 
+      if (&Other) {}; // warning killer
+      refcount = 0;
+    }
+
+  /* when a RefCount deleted, one must have zero references to it */
+  virtual ~RefCount()
+    { 
+      if(refcount!=0) {
+	std::cerr << "Trying to delete a RefCount with non zero number of references" << std::endl;
+	std::cerr << "There is a living CountedRef in memory (in a StarList for instance)" << std::endl;
+	abort();
+      }
+    }
   
-  virtual  ~RefCount() {}
   
   int& refCount()   { return refcount; }
-  //  int  refCount() const {return refcount;}
-  
 
+  
 #ifndef SWIG
   void operator = (const RefCount & Right)
     {

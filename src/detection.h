@@ -5,8 +5,11 @@
 #include "basestar.h"
 
 class Detection : public BaseStar
-{
-  private:
+{  
+  CLASS_VERSION(Detection,1);
+  #define Detection__is__persistent 
+  
+ private:
   double eFlux;
   double sig2Noise;
   double aperFlux;
@@ -228,6 +231,6 @@ class MatchedDetectionList : public StarList<MatchedDetection>
 typedef MatchedDetectionList::iterator MatchedDetectionIterator;
 typedef MatchedDetectionList::const_iterator MatchedDetectionCIterator;
 
-
+// make_persister_for CountedRef<Detection>
 
 #endif /*DETECTION__H */

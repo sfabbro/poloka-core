@@ -37,7 +37,7 @@ class StarMatch {
 public: /* if one sets that private, then fitting routines will be a nightmare. we could set all the Transfo classes friend... */
   
   Point point1, point2; //!< 2 points 
-  BaseStarRef s1, s2; //!< the Star pointers (the pointer is in fact generic, pointed data is never used).
+  CountedRef<BaseStar> s1, s2; //!< the Star pointers (the pointer is in fact generic, pointed data is never used).
   double distance;
 
 public :

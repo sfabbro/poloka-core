@@ -19,12 +19,13 @@ libtoads_la_SOURCES = \
  \
   frame_dict.cc \
   point_dict.cc \
+  starlist_dict.cc \
   basestar_dict.cc \
   sestar_dict.cc \
   candidatestar_dict.cc \
-  fidstar_dict.cc \
   jimstar_dict.cc \
   photstar_dict.cc \
+  fidstar_dict.cc \
   rollingstar_dict.cc \
   senearstar_dict.cc \
   standardstar_dict.cc \
@@ -35,6 +36,7 @@ libtoads_la_SOURCES = \
   histo4d_dict.cc \
   image_dict.cc \
   dimage_dict.cc \
+  detection_dict.cc \
  \
   vutils.cc                   vutils.h         \
   wcscon.c                    wcscon.h         \
