@@ -1628,69 +1628,69 @@ bool ReducedImage::FlagDiffractionSpikes() {
   std::list<mycluster> saturatedclusters;
   
   // read satur and make cluster list
-  {
-    FitsImage satur(FitsSaturName());
-    
-   if(rebin>1) {      
-     rebin_image(satur,rebin,rebin);
-   }
-   
-   // find clusters in saturated image
-   findclusters(satur,saturatedclusters);
-   //saturatedclusters.sort(&DecreasingClusterSize);
-   if(debug) {
-     cout << "list of saturated clusters = " << saturatedclusters.size() << endl;
-     std::list<mycluster>::iterator cluster = saturatedclusters.begin();
-     std::list<mycluster>::iterator endcluster = saturatedclusters.end();
-     for(;cluster!=endcluster;++cluster) {
-       cout << "size " << cluster->size() << endl;
-     }
-   }
- }
  
- // copy initial image
-  FitsImage initial_image(FitsName());
-  Image newimage =  initial_image;
- 
- 
- 
-  // now rebin image by a factor rebin
-  if(rebin>1) {      
-    rebin_image(newimage,rebin,rebin);
-  }
-  // skylev
-  Pixel mean,sigma;
-  newimage.SkyLevel(&mean, &sigma);
-  // pix = 1 if signal greater than 1.5 sigma
-  newimage.Simplify(1.5*sigma,1,0);
+  FitsImage satur(FitsSaturName(),RW);
   
-  // now enlarge satured clusters using this image
-  std::list<mycluster>::iterator cluster = saturatedclusters.begin();
-  std::list<mycluster>::iterator endcluster = saturatedclusters.end();
-  if(debug)
-    cout << "list of enlarged clusters" << endl;
-  for(;cluster!=endcluster;++cluster) {
-    cluster->enlarge(newimage);
+  int nx = satur.Nx();
+  int ny = satur.Ny();
+  
+  if(rebin>1) {      
+    rebin_image(satur,rebin,rebin);
+  }
+   
+  // find clusters in saturated image
+  findclusters(satur,saturatedclusters);
+  //saturatedclusters.sort(&DecreasingClusterSize);
+  if(debug) {
+    cout << "list of saturated clusters = " << saturatedclusters.size() << endl;
+    std::list<mycluster>::iterator cluster = saturatedclusters.begin();
+    std::list<mycluster>::iterator endcluster = saturatedclusters.end();
+    for(;cluster!=endcluster;++cluster) {
+      cout << "size " << cluster->size() << endl;
+    }
+  }
+ 
+  {
+    // copy initial image
+    FitsImage initial_image(FitsName());
+    
+    Image &newimage =  initial_image;
+    
+    // now rebin image by a factor rebin
+    if(rebin>1) {      
+      rebin_image(newimage,rebin,rebin);
+    }
+    // skylev
+    Pixel mean,sigma;
+    newimage.SkyLevel(&mean, &sigma);
+    // pix = 1 if signal greater than 1.5 sigma
+    newimage.Simplify(1.5*sigma,1,0);
+    
+    // now enlarge satured clusters using this image
+    std::list<mycluster>::iterator cluster = saturatedclusters.begin();
+    std::list<mycluster>::iterator endcluster = saturatedclusters.end();
     if(debug)
-     cout << "size " << cluster->size() << endl;
+      cout << "list of enlarged clusters" << endl;
+    for(;cluster!=endcluster;++cluster) {
+      cluster->enlarge(newimage);
+      if(debug)
+	cout << "size " << cluster->size() << endl;
+    } 
   }
   
   // save pixels in clusters in a binary image 
-  saveclustersinimage(saturatedclusters,newimage);
+  saveclustersinimage(saturatedclusters,satur);
   
   // un bin image to input size
   if(rebin>1) {   
-    unbin_image(newimage,initial_image.Nx(),initial_image.Ny(),rebin,rebin);
+    unbin_image(satur,nx,ny,rebin,rebin);
   }
-  
-  // save new image as satur
-  {
-    FitsImage im(FitsSaturName(),(const FitsHeader&)initial_image,newimage);
-    im.AddCommentLine("This satur file was modified by ReducedImage::FlagDiffractionSpikes");
-  }
+
+  satur.AddCommentLine("This satur file was modified by ReducedImage::FlagDiffractionSpikes");
   cout << "Ending ReducedImage::FlagDiffractionSpikes" << endl;
-  return true;
   
+  // (save satur at delete)
+  return true;
 }
 
 
