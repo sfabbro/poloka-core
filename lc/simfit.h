@@ -88,6 +88,9 @@ public:
   //! set what you want to fit
   void SetWhatToFit(const unsigned int ToFit = FitFlux);
 
+  //! get worst seeing value in the list of images
+  double GetWorstSeeing();
+
   //! get the minimum scaling factor to resize the vignets. WorstSeeing is in ReducedImage::Seeing() unit
   void FindMinimumScale(const double &WorstSeeing);
 
@@ -126,7 +129,7 @@ public:
 
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);
-
+  
 };
 
 #endif // SIMFIT__H
