@@ -11,20 +11,35 @@ bin_PROGRAMS = \
  makesub make_weight matchNimages matchradec matchstandard matchusno \
  preptoads removeback selection \
  skylev sum_images trim valid_fits wiynpad make_daophot make_lightcurve \
- split_fits2 rustine_for_fringe assign dbls split_fits toto
+ split_fits2 rustine_for_fringe assign dbls split_fits 
+
+### CPPFLAGS for all programs
+AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
+AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio  -L$(top_builddir)/lc -L$(top_builddir)/dao -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff -L@libdir@  -ltoads -ltoadio -lcernstuff  -llapackstuff @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/objio -I$(top_srcdir)/dao -I$(top_srcdir)/lc @XML_CFLAGS@ @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
-AM_LDFLAGS = -L$(top_builddir)/src  -L$(top_builddir)/objio -L$(top_builddir)/dao -L$(top_srcdir)/lc -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff -L@libdir@  -ltoadslc -ltoadsdao -ltoads -ltoadio -lcernstuff  -llapackstuff @CMT_LDFLAGS@  @XML_LIBS@ @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
-toto_SOURCES = toto.cc
+### Programs depending on dao and lc
+make_lightcurve_SOURCES = make_lightcurve.cc
+make_lightcurve_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
+make_lightcurve_LDFLAGS =  -ltoadslc -ltoadsdao
+
+make_phot_SOURCES = make_phot.cc
+make_phot_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
+make_phot_LDFLAGS =  -ltoadslc -ltoadsdao
+
+### Programs depending on dao
+make_daophot_SOURCES = make_daophot.cc
+make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
+make_daophot_LDFLAGS =  -ltoadsdao
+
+
+
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
 split_fits_SOURCES = split_fits.cc
 rustine_for_fringe_SOURCES = rustine_for_fringe.cc
 split_fits2_SOURCES = split_fits2.cc
-make_lightcurve_SOURCES = make_lightcurve.cc
-make_lightcurve_CXXFLAGS = -O
 header_SOURCES = header.cc
 astrom_SOURCES = astrom.cc 
 changekey_SOURCES = changekey.cc
@@ -51,9 +66,7 @@ lbl2toads_SOURCES = lbl2toads.cc
 maglimeval_SOURCES = maglimeval.cc 
 make_catalog_SOURCES = make_catalog.cc
 make_cosmic_SOURCES = make_cosmic.cc
-make_daophot_SOURCES = make_daophot.cc
 make_dead_SOURCES = make_dead.cc
-make_phot_SOURCES = make_phot.cc
 makefringe_SOURCES = makefringe.cc
 #make_mosaique_SOURCES = make_mosaique.cc
 #make_sub_SOURCES = make_sub.cc
