@@ -1,5 +1,5 @@
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-$Id: README,v 1.2 2004/03/06 23:15:41 nrl Exp $
+$Id: README,v 1.3 2004/07/15 14:13:09 hardin Exp $
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 objio is an attempt to design a lightweight C++ object persistency
@@ -14,7 +14,6 @@ structure. Section (I) will present the objio classes, section (II)
 will present how to use the current version of objio. Section (III)
 will present the current limitations of the system and our plans to
 overcome them.
-
 
 (I) The objio classes:
 -=-=-=-=-=-=-=-=-=-=-=
@@ -86,7 +85,34 @@ overcome them.
 
 (II) How to use objio
 -=-=-=-=-=-=-=-=-=-=-
+To obtain a persitent class, you only have to do this
+in your file myclass.h :
 
+#include <persistence.h>
+ 
+class MyClass {
+ 
+  CLASS_VERSION(MyClass,1); // <-- add this in the private
+                             // <-- section of the class
+  #define MyClass__is_persistent // <-- this as well
+ 
+public:
+  MyClass();
+  ~MyClass();
+ 
+  //.......
+};
+
+AND add in Makefile.am to libtoads_la_SOURCES : myclasse_dict.cc. 
+
+To use your class in a main, you have to include :
+#include "myclass_dict.h"
+#include "objio.h"
+#include "typemgr.h"
+
+You can then write your class, or a CountedRef<MyClass>
+if your class derives from RefCount. But you can't write a pointer
+to your class.
 
 
 (III) Where we stand now: current limitations and the road ahead
