@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: cpptype.cc,v 1.1 2004/03/03 21:41:15 nrl Exp $
+// $Id: cpptype.cc,v 1.2 2004/03/04 17:49:07 nrl Exp $
 // \file cpptype.cc
 // 
 // 
@@ -46,12 +46,12 @@ CppType CppType::instantiate(CppTemplateInstance const& ti) const
     return ret;
   }
   
-  if(!isATemplate()) {
-    cout << "CppType::instantiate() ERROR"
-	 << " class is not template!" 
-	 << endl;
-    return ret;
-  }
+  //  if(!isTemplate()) {
+  //    cout << "CppType::instantiate() ERROR"
+  //    	 << " class is not template!" 
+  //    	 << endl;
+  //    return ret;
+  //  }
   
   int i,idx,sz=tok_.size();
   for(i=0;i<sz;i++) {
@@ -65,18 +65,30 @@ CppType CppType::instantiate(CppTemplateInstance const& ti) const
       ret.baseTok_[i]=ti.realName(baseTok_[i]);
   }
   
+  // OK, now that the substitutions are done,
+  // we clean and recompute the type strings
+  vector<string> tok;
+  string str = buildTypeString(ret.tok_);
+  tokenize(str,tok,",<>()*&[] \t", true);
+  cleanTokens_(tok);
+  ret.tok_.clear();
+  std::copy(tok.begin(),tok.end(),
+	    std::back_inserter(ret.tok_));
+  
+  tok.clear();
+  str = buildTypeString(ret.baseTok_);
+  tokenize(str,tok,",<>()*&[] \t", true);
+  cleanTokens_(tok);
+  ret.baseTok_.clear();
+  std::copy(tok.begin(),tok.end(),
+	    std::back_inserter(ret.baseTok_));
+  
+  
   // now, we recompute the instantiated names
   ret.symbolicCppTypeName_=cppTypeName_;
   ret.symbolicBaseCppTypeName_=baseCppTypeName_;
-  ret.cppTypeName_="";
-  ret.baseCppTypeName_="";
-  sz=ret.tok_.size();
-  for(i=0;i<sz;i++) 
-    ret.cppTypeName_ = ret.cppTypeName_ + ret.tok_[i] + " ";
-  
-  sz=ret.baseTok_.size();
-  for(i=0;i<sz;i++) 
-    ret.baseCppTypeName_ = ret.baseCppTypeName_ + ret.baseTok_[i] + " ";
+  ret.cppTypeName_=buildTypeString(ret.tok_);
+  ret.baseCppTypeName_ = buildTypeString(ret.baseTok_);
   
   ret.wasInstantiated_=true;
   
@@ -96,7 +108,6 @@ void CppType::copy(CppType const& cppt)
   isConst_=cppt.isConst_;
   isStatic_=cppt.isStatic_;
   isAPointer_=cppt.isAPointer_;
-  //  isASTLContainer_=cppt.isASTLContainer_;
   isAComplexType_=cppt.isAComplexType_;
   isAReference_=cppt.isAReference_;
   wasInstantiated_=cppt.wasInstantiated_;
@@ -117,38 +128,77 @@ void CppType::readFromCppTypeDecl(string const& cpptype)
   clear_();
   
   tok_.clear();
-  tokenize(cpptype,tok_,",<>*&[] \t", true);
+  tokenize(cpptype,tok_,",<>()*&[] \t", true);
+  cleanTokens_(tok_);
   
   // first pass:
   // analyze the type modifiers
   // and the template arguments
-  int i,sz=tok_.size();
+  int i, depth=0, sz=tok_.size();
   for(i=0;i<sz;) {
     if(tok_[i]=="const") { isConst_=true; i++; continue; }
     if(tok_[i]=="*") { isAPointer_=true; i++; continue; }
     if(tok_[i]=="&") { isAReference_=true; i++; continue; }
     if(tok_[i]=="static") { isStatic_=true; i++; continue; }
     if(tok_[i]=="[") { isAPointer_=true; i++; continue; } // FIXME: should be isArray_
-    if(tok_[i]=="<") {
-      templateArgs_.push_back(tok_[++i]);
-      i++; continue; }
+    
+    //    if(tok_[i]=="<") {
+    //      templateArgs_.push_back(tok_[++i]);
+    //      i++; continue; }
     i++;
   }
+
+  // now, the template args.
+  // it is a little more tricky
+  string tpl_arg="";
+  for(i=0;i<sz;i++) {
+    if(tok_[i]=="<") {
+      if(depth>0)
+    	tpl_arg = tpl_arg + tok_[i];
+      depth++;
+      continue;
+    }
+    
+    if(tok_[i]==">") {
+      if(depth==1) {
+    	templateArgs_.push_back(tpl_arg);
+    	tpl_arg="";
+      }
+      if(depth>1)
+    	tpl_arg = tpl_arg + tok_[i];
+      depth--;
+      continue;
+    }
+    
+    if(tok_[i]==",") {
+      if(depth==1) {
+    	templateArgs_.push_back(tpl_arg);
+    	tpl_arg="";
+      }
+      if(depth>1) 
+    	tpl_arg = tpl_arg + tok_[i];
+      continue;
+    }
+    
+    if(depth>=1)
+      tpl_arg = tpl_arg + tok_[i];
+  }
   
-  // now, try to build the base
+  // and now, we clean the template args type definition
+  int j,ssz=templateArgs_.size();
+  for(j=0;j<ssz;j++) {
+    std::vector<std::string> tok;
+    tokenize(templateArgs_[j],tok,",<>()*&[] \t",true);
+    cleanTokens_(tok);
+    templateArgs_[j] = buildTypeString(tok);
+  }
+  
+  
+  // now, try to build the base type
   // remove the whitespaces, empty strings and tabs
   // DO NOT remove the ',' (!)
   vector<string>::iterator it;
   for(it=tok_.begin();it!=tok_.end();) {
-    
-    // remove the blanks
-    if(*it==""       || 
-       *it==" "      || 
-       *it=="\t"     ) { 
-      it = tok_.erase(it); 
-      continue; 
-    }
-    
     if(*it=="const"  || 
        *it=="static" || 
        *it=="*"      || 
@@ -160,38 +210,21 @@ void CppType::readFromCppTypeDecl(string const& cpptype)
     it++;
   }
   
-  sz=tok_.size();
-  for(i=0;i<sz;i++) 
-    cppTypeName_ = cppTypeName_ + tok_[i] + " ";
-
-  sz=baseTok_.size();
-  for(i=0;i<sz;i++) 
-    baseCppTypeName_ = baseCppTypeName_ + baseTok_[i] + " ";
+  cppTypeName_ = buildTypeString(tok_);
+  baseCppTypeName_ = buildTypeString(baseTok_);
 }
 
 
 
 void CppType::print() const
 {
-  cout << "*** typeName: " << cppTypeName_
-       << " (" << baseCppTypeName_  << ")" << endl;
-  if(wasInstantiated_)
-    cout << "***  [Instantiated from: " << symbolicCppTypeName_ << "]" << endl;
-  if(isConst_) cout << "*** const" << endl;
-  if(isStatic_) cout << "*** static" << endl;
-  if(isAPointer_) cout << "*** pointer type" << endl;
-  if(isAReference_) cout << "*** reference" << endl;
-  if(isPersistent())
-    cout << " ===> PERSISTENT" << endl;
+  if( isPersistent() )
+    std::cout << "   + ";
   else
-    cout << " ===> NOT PERSISTENT" << endl;
-  
-  //  int i;
-  //  for(i=0;i<tok_.size();i++)
-  //    cout << " tok_[" << i << "]=" << tok_[i] << endl;
-  
-  //  for(i=0;i<baseTok_.size();i++)
-  //    cout << " baseTok_[" << i << "]=" << baseTok_[i] << endl;
+    std::cout << "   - ";
+  std::cout.flags(ios::left); std::cout.width(30); 
+  std::cout << cppTypeName().c_str();
+  std::cout << std::endl;
 }
 
 
@@ -250,6 +283,94 @@ void CppType::clear_()
 }
 
 
+// we remove:
+// 1. the blanks
+// 2. the <( and )>
+void  CppType::cleanTokens_(std::vector<std::string>& tok)
+{
+  std::string<std::string>::iterator it,itp;
+  
+  for(it=tok.begin();it!=tok.end();) {
+    if( *it==""  ||
+        *it==" " ||
+	*it=="(" || // potentiel bug: function pointers are defined with parhenthesis
+	*it==")" ||
+        *it=="\t" ) {
+      it = tok.erase(it);
+      continue;
+    }
+    it++;
+  }
+  
+  for(itp=tok.begin(),it=tok.begin();it!=tok.end();) {
+    if(*itp=="<" && *it=="(")
+      it=tok.erase(it);
+    if(*itp==")" && *it==">")
+      it=tok.erase(itp);
+    itp=it; it++;
+  }
+}
+
+
+std::string CppType::buildTypeString(std::vector<std::string> const& tok)
+{
+  std::string ret=tok[0];
+  
+  int i,sz=tok.size();
+  
+  for(i=1;i<sz;i++) {
+    if(tok[i]=="const") {
+      ret = ret + " " + tok[i] + " ";
+      continue;
+    }
+    if(tok[i]=="static") {
+      ret = ret + " " + tok[i] + " ";
+      continue;
+    }
+    if(tok[i]==">" && tok[i-1]==">") {
+      ret = ret + " " + tok[i];
+      continue;
+    }
+    ret = ret + tok[i];
+  }
+  return ret;
+}
+
+std::string CppType::reformatTypeString(std::string const& str)
+{
+  vector<string> tok;
+  tokenize(str,tok,",<>()*&[] \t", true);
+  cleanTokens_(tok);
+  return buildTypeString(tok);
+}
+
+
+std::string CppType::buildCleanTypeString(std::vector<std::string> const& tok)
+{
+  std::string ret=tok[0];
+  
+  int i,sz=tok.size();
+  
+  for(i=1;i<sz;i++) {
+    if(tok[i]==">" ||
+       tok[i]=="<" ||
+       tok[i]=="(" || 
+       tok[i]==")" ||
+       tok[i]=="[" || 
+       tok[i]=="]" ||
+       tok[i]=="*" ||
+       tok[i]=="&" ||
+       tok[i]=="," ) {
+      ret = ret + "_";
+      continue;
+    }
+    ret = ret + tok[i];
+  }
+  return ret;
+}
+
+
+
 std::string CppTemplateInstance::realName(std::string const& sym) const
 {
   int i = find_(sym_,sym);
@@ -279,6 +400,13 @@ void CppTemplateInstance::addInstance(std::string const& sym, std::string const&
 }
 
 
+void CppTemplateInstance::print() const
+{
+  int i,sz=sym_.size();
+  for(i=0;i<sz;i++)
+    cout << " " << sym_[i] << " <-> " << real_[i]
+	 << endl;
+}
 
 
 void CppTemplateInstance::clear_()
@@ -316,3 +444,12 @@ int CppTemplateInstance::find_(std::vector<std::string> const& v, std::string co
     //    continue;
     //    }
     //    else {
+
+
+//    // remove the blanks
+//    if(*it==""       || 
+//       *it==" "      || 
+//       *it=="\t"     ) { 
+//      it = tok_.erase(it); 
+//      continue; 
+//    }

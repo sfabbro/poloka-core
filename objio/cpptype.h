@@ -1,10 +1,10 @@
 // -*- C++ -*-
-// $Id: cpptype.h,v 1.1 2004/03/03 21:41:15 nrl Exp $
+// $Id: cpptype.h,v 1.2 2004/03/04 17:49:07 nrl Exp $
 // 
 // \file cpptype.h Simple class to hold the type of
 // a class member.
 // 
-// Last modified: $Date: 2004/03/03 21:41:15 $
+// Last modified: $Date: 2004/03/04 17:49:07 $
 // By:            $Author: nrl $
 // 
 // POTENTIAL PROBLEMS:
@@ -23,6 +23,7 @@ class CppTemplateInstance;
 class CppType {
 public:
   CppType();
+  CppType(std::string const& decl) { readFromCppTypeDecl(decl); }
   ~CppType();
   
   //! the full name (StarList<T>, double or Image)
@@ -37,11 +38,14 @@ public:
   //! the symbolic class name, without the type modifiers
   std::string        symbolicBaseCppTypeName() const { return symbolicBaseCppTypeName_; }
   
-  //! return the number of template args. retunr 0 if the class is not template
+  //! return the number of template args. return 0 if the class is not template
   int                nTemplateArgs() const { return templateArgs_.size(); }
   
+  //! return the class template argument number i
+  std::string        templateArg(int i) const { return templateArgs_[i]; }
+  
   //! true if the class is a template classa
-  bool               isATemplate() const { return templateArgs_.size()!=0; }
+  bool               isTemplate() const { return templateArgs_.size()!=0; }
   
   //! true if the template is instantiated (StarList<SEStar>)
   bool               wasInstantiated() const { return wasInstantiated_; }
@@ -84,11 +88,15 @@ public:
   
   //! split the string str into tokens. if keep_del is true,
   //! the delimiters are kept in the tokens output vector
-  static void        tokenize(std::string const& str,
-			      std::vector<std::string>& tokens,
-			      std::string const& del, bool keep_del);
+  static void         tokenize(std::string const& str,
+			       std::vector<std::string>& tokens,
+			       std::string const& del, bool keep_del);
   
-private:
+  static std::string  buildTypeString(std::vector<std::string> const&);
+  static std::string  reformatTypeString(std::string const&);
+  static std::string  buildCleanTypeString(std::vector<std::string> const&);
+  
+protected:
   std::string cppTypeName_;
   std::string symbolicCppTypeName_;
   std::string baseCppTypeName_;
@@ -102,11 +110,13 @@ private:
   bool isAReference_;
   bool wasInstantiated_; // means, the instantiate() function was called...
   
-  std::vector<std::string> templateArgs_;
+  std::vector<std::string> templateArgs_;      // all the template args
+  //  std::vector<std::string> classTemplateArgs_; // the class template args
   std::vector<std::string> tok_;
   std::vector<std::string> baseTok_;
   
   void clear_();
+  static void  cleanTokens_(std::vector<std::string>&);
 };
 
 
@@ -130,9 +140,12 @@ public:
   void               addInstance(std::string const& sym, std::string const& real);
   //  void               readFromHeaderSpec(std::string const&);
   
+  void               print() const;
+  
 private:
   std::vector<std::string> sym_;
   std::vector<std::string> real_;
+  
   void  clear_();
   int   find_(std::vector<std::string> const& v, std::string const& name) const;
 };
