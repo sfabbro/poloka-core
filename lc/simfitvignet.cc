@@ -9,7 +9,7 @@
 
 
 
-//#define VALCUTOFF 0.
+#define VALCUTOFF 0.
 
 TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
   : Kernel(Radius), Dx(Radius), Dy(Radius)

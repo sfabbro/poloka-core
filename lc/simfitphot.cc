@@ -64,15 +64,25 @@ void SimFitPhot::operator() (LightCurve& Lc)
       zeFit.SetWhatToFit(FitFlux);
       zeFit.UseGalaxyModel(false);
       zeFit.DoTheFit();
-      zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky);
+      zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky );
       zeFit.UseGalaxyModel(false);
+      zeFit.DoTheFit(50,0.05);
+      // robustify to get rid of other stars in the vignet
+      for (SimFitVignetIterator itVig = zeFit.begin(); itVig != zeFit.end(); ++itVig) {
+	(*itVig)->KillOutliers();
+	(*itVig)->CheckWeight();
+      }
+      zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky );
+      zeFit.UseGalaxyModel(false);
+      //zeFit.DoTheFit(50,0.05);
       break;
     case 2: //galaxy 
       zeFit.SetWhatToFit(                   FitGal); 
       break;
     }
   
-  string dir = Lc.Ref->name;
+  //string dir = Lc.Ref->name;
+  string dir = ".";
   
   if(dowrite && !IsDirectory(dir))
     MKDir(dir.c_str());
