@@ -34,8 +34,13 @@ matvec.cc_cppflags = $(optimize_it)
 lib_LTLIBRARIES = libtoads.la
 libtoads_la_SOURCES = \
   dbimage_dict.cc \
-  reducedimage_dict.cc \
   frame_dict.cc \
+  reducedimage_dict.cc \
+  gtransfo_dict.cc \
+  transformedimage_dict.cc \
+  kernelfit_dict.cc \
+  psfmatch_dict.cc \
+  imagesubtraction_dict.cc \
   point_dict.cc \
   starlist_dict.cc \
   basestar_dict.cc \
@@ -43,12 +48,7 @@ libtoads_la_SOURCES = \
   jimstar_dict.cc \
   standardstar_dict.cc \
   starmatch_dict.cc \
-  histo1d_dict.cc \
-  histo2d_dict.cc \
-  histo4d_dict.cc \
   detection_dict.cc \
-  gtransfo_dict.cc \
-  kernelfit_dict.cc \
  \
   matvect.cc                  matvect.h \
   vutils.cc                   vutils.h         \
