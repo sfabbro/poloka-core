@@ -1,11 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
-#include <iomanip.h>
-#include <fstream.h>
+#include <iomanip>
+#include <fstream>
 #include <getopt.h>
-#include <string.h>
-#include <vector.h>
+#include <string>
+#include <vector>
 #include "dbimage.h"
 #include "fitsimage.h"
 #include "hbook.h"
