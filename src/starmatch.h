@@ -126,7 +126,8 @@ ostream& operator << (ostream &stream, const StarMatchList &List);
 
 class StarMatchList : public list<StarMatch> {
 
-
+  CLASS_VERSION(StarMatchList,1);
+  #define StarMatchList__is__persistent
   private :
   int nused;
   int order;
