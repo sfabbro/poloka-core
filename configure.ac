@@ -97,9 +97,9 @@ AC_FUNC_STRTOD
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([floor getcwd memchr memset pow rint setenv sqrt strchr strrchr strspn strstr])
 
-CXXFLAGS="-g"
-CPPFLAGS="-g"
-CFLAGS="-g"
+CXXFLAGS="-g -Wall"
+CPPFLAGS="-g -Wall"
+CFLAGS="-g -Wall"
 FFLAGS="-g"
 
 
