@@ -7,8 +7,8 @@
 #include "simfitvignet.h"
 #include "simfit.h"
 
-#define FNAME // name of functions ar dumped
-#define DEBUG // some output
+//#define FNAME // name of functions ar dumped
+//#define DEBUG // some output
 //#define DEBUG_FILLMAT // lots of debug from matrices filling
 
 static void resize_vec(double* &vec, const int n)
@@ -94,6 +94,7 @@ void SimFit::SetWhatToFit(unsigned int ToFit)
   use_gal |= fit_gal; // use the galaxy if we fit it
   dont_use_vignets_with_star = false;
 
+  
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
     (*itVig)->FitPos = fit_pos;
     (*itVig)->UseGal = use_gal;
@@ -229,18 +230,18 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
 void SimFit::Resize(const double& ScaleFactor)
 {
 
-#ifdef DEBUG
-  cout << " SimFit::Resize(" << ScaleFactor << ");" << endl;
+#ifdef FNAME
+  cout << " > SimFit::Resize(" << ScaleFactor << ");" << endl;
 #endif
   
   int hrefx = VignetRef->Hx();
   int hrefy = VignetRef->Hy();
   
-  if(fabs(ScaleFactor-1)<0.001) {
-#ifdef DEBUG
-    cout << " actually do not resize " << endl;
-#endif    
-  }else{
+  //  if(fabs(ScaleFactor-1)<0.001) {
+  //#ifdef DEBUG
+  //cout << " actually do not resize " << endl;
+  //#endif    
+  //}else{
     if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
       {
 	cerr << " SimFit::Resize(" << ScaleFactor 
@@ -264,7 +265,7 @@ void SimFit::Resize(const double& ScaleFactor)
     
     //for (SimFitVignetIterator it = begin(); it != end(); ++it)
     //(*it)->AutoResize();
-  }
+    //}
   
   // anyway, resize and update everything for all vignets
   for (SimFitVignetIterator it = begin(); it != end(); ++it) {
@@ -1063,37 +1064,46 @@ void SimFit::fillGalGal()
 	  continue;
 	}
 
+   
       int hkx = vi->Kern.HSizeX();
       int hky = vi->Kern.HSizeY();
       int min_m = -2*(hkx*nfy + hky);
       int npix = nfx*nfy;
-
+      
+      int m,n; // index of the galgal matrix
+      int im,jm; // index of pixels in the galaxy image, corresponding to matrix index m, 
+      int in,jn; // index of pixels in the galaxy image, corresponding to matrix index n
+      // m = (im+hfx)*nfy + (jm+hfy)  same as galind
+      int imn,jmn;
+      int ik,jk;
+      
+      int ikmin,ikmax,jkmin,jkmax;
+      DPixel *pkern1,*pkern2,*pw;
+      
       // loop over fitting coordinates
-      for (int m=0; m<npix; ++m)
+      for ( m=0; m<npix; ++m)
 	{
-	  int im = (m / nfy) - hfx;
-	  int jm = (m % nfy) - hfy;
-	  for (int n=((min_m+m > 0) ? min_m+m : 0); n<=m; ++n)
+	  im = (m / nfy) - hfx;
+	  jm = (m % nfy) - hfy;
+	  for ( n=((min_m+m > 0) ? min_m+m : 0); n<=m; ++n) // ???
 	    {
-	      int in = (n / nfy) - hfx;
-	      int jn = (n % nfy) - hfy;
-	      int imn = im-in;
-	      int jmn = jm-jn;
+	      in = (n / nfy) - hfx;
+	      jn = (n % nfy) - hfy;
+	      imn = im-in;
+	      jmn = jm-jn;
 	      summat = 0.;
-	      for (int jk=-hky; jk<=hky; ++jk)
-		for (int ik=-hkx; ik<=hkx; ++ik)
-		  {
-		    // the ugly test (see for comments below)
-		    if ((ik+im >= -hx) && (ik+im <= hx) && 
-			(jk+jm >= -hy) && (jk+jm <= hy) && 			
-			(ik+imn >= -hkx) && (ik+imn <= hkx) &&
-			(jk+jmn >= -hky) && (jk+jmn <= hky))
-		      {
-			summat += (vi->Kern)  (ik,jk)
-			        * (vi->Kern)  (ik+imn,jk+jmn)
-			        * (vi->Weight)(ik+im,jk+jm);
-		      }	    
-		  }
+	      jkmin = max(max(-hky,-hy-jm),-hky-jmn);
+	      jkmax = min(min(hky,hy-jm), hky-jmn);
+	      
+	      for (jk=jkmin; jk<=jkmax; ++jk) {
+		ikmin = max(max(-hkx,-hx-im),-hkx-imn);
+		ikmax = min(min(hkx,hx-im),hkx-imn);
+		pkern1 = &( (vi->Kern)  (ikmin,jk));
+		pkern2 = &( (vi->Kern)  (ikmin+imn,jk+jmn));
+		pw     = &( (vi->Weight) (ikmin+im,jk+jm));
+		for (ik=ikmin; ik<=ikmax; ++ik, ++pkern1, ++pkern2, ++pw)  
+		  summat += (*pkern1)*(*pkern2)*(*pw);
+	      }
 #ifdef CHECK_MAT_BOUNDS
 	      fillMat((galstart+m)*nparams+galstart+n) += summat; 	
 #else
@@ -1550,43 +1560,63 @@ void SimFit::DoTheFit()
 
 }
 
-void SimFit::write(const string& StarName,const string &DirName) 
+void SimFit::write(const string& StarName,const string &DirName, unsigned int whattowrite) 
 {
   cout << " SimFit::write(" << StarName << ")" << endl;
-  // dump light curve and vignets
-  ofstream lstream(string(DirName+"/lightcurve_"+StarName+".dat").c_str());
-  ofstream vignetstream(string(DirName+"/vignets_"+StarName+".dat").c_str());
-  lstream << setiosflags(ios::fixed);
-  front()->Star->WriteHeader(lstream);
-  const string name = DirName+"/simfit_vignets_"+StarName+".fits";
-  VignetRef->Galaxy.writeFits(DirName+"/galaxy_"+StarName+".fits");
-  for (SimFitVignetIterator it=begin(); it != end() ; ++it)
-    {      
+  
+  // write lc
+  if(whattowrite & WriteLightCurve) {
+    ofstream lstream(string(DirName+"/lightcurve_"+StarName+".dat").c_str());
+    lstream << setiosflags(ios::fixed);
+    front()->Star->WriteHeader(lstream);
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it) {
+      lstream << *((*it)->Star) << endl;
+    }
+    lstream.close();
+  }
+  
+  // write vignets info
+  if(whattowrite & WriteVignetsInfo) {
+    ofstream vignetstream(string(DirName+"/vignets_"+StarName+".dat").c_str());
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it) {
       SimFitVignet *vi = *it;
-      vi->ClearResidZeroWeight();
-      lstream << *vi->Star << endl;
       vignetstream << *vi << endl;
-      vi->Kern.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_kern.fits");
-      vi->Resid.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_resid.fits");
-      vi->Data.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_data.fits");
-      vi->Psf.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_psf.fits");
-      vi->Weight.writeFits(DirName+"/"+vi->Image()->Name()+"_"+StarName+"_weight.fits");
     }
-  lstream.close();
-  vignetstream.close();
+    vignetstream.close();
+  }
+  
+  // write galaxy fits
+  if(whattowrite & WriteGalaxy)
+    VignetRef->Galaxy.writeFits(DirName+"/galaxy_"+StarName+".fits");
+  
 
-  // dump covariance matrix
-  if (Mat != 0 && Mat != 0) 
-    {
-      ofstream cstream(string(DirName+"/cov_"+StarName+".dat").c_str());
-      cstream << setiosflags(ios::fixed);
-      for(int j=fluxstart; j<=fluxend; ++j)
-	{
-	  for(int i=fluxstart; i<=fluxend; ++i)
-	    cstream << Mat[i*nparams+j] << " ";
-	  cstream << endl;
-	}
+  // write residuals
+  if(whattowrite & WriteResid) {
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it){      
+      (*it)->ClearResidZeroWeight();
+      (*it)->Resid.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_resid.fits");
     }
+  }
+  
+  // write Data
+  if(whattowrite & WriteData)
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+      (*it)->Data.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_data.fits");
+  
+  // write Psf
+  if(whattowrite & WritePsf)
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+      (*it)->Psf.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_psf.fits");
+
+  // write weights
+  if(whattowrite & WriteWeight)
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+      (*it)->Weight.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_weight.fits");
+  
+  // write kernels
+  if(whattowrite & WriteKernel)
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+      (*it)->Kern.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_kern.fits");
 }
 
 ostream& operator << (ostream& Stream, const CountedRef<SimFitVignet> &Vig)
@@ -1615,12 +1645,12 @@ ostream& operator << (ostream& Stream, const SimFit &MyFit)
 	 << "  scale = " << MyFit.scale << " minscale = " << MyFit.minscale << " refill = "  << MyFit.refill << endl
 	 << "  chi2 = "  << MyFit.chi2  << " dof = "      << MyFit.ndata-MyFit.nparams << endl;
 #ifdef DEBUG  
-  Stream << "   Reference: " << endl
-	 << MyFit.VignetRef << endl
-	 << "   Vignets: " << endl
-	 << " --------------------------" << endl;
+//   Stream << "   Reference: " << endl
+// 	 << MyFit.VignetRef << endl
+// 	 << "   Vignets: " << endl
+// 	 << " --------------------------" << endl;
 
-  copy(MyFit.begin(), MyFit.end(), ostream_iterator<CountedRef<SimFitVignet> >(Stream, "\n"));
+//   copy(MyFit.begin(), MyFit.end(), ostream_iterator<CountedRef<SimFitVignet> >(Stream, "\n"));
 #endif
   return Stream;
 }

@@ -16,11 +16,24 @@
 //!  The final fluxes are therefore expressed in the best seeing reference image.
 //!  PSF and Kernel should be given and will not be re-fitted.
 
-
+// what to fit
 const unsigned int FitFlux = 1;
 const unsigned int FitPos  = 2;
 const unsigned int FitGal  = 4;
 const unsigned int FitSky  = 8;
+
+// what result to write
+const unsigned int WriteLightCurve = 1;
+const unsigned int WriteGalaxy  = 2;
+const unsigned int WriteResid  = 4;
+const unsigned int WriteData  = 8;
+const unsigned int WritePsf  = 16;
+const unsigned int WriteWeight  = 32;
+const unsigned int WriteKernel  = 64;
+const unsigned int WriteVignetsInfo  = 128;
+
+
+
 
 typedef ImageList<SimFitVignet>::iterator SimFitVignetIterator;
 typedef ImageList<SimFitVignet>::const_iterator SimFitVignetCIterator;
@@ -157,7 +170,7 @@ public:
   double Scale() const { return scale; }
 
   //! write galaxy, covariance matrix and lightcurve on disk
-  void write(const string &StarName,const string &DirName=".");
+  void write(const string &StarName,const string &DirName=".", unsigned int whattofit = 0);
   
   ostream& DumpMatrices(ostream& Stream=cout) const; 
   

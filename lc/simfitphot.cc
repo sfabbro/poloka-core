@@ -9,17 +9,17 @@
 #define FNAME
 #define DEBUG
 
+/*
 static bool IncSeeing(const CountedRef<ReducedImage> one, const CountedRef<ReducedImage> two)
 { return (one->Seeing() < two->Seeing());}
 
-
+ 
 static void init_phot(LightCurveList& Fiducials)
 {  
 #ifdef FNAME
-  cout << " > init_phot(LightCurveList& Fiducials)" << endl;
+cout << " > init_phot(LightCurveList& Fiducials)" << endl;
 #endif
-  if (Fiducials.size() == 0) 
-    {
+if (Fiducials.size() == 0)  {
       cerr << " init_phot() : no objects to initialize! \n";
       return;
     }
@@ -74,7 +74,7 @@ static void init_phot(LightCurveList& Fiducials)
 	}
     }
 }
-
+*/
 SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 {
 #ifdef FNAME
@@ -112,15 +112,6 @@ void SimFitPhot::operator() (LightCurve& Lc)
   switch (Lc.Ref->type)
     {
     case 0: // sn+galaxy
-#ifdef DEBUG
-      cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
-#endif
-      zeFit.FitInitialGalaxy(); // first fit inital galaxy
-#ifdef DEBUG
-      cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
-#endif
-      zeFit.SetWhatToFit(FitFlux); // then flux
-      zeFit.UseGalaxyModel(true);
       break;
     case 1: //star 
       zeFit.SetWhatToFit(FitFlux | FitPos         );
@@ -133,13 +124,29 @@ void SimFitPhot::operator() (LightCurve& Lc)
 		  << Lc.Ref->type << endl; return;
     }
   
+  
   if(Lc.Ref->type == 0) {
-     zeFit.DoTheFit();
+    string dir = Lc.Ref->name;
+    if(!IsDirectory(dir))
+      MKDir(dir.c_str());
+
 #ifdef DEBUG
-     cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
+    cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
+#endif
+    zeFit.FitInitialGalaxy(); // first fit inital galaxy
+    zeFit.write("sn_init0",dir,WriteGalaxy|WriteVignetsInfo);
+#ifdef DEBUG
+    cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
+#endif
+    zeFit.SetWhatToFit(FitFlux); // then flux
+    zeFit.UseGalaxyModel(true);  
+    zeFit.DoTheFit();
+    zeFit.write("sn_init1",dir,WriteLightCurve|WriteVignetsInfo);
+#ifdef DEBUG
+    cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
      zeFit.SetWhatToFit(FitFlux | FitGal | FitPos); // then everything    
-     zeFit.DoTheFit();
+     zeFit.DoTheFit();     
 #ifdef DEBUG
      cout << " ============= SimFitPhot::operator() Robustify  =============" << endl;
 #endif
@@ -150,17 +157,14 @@ void SimFitPhot::operator() (LightCurve& Lc)
      cout << " ============= SimFitPhot::operator() refit FitFlux | FitPos | FitGal =============" << endl;
 #endif	
      zeFit.DoTheFit();
-     
+     zeFit.write("sn",dir, WriteLightCurve|WriteGalaxy|WriteResid|WriteData|WriteVignetsInfo);
+     ofstream lstream((string(dir+"/lc.dat")).c_str());
+     Lc.write_short((ostream&)lstream);
+     lstream.close();
+  
   }else{
-    zeFit.DoTheFit();   
+    zeFit.DoTheFit();
   }
-  string dir = Lc.Ref->name;
-  if(!IsDirectory(dir))
-    MKDir(dir.c_str());
-  zeFit.write("sn",dir);
-  ofstream lstream((string(dir+"/lc.dat")).c_str());
-  Lc.write_short((ostream&)lstream);
-  lstream.close();
 }
 
 
