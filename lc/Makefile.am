@@ -1,6 +1,6 @@
 
-AM_CPPFLAGS = -Wall -I../src -I../objio -I../dao @XML_CFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@ @CMT_CFLAGS@ 
-AM_LDFLAGS  = -L../src -L../dao -L../objio -L@libdir@ -ltoadio @XML_LIBS@ CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CMT_LDFLAGS@ @CERNLIB_LDFLAGS@
+AM_CPPFLAGS = -Wall -I../src -I../objio -I../dao @XML_CFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
+AM_LDFLAGS  = -L../src -L../dao -L../objio -L@libdir@ -ltoadio @XML_LIBS@ CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
 
 
 lib_LTLIBRARIES = libtoadslc.la
