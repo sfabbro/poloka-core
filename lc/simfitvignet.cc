@@ -7,8 +7,6 @@
 #include "objio.h"
 #include "typemgr.h"
 
-//#define FNAME
-//#define DEBUG
 
 #define VALCUTOFF 0.
 
@@ -30,6 +28,7 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
   cout << " > TabulatedPsf::Resize(const int Hx, const int Hy)" << endl;
 #endif
 
+#ifdef DEBUG
  cout << "before Hx Hy HSizeX() HSizeY() Nx() Ny() hSizeX hSizeY " 
        << Hx << " "
        << Hy << " "
@@ -39,7 +38,7 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
        << Ny() << " "
        << hSizeX << " "
        << hSizeY << endl;
-
+#endif
   if (HSizeX() != Dx.HSizeX() ||
       HSizeY() != Dx.HSizeY() ||
       HSizeX() != Dy.HSizeX() ||
@@ -51,6 +50,7 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
       Dx.Allocate(Nx(), Ny());
       Dy.Allocate(Nx(), Ny());
     }
+#ifdef DEBUG
   cout << "after Hx Hy HSizeX() HSizeY() Nx() Ny() hSizeX hSizeY " 
        << Hx << " "
        << Hy << " "
@@ -60,6 +60,7 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
        << Ny() << " "
        << hSizeX << " "
        << hSizeY << endl;
+#endif
 }
 
 void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)
@@ -120,7 +121,9 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Re
   DPixel *ppdy = Dy.begin();
 
   double integrale = 0;
+#ifdef DEBUG
   cout << "in  TabulatedPsf::Tabulate DUMP , Pt.x, Pt.y = " << Pt.x << " " << Pt.y << endl;
+#endif
   for (int j=Rect.ystart; j<Rect.yend; ++j)
     for (int i=Rect.xstart; i<Rect.xend; ++i, ++ppsf, ++ppdx, ++ppdy) 
       {
@@ -528,18 +531,24 @@ void SimFitVignet::BuildKernel()
     if(FileExists(kernelpath)) 
       {
 	KernelFit *kernel = new KernelFit();
+#ifdef DEBUG
 	cout << "   Reading kernel " << kernelpath << " ..." << endl;
+#endif 
 	obj_input<xmlstream> oi(kernelpath);
 	oi >> *kernel;
 	oi.close();
+#ifdef DEBUG
 	cout << "   done" << endl;
+#endif
 	psfmatch.SetKernelFit(kernel);
-	cout << "   kernel loaded" << endl;
       }
     else
       {
+	
+#ifdef DEBUG
 	cout << " SimFitVignet::BuildKernelPsf() : cannot find kernel " 
 	     << kernelpath << ", so we do it" << endl;
+#endif
 	psfmatch.FitKernel(false);
 	obj_output<xmlstream> oo(kernelpath);
 	oo << *(psfmatch.GetKernelFit());

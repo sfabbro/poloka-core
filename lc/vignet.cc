@@ -183,7 +183,9 @@ double Vignet::MaxPixResid() const {
 void Vignet::KillOutliers(const double& nsigma) {
  
   if (Resid.IsEmpty() || Weight.IsEmpty()) return;
+#ifdef FNAME
   cout << " > Vignet::KillOutliers with nsigma = " << nsigma << endl;
+#endif
   DPixel *pw, *pres;
   
   double sw = 0;
@@ -204,7 +206,7 @@ void Vignet::KillOutliers(const double& nsigma) {
     pres=Resid.begin();
     int nbad = 0;
     for (int i=0; i< Nx()*Ny(); ++i , ++pres, ++pw) {
-      if (fabs(*pres-mean)>thres) {
+      if (fabs(*pres-mean)>thres && (*pw>0)) {
 	*pw = 0;
 	nbad ++;
       }
@@ -218,9 +220,9 @@ void Vignet::KillOutliers(const double& nsigma) {
 void Vignet::RobustifyWeight(const double& alpha, const double& beta)
 {
   if (Resid.IsEmpty() || Weight.IsEmpty()) return;
-  
+#ifdef FNAME
   cout << " Vignet::RobustifyWeight(" << alpha << "," << beta << ") : re-weight" << endl;
-  
+#endif
   DPixel *pw, *pres;
 
   for (int j=-hy; j<=hy; ++j)

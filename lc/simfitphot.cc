@@ -34,11 +34,22 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials,bool usegal)
   
 }
 
-
+#define DEBUG0
 void SimFitPhot::operator() (LightCurve& Lc)
 {
-#ifdef DEBUG
-    cout << " ============= SimFitPhot::operator() zeFit.Load =============" << endl;
+
+#ifdef DEBUG0
+  switch (Lc.Ref->type)
+    {
+    case 0: cout << " ============= SimFitPhot::operator() Fitting a Sn + Galaxy \"" << Lc.Ref->name << "\" =============" << endl; break;
+    case 1: cout << " ============= SimFitPhot::operator() Fitting a star (without galaxy) \"" << Lc.Ref->name << "\"  =============" << endl; break;
+    case 2: cout << " ============= SimFitPhot::operator() Fitting a galaxy (without star) \"" <<  Lc.Ref->name << "\"  =============" << endl; break;
+    default: cout << " SimFitPhot::operator() : Error : unknown star type :" << Lc.Ref->type << endl; return;
+    }
+#endif
+
+#ifdef DEBUG0
+  cout << " ============= SimFitPhot::operator() zeFit.Load =============" << endl;
 #endif  
   zeFit.Load(Lc);
   
@@ -58,8 +69,6 @@ void SimFitPhot::operator() (LightCurve& Lc)
     case 2: //galaxy 
       zeFit.SetWhatToFit(                   FitGal); 
       break;
-    default: cerr << " SimFitPhot::operator() : Error : unknown star type :" 
-		  << Lc.Ref->type << endl; return;
     }
   
   string dir = Lc.Ref->name;
@@ -68,18 +77,18 @@ void SimFitPhot::operator() (LightCurve& Lc)
     MKDir(dir.c_str());
   
   if(Lc.Ref->type == 0) {
-#ifdef DEBUG
-    cout << " ============= SimFitPhot::operator() zeFit.FitInitialGalaxy =============" << endl;
+#ifdef DEBUG0
+    cout << " ============= SimFitPhot::operator() FitInitialGalaxy =============" << endl;
 #endif
     zeFit.FitInitialGalaxy(); // first fit inital galaxy
     zeFit.write("sn_init",dir,WriteGalaxy);
-#ifdef DEBUG
-    cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
+#ifdef DEBUG0
+    cout << " ============= SimFitPhot::operator() Fit Flux then Position 3 times =============" << endl;
 #endif
      for(int i=0;i<3;i++) {
       zeFit.SetWhatToFit(FitFlux); // then flux
       zeFit.UseGalaxyModel(true);  
-      zeFit.DoTheFit(2);
+      zeFit.DoTheFit(2,0.05);
       if(i==-12) {
 	ofstream lstream((string(dir+"/lc_init0.dat")).c_str());
 	Lc.write_lc2fit((ostream&)lstream);
@@ -88,33 +97,37 @@ void SimFitPhot::operator() (LightCurve& Lc)
       }
       zeFit.SetWhatToFit(FitPos); // then pos
       zeFit.UseGalaxyModel(true);  
-      zeFit.DoTheFit(2);
+      zeFit.DoTheFit(2,0.05);
      }
     ofstream lstream((string(dir+"/lc_init.dat")).c_str());
     Lc.write_lc2fit((ostream&)lstream);
     lstream.close();
     //return;
-#ifdef DEBUG
+#ifdef DEBUG0
     cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
 #endif	
      zeFit.SetWhatToFit(FitFlux | FitGal | FitPos | FitSky); // then everything    
-     zeFit.DoTheFit(30);     
-#ifdef DEBUG
+     zeFit.DoTheFit(30,0.05);     
+#ifdef DEBUG0
      cout << " ============= SimFitPhot::operator() Robustify  =============" << endl;
 #endif
      for (SimFitVignetIterator itVig = zeFit.begin(); itVig != zeFit.end(); ++itVig) {
        (*itVig)->KillOutliers();
        (*itVig)->CheckWeight();
      }
-#ifdef DEBUG
+#ifdef DEBUG0
      cout << " ============= SimFitPhot::operator() refit FitFlux | FitPos | FitGal =============" << endl;
 #endif	
      zeFit.SetWhatToFit(FitFlux | FitGal | FitPos | FitSky);
-     zeFit.DoTheFit(30);
+     zeFit.DoTheFit(30,0.005);
   }else{
     zeFit.DoTheFit(); 
   }
+
   if(dowrite) {
+#ifdef DEBUG0
+     cout << " ============= SimFitPhot::operator() Write =============" << endl;
+#endif
   zeFit.write("sn",dir, WriteLightCurve|WriteGalaxy|WriteResid|WriteWeight|WriteData|WriteVignetsInfo|WriteMatrices);
   ofstream lstream((string(dir+"/lc2fit.dat")).c_str());
   Lc.write_lc2fit((ostream&)lstream);
