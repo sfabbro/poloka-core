@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: cppswigclassreader.h,v 1.1 2004/03/08 11:47:43 nrl Exp $
+// $Id: cppswigclassreader.h,v 1.2 2004/03/09 10:36:27 nrl Exp $
 // \file cppswigclassreader.h
 // 
 // 
@@ -30,13 +30,15 @@ private:
   xmlNodePtr ptr_;
   xmlXPathObjectPtr res_;
   xmlXPathContextPtr ctx_;
+  std::vector<bool> classIsOk_;
   
-  virtual void next_() const { if(iptr_>=sz_) return; iptr_++; }
+  virtual void next_() const;
   
   virtual void readHeader_(std::string&, unsigned int&, std::string&,
 			   bool&, bool&) const;
   virtual void readBaseList_(std::vector<CppClassMember>&) const;
   virtual void readMemberList_(std::vector<CppClassMember>&) const;
+  virtual void checkCppClasses_();
 };
 
 

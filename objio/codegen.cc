@@ -222,7 +222,10 @@ bool codegen::checkTemplateInstantiation_(CppClass const& cppclass,
 
 void codegen::classPersisterDecl_(CppClass const& cppclass)
 {
-  if(!cppclass.isPersistent()) { return; }
+  if(!cppclass.classIsPersistent()) { return; }
+  
+  cout << "class: " << cppclass.cppTypeName()
+       << " is persistent" << endl;
   
   unsigned int i,j;
   std::string nm;
@@ -392,7 +395,7 @@ void codegen::classPersisterDecl_(CppClass const& cppclass)
 
 void codegen::classPersisterCode_(CppClass const& cppclass)
 {
-  if(!cppclass.isPersistent()) return;
+  if(!cppclass.classIsPersistent()) return;
   
   unsigned int i;
   

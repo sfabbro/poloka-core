@@ -1,9 +1,9 @@
 // -*- C++ -*-
-// $Id: cppclass.h,v 1.3 2004/03/06 23:15:42 nrl Exp $
+// $Id: cppclass.h,v 1.4 2004/03/09 10:36:27 nrl Exp $
 // 
 // \file cppclass.h
 // 
-// Last modified: $Date: 2004/03/06 23:15:42 $
+// Last modified: $Date: 2004/03/09 10:36:27 $
 // By:            $Author: nrl $
 // 
 // POTENTIAL PROBLEMS:
@@ -42,8 +42,7 @@ public:
   void                          copy(CppClass const&);
   CppClass&                     operator=(CppClass const& t) { copy(t); return *this; }
 
-  //  void                     copy(CppType const&);
-  //  CppClass&                operator=(CppType const& t) { copy(t); return *this; }
+  bool                          classIsPersistent() const { return version_>0; }
   
   CppTemplateInstance           readFromHeaderSpec(std::string const& str) const;
   void                          addMember(CppClassMember const&);

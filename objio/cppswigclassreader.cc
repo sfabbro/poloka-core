@@ -1,5 +1,5 @@
 // -*- C++ -*-
-// $Id: cppswigclassreader.cc,v 1.2 2004/03/08 13:20:01 guy Exp $
+// $Id: cppswigclassreader.cc,v 1.3 2004/03/09 10:36:27 nrl Exp $
 // \file cppswigclassreader.cc
 // 
 // 
@@ -25,6 +25,33 @@ CppSwigClassReader::CppSwigClassReader(string const& filename)
   ctx_ = xmlXPathNewContext(doc_);
   res_ = xmlXPathEvalExpression((xmlChar*)"/top/include/include/class|/top/include/include/template",  ctx_);
   sz_ = res_->nodesetval->nodeNr;
+  checkCppClasses_();
+}
+
+
+// This function tries to figure whether what we just read
+// are really classes / template classes
+void CppSwigClassReader::checkCppClasses_()
+{
+  classIsOk_.clear();
+  
+  int i,size=sz_;
+  for(i=0;i<size;i++) {
+    xmlNodePtr node = res_->nodesetval->nodeTab[i];
+    ctx_->node = node;
+    
+    // template classes and template functions
+    // are both written out as <template>
+    xmlXPathObjectPtr obj;
+    obj = xmlXPathEvalExpression((xmlChar*)"attributelist/attribute[@name='kind']", ctx_);
+    if(!obj || xmlXPathNodeSetIsEmpty(obj->nodesetval) ) {
+      classIsOk_.push_back(false);
+      sz_--;
+    }
+    else 
+      classIsOk_.push_back(true);
+    xmlXPathFreeObject(obj);
+  }
 }
 
 
@@ -33,6 +60,17 @@ CppSwigClassReader::~CppSwigClassReader()
   xmlCleanupParser();
   xmlXPathFreeContext(ctx_); ctx_=0;
   xmlFreeDoc(doc_); doc_=0;
+}
+
+
+void CppSwigClassReader::next_() const 
+{ 
+  if(iptr_>=sz_) return; 
+  
+  while( iptr_<sz_ ){
+    iptr_++; 
+    if( classIsOk_[iptr_] ) break;
+  }
 }
 
 
@@ -99,7 +137,7 @@ void CppSwigClassReader::readHeader_(string& name, unsigned int& version,
     xmlXPathEvalExpression((xmlChar*)"attributelist/attribute[@name='kind']", ctx_);
   //  assert_xpath_selection_(obj,1);
   if(!obj || xmlXPathNodeSetIsEmpty(obj->nodesetval)) {
-    cout << "swig_dict_reader::read_header_ ERROR reading class name"
+    cout << "swig_dict_reader::read_header_ ERROR reading class kind"
 	 << endl;
     return;
   }
@@ -135,6 +173,7 @@ void CppSwigClassReader::readHeader_(string& name, unsigned int& version,
   ctx_->node = tmp_node;
   
   if(version>0) isPersistent=true;
+  else isPersistent=false;
 }
 
 
@@ -201,7 +240,6 @@ void CppSwigClassReader::readMemberList_(vector<CppClassMember>& ml) const
   
   for(i=0;i<sz;i++) {
     member_name="";
-    //    dm.name=""; dm.type="";
     
     p = obj->nodesetval->nodeTab[i];
     ctx_->node=p;
@@ -221,6 +259,18 @@ void CppSwigClassReader::readMemberList_(vector<CppClassMember>& ml) const
     if(decl.find("f(")!=string::npos)
       continue;
     swig_type_str = decl;
+    
+    
+    // we also may have caught a static data member or a typedef
+    // at first sight, we get rid of all the <cdecl> with a 
+    //    <attribute name="storage" ... > attributes
+    obj2 = 
+      xmlXPathEvalExpression((xmlChar*)"attributelist/attribute[@name='storage']", ctx_);
+    if(!obj2 || !xmlXPathNodeSetIsEmpty(obj2->nodesetval)) {
+      xmlXPathFreeObject(obj2);
+      continue;
+    }
+    
     
     // if the element name is __version__,
     // it is not a data member, but a field indicating 
@@ -264,12 +314,8 @@ void CppSwigClassReader::readMemberList_(vector<CppClassMember>& ml) const
     // we save the element:
     if(member_type!="" && member_name!="") {
       CppClassMember m(member_type, member_name);
-      //      cout << " --> " << member_type << endl;
-      //      cout << " ++> "; m.print();
       ml.push_back(m);
     }
-    //    if(dm_sw.name!="" && dm_sw.type!="")
-    //      ml.push_back(dm_sw);
   }
   
   xmlXPathFreeObject(obj);
@@ -314,7 +360,7 @@ string swig2cpp(string& type)
       str="&";
     }
     
-    ret = ret + " " + str;
+    ret = str + " " + ret;
   }
   
   sz = array_size.size();
