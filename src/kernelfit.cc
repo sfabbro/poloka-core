@@ -67,7 +67,7 @@ int KernelFit::FitDifferentialBackground(const double NSig)
 	  monom(q1) = optParams.SepBackVar.Value(double(i), double(j),q1);
 
 	  for (int q2 = q1; q2<nterms; ++q2) A(q1,q2) += monom(q1)*monom(q2);
-	  B(q1) += monom(q1)*p1;
+	  B(q1) += monom(q1)*(p1-p2);
 	}
     }
   /* symetrize */
