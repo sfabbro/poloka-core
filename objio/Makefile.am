@@ -1,18 +1,17 @@
 EXTRA_DIST = snls.xsd
 
 lib_LTLIBRARIES = libtoadio.la
-libtoadio_la_SOURCES = xmlstream.cc dict.cc swig_dict_reader.cc xmlschema_dict_writer.cc
-
-AM_CPPFLAGS = @XML_CFLAGS@
+libtoadio_la_SOURCES = xmlstream.cc dict.cc swig_dict_reader.cc xmlschema_dict_writer.cc typemgr.cc
+libtoadio_la_CPPFLAGS = @XML_CFLAGS@
 libtoadio_la_LDFLAGS = @XML_LIBS@
 
 
-%_dict.cc : %.h
-	./dictgen2 -o $@ $<
+#%_dict.cc : %.h
+#	./dictgen2 -o $@ $<
 
 include_HEADERS = \
  persister.h dict.h objio.h dictio.h reader.h \
- xmlstream.h toadtypes.h
+ xmlstream.h toadtypes.h persistence.h typemgr.h
 
 noinst_HEADERS = \
  codegen.h

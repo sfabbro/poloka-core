@@ -9,14 +9,15 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <sstream>
 
+#include "persistence.h"
+#include "typemgr.h"
 #include "test_swig.h"
-#include "xmlstream.h"
-
 #include "test_swig_dict.h"
-#include "persister.h"
 
-#include "dictio.h"
+#include "B__persister.h"
+#include "BB__persister.h"
 
 
 struct Toto {
@@ -29,7 +30,8 @@ struct Toto {
 
 int main()
 {
-
+  cout << typemgr::size() << endl;
+  
   
   int i,j,k;
   AA a;
@@ -40,6 +42,8 @@ int main()
   std::vector<std::string> string_vector;
   map<std::string,short> string_short_map;
   std::list< std::vector< std::map<string,unsigned int> > > stupidly_complex_example;
+  B<int> b;
+  BB<string,double> bb;
   
   p.x()=2;
   p.y()=5.243;
@@ -72,6 +76,9 @@ int main()
   string_short_map["tutu"]=3435;
   string_short_map["tata"]=5;  
   
+  bb.lt_.push_back("glop");
+  bb.mtu_["tutu"]=3.14;
+  
   obj_output<xmlostream> oo("ttt.xml");
   oo << a;
   oo << p;
@@ -80,8 +87,18 @@ int main()
   oo << string_vector;
   oo << double_vector;
   oo << string_short_map;
+  oo << b;
+  oo << bb;
+  
+  //  persister<Star>* tps = (persister<Star>*)typemgr::getPersister(typeid(&s).name());
+  persister_base* tps = typemgr::getPersister(typeid(&s).name());
+  std::cout << " name=" << tps->name() << " version=" << tps->version() << endl;
+  oo.write(tps);
+  
   oo.close();
 
+  exit(0);
+  
   AA a2;
   Point p2;
   Star s2;
@@ -90,7 +107,6 @@ int main()
   std::vector<double> double_vector2;
   map<std::string,short> string_short_map2;
   
-  exit(0);
   
   std::cout << "about to read object..." << std::endl;
   obj_input<xmlistream> oi("ttt.xml");

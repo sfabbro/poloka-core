@@ -84,7 +84,7 @@ void codegen::generatePersister(dict const& d)
 
 void codegen::classPersisterDecl_(dict const& dict_)
 {
-  //  if(!dict_.isPersistent()) return;
+  if(!dict_.isPersistent()) return;
   
   class_ofs_h_ << "template<>" << std::endl
 	       << "class persister<" << dict_.name() << "> : public handle<" 

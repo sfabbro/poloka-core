@@ -1,6 +1,6 @@
 // -*- C++ -*-
 // 
-// $Id: xmlstream.h,v 1.2 2004/02/24 16:33:22 nrl Exp $
+// $Id: xmlstream.h,v 1.3 2004/02/27 16:34:36 nrl Exp $
 // 
 // 
 #ifndef XMLSTREAM_H
@@ -482,8 +482,8 @@ simple_type_write_def(int4,   i4, %d)
 simple_type_write_def(uint4,  u4, %u)
 simple_type_write_def(int8,   i8, %ld)
 simple_type_write_def(uint8,  u8, %lu)
-simple_type_write_def(float4, f4, %f)
-simple_type_write_def(float8, f8, %lf)
+simple_type_write_def(float4, f4, %.6E)
+simple_type_write_def(float8, f8, %.12E)
 
 void xmlostream::write(std::string const& v, const char* name)
 {

@@ -1,6 +1,8 @@
 // -*- C++ -*-
 // 
-// file objio.h
+// $Id: objio.h,v 1.4 2004/02/27 16:34:36 nrl Exp $
+// 
+// \file objio.h
 // 
 // 
 #ifndef OBJIO_H
@@ -14,7 +16,7 @@
 #include "toadtypes.h"
 
 
-
+class persister_base;
 template<class T> class persister;
 
 
@@ -30,21 +32,19 @@ class obj_output { //: public obj_output_base {
 
   void         close() { stream_.close(); }
 
-  //  template<class T>
-  //  void   write(persister<T>& pt) {
-  //    //    persister<T> pt(&t);
-  //    stream_.start_object(pt.name(), pt.version());
-  //    pt.write_members(*this);
-  //    stream_.end_object();
-  //  }
-
   template<class T>
   void   write(persister<T> const& p, const char* name=0) {
     stream_.start_object(p.name(), p.version());
     p.write_members(*this);
     stream_.end_object();
   }
-
+  
+  void   write(persister_base const* p, const char* name=0) {
+    stream_.start_object(p->name(), p->version());
+    p->write_members(*this);
+    stream_.end_object();
+  }
+  
   virtual void   write(int1 v,   const char* name=0) { stream_.write(v, name); }
   virtual void   write(uint1 v,  const char* name=0) { stream_.write(v, name); }
   virtual void   write(int2 v,   const char* name=0) { stream_.write(v, name); }
@@ -56,19 +56,42 @@ class obj_output { //: public obj_output_base {
   virtual void   write(float4 v, const char* name=0) { stream_.write(v, name); }
   virtual void   write(float8 v, const char* name=0) { stream_.write(v, name); }
   virtual void   write(const std::string& v, const char* name=0) { stream_.write(v, name); }
-
-  // pointers are a difficult matter.
-  //  template<class T>
-  //  void           write(T const* t, unsigned long sz) {
-  //    stream_.write(t,sz,*this);
-  //  }
-
+  
+  
+  // tabs     //    stream_.write(t,sz,*this);
+  /*
+    template<class T>
+    void           write(T const* t, unsigned long sz, const char* name=0) {
+    stream_.start_collection(name,sz,t);
+    int i;
+    for(i=0;i<sz;i++) write(t+i)
+    stream_.end_collection();
+    }
+  */
+  
+  /*
+  // raw pointers 
+  template<class T>
+  void           write(T const* t) {
+    bool w = true; //check_pointer_((void*)t); // did we write this object already ?
+    persister_base* b = objmgr::getPersister(typeinfo(t).name());
+    stream_.start_pointer(name);
+    if(!w) {
+      *b = t;
+      //      *this << *b;
+    }
+    else 
+      stream_.write(t);
+    stream_.end_pointer();
+  }
+  */
+  
   template<class T>
   void           write(std::list<T> const& l, const char* name=0) {
     stream_.start_collection(l.size(), name);
     typename std::list<T>::const_iterator it;
     for(it=l.begin();it!=l.end();it++)
-      *this << *it; //      write(*it);
+      *this << *it;
     stream_.end_collection();
   }
 
@@ -78,7 +101,6 @@ class obj_output { //: public obj_output_base {
     typename std::vector<T>::const_iterator it;
     for(it=v.begin();it!=v.end();it++) {
       *this << *it;
-      //      write(*it);
     }
     stream_.end_collection();
   }
@@ -88,7 +110,9 @@ class obj_output { //: public obj_output_base {
     stream_.start_collection(m.size(), name);
     typename std::map<T,U>::const_iterator it;
     for(it=m.begin();it!=m.end();it++)
-      write(*it); // this time, we must use write(). Because we know what we are writing out...
+      // this time, we must use write().
+      // Because we know what we are writing out...
+      write(*it);
     stream_.end_collection();
   }
   
@@ -96,8 +120,8 @@ class obj_output { //: public obj_output_base {
   template<class T, class U>
   void           write(std::pair<T,U> const& p, const char* name=0) {
     stream_.start_collection(2, name);
-    *this << p.first;     //    write(p.first);
-    *this << p.second;    //    write(p.second);
+    *this << p.first;
+    *this << p.second;
     stream_.end_collection();
   }
   
@@ -122,18 +146,11 @@ private:
   IOS stream_;
   //  dict_output<IOS>& d_output_;
   
+  bool check_pointer(void*);
+  
   template<class T> friend class persister;
 };
 
-
-
-// VERY DANGEROUS ! GET RID OF THIS! --nrl 02/2004
-//template<class IOS, class T>
-//inline obj_output<IOS>& operator<<(obj_output<IOS>& oo, T t)
-//{
-//  oo.write(t);
-//  return oo;
-//}
 
 #define define_output_operator(type)                       \
 template<class IOS>                                        \
@@ -261,9 +278,7 @@ public:
     unsigned int sz;
     T v1; U v2;
     stream_.start_collection(sz);
-    // read(v1); 
     *this >> v1; p.first=v1;
-    // read(v2); 
     *this >> v2;
     p.second=v2;
     stream_.end_collection();
@@ -287,16 +302,6 @@ public:
 private:
   IOS stream_;
 };
-
-
-// NRL 02/2004: VERY DANGEROUS! GET RID OF THIS!
-//template<class IOS, class T>
-//inline obj_input<IOS> const& operator>>(obj_input<IOS> const& oi, T& t)
-//{
-//  oi.read(t);
-//  return oi;
-//}
-
 
 
 #define define_input_operator(type)                        \

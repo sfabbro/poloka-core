@@ -2,16 +2,21 @@
 (*) one header / persister
 (*) work out reasonable makefile rule so that persisters are automatically generated
 (*) << & >> operators for STL types
-( ) set precision automatically for floating point types
+(*) set precision automatically for floating point types
+(*) make sure that no persisters are generated for classes without any version number
+( ) make sure that dictgen2 always understands the CLASS_VERSION macro
+( ) stuff all the important headers in one single header file -- ALMOST DONE --> check that everything's ok
+( ) generate persisters for templates -- ALMOST DONE --> implement generation by codegen
+( ) tabs --> should be done in the dicts (I guess)
+( ) pointers --> 
+( ) dictionaries --> 
+( ) t= --> xsi:type= everywhere
+
+( ) implement constant persisters
 ( ) new options to dictgen2, so that *__persister.h files can be stored in a single directory
 ( ) makefile rule, so that these files can be installed with the other header files 
     (maybe just include_HEADERS= *__persister.h may work)
 ( ) make sure again that classes without persisters can be written out
-( ) make sure that no persisters are generated for classes without any version number
-( ) generate persisters for templates
-( ) pointers
-( ) dictionaries
-( ) implement constant persisters
 
 ( ) clean codegen.[h|cc]
 ( ) FITS backend

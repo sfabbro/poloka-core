@@ -13,13 +13,32 @@
 
 #include "objio.h"
 
-#define CLASS_VERSION(className,id) \
- static const unsigned short __version__=id; \
- friend class persister<className>;
-
-
 class obj_intput_base;
 class obj_output_base;
+
+//#define CLASS_VERSION(className,id) \
+//static const unsigned short __version__=id;\
+//friend class persister<className>;
+
+
+class persister_base {
+public:
+  virtual unsigned int     version() const=0;
+  virtual std::string      name() const=0;
+  virtual persister_base*  clone() const=0;
+
+protected:
+  template<class IOS>
+  void   write_members(obj_output<IOS>& oo) const {}
+  
+  template<class IOS>
+  void   read_members(obj_input<IOS> const& oi) {}
+
+  template<class U> friend class obj_input;
+  template<class U> friend class obj_output;
+};
+
+
 
 //class persister_base {
 //public:
@@ -72,7 +91,7 @@ protected:
 
 
 // Default persister (empty)
-template<class T> 
+template<class T>
 class persister : public handle<T> {
 public:
   persister() : handle<T>() {}
@@ -97,6 +116,9 @@ protected:
   template<class U> friend class obj_input;
   template<class U> friend class obj_output;
 };
+
+
+
 
 
 // default IO operators

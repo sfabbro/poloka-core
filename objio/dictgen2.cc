@@ -114,8 +114,6 @@ main(int argc, char** argv)
   std::stringstream sstrm;
   sstrm << getpid();
   tmp_name = "dictgen_" + sstrm.str() + (std::string)".xml";  
-  //  std::string cmd = "swig -c++ -xmllite -xml -module persist -o " 
-  //    + tmp_name + " " + headerName;
   cmd = "swig -c++ -xml -w401 -module persist -o " 
     + tmp_name + " " + headerName;
   if(verbose)
@@ -203,3 +201,6 @@ main(int argc, char** argv)
 //  ostrm_tst.close();
 //  exit(0);
 
+
+//  std::string cmd = "swig -c++ -xmllite -xml -module persist -o " 
+//    + tmp_name + " " + headerName;

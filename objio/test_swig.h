@@ -8,21 +8,21 @@
 
 
 #include<string>
-#include "persister.h"
+
+
 #include "objio.h"
+#include "persister.h"
 
 
 #define CLASS_VERSION(className,id) \
- static const unsigned short __version__=id; \
- friend class persister<className>;
-
+static const unsigned short __version__=id;\
+friend class persister<className>;
 
 struct A {};
 struct C {};
+
 struct AA : public A, public C {
-private:
-CLASS_VERSION(AA,1);
-//static const unsigned short __version__=2;
+  CLASS_VERSION(AA,1);
 };
 
 
@@ -41,6 +41,7 @@ public:
 protected:
   float8 x_;
   float8 y_;
+  
   CLASS_VERSION(Point,1);
 };
 
@@ -63,15 +64,33 @@ private:
 };
 
 
-//template<class T>
-//class B : public A {
-//public:
-//  B() {}
-//  ~B() {}
-//  
-//private:
-//  T t_;
-//};
+template<class T>
+class B : public A {
+public:
+  B() {}
+  ~B() {}
+  
+private:
+  T t_;
+  template<class U> friend class persister;
+};
+
+
+template<class T, class U>
+class BB : public A {
+public:
+  BB() {}
+  ~BB() {}
+  
+  std::list<T>  lt_;
+  std::map<T,U> mtu_;
+  
+private:  
+  T t_;
+  U u_;
+  
+  template<class Z> friend class persister;
+};
 
 
 #endif
