@@ -165,7 +165,7 @@ void SimFitPhot::operator() (LightCurve& Lc)
     }
     zeFit.SetWhatToFit(FitFlux  | FitPos | FitSky );
     zeFit.UseGalaxyModel(false);
-    zeFit.DoTheFit(50,0.005); 
+    zeFit.DoTheFit(10,0.05); 
   }
 
   if(dowrite) {
