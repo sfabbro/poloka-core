@@ -4,7 +4,7 @@
 
 package @PACKAGE@	
 
-use cfitsio v2r440
+use cfitsio v2r440b
 use sex v222
 use lapack v1r1p_a_gcc_3.2.3
 	
