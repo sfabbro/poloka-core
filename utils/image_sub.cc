@@ -30,27 +30,22 @@ int main(int nargs, char **args)
   CountedRef<ReducedImage> refimage = new ReducedImage(args[1]);
   CountedRef<ReducedImage> newimage = new ReducedImage(args[2]);
 
-  const KernelFit* kernel=0;  
-  if(makesub) {
-    ImageSubtraction sub("sub",*refimage,*newimage);
-    sub.MakeFits();
-    kernel = sub.GetKernelFit();
-  }else{
-    PsfMatch psfmatch(*refimage,*newimage);
-    psfmatch.FitKernel(true);
-    kernel = psfmatch.GetKernelFit();
-  }
-
-  if(!kernel) {
-    cout << "aie aie aie" << endl;
-    exit(-1);
-  }
-
   // write kernel in xml file
   string outputfilename = newimage->Dir()+"/kernel_from_"+refimage->Name()+".xml";
   cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl;
   obj_output<xmlstream> oo(outputfilename);
-  oo << *kernel;
+
+  
+  if(makesub) {
+    ImageSubtraction sub("sub",*refimage,*newimage);
+    sub.MakeFits();
+    oo <<*(sub.GetKernelFit());
+  }else{
+    PsfMatch psfmatch(*refimage,*newimage);
+    psfmatch.FitKernel(true);
+    oo << *(psfmatch.GetKernelFit());
+  }
+  
   oo.close();
   cout << "the end" << endl;
   
