@@ -178,8 +178,11 @@ int main(int argc, char **argv)
   stream << "#end" <<endl;
   // first let's try to compute the ZP
   double weight;
+  int count=0;
   double sumzp=0;
+  double sumzp2=0;
   double sumweight=0;
+  double zp;
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
     //cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
@@ -207,12 +210,16 @@ int main(int argc, char **argv)
       stream << endl;
       
       weight = 1./fs->varflux;
+      count ++;
       sumweight += weight;
-      sumzp += 2.5*log10(fs->flux/cstar.flux)*weight;
+      zp = 2.5*log10(fs->flux/cstar.flux);
+      sumzp += zp*weight;
+      sumzp2 += zp*zp*weight;
     }
   }
-  double zp = sumzp/sumweight;
-  cout << "zp=" << zp << endl;
+  zp = sumzp/sumweight;
+  double rms = sqrt(sumzp2/sumweight -zp*zp);
+  printf("RESULT_zp_rms_error= %6.6f %6.6f %6.6f\n",zp,rms,rms/sqrt(float(count)));
   stream.close();
   return EXIT_SUCCESS;
 }
