@@ -2,8 +2,8 @@ EXTRA_DIST = repack_python.swg
 
 
 PYTHON_INCLUDES=-I/usr/include/python@PYTHON_VERSION@ -I../src
-AM_CPPFLAGS=-I/usr/include/python@PYTHON_VERSION@ -I../src
-AM_LDFLAGS=-L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@ -lg2c
+AM_CPPFLAGS=-I/usr/include/python@PYTHON_VERSION@ -I../src @SEX_LDFLAGS@ @CFITSIO_CPPFLAGS@ @LAPACK_CPPFLAGS@
+AM_LDFLAGS=-L../src -ltoads -L../cern_stuff -lcernstuff @SEX_LDFLAGS@ CFITSIO_LDFLAGS@ @LAPACK_LDFLAGS@ @CERNLIB_LDFLAGS@ -lg2c
 
 lib_LTLIBRARIES = librepack_python.la
 librepack_python_la_SOURCES = repack_python_wrap.cxx
