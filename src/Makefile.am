@@ -36,6 +36,7 @@ libtoads_la_SOURCES = \
   histo4d_dict.cc \
   detection_dict.cc \
   gtransfo_dict.cc \
+  kernelfit_dict.cc \
  \
   vutils.cc                   vutils.h         \
   wcscon.c                    wcscon.h         \

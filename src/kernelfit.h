@@ -3,8 +3,10 @@
 #define KERNELFIT__H
 
 #include <list>
+#include <vector>
 
 
+using namespace std;
 
 #include "basestar.h"
 #include "image.h"
@@ -37,11 +39,11 @@ convolution kernels. see astro-ph 9903111 & astro-ph 9712287
 // So in the end we have :
 #ifdef JUST_FOR_DOCUMENTATION
 
-   class KernelFit { 
-   vector<Kernel> Kernels; 
-   BestImageStampList *StampList;
-   ...
-   };
+//   class KernelFit { 
+//   vector<Kernel> Kernels; 
+//   BestImageStampList *StampList;
+//   ...
+//   };
 
 #endif
 
@@ -58,19 +60,20 @@ struct XYPower  /* to handle and compute things like x**n*y**m */
   
   /* was separated from other stuff because we need 2 of them : one for the spatial variations of the kernel,
    and one for the spatial variation of the background (see in OptParams) */
-  int Degree, Nterms;
-  int *Xdeg;  //[Nterms]  : values of x exponant of monomials
-  int *Ydeg; //[Nterms]   : values of exponant for x and y of monomials
+  int Degree;
+  vector<int> Xdeg; // values of x exponant of monomials
+  vector<int> Ydeg; // values of exponant for x and y of monomials
+  unsigned int Nterms() const {return Xdeg.size();};
 
   /* the value of monomial of rank q (where q < Nterms) */
   double Value(const double X, const double Y, const int q) const;
 
   /* default constructor: Value(x,y,0) will return 1. */
-  XYPower() { Xdeg=Ydeg = NULL; SetDegree(0);};
-  XYPower(int Degree) { Xdeg=Ydeg = NULL; SetDegree(Degree);};
+  XYPower() { SetDegree(0);};
+  XYPower(int Degree) { SetDegree(Degree);};
   void SetDegree(const int Degree);
 
-  ~XYPower() { if (Xdeg) delete [] Xdeg; if (Ydeg) delete [] Ydeg;}
+  ~XYPower() {};
 
 };
 
@@ -84,10 +87,10 @@ public :
 
   /* kernel basis */
   int NGauss;
-  double *Sigmas;// [NGauss]
-  int *Degrees; // [NGauss]
+  vector<double> Sigmas;// [NGauss]
+  vector<int> Degrees; // [NGauss]
   double NSig; // size (in pixel) of kernel in number of sigmas of guessed size.
-
+  
   /* Kernel variations */
   XYPower KernVar;
 
@@ -154,15 +157,15 @@ class KernelFit {
   int HKernelSizeY() { return optParams.HKernelSize;}
 
   int mSize; /* the size of the matrix m */
-  double *m; //! /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */; 
-  double *b; //! /* the normal equations (i.e. grad(chi2) = 0) right hand side */ 
-  double *solution; //[mSize]/* the weights of various kernels */
-  double *diffbackground; //! /* the differential background coefficient when fitted separately */
+  vector<double> m; //! /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */; 
+  vector<double> b; //! /* the normal equations (i.e. grad(chi2) = 0) right hand side */ 
+  vector<double> solution; //[mSize]/* the weights of various kernels */
+  vector<double> diffbackground; //! /* the differential background coefficient when fitted separately */
 
 /* routines to compute an index in the solution array ... internal cooking */
 
-  int KernIndex(int iKernel, int iSpatial) const { return optParams.KernVar.Nterms*iKernel + iSpatial;};
-  int BackIndex(int ib) const { return ib+Kernels.size()*optParams.KernVar.Nterms;}
+  int KernIndex(int iKernel, int iSpatial) const { return optParams.KernVar.Nterms()*iKernel + iSpatial;};
+  int BackIndex(int ib) const { return ib+Kernels.size()*optParams.KernVar.Nterms();}
 
 
 /* Fit the differential background separately from the kernel */
@@ -174,20 +177,25 @@ class KernelFit {
   void DeleteConvolvedBest() { if (ConvolvedBest) delete ConvolvedBest; ConvolvedBest = NULL;}
   void DeleteWorstDiffBkgrdSubtracted() { if (WorstDiffBkgrdSubtracted) delete WorstDiffBkgrdSubtracted; WorstDiffBkgrdSubtracted = NULL;}
 
-    KernelFit() { BestImage = WorstImage = NULL; BestImageStamps = NULL; ConvolvedBest = NULL; 
-                       WorstDiffBkgrdSubtracted = NULL;
-		       m = b = solution = diffbackground = NULL; convolutions = NULL;
-                       BestImageBack = WorstImageBack = 0;
-                      }
-
-  ~KernelFit() { if (m) delete[] m; if (b) delete [] b;
-                 if (convolutions) delete [] convolutions;
-                 if (BestImageStamps) delete BestImageStamps;
-                 if (ConvolvedBest) delete ConvolvedBest;
-		 if (WorstDiffBkgrdSubtracted) delete WorstDiffBkgrdSubtracted;
+  KernelFit() { 
+    BestImage = NULL;
+    WorstImage = NULL; 
+    BestImageStamps = NULL; 
+    ConvolvedBest = NULL; 
+    WorstDiffBkgrdSubtracted = NULL;
+    convolutions = NULL;
+    BestImageBack = 0;
+      WorstImageBack = 0;
+  }
+  
+  ~KernelFit() {
+    if (convolutions) delete [] convolutions;
+    if (BestImageStamps) delete BestImageStamps;
+    if (ConvolvedBest) delete ConvolvedBest;
+    if (WorstDiffBkgrdSubtracted) delete WorstDiffBkgrdSubtracted;
   }
 
-
+  
 /* fitting routines */
 void KernelsFill(); /* compute the kernels constituting the basis */
 void AllocateConvolvedStamps(); /* trick to avoid allocation and deallocation of a big memory chunk. 
@@ -197,7 +205,7 @@ void DeallocateConvolvedStamps();
 //! sums least square matrix and vector for all stamps
 void ComputeMAndB();
 //! computes least square matrix and vector for one stamp
-void OneStampMAndB(const Stamp &Astamp, double *StampM, double *StampB); 
+  void OneStampMAndB(const Stamp &Astamp, vector<double> &StampM, vector<double> &StampB);
 //! subtract a stamp of the least square matrix and vector
 void SubtractStampFromMAndB(Stamp& AStamp); 
 //! actually solves the system by calling linear algebra efficient routines
@@ -209,7 +217,7 @@ double StampChi2(Stamp &stamp, double VSky, double InvGain); /* involves a kerne
 /* computes chi2 contributions of stamps and applies median filtering for outliers removal. iterates until
 the number of stamps involved stabilizes. */
 void FilterStamps(); 
-//! final wrapper that calls various routines to fill matrix and vector, and then solve.
+  //! final wrapper that calls various routines to fill matrix and vector, and then solve.
 int DoTheFit(const BaseStarList &List, double &BestSeeing, double &WorstSeeing);
 int DoIt(const BaseStarList &List, double &BestSeeing, double &WorstSeeing);
 
