@@ -184,6 +184,8 @@ class SimSNStar : public BaseStar
   SimSNStar(double xx, double yy, double ff);
   virtual void writen(ostream & pr = cout) const;
   std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
+  virtual void    dumpn(ostream& s = cout) const;
+  virtual void    dump(ostream& s = cout) const ;
   virtual void    read_it(istream& r, const char *Format); 
   static SimSNStar* read(istream& r, const char* Format);
 
@@ -215,6 +217,8 @@ class SimSNWModelStar : public SimSNStar
   SimSNWModelStar(double xx, double yy, double ff) : SimSNStar(xx,yy,ff){};
   SimSNWModelStar(const SimSNStar &AStar) : SimSNStar(AStar){};
   virtual void writen(ostream & pr = cout) const;
+  virtual void    dumpn(ostream& s = cout) const;
+  virtual void    dump(ostream& s = cout) const ;
   std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
   virtual void    read_it(istream& r, const char *Format); 
   static SimSNWModelStar* read(istream& r, const char* Format);
@@ -267,7 +271,11 @@ class SimSNStarList : public StarList<SimSNStar>
 			   Image & dest, 
 			   const Gtransfo *Transfo,   
 			   Image * psat = NULL, double satlevel=-1) const ;
+  void AddWGaussianToImage(double sigmax, double sigmay, double rho,
+			   Image & dest, 
+			   Image * psat = NULL, double satlevel=-1) const ;
 
+  
 };
 
 
@@ -321,7 +329,22 @@ typedef CountedRef<SimSNWModelStar> SimSNWModelStarRef;
 BaseStarList* SimSNWModel2Base(SimSNWModelStarList * This);
 const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This);
 #endif
+ 
 
 
+// DaoPhot utilitaries
+// The place of this is to be discussed with Seb
+
+
+#include "image.h"
+#include "daophotpsf.h"
+
+
+void AddWDaoPsfToImage(DaoPsf const & daopsf, double xc, double yc, 
+		       double flux, Image & image, Image * psat, double saturation);
+
+void AddListWDaoPsfToImage(DaoPsf const & daopsf, BaseStarList *List, 
+		       Image & img, 
+		       Image * psat=NULL, double saturation=-1);
 
 #endif /* SIMSNSTAR__H */

@@ -120,6 +120,7 @@ AddModelToImage(double xmod, double ymod, int xShift , int yShift,
 	  if ( (satlevel > 0 ) && 
 	       (dest(targeti , targetj)+ val > satlevel ) )
 	    {
+	      //cerr << "dest: " << targeti << " " << targetj << " " << satlevel << endl ;
 	      dest(targeti , targetj) = satlevel ;
 	      if (psat != NULL)
 		{
@@ -148,7 +149,10 @@ AddModelToImage(double xmod, double ymod, int xShift , int yShift,
 	      
 	    }
 	  else
-	    dest(targeti , targetj) += val ;
+	    {
+	      dest(targeti , targetj) += val ;
+	      //cerr << "dest: " << targeti << " " << targetj << " " << dest(targeti , targetj) << endl ;
+	    }
 	  // area computed for debug.
 	  Aire++;
 	}
@@ -196,7 +200,24 @@ SimSNStar::SimSNStar(double xx, double yy, double ff)
   fluxmax_gal = 0.;
 }
 
+void
+SimSNStar::dumpn(ostream& s) const
+{
+ BaseStar::dumpn(s);
+ s << " mag_sn : "   << mag_sn
+   << " mag_gal : " << mag_gal
+   << " x_gal : " << x_gal
+   << " y_gal : " << y_gal
+   << " a_gal : " << a_gal
+   << " fluxmax_gal : " << fluxmax_gal ;
+}
 
+void
+SimSNStar::dump(ostream& s) const
+{
+ dumpn(s);
+ s << endl ;
+}
 
 string SimSNStar::WriteHeader_(ostream &pr, const char *i) const
 {
@@ -274,6 +295,17 @@ SimSNStarList::AddWGaussianToImage(double sigmax, double sigmay, double rho,
     }
 }
 
+void 
+SimSNStarList::AddWGaussianToImage(double sigmax, double sigmay, double rho,
+				   Image & dest,    
+				   Image * psat, 
+				   double satlevel) const 
+{  
+  BaseStarList *list = (BaseStarList *) this ;
+  AddListWGaussianToImage(sigmax, sigmay, rho, list,
+			  dest, psat, satlevel);
+}
+
 // Converter :
 BaseStarList* SimSN2Base(SimSNStarList * This)
 { return (BaseStarList*) This;} 
@@ -298,6 +330,18 @@ string SimSNWModelStar::WriteHeader_(ostream &pr, const char *i) const
   return SimSNFormat + ModelStarFormat + " SimSNWModelStar 1 ";
   }
 
+void SimSNWModelStar::dumpn(ostream & pr) const
+{
+  SimSNStar::dumpn(pr);
+  pr << " Modele : " ;
+  model_on_ref.dumpn(pr);
+}
+void
+SimSNWModelStar::dump(ostream& s) const
+{
+ dumpn(s);
+ s << endl ;
+}
 
 void SimSNWModelStar::writen(ostream & pr) const
 {
@@ -493,6 +537,10 @@ SimSNWModelStarList::AddWModelToImage(const Image &image, Image & dest,
 
 
 
+ 
+
+
+
 
 // Converter :
 BaseStarList* SimSNWModel2Base(SimSNWModelStarList * This)
@@ -503,3 +551,78 @@ const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This)
 
 #include "starlist.cc" /* since starlist is a template class */
 template class StarList<SimSNWModelStar>;  /* to force instanciation */
+
+/***************** Utilitaires Dao **************/
+//The place for this is to be discussed with Seb
+
+
+
+// a comparer a
+// void Daophot::Addstar(const string& PsfFileName, const string& AddFileName, const string& AddPicName, const int InSeed)
+// a mettre ds daophoutils ?
+void AddWDaoPsfToImage(DaoPsf const & daopsf, double xc, double yc, 
+		       double flux,Image & image,
+		       Image * psat,
+		       double saturation)
+{
+  double dpdx, dpdy ;
+  int NN = (int) (daopsf.Radius() + 1.) ; // au-dela de Radius, la 
+  // DaoPsf.Value retourne 0.
+  // cerr <<"taille fenetre " <<  NN << endl ;
+ int flagsaturated = 0 ;
+  for (int j = -NN; j <=NN ; j++)
+    {
+      int jj = (int) (j +yc + 0.5) ;
+      if ( jj < 0 ) continue ;
+      if ( jj >= image.Ny() ) break  ;
+      for (int i = -NN; i <=NN ; i++)
+	{
+	  int ii = (int) (i +xc + 0.5) ;
+	  if ( ii < 0 ) continue ;
+	  if ( ii >= image.Nx() ) break  ;
+	  double val = daopsf.Value(ii,jj,xc,yc,dpdx,dpdy) * flux;
+	  if ( (saturation > 0 ) && 
+	       (image(i,j)+ val > saturation ) )
+	    {
+	      image(ii,jj) = saturation ;
+	      if (psat != NULL)
+		{
+		  if (flagsaturated == 0 ) // la 1ere fois qu'on s'en apercoit
+		    if ((*psat)(ii,jj) == 0 ) // not saturated before, saturated because of SNe
+		      {
+			cerr << "SN is saturated (i= " 
+			     << ii << ", j= " 
+			     << jj << "), saturation = " 
+			     << saturation << ", image = " 
+			     << image(ii,jj) << ", new image val = " 
+			     << image(ii,jj)+ val  << endl ;
+			flagsaturated = 1; // pour ne pas le dire 36 fois
+		      }	
+		    
+		  (*psat)(ii,jj) = 1 ;
+		}
+	      else
+		if (flagsaturated == 0 )
+		  {
+		    cerr << "SN or SN zone  is saturated: " << endl ;
+		    flagsaturated = 1;
+		  }	      
+	    }
+	  else
+	    image(ii,jj) += val ; // il faudrait faire un tirage poissonien 
+	  // sur val.
+	}
+    }
+} 
+
+void AddListWDaoPsfToImage(DaoPsf const & daopsf, BaseStarList *List,
+		       Image & img,  Image * psat,
+		       double saturation)
+{
+  for (BaseStarIterator it= List->begin(); it!= List->end(); ++it )
+    {     
+      AddWDaoPsfToImage(daopsf, (*it)->x, (*it)->y,  (*it)->flux,img,psat,saturation);
+    }
+}
+
+
