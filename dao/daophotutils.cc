@@ -108,6 +108,10 @@ static size_t filter_chi(SEStarList& Stars, const double& maxchi)
 	si = Stars.erase(si); 
       else ++si;
     }
+  if(Stars.size()==0) {
+    cout << "ERROR IN filter_chi" << endl;
+    return 0;
+  }
   Stars.sort(&increasing_chi);
   double cutchi = 2*Stars.front()->Chi();
   si = Stars.begin();
@@ -129,7 +133,7 @@ bool IteratePsf(Daophot& DaoSession, SEStarList& Stars)
   unsigned int curIter = 0;
 
   DaoSession.opt[WatchProgress].SetValue(-1);
-  const double maxchi(0.1);
+  const double maxchi(1.5);
   do
     {
       nStars = nStarsLeft;
@@ -175,7 +179,8 @@ void MakeExperimentalPsf(ReducedImage &Rim)
 
   SEStarList psfStars(Rim.CatalogName());
   psfStars.FluxSort();
-  SelectIsolatedStars(psfStars, Rim.UsablePart(), Rim.Saturation()*0.95, Rim.Seeing(), 0.3, 1., 0.5);  
+  float saturratio = 0.5;
+  SelectIsolatedStars(psfStars, Rim.UsablePart(), Rim.Saturation()*saturratio, Rim.Seeing(), 0.3, 1., 0.5);  
   Daophot daoSession(Rim);
   daoSession.opt.write(Rim.Dir()+"/daophot.opt");
   daoSession.WriteSEStarList<DaophotAp>(psfStars);
@@ -198,7 +203,7 @@ void MakeExperimentalPsf(ReducedImage &Rim)
   psfStars.ClearList();
 
   ReadDaoSex<DaophotAls>(Rim, psfStars, true, true, false);  
-  SelectOKStars(psfStars, Rim.Saturation()*0.95, Rim.Seeing(), 0.3, 2., 0.3);
+  SelectOKStars(psfStars, Rim.Saturation()*saturratio, Rim.Seeing(), 0.3, 2., 0.3);
   psfStars.FluxSort();
   daoSession.WriteSEStarList<DaophotAp>(psfStars);
   psfStars.CutTail(200);
@@ -288,11 +293,11 @@ bool UpdateSeeingFromDaoPsf(ReducedImage &Rim)
     seeing = sqrt(sqrt(r)*sigmaX*sigmaY);
   else seeing =  max(sigmaX,sigmaY); // is this ok?
 
-  double oldseeing = Rim.Seeing();
-  Rim.SetSeeing(seeing, "Seeing updated from DAOPHOT PSF file");
+  //double oldseeing = Rim.Seeing();
+  //Rim.SetSeeing(seeing, "Seeing updated from DAOPHOT PSF file");
   Rim.SetPsfShapeParams(sigmaX, sigmaY, thetaXY, "Sigmas and theta updated from DAOPHOT PSF file");
 
-  cout << " UpdateFromDaoPsf() : old seeing = " << oldseeing << " new seeing = " << seeing << endl;  
+  //cout << " UpdateFromDaoPsf() : old seeing = " << oldseeing << " new seeing = " << seeing << endl;  
 
   return true;
 }
