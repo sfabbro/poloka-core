@@ -14,7 +14,7 @@ bin_PROGRAMS = \
  skylev sum_images trim valid_fits make_daophot make_lightcurve \
  split_fits2 rustine_for_fringe assign dbls split_fits testdao \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
- compute enlargeimage calibrate coordfromimage
+ compute enlargeimage calibrate coordfromimage enlargedead
 
 # extinction readagain_extinction
 
@@ -116,7 +116,7 @@ skylev_SOURCES = skylev.cc
 sum_images_SOURCES = sum_images.cc
 trim_SOURCES = trim.cc
 valid_fits_SOURCES = valid_fits.cc
-
+enlargedead_SOURCES = enlargedead.cc
 
 
 
