@@ -144,7 +144,7 @@ bool IteratePsf(Daophot& DaoSession, SEStarList& Stars)
     }
   while ((curIter++ < maxIter) && (nStars-nStarsLeft) && nStarsLeft);
 
-  return (DaoSession.LoadPsf());
+  return true;
 }
 
 void MakeDaoPsf(ReducedImage &Rim, const bool Redo)

@@ -7,7 +7,6 @@
 #include "fitssubs.h"
 #include "daophotio.h"
 #include "daophotoption.h"
-#include "daophotpsf.h"
 
 class ReducedImage;
 
@@ -21,20 +20,14 @@ class Daophot {
   float   lowbad, threshold, ap1;     // some numbers to write the daophot files
   float   global_sky;                 // background value of the whole image
   string  rootname;                   // the name of the file without extension
-  DaoPsf *psf;                        // PSF to keep around in case it was built
   
-  static const int MAXSKY;            // some useful number to keep
-  static const int NOPT;
-
   Daophot(const Daophot&);            // assignment not properly handled 
   Daophot& operator=(const Daophot&); // copy not properly handled 
 
 public:
 
-  friend class DaoPsf;
-
   //! empty constructor make sure pointers are pointing to 0
-  Daophot() : open(0), data(0), psf(0) {}
+  Daophot() : open(0), data(0) {}
 
   //! initialize with a ReducedImage, the recommanded option
   Daophot(const ReducedImage &Rim);
@@ -84,11 +77,9 @@ public:
   void Substar(const string& PsfFileName, const string& NstFileName, const string& LstFileName, const string& SubPicFileName) const;
   void Substar() const { Substar(rootname+".psf", rootname+".nst", rootname+".lst", rootname+"_sub.fits"); }
 
-  /*
   //! add fake stars and noise from a PSF     -  equivalent to DAOPHOT/ADD*
-  void Addstar(const string& );
-  void Addstar() {} 
-  */
+  void Addstar(const string& PsfFileName, const string& AddFileName, const string& AddPicName, const int InSeed);
+  void Addstar() { Addstar(rootname+".psf", rootname+".add", rootname+"_add.fits", 10); } 
 
   //! fit and iteratively subtract stars      -  equivalent to ALLSTAR
   void Allstar(const string& ApFileName, const string& PsfFileName, const string& AlsFileName, const string& SubPicFileName) const;
@@ -100,13 +91,6 @@ public:
   //! get value of sky with 3 estimators
   void GetSky(float &SkyMean, float &SkyMedian, float &SkyMode, float &SkySigma) const;
   
-  //! fit only one SEStar with the currently loaded DaoPsf
-  void PeakFit(SEStar &Star) const;
-
-  //! Load a DaoPsf from a file
-  bool LoadPsf(const string& PsfFileName);
-  bool LoadPsf() { return LoadPsf(rootname+".psf"); }
-
   //! write a DAOPHOT style star file
   template<DbImageCatalogKind filetype>
   void WriteSEStarList(const SEStarList& Stars) const

@@ -2,7 +2,6 @@
 #ifndef DAOPHOTPSF__H
 #define DAOPHOTPSF__H
 
-#include <persistence.h>
 #include <reducedimage.h>
 #include <sestar.h>
 
@@ -20,10 +19,6 @@ class DaoPsf : public RefCount {
   int    npsf, npar, nexp, nfrac, type;
   double radius;
   
-  static const int MAXPSF;      // maximum PSF array size allowed by DAOPHOT
-  static const int MAXPAR;      // maximum number of PSF parameters
-  static const int MAXEXP;      // maximum coeff for interpolating spatial variable table
-
 public:
 
   //! empty constructor make sure array are not pointing to anything

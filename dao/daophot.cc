@@ -15,14 +15,8 @@ static void not_open_error(const string &RoutineName)
 }
 
 //***************************** Daophot ****************************
-// NB: all "hardcoded" numbers are taken to reproduce original daophot programs
-// They are usually associated with fortran 77 limitations for dynamical allocation
-
-const int Daophot::MAXSKY = 10000;
-const int Daophot::NOPT   = 20;
-
 Daophot::Daophot(const ReducedImage &Rim) 
-  : open(0), data(0), psf(0), opt(Rim)
+  : open(0), data(0), opt(Rim)
 {
 
   if (!Rim.ActuallyReduced()) 
@@ -46,8 +40,6 @@ Daophot::Daophot(const ReducedImage &Rim)
 Daophot::~Daophot()
 {
   if (data) delete [] data;
-  if (psf)  delete psf;
-
   CLPIC("DATA");
 }
 
@@ -65,7 +57,7 @@ void Daophot::Attach(const string& FitsFileName)
 
   ATTACH(FitsFileName.c_str(), &open);
 
-  if (!open) {not_open_error("Attach"); return;}
+  if (!open) { not_open_error("Attach"); return; }
   if (!data) data = new float[SIZE.ncol*SIZE.nrow];
 }
 
@@ -129,15 +121,10 @@ void Daophot::Psf(const string& ApFileName, const string& LstFileName, const str
   if (!open) {not_open_error("Psf");return;}
   cout << " Daophot::Psf() : Profile : " << opt[AnalyticPsf].Value() 
        << " Variability: " << opt[VariablePsf].Value() << endl;
-  if (!psf) 
-    { 
-      psf = new DaoPsf(); 
-      psf->Allocate(psf->MAXPSF, psf->MAXPAR);
-    }
-
   const float *options = opt.GetArray(NOPT);
 
-  GETPSF(data, &SIZE.ncol, &SIZE.nrow, psf->param, psf->table, options, &NOPT, 
+  GETPSF(data, &SIZE.ncol, &SIZE.nrow, options, &NOPT, 
+	 &MAXBOX, &MAXPSF, &MAXSTR, &MAXN, &MAXPAR, &MAXEXP,
 	 ApFileName.c_str(), LstFileName.c_str(), PsfFileName.c_str(), NeiFileName.c_str(), &global_sky);
 
   delete [] options;
@@ -146,22 +133,20 @@ void Daophot::Psf(const string& ApFileName, const string& LstFileName, const str
 void Daophot::Peak(const string& MagFileName, const string& PsfFileName, const string& PkFileName) const
 {
   if (!open) {not_open_error("Peak");return;}
-  if (!psf)  {cerr << " Daophot::Peak() : Warning PSF not done yet\n"; return; }
-
   cout << " Daophot::Peak() : Fitting a PSF to all stars" << endl;
-  DAOPK(psf->param, &psf->MAXPAR, psf->table, &psf->MAXPSF, &psf->MAXEXP, data,
-	&opt[WatchProgress].Value(), &opt[FitRadius].Value(), &opt[PercError].Value(), &opt[ProfError].Value(), 
+
+  DAOPK(data, &opt[WatchProgress].Value(), &opt[FitRadius].Value(), 
+	&opt[PercError].Value(), &opt[ProfError].Value(), 
 	MagFileName.c_str(), PsfFileName.c_str(), PkFileName.c_str(), &global_sky);
 }
 
 void Daophot::Group(const string& MagFileName, const string& PsfFileName, const string& GrpFileName, const float& CriticalOverlap) const
 {
-  if (!psf) {cerr << " Daophot::Group() : Warning PSF not done yet\n"; return;}
 
-  const int maxstr = 10000; // max number of stars to group
+  cout << " Daophot::Group() : clustering stars to fit simultaneously" << endl;
 
-  GROUP(psf->param,  &psf->MAXPAR, psf->table, &psf->MAXPSF, &psf->MAXEXP, 
-	&maxstr, &opt[FitRadius].Value(), &opt[PsfRadius].Value(), 
+  GROUP(&MAXPSF, &MAXPAR, &MAXEXP, &MAXBOX, &MAXSTR,
+	&opt[FitRadius].Value(), &opt[PsfRadius].Value(), 
 	MagFileName.c_str(), PsfFileName.c_str(), GrpFileName.c_str(), 
 	&CriticalOverlap, &global_sky);
 }
@@ -169,10 +154,9 @@ void Daophot::Group(const string& MagFileName, const string& PsfFileName, const 
 void Daophot::Nstar(const string& GrpFileName, const string& PsfFileName, const string& NstFileName) const
 {
   if (!open) {not_open_error("Nstar");return;}
-  if (!psf) {cerr << " Daophot::Nstar() : Warning PSF not done yet\n"; return;}
   cout << " Daophot::Nstar() : Fitting a PSF to all star groups" << endl;
 
-  NSTAR(psf->param, &psf->MAXPAR, psf->table, &psf->MAXPSF, &psf->MAXEXP, data, &SIZE.ncol, &SIZE.nrow,
+  NSTAR(data, &SIZE.ncol, &SIZE.nrow,
 	&opt[WatchProgress].Value(), &opt[FitRadius].Value(), &opt[PercError].Value(), &opt[ProfError].Value(), 
 	GrpFileName.c_str(), PsfFileName.c_str(), NstFileName.c_str(), &global_sky);
 }
@@ -180,25 +164,31 @@ void Daophot::Nstar(const string& GrpFileName, const string& PsfFileName, const 
 void Daophot::Substar(const string& PsfFileName, const string& NstFileName, const string& LstFileName, const string& SubPicFileName) const
 {
   if (!open) {not_open_error("Substar");return;}
-  if (!psf) {cerr << " Daophot::Substar() : Warning PSF not done yet\n"; return;}
   cout << " Daophot::Substar() : subtract PSF stars " << endl;
 
-  SUBSTR(psf->param, &psf->MAXPAR, psf->table, &psf->MAXPSF, &psf->MAXEXP, data, &SIZE.ncol, &SIZE.nrow, 
-	 &opt[WatchProgress].Value(), PsfFileName.c_str(), NstFileName.c_str(), LstFileName.c_str(), SubPicFileName.c_str());
+  SUBSTR(data, &SIZE.ncol, &SIZE.nrow, &opt[WatchProgress].Value(), PsfFileName.c_str(), 
+	 NstFileName.c_str(), LstFileName.c_str(), SubPicFileName.c_str());
 }
 
-/*
-void Daophot::Addstar(const string& PsfFileName, const string& AddPicName, const int InSeed)
+void Daophot::Addstar(const string& PsfFileName, const string& AddFileName, const string& AddPicName, const int InSeed)
 {
 
-  if (!psf) {cerr << " Daophot::AddStar() : Warning PSF not done yet. Returning. \n"; return;}
-  Attach(AddPic);
+  Attach(AddPicName);
   cout << " Daophot::AddStar() :  Adding fake stars and noise " << endl;
+  
+  string outstm = CutExtension(AddFileName);
+  // unimportant values to pass anyway
+  float rmag[]  = {0., 0.};
+  int nstar     = 0;
+  int nframe    = 1;
 
-  ADDSTR(psf->param, &psf->MAXPAR, psf->table, &psf->MAXPSF, &psf->MAXEXP, data, &SIZE.ncol, &SIZE.nrow, 
-	 &opt[WatchProgress].Value(), PsfFileName.c_str(), AddPicName.c_str(), ); 
+  ADDSTR(data, &SIZE.ncol, &SIZE.nrow, &MAXPSF, &MAXPAR, &MAXEXP,  
+	 &opt[WatchProgress].Value(), PsfFileName.c_str(), AddFileName.c_str(), 
+	 AddPicName.c_str(), outstm.c_str(), &opt[Gain].Value(), 
+	 rmag, &nstar, &nframe, &InSeed);
+
+
 }
-*/
 
 void Daophot::Allstar(const string& ApFileName, const string& PsfFileName, const string& AlsFileName, const string& SubPicFileName) const
 {
@@ -216,7 +206,9 @@ void Daophot::Allstar(const string& ApFileName, const string& PsfFileName, const
   if (opt[Recentroid].Value() > 0.5) center = 1;
   int status;
 
-  ALLSTR(data, &SIZE.ncol, &SIZE.nrow, subt, sigma, &opt[PsfRadius].Value(), 
+  ALLSTR(data, &SIZE.ncol, &SIZE.nrow, 
+	 &MAXSTR, &MAXPSF, &MAXMAX, &MAXPAR, &MAXEXP,
+	 subt, sigma, &opt[PsfRadius].Value(), 
 	 &opt[WatchProgress].Value(),&opt[ClipRange].Value(), &iexp, &center, &maxgrp, 
 	 &pererr, &proerr, &opt[InnerSky].Value(), &opt[OutterSky].Value(), &status, 
 	 PsfFileName.c_str(), ApFileName.c_str(), AlsFileName.c_str(), SubPicFileName.c_str(), 
@@ -231,51 +223,6 @@ void Daophot::Dump(const Point& Pt, const float& Size) const
   const float coords[2] = {Pt.x, Pt.y};
 
   DUMP(data, &SIZE.ncol, &SIZE.nrow, coords, &Size);  
-}
-
-void Daophot::PeakFit(SEStar &Star) const
-{
-  float x      = Star.x - DAOPHOT_TOADS_SHIFT;
-  float y      = Star.y - DAOPHOT_TOADS_SHIFT;
-  float deltax = (x-1)/psf->xpsf -1 ;
-  float deltay = (y-1)/psf->ypsf -1 ;
-  float scale  = Star.flux;
-  float sky    = Star.Fond();
-  float perr   = opt[PercError].Value()*0.01;
-  float pkerr  = opt[ProfError].Value()*0.01;
-  float radius = min(opt[PsfRadius].Value(), float(((psf->npsf-1.)/2. - 1.)/2.) );
-  int lx       = max(1, int(x-radius)+1);
-  int ly       = max(1, int(y-radius)+1);
-  int nx       = min(SIZE.ncol, int(x-radius)+1) - lx +1;
-  int ny       = min(SIZE.nrow, int(y-radius)+1) - ly +1;
-  x += -lx+1;
-  y += -ly+1;
- 
-  const int maxbox = 69; // box of the litte vignette around the star
-  float *f = new float[maxbox*maxbox];
-
-  int status, niter;
-  float errmag, chi, sharp;
-
-  RDARAY("DATA", &lx, &ly, &nx, &ny, &maxbox, f, &status);
-
-  PKFIT(f, &nx, &ny, &maxbox, &x, &y, &scale, &sky, &radius, 
-	&lowbad, &opt[AduHighDatum].Value(), &opt[Gain].Value(), &opt[ReadNoise].Value(), &perr, &pkerr, 
-	&psf->bright, &psf->type, psf->param, 
-	&psf->MAXPAR, &psf->npar, psf->table, 
-	&psf->MAXPSF, &psf->MAXEXP, &psf->npsf, &psf->nexp, 
-	&psf->nfrac, &deltax, &deltay, &errmag, &chi, 
-	&sharp, &niter, &global_sky);
-
-  delete [] f;
-
-  Star.x       = x + DAOPHOT_TOADS_SHIFT;
-  Star.y       = y + DAOPHOT_TOADS_SHIFT;
-  Star.flux    = scale;
-  Star.EFlux() = errmag;
-  Star.Chi()   = chi;
-  Star.Sharp() = sharp;
-  Star.Iter()  = niter;
 }
 
 void Daophot::GetSky(float& SkyMean, float& SkyMedian, float& SkyMode, float &SkySigma) const
@@ -294,13 +241,3 @@ void Daophot::GetSky(float& SkyMean, float& SkyMedian, float& SkyMode, float &Sk
   delete [] index;
   delete [] s;
 }
-
-
-bool Daophot::LoadPsf(const string& PsfFileName)
-{
-  if (psf) delete psf;
-  psf = new DaoPsf();
-  return psf->read(PsfFileName);
-}
-
-

@@ -1,5 +1,5 @@
-#ifndef FITSSUBS_H
-#define FITSSUBS_H
+#ifndef FITSSUBS__H
+#define FITSSUBS__H
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,10 +12,10 @@ struct Common_Size
   int ncol;  /* The number of columns (ie. x axis range) in the image file. */
   int nrow;  /* The number of rows (ie. y axis type) in the image file. */
 };
-
 #define SIZE size_
 extern struct Common_Size SIZE;
   
+
 /*! Opens the image file without reading it.*/
 #define ATTACH attach_
 void ATTACH(const char* image, int* open);
