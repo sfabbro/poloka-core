@@ -116,9 +116,9 @@ AC_CONFIG_FILES([Makefile
                  doc/Doxyfile
                  objio/Makefile
                  src/Makefile
+  		 lc/Makefile
                  telinst/Makefile
                  utils/Makefile
-		 myutils/Makefile
 		 cern_utils/Makefile
                  repack-config
                  repack.spec
