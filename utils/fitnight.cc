@@ -51,9 +51,12 @@ int main(int argc, char **argv)
     for(int i=0;i<nflux;++i)
       A(0,i)=1;
   }
+  Mat Abis = A; // we save a copy for output 
   cout << A << endl;
   
   vector<int> suppressedfluxes;
+  Vect flux_per_night;
+  Mat AtWA_invert;
   while(true) {
   
     Mat FluxWeightMat = FluxCovarianceMat;
@@ -61,8 +64,8 @@ int main(int argc, char **argv)
     //cout << "FluxWeightMat" << endl;
     //cout << FluxWeightMat << endl;
     Mat AtWA = A.transposed()*FluxWeightMat*A;
-    Mat AtWA_invert = AtWA; AtWA_invert.SymMatInvert();
-    Vect flux_per_night = (AtWA_invert*(A.transposed()*FluxWeightMat))*FluxVec;
+    AtWA_invert = AtWA; AtWA_invert.SymMatInvert();
+    flux_per_night = (AtWA_invert*(A.transposed()*FluxWeightMat))*FluxVec;
     cout << "Mean flux per night" << endl;
     cout << flux_per_night << endl;
     cout << "Covariance matrix" << endl;
@@ -107,14 +110,102 @@ int main(int argc, char **argv)
     FluxCovarianceMat = FluxCovarianceMat.WithoutRows(outlier,outlier);
     FluxCovarianceMat = FluxCovarianceMat.WithoutColumns(outlier,outlier);
   }
-  return 0;
-
-  //list< CountedRef<LightCurvePoint> > lcpoints;
-  //obj_input<xmlstream> oi("lc.xml");
-  //oi >> lcpoints;
-  //oi.close();
-  //cout << lcpoints.size() << endl;
   
+  // OUTPUT
+  // ============================================================================================
+
+
+  // save these results in ASCII files
+  // ... TODO ...
+  {
+    ofstream st("flux_per_expo_covmat.dat");
+    st << FluxCovarianceMat;
+    st.close();
+    FluxCovarianceMat.writeFits("flux_per_expo_covmat.fits");
+    ofstream st2("flux_per_night_covmat.dat");
+    st2 <<  AtWA_invert;
+    st2.close();
+    AtWA_invert.writeFits("flux_per_night_covmat.fits");
+  }
+  
+
+  // now we read the lightcurve point list to get julian dates and zero point
+  vector< CountedRef<LightCurvePoint> > lcpoints;
+  {
+    vector< CountedRef<LightCurvePoint> > lcpoints_all;
+    obj_input<xmlstream> oi("lc.xml");
+    oi >> lcpoints_all;
+    oi.close();
+    
+    // no keep only points with flux!=0 (i.e. fitted points)
+    vector< CountedRef<LightCurvePoint> >::iterator it = lcpoints_all.begin();
+    for(;it!=lcpoints_all.end();++it) {
+      cout << (*it)->julianday << " " << (*it)->flux;
+      if((*it)->flux!=0) {
+	lcpoints.push_back(*it);
+      }
+      cout << endl;
+    }
+  }
+  
+
+  cout << lcpoints.size() << endl;
+  for(unsigned int expo=0;expo<lcpoints.size();++expo) {
+    	cout 
+	     << expo << " " 
+	     << lcpoints[expo]->flux << " " 
+	     << lcpoints[expo]->julianday-2452854.0 << endl;
+  }
+
+  // get zero point 
+  double zp = lcpoints[0]->zeropoint;
+  cout << "zp=" << zp << endl;
+
+
+  ofstream outputlc("lc_per_night.dat");
+  outputlc << "# jd : \n"
+	   << "# flux : \n"  
+	   << "# eflux : \n"
+	   << "# mag : using elixir zero point = " << zp << "\n"
+	   << "# emag_minus : useful for drawing\n"
+	   << "# emag_plus : useful for drawing\n"
+	   << "# zeropoint : elixir zp\n";
+  outputlc << "# end \n";
+  
+  vector< CountedRef<LightCurvePoint> > newlcpoints;
+  double jd;
+  int nexpo;
+  for(unsigned int night = 0; night < flux_per_night.Size(); ++ night) {
+    CountedRef<LightCurvePoint> newpoint = new LightCurvePoint();
+    newpoint->flux = flux_per_night(night);
+    newpoint->eflux = sqrt(FluxCovarianceMat(night,night));
+    newpoint->computemag(zp);
+    // now get julian day (mean of all exposures)
+    jd=0;
+    nexpo=0;
+    for(unsigned int expo=0;expo<Abis.SizeY();++expo) {
+      if(Abis(night,expo)>0.5) {
+	jd += lcpoints[expo]->julianday;
+	cout << night << " " 
+	     << expo << " " 
+	     << lcpoints[expo]->julianday-2452854.0 << endl;
+	nexpo++;
+      }
+    }
+    newpoint->julianday = jd/nexpo;
+    
+    outputlc << (*newpoint) << endl;
+    newlcpoints.push_back(newpoint);
+  }
+  outputlc.close();
+  
+  // save it also in xml
+  obj_output<xmlstream> oo("lc_per_night.xml");
+  oo << newlcpoints;
+  oo.close();
+
+  
+  // done !!
 
   return 0;
 }
