@@ -188,7 +188,7 @@ void MakeExperimentalPsf(ReducedImage &Rim)
 
   SEStarList psfStars(Rim.CatalogName());
   psfStars.FluxSort();
-  float saturratio = 0.5;
+  float saturratio = 0.90;
   float maxcstar=0.3; // <=> disable
   SelectIsolatedStars(psfStars, Rim.UsablePart(), Rim.Saturation()*saturratio, Rim.Seeing(), maxcstar , 1., 0.5);  
   Daophot daoSession(Rim);
