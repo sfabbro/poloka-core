@@ -7,10 +7,12 @@
 
 static void usage(const char *pgname)
 {
-  cout << pgname << ' ' << " <dbimage name .... > (for matching with usno)" << endl;
-  cout <<   " or " << pgname << ' ' << " -i <fitsImage> -l <cat> [-n](just print)" << endl;
-  cout << " [-o] to overwrite previous match " << endl;
-  cout << " [-c datacards] " << endl;
+  cout << pgname << ' ' << " <dbimage name .... >" << endl
+       <<   " (or  -i <fitsImage> -l <sex cat>)" << endl
+       << " [-n] just print, won't alter WCS" << endl
+       << " [-o] to overwrite previous match" << endl
+       << " [-c <datacards>]" << endl
+       << " [-a <astrometric catalog>] (if applicable, superseeds value in datacards)" << endl;
 }
 
 
@@ -25,6 +27,16 @@ int main(int argc, char **argv)
   char *fitsName = NULL;
   char *listName = NULL;
   bool overwrite = false;
+  for (int i=1;  i<argc; ++i) // first loop on arguments to read datacards name, if any
+    {
+      char *arg = argv[i];
+      if (arg[0] != '-') continue;
+      if (arg[1] == 'c')
+	{
+	  i++;MatchPrefs.ReadCards(string(argv[i]));
+	  break;
+	}
+    }
   for (int i=1;  i<argc; ++i)
     {
       char *arg = argv[i];
@@ -39,8 +51,11 @@ int main(int argc, char **argv)
 	case 'l' : i++; listName = argv[i]; break; 
 	case 'n' : MatchPrefs.writeWCS = false; break;
 	case 'o' : overwrite = true; break;
-	case 'c' : i++;MatchPrefs.ReadCards(string(argv[i]));break;
-	default : usage(argv[0]); exit(0);
+	case 'c' : i++;break; // datacards were already read above
+	case 'a' : i++; MatchPrefs.astromCatalogName = argv[i];break;
+	default : 
+	  std:: cout << " don't understand " << argv[i] << std::endl;
+	  usage(argv[0]); exit(0);
 	}
     }
 
