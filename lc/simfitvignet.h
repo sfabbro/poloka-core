@@ -151,10 +151,11 @@ public:
     Star = RefStar;
     kernel_updated = false;
     psf_updated = false;
+    resid_updated = false;
   } 
   
   //! resize vignet and call Update()
-  void Resize(const int Hx, const int Hy);
+  void Resize( int Hx_new,  int Hy_new);
   
   // ! this makes a tabulated version of the reference image psf (that of VignetRef)
   void BuildPsf();

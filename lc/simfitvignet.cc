@@ -268,15 +268,24 @@ void SimFitVignet::Update()
 
 // make sure that psf, vignet and data have proper sizes.
 // allocate if needed, do only with a Star
-void SimFitVignet::Resize(const int Hx, const int Hy)
+void SimFitVignet::Resize( int Hx_new,  int Hy_new)
 {
-  
+#ifdef FNAME
+  cout << " > SimFitVignet::Resize( int Hx_new,  int Hy_new)" << endl;
+#endif
   if (!Star) return;
-
+  
   // resize data, weight, resid if necessary
-  Vignet::Resize(Hx,Hy);
-  kernel_updated = false;
-  psf_updated = false;
+  if(Hx()==Hx_new && Hy()==Hy_new) {
+#ifdef DEBUG
+    cout << "    actually do not resize" << endl;
+#endif
+  }else{
+    Vignet::Resize(Hx_new,Hy_new);
+    kernel_updated = false;
+    psf_updated    = false;
+    resid_updated  = false;
+  }
   Update();
 }
 
@@ -432,6 +441,7 @@ void SimFitVignet::UpdateResid_gal()
   cout << " in SimFitVignet::UpdateResid Data  = " << Data  << endl;
   cout << " in SimFitVignet::UpdateResid Resid = " << Resid << endl;
   cout << " in SimFitVignet::UpdateResid Psf   = " << Psf   << endl;
+  cout << " in SimFitVignet::UpdateResid Star->flux = " << Star->flux << endl;
 #endif
 
   double sumg;
