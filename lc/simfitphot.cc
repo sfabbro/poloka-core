@@ -86,10 +86,14 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 #endif
   zeFit.reserve(Fiducials.Images.size());
   
-  zeFit.VignetRef = SimFitRefVignet(Fiducials.RefImage); //  no data will be read cause no star is defined
+  zeFit.VignetRef = new SimFitRefVignet(Fiducials.RefImage); //  no data will be read cause no star is defined
+#ifdef DEBUG
+  SimFitRefVignet* toto = zeFit.VignetRef;
+  cout << " in SimFitPhot::SimFitPhot,  zeFit.VignetRef     = " << toto << endl;
+#endif
   for (ReducedImageCIterator it=Fiducials.Images.begin(); it != Fiducials.Images.end(); ++it)
     {
-      SimFitVignet *vig = new SimFitVignet(*it);
+      SimFitVignet *vig = new SimFitVignet(*it,zeFit.VignetRef);
       zeFit.push_back(vig);
     }
   // cannot do this since we do not have any data loaded yet 
@@ -101,30 +105,32 @@ SimFitPhot::SimFitPhot(LightCurveList& Fiducials)
 void SimFitPhot::operator() (LightCurve& Lc)
 {
   zeFit.Load(Lc);
-  if(Lc.Ref->type == 0) { // sn+galaxy
-    // first fit only the flux, then everything
+
+  switch (Lc.Ref->type)
+    {
+    case 0: // sn+galaxy
 #ifdef DEBUG
-    cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
+      cout << " ============= SimFitPhot::operator() First FitFlux =============" << endl;
 #endif
-    zeFit.SetWhatToFit(FitFlux);
-    zeFit.DoTheFit();
+      zeFit.SetWhatToFit(FitFlux);
+      zeFit.UseGalaxyModel(true);
+      zeFit.DoTheFit();
 #ifdef DEBUG
-    cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
-#endif
-    zeFit.SetWhatToFit(FitFlux | FitPos | FitGal);
-    zeFit.DoTheFit();
-  }else{
-    switch (Lc.Ref->type)
-      {
-	//case 0: zeFit.SetWhatToFit(FitFlux | FitPos | FitGal); break; // sn+galaxy
-      case 1: zeFit.SetWhatToFit(FitFlux | FitPos         ); break; // star
-      case 2: zeFit.SetWhatToFit(                   FitGal); break; // galaxy
-      default: cerr << " SimFitPhot::operator() : Error : unknown star type :" 
-		    << Lc.Ref->type << endl; return;
-      }
-    zeFit.DoTheFit();
-  }
+      cout << " ============= SimFitPhot::operator() Now FitFlux | FitPos | FitGal =============" << endl;
+#endif	
+      zeFit.SetWhatToFit(FitFlux | FitPos | FitGal);
+      break;
+    case 1: //star 
+      zeFit.SetWhatToFit(FitFlux | FitPos         );
+      zeFit.UseGalaxyModel(false);
+      break;
+    case 2: //galaxy 
+      zeFit.SetWhatToFit(                   FitGal); 
+      break;
+    default: cerr << " SimFitPhot::operator() : Error : unknown star type :" 
+		  << Lc.Ref->type << endl; return;
+    }
   zeFit.DoTheFit();
-  zeFit.write("sn");
+  zeFit.write("sn"); // we have to change this
 }
 
