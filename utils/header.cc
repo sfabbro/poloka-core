@@ -23,7 +23,7 @@ exit(1);;
 static void fits_header_process(const string &FileName, vector<char *> requested_keys, const string &line_start)
 {
   if (!FileExists(FileName)) { cerr << FileName << " does not exist" << endl; return;}
-  if (!IsFits(FileName))     { cerr << FileName << " is not a fits file" << endl; return;}
+  //  if (!IsFits(FileName))     { cerr << FileName << " is not a fits file" << endl; return;}
   FitsHeader header(FileName);
   if (!header.IsValid()) return;
   int nkeys = requested_keys.size();
