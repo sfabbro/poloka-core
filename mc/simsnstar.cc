@@ -1,4 +1,4 @@
-#include "fakestar.h"
+#include "simsnstar.h"
 #include "image.h"
 #include "gtransfo.h"
 
