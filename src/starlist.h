@@ -165,8 +165,8 @@ public :
   //  private :
   // no implicit copies.
 #ifndef SWIG
-     StarList(const StarList<Star>&);
-     StarList& operator = (const StarList&);
+  //StarList(const StarList<Star>&);
+  // StarList& operator = (const StarList&);
 #endif
 
 };
