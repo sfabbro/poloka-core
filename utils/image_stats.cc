@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <string>
 #include "fitsimage.h"
-#include "../dao_stuff/cdaophot.h"
+//#include "../dao_stuff/cdaophot.h"
 
 int main(int argc,char **args)
 {

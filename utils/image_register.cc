@@ -53,7 +53,7 @@ int main(int nargs, char **args)
   for (ReducedImageCIterator it = toRegister.begin(); it != toRegister.end(); ++it)
     {
       const ReducedImage *current = *it;
-      Gtransfo *direct, *reverse;
+      CountedRef<Gtransfo> direct, reverse;
       if (dump) setenv("DUMP_MATCH","YES",1);
       //naming of the list dump is taken care in imagematch.cc
       ImageListMatch(geoRef, *current, direct, reverse);
@@ -64,9 +64,7 @@ int main(int nargs, char **args)
 	  direct->dump(gout);
 	  gout << "# Transfo " << current->Name() << " to " << geoName << endl;
 	  reverse->dump(gout);
-	}
-      delete direct;
-      delete reverse;      
+	}   
     }
 
   if (dump && !old_dump) unsetenv("DUMP_MATCH");

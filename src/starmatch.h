@@ -12,7 +12,7 @@
 #include "point.h"
 #include "basestar.h"
 #include "gtransfo.h"
-
+#include "countedref.h"
 
 /*! \file
    \brief pairs of points
@@ -132,7 +132,7 @@ class StarMatchList : public list<StarMatch> {
   int nused;
   int order;
   double chi2;
-  Gtransfo *transfo;
+  CountedRef<Gtransfo> transfo;
 
 
 
@@ -140,7 +140,7 @@ class StarMatchList : public list<StarMatch> {
 
 
   /* constructor */
-  StarMatchList() : nused(0), order(0), chi2(0), transfo(0) {};
+  StarMatchList() : nused(0), order(0), chi2(0){};
 
   //!carries out a fit with outlier rejection 
 
@@ -148,7 +148,7 @@ class StarMatchList : public list<StarMatch> {
 
   //! enables to access the fitted transformation. 
   /*! Clone it if you want to store it permanently */
-  Gtransfo *Transfo() const { return transfo;}
+  const Gtransfo *Transfo() const { return &*(transfo);}
 
   //! access to the chi2 of the last fit. 
   double Chi2() const { return chi2;}
@@ -183,9 +183,9 @@ class StarMatchList : public list<StarMatch> {
   double MedianDist2() const;
   
   //! sets a transfo between the 2 lists and deletes the previous or default one.  No fit.
-  void SetTransfo(const Gtransfo *Transfo) { if (transfo) delete transfo; transfo = Transfo->Clone();}
+  void SetTransfo(const Gtransfo *Transfo) { transfo = Transfo->Clone();}
   //!
-  void SetTransfo(const Gtransfo &Transfo) { if (transfo) delete transfo; transfo = Transfo.Clone();}
+  void SetTransfo(const Gtransfo &Transfo) { transfo = Transfo.Clone();}
 
   //! set transfo according to the given order. 
   void SetTransfoOrder(const int Order);
@@ -204,7 +204,7 @@ class StarMatchList : public list<StarMatch> {
   //! print the matching transformation quality (transfo, chi2, residual, nused) 
   void DumpTransfo(ostream &stream = cout) const;
 
-  ~StarMatchList() { if (transfo) delete transfo;}
+  ~StarMatchList() {};
   
  //! write  StarMatchList with a header which  can be read by l2tup 
     void write(const string &filename) const ;

@@ -36,7 +36,7 @@ int ImagesStarMatch(const vector<string> &toMatch, const string &filename)
 
       BaseStarList* bsl2 = SE2Base(seStrList);
 
-      Gtransfo *guess1,*guess2;
+      CountedRef<Gtransfo> guess1,guess2;
       ImageListMatch(refimage,dbimage, guess1, guess2);
       nStrMtchList.SetTransfo(guess1,0,i);
       nStrMtchList.SetTransfo(guess2,i,0);
@@ -89,7 +89,7 @@ int ImagesStarMatch(const vector<string> &toMatch, const string &filename)
       lists[i] = new SEStarList(sexCatName);
       BaseStarList* bsl2 = SE2Base(lists[i]);
   
-      Gtransfo *guess1,*guess2;
+      CountedRef<Gtransfo> guess1,guess2;
       ImageListMatch(refimage,dbimage, guess1, guess2);
       nStrMtchList.SetTransfo(guess1,0,i);
       nStrMtchList.SetTransfo(guess2,i,0);

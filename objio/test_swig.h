@@ -77,6 +77,8 @@ private:
 };
 
 
+
+
 // define_template_args BB<T,U>
 // make_persister_for BB<string,string>
 // make_persister_for BB<string,double>

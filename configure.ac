@@ -106,9 +106,11 @@ FFLAGS="-g"
 
 
 AC_CONFIG_FILES([Makefile
+		 cmt/requirements
+		 cmt/version.cmt
                  bindings/Makefile
                  cern_stuff/Makefile
-                 dao_stuff/Makefile
+                 dao/Makefile
                  datacards/Makefile
                  doc/Makefile
                  doc/Doxyfile
@@ -116,11 +118,10 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  telinst/Makefile
                  utils/Makefile
+		 myutils/Makefile
 		 cern_utils/Makefile
                  repack-config
                  repack.spec
-		 cmt/requirements
-		 cmt/version.cmt
 ])
 
 AC_OUTPUT

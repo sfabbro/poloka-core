@@ -256,18 +256,10 @@ return stream;
 
 /**************************** implementation of DbImage ********************************/
 
-#define DIR_IS_IMAGE ".dbstuff"
 
 
-static string db_image_tag(const string &a_directory)
-{
-return AddSlash(a_directory) + DIR_IS_IMAGE;
-}
 
-bool is_image(const string& a_directory)
-{
-return (FileExists(db_image_tag(a_directory)));
-}
+
 
 
 DbImage::DbImage(const string &ImageName)
@@ -283,6 +275,17 @@ DbImage::DbImage(const char *ImageName)
   init_from_name();
 }
 
+#define DIR_IS_IMAGE ".dbstuff"
+
+
+string DbImage::db_image_tag(const string &a_directory) const {
+  return AddSlash(a_directory) + DIR_IS_IMAGE;
+}
+
+bool DbImage::is_image(const string& a_directory) const {
+  return (FileExists(db_image_tag(a_directory)));
+}
+
 
 void DbImage::init_from_name()
 {
@@ -290,20 +293,17 @@ void DbImage::init_from_name()
     {
       directory = AddSlash(imageName);
       imageName = BaseName(imageName); 
-      if (is_image(directory))
-	{
-	  path = new Path(directory, imageName, 0); /* build a path, but it will not be used in fact */
-	}
-      else path = 0;
     }
   else /* use the db config to locate the image */
     {
-      path = DbConfig()->GetImagePath(imageName);
+       const Path* path = DbConfig()->GetImagePath(imageName);
       if (path) directory = AddSlash(AddSlash(path->path) + imageName);
-      if (!is_image(directory)) path = 0; /* kills the image as a valid image */
     }
   saveEverythingElse = false; // this image already exists
   //  if (!FileExists(EverythingElseFileName())) saveEverythingElse = true;
+  //if(!IsValid()) {
+  //std::cerr << "ERROR in  DbImage::init_from_name cannot find " << imageName << endl;
+  //}
 }
 
 
@@ -321,8 +321,9 @@ bool DbImage::create(const string &ActualPath) // the actual creator
   //cerr << tag << endl;
   fclose(fopen(tag.c_str(), "w"));
   // get the pointer to the path (which is used at least to tell if the DbImage is OK)
-  path = DbConfig()->GetImagePath(Name());
-  if (!path) path = new Path(ActualPath,"adhoc",0);
+  
+  //path = DbConfig()->GetImagePath(Name());
+  //if (!path) path = new Path(ActualPath,"adhoc",0);
   
   // check that when retrieved, the image is the one just created
   DbImage db2(Name());
@@ -366,18 +367,14 @@ if (FileExists(Where)) return create(Where);
 DbImage::DbImage(const string &ImageName, const Path* APath)
 {
 imageName = ImageName;
-path = APath;
-if (path) directory = AddSlash(AddSlash(path->path) + imageName);
-if (!is_image(directory) ) path = 0; /* it kills it */
-// cout << " debug directory : " << directory << endl;
+if (APath) directory = AddSlash(AddSlash(APath->path) + imageName);
 }
 
 
 bool DbImage::operator == (const DbImage &Right) const
 {
   return ((imageName == Right.imageName) && 
-	  (directory == Right.directory) &&
-	  (path == Right.path));
+	  (directory == Right.directory));
 }
 
 static string GzTestedName(string Name)
@@ -427,9 +424,13 @@ return "";
 
 void DbImage::dump(ostream &stream)  const
 {
-if (DumpLevel >=2)
-  stream << path->symbolicName << " : " << imageName << endl;
-else if (DumpLevel == 1)
+  if (DumpLevel >=2) {
+    stream << directory << " : " << imageName;
+    if(IsValid())
+      stream << " is valid" << endl;
+    else
+      stream << " is not valid" << endl;
+  } else if (DumpLevel == 1)
   stream << imageName << endl;
 }
 
@@ -647,17 +648,17 @@ for (DbImageCIterator ii = begin(); ii != end(); ++ii)
   }
 }
 
-void DbImageList::FilterByDate(const int a_date)
-{
-for (DbImageIterator dbi = begin(); dbi != end(); )
-  {
-  if ((*dbi).path->date != a_date)
-    {
-    dbi = erase(dbi);
-    }
-  else ++dbi;
-  }
-}
+// void DbImageList::FilterByDate(const int a_date)
+// {
+// for (DbImageIterator dbi = begin(); dbi != end(); )
+//   {
+//     if ((*dbi).path->date != a_date)
+//     {
+//     dbi = erase(dbi);
+//     }
+//   else ++dbi;
+//   }
+// }
 
 #ifdef STORAGE
 void DbImageList::SelectedDump(const int WhichInfos) const 

@@ -17,6 +17,8 @@ AM_YFLAGS = -l -d
 lib_LTLIBRARIES = libtoads.la
 libtoads_la_SOURCES = \
  \
+  dbimage_dict.cc \
+  reducedimage_dict.cc \
   frame_dict.cc \
   point_dict.cc \
   starlist_dict.cc \

@@ -16959,7 +16959,7 @@ FFLAGS="-g"
 
 
 
-                                                                                                                                                                ac_config_files="$ac_config_files Makefile bindings/Makefile cern_stuff/Makefile dao_stuff/Makefile datacards/Makefile doc/Makefile doc/Doxyfile objio/Makefile src/Makefile telinst/Makefile utils/Makefile cern_utils/Makefile repack-config repack.spec cmt/requirements cmt/version.cmt"
+                                                                                                                                                                          ac_config_files="$ac_config_files Makefile cmt/requirements cmt/version.cmt bindings/Makefile cern_stuff/Makefile dao/Makefile datacards/Makefile doc/Makefile doc/Doxyfile objio/Makefile src/Makefile telinst/Makefile utils/Makefile myutils/Makefile cern_utils/Makefile repack-config repack.spec"
 
 
 cat >confcache <<\_ACEOF
@@ -17519,9 +17519,11 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "cmt/requirements" ) CONFIG_FILES="$CONFIG_FILES cmt/requirements" ;;
+  "cmt/version.cmt" ) CONFIG_FILES="$CONFIG_FILES cmt/version.cmt" ;;
   "bindings/Makefile" ) CONFIG_FILES="$CONFIG_FILES bindings/Makefile" ;;
   "cern_stuff/Makefile" ) CONFIG_FILES="$CONFIG_FILES cern_stuff/Makefile" ;;
-  "dao_stuff/Makefile" ) CONFIG_FILES="$CONFIG_FILES dao_stuff/Makefile" ;;
+  "dao/Makefile" ) CONFIG_FILES="$CONFIG_FILES dao/Makefile" ;;
   "datacards/Makefile" ) CONFIG_FILES="$CONFIG_FILES datacards/Makefile" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
   "doc/Doxyfile" ) CONFIG_FILES="$CONFIG_FILES doc/Doxyfile" ;;
@@ -17529,11 +17531,10 @@ do
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "telinst/Makefile" ) CONFIG_FILES="$CONFIG_FILES telinst/Makefile" ;;
   "utils/Makefile" ) CONFIG_FILES="$CONFIG_FILES utils/Makefile" ;;
+  "myutils/Makefile" ) CONFIG_FILES="$CONFIG_FILES myutils/Makefile" ;;
   "cern_utils/Makefile" ) CONFIG_FILES="$CONFIG_FILES cern_utils/Makefile" ;;
   "repack-config" ) CONFIG_FILES="$CONFIG_FILES repack-config" ;;
   "repack.spec" ) CONFIG_FILES="$CONFIG_FILES repack.spec" ;;
-  "cmt/requirements" ) CONFIG_FILES="$CONFIG_FILES cmt/requirements" ;;
-  "cmt/version.cmt" ) CONFIG_FILES="$CONFIG_FILES cmt/version.cmt" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5

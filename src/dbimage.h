@@ -2,6 +2,9 @@
 #ifndef DBIMAGE__H
 #define DBIMAGE__H
 
+#ifndef BISON_PARSER
+#include "persistence.h"
+#endif
 
 /*! \file dbimage.h
 \brief documentation for the DbImage class and the \ref dbconfig file, and more
@@ -78,26 +81,24 @@ class Path;
   during the reduction (lists of stars). */
 
 
-#include "rootstuff.h"
 
 class DbImage 
-#ifdef USE_ROOT
-: public TObject
-#endif /* USE_ROOT */
 {
 
-public:
-
-
+#ifndef BISON_PARSER 
+  CLASS_VERSION(DbImage,1);
+#endif
+#define Dbimage__is__persistent
 
 private :
   string imageName;
   string directory;//!
-  const Path *path;//!
   bool create(const string &ActualPath);
 
 protected :
   bool saveEverythingElse; //! // wether we have to write the EverythingElse file in destructor
+  string db_image_tag(const string &a_directory) const;
+  bool is_image(const string& a_directory) const;
 
 public :
 
@@ -108,9 +109,9 @@ public :
   //! a constructor: its argument is a unique image identifier (eg r124280). 
   explicit DbImage(const char *ImageName);
   
-  DbImage():imageName(""),directory(""),path(NULL), saveEverythingElse(false){};
+  DbImage():imageName(""),directory(""), saveEverythingElse(false){};
   //! for images obtained from the above constructor, checks that the image could be located.
-  bool IsValid() const { return (path != NULL /*directory != "" */);};
+  bool IsValid() const { return is_image(directory);}
 
   //! returns the image name.
   string Name() const {return imageName;}
@@ -204,9 +205,6 @@ public :
 
   friend class DbImageList;
 
-#ifdef USE_ROOT
-  ClassDef(DbImage,1);
-#endif /* USE_ROOT */
 
   // routines which have to do with IOs
   void init_from_name();
@@ -233,7 +231,7 @@ class DbImageList : public list<DbImage> {
   DbImageList() {};
 
   //! discards from a DbImageList all images not matching a date 
-    void FilterByDate(const int a_date);
+  //void FilterByDate(const int a_date);
 
 
     //! DOCF collects  and appends DbImages inside PathName. 

@@ -60,8 +60,8 @@ class ImageTransfo
 class ImageGtransfo : public ImageTransfo {
  private:
   string geomRefName; 
-  Gtransfo *transfoFromRef;
-  Gtransfo *transfoToRef;
+  CountedRef<Gtransfo> transfoFromRef;
+  CountedRef<Gtransfo> transfoToRef;
   double scaleFactor; // 1d scale factor (== sqrt(jacobian))
   Frame outputImageSize; // the frame on which we want the input image to be resampled.
   
@@ -73,9 +73,9 @@ public:
   //!
   ImageGtransfo();
   //!
-  Gtransfo *TransfoFromRef() const {return transfoFromRef;}
+  const Gtransfo *TransfoFromRef() const {return &(*transfoFromRef);}
   //!
-  Gtransfo *TransfoToRef() const {return transfoToRef;}
+  const Gtransfo *TransfoToRef() const {return &(*transfoToRef);}
   //!
   const Gtransfo* FromRef() const;
 

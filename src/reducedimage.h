@@ -44,6 +44,10 @@ using namespace std;
 
 class ReducedImage : public DbImage, public RefCount
 {
+
+CLASS_VERSION(ReducedImage,1);
+#define ReducedImage__is__persistent
+
 private :
   // take care if you add any pointer here : 
   // the default copy constructor then has to be written

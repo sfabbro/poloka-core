@@ -22,14 +22,14 @@ is to be run, a flip is allowed for. */
 
 bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 		const FitsHeader &Head1, const FitsHeader &Head2,
-		Gtransfo* &One2Two, Gtransfo* &Two2One);
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
 
 //! From an initial first order guess, fit and refine it
 int RefineGuess(const BaseStarList &List1, const BaseStarList &List2, 
-		Gtransfo* &One2Two, Gtransfo* &Two2One);
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
 
 //! calls MatchGuess, refines the guess with RefineGuess
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 
-                    Gtransfo* &One2Two, Gtransfo* &Two2One);
+                    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
 
 #endif /* IMAGEMATCH__H */

@@ -44,8 +44,8 @@ ImageTransfo* ImageGtransfo::Clone() const
 
 ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign)
 {
-  transfoFromRef = NULL;
-  transfoToRef = NULL;
+  //transfoFromRef = NULL;
+  //transfoToRef = NULL;
   geomRefName = Ref.Name();
   if (!ImageListMatch(Ref, ToAlign, transfoFromRef, transfoToRef))
     {
@@ -69,8 +69,8 @@ ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlig
 
 ImageGtransfo::ImageGtransfo()
 {
-  transfoFromRef = NULL;
-  transfoToRef = NULL;
+  //transfoFromRef = NULL;
+  //transfoToRef = NULL;
   scaleFactor = 1; //? 
 }
 
@@ -328,8 +328,7 @@ void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Tran
 
 ImageGtransfo::~ImageGtransfo()
 {
-if (transfoFromRef) delete transfoFromRef;
-if (transfoToRef) delete transfoToRef;
+ 
 }
 
 

@@ -366,7 +366,7 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
       if (currentName == ImageNameToExtract) {++i;continue;}
       ReducedImage current(currentName);
       FitsHeader currentHead(current.FitsName());
-      Gtransfo *current2Large = NULL;
+      CountedRef<Gtransfo> current2Large;
       if (HasLinWCS(currentHead))
 	{
 	  Gtransfo *currentPix2RaDec;
@@ -376,18 +376,15 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
 	}
       else // go the hard way
 	{
-	  Gtransfo *large2Current = NULL;
+	  CountedRef<Gtransfo> large2Current;
 	  if (ImageListMatch(current, large, current2Large, large2Current))
 	    {
 	      cerr << " could not match " << current.Name() << " and " << large.Name() << endl;
 	      cerr << " we forget " <<  current.Name() << endl;
 	      i = AllInputImages.erase(i);
-	      RemoveImage(current.Name());
-	      if (current2Large) delete current2Large;
-	      if (large2Current) delete large2Current;
+	      RemoveImage(current.Name());	      
 	      continue;
 	    }
-	  if (large2Current) delete large2Current;
 	}
       cout << " transfo between " << large.Name() << ' ' << " and " 
 	   << current.Name() << endl 
@@ -404,7 +401,6 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
       cout << " after adding " << current.Name() 
 	   << ", extract frame = " << toExtract;
       ++i;
-      delete current2Large;
     }
   delete largeRaDec2Pix;
   SubImage *subImage = new SubImage(SubName, ImageNameToExtract, toExtract);

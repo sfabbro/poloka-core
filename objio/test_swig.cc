@@ -91,6 +91,12 @@ int main()
   bb.mtu_["tutu"]="toto";
   
   obj_output<xmlstream> oo("ttt.xml");
+
+  vector<int> zou;
+  zou.push_back(12);
+  zou.push_back(13);
+  
+  oo << zou;
   oo << a;
   oo << p;
   oo << s;
@@ -132,7 +138,10 @@ int main()
   
   std::cout << "about to read object..." << std::endl;
   obj_input<xmlstream> oi("ttt.xml");
+  vector<int> zou2;
+  oi >> zou2;
   
+
   oi >> a2;
   oi >> p2;
   p2.print();

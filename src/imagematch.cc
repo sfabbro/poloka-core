@@ -62,15 +62,16 @@ static bool ListAndFitsCheck(const DbImage &Im, SEStarList &Sl, string &FitsName
 }
 
  
-void ShiftGuess(const BaseStarList &List1, const BaseStarList &List2, GtransfoLin* &Guess)
+void ShiftGuess(const BaseStarList &List1, const BaseStarList &List2, CountedRef<Gtransfo> &Guess)
 {
   cout << " ShiftGuess : doing a quick shift guess " << endl;
   GtransfoLin *shift = ListMatchupShift(List1, List2, *Guess, 400.);  // 400 = maxshift.
-  *Guess = (*shift) * (*Guess);
+  GtransfoLin newtransfo = (*shift) * (dynamic_cast<GtransfoLin&>(*Guess));
+  Guess = dynamic_cast<GtransfoLin*>(newtransfo.Clone());
   delete shift;
 }
 
-void BrutalGuess(const BaseStarList &List1, const BaseStarList &List2, GtransfoLin* &Guess, 
+void BrutalGuess(const BaseStarList &List1, const BaseStarList &List2,  CountedRef<Gtransfo> &Guess, 
 			const FitsHeader &Head1, const FitsHeader &Head2)
 {
   cout << " BrutalGuess : starting a combinatorial match " << endl;
@@ -98,25 +99,22 @@ void BrutalGuess(const BaseStarList &List1, const BaseStarList &List2, GtransfoL
 }
 
 static bool testNewTransfo(const StarMatchList* matchList, const GtransfoLin* guess, 
-			   const double pixSizeRatio2, size_t &nmatch, 
-			   const size_t nmin, Gtransfo* &One2Two)
+			   const double pixSizeRatio2, size_t &nmatch, const size_t nmin)
 {
 
   size_t nmatch_new = matchList->size();  
-
+  
   if ((fabs(fabs(guess->Determinant())-pixSizeRatio2)/pixSizeRatio2 < 0.2)  
       && (nmatch_new > nmin)) return true;
-  
+  if (nmatch_new > nmatch) {
+    nmatch = nmatch_new;
+  }
   cout << " MatchGuess : guess was bad: \n";
   matchList->DumpTransfo();
-  if (nmatch_new > nmatch)
-    {
-      nmatch = nmatch_new;
-      if (One2Two) delete One2Two;
-      One2Two = guess->Clone();
-    }
+  
   return false;
 }
+
 
 static void CutList(const SEStarList &SList, BaseStarList &BList)
 {
@@ -129,7 +127,7 @@ static void CutList(const SEStarList &SList, BaseStarList &BList)
 
 bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 		const FitsHeader &Head1, const FitsHeader &Head2,
-		Gtransfo* &One2Two, Gtransfo* &Two2One)
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One)
 {
 
   cout << " MatchGuess : starting guess with "  
@@ -139,39 +137,38 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
   const double init_toldist = 4;
 
 
-  GtransfoLin *guess = new GtransfoLin();// the identity by default
+  One2Two = new GtransfoLin();// the identity by default
 
   double pixscale1 = Head1.KeyVal("TOADPIXS");
   double pixscale2 = Head2.KeyVal("TOADPIXS");
   double pixSizeRatio2 = pixscale1*pixscale1/pixscale2/pixscale2;
 
-  StarMatchList *matchList = ListMatchCollect(List1, List2, guess, init_toldist);
+  StarMatchList *matchList = ListMatchCollect(List1, List2, One2Two, init_toldist);
   size_t nmatch = matchList->size();
   size_t nmin = min(min(List1.size(), List2.size())/10, size_t(20));
 
   // 1 - Try WCS
   cout << " MatchGuess : doing a quick guess with WCS" << endl;
-  if (!WCSTransfoBetweenHeader(Head1, Head2, *guess)) 
+  if (!WCSTransfoBetweenHeader(Head1, Head2, dynamic_cast<GtransfoLin&>(*One2Two))) 
     cout << " MatchGuess : one of images does not have WCS \n";
   delete matchList;
-  matchList = ListMatchCollect(List1, List2, guess, init_toldist);
-  if (!testNewTransfo(matchList, guess, pixSizeRatio2, nmatch, nmin, One2Two))
+  matchList = ListMatchCollect(List1, List2, One2Two , init_toldist);
+  if (!testNewTransfo(matchList,One2Two , pixSizeRatio2, nmatch, nmin))
     {
       // 2 - WCS failed: try a quick shift with this WCS 
-      ShiftGuess(List1, List2, guess);
+      ShiftGuess(List1, List2, One2Two);
       delete matchList;
-      matchList = ListMatchCollect(List1, List2, guess, init_toldist);
-      if (!testNewTransfo(matchList, guess, pixSizeRatio2, nmatch, nmin, One2Two))
+      matchList = ListMatchCollect(List1, List2, One2Two, init_toldist);
+      if (!testNewTransfo(matchList, One2Two, pixSizeRatio2, nmatch, nmin))
 	{
 	  // 3 - Both above failed: try brutal combinatorial approach
-	  BrutalGuess(List1, List2, guess, Head1, Head2);
+	  BrutalGuess(List1, List2, One2Two, Head1, Head2);
 	  delete matchList;
-	  matchList = ListMatchCollect(List1, List2, guess, init_toldist);
-	  if (!testNewTransfo(matchList, guess, pixSizeRatio2, nmatch, nmin, One2Two))
+	  matchList = ListMatchCollect(List1, List2,One2Two , init_toldist);
+	  if (!testNewTransfo(matchList, One2Two, pixSizeRatio2, nmatch, nmin))
 	    {
 	      cout << " MatchGuess : bad initial brutal match \n";
 	      delete matchList;
-	      delete guess;
 	      return false;
 	    }
 	  else cout << " MatchGuess : found a guess with BrutalGuess \n";
@@ -179,16 +176,18 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
       else cout << " MatchGuess : found a guess with ShiftGuess \n";
     }
   else cout << " MatchGuess : found a guess with WCS \n";
-
+  
   cout << " MatchGuess : guessed transfo : \n";
   matchList->DumpTransfo();
 
-  if (One2Two) delete One2Two;
-  if (Two2One) delete Two2One;
-  One2Two = guess->Clone();
-  Two2One = guess->invert().Clone();
+  // no need to delete with countedref
+  // this is included in countedref operator =
+  //if (One2Two) delete One2Two;
+  //if (Two2One) delete Two2One;
+ 
+  Two2One = (dynamic_cast<GtransfoLin&>(*One2Two)).invert().Clone(); // clone need to get a new gtransfo
   delete matchList; 
-  delete guess;
+  //delete guess; // we don't use clone so no delete here
 
   return true;
 }
@@ -215,7 +214,7 @@ static double transfo_diff(const BaseStarList &List, const Gtransfo *T1, const G
 // iterative collect / fit until transfo stabilizes.
 // increase order if transfo looks ok
 int RefineGuess(const BaseStarList &List1, const BaseStarList &List2, 
-		Gtransfo* &One2Two, Gtransfo* &Two2One) 
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One)
 {
   cout << " RefineGuess : starting guess with "  
     << List1.size() << " " << List2.size() << " bright objects\n";
@@ -267,8 +266,6 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
       if (((prevChi2Red-curChi2Red) > 0.01*curChi2Red) && curChi2Red > 0 )
 	{
 	  cout << " RefineGuess : Order " << order << " was a better guess \n";
-	  if (One2Two) delete One2Two;
-	  if (Two2One) delete Two2One;
 	  One2Two = refinedMatch->Transfo()->Clone();
 	  Two2One = refinedMatch->InverseTransfo();
 	  bestorder = order;
@@ -303,7 +300,7 @@ static void FrameList(const SEStarList &SList, const FitsHeader &Head,
 
 
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 
-		    Gtransfo* &One2Two, Gtransfo*  &Two2One)
+		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One)
 {
   cout << "\n ImageListMatch : Matching " << DbImage1.Name() 
        << " and " << DbImage2.Name() << endl;

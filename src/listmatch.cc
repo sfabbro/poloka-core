@@ -567,7 +567,7 @@ GtransfoLin *ListMatchupShift(const BaseStarList &L1, const BaseStarList &L2, co
       Solutions.push_back(matches);
     }
   Solutions.sort(DecreasingQuality);
-  GtransfoLin *best = new GtransfoLin(* dynamic_cast<GtransfoLin*> (Solutions.front()->Transfo()));
+  GtransfoLin *best = new GtransfoLin(* const_cast<GtransfoLin*>(dynamic_cast<const GtransfoLin*> (Solutions.front()->Transfo())));
   //  cout << " best \"shift\" found " << endl << *best; 
   return best;
 }
