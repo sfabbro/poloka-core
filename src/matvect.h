@@ -42,11 +42,11 @@ class Mat {
   // operators
   Mat operator +(const Mat& Right) const;
   Mat operator -(const Mat& Right) const;
-  //Mat operator *(const Mat& Right) const;
+  Mat operator *(const Mat& Right) const;
   
-  void operator +=(const Mat& Right) const;
-  void operator -=(const Mat& Right) const;
-  //void operator *=(const Mat& Right) const;
+  void operator +=(const Mat& Right);
+  void operator -=(const Mat& Right);
+  void operator *=(const Mat& Right);
   
   Mat operator *(const double Right) const;
   friend Mat operator *(const double Left, const Mat &Right);

@@ -91,21 +91,23 @@ static bool same_size(const Mat& m1, const Mat& m2)
 
 
 
-Mat Mat::operator +(const Mat& Right) const {
+Mat Mat::operator +(const Mat& Right) const
+{
   same_size(*this,Right);
   Mat res = (*this);
   res += Right;
   return res;
 }
 
-Mat Mat::operator -(const Mat& Right) const {
+Mat Mat::operator -(const Mat& Right) const
+{
   same_size(*this,Right);
   Mat res = (*this);
   res -= Right;
   return res;
 }
 
-void Mat::operator +=(const Mat& Right) const
+void Mat::operator +=(const Mat& Right)
 {
   same_size(*this,Right);
   double *a = data;
@@ -115,7 +117,7 @@ void Mat::operator +=(const Mat& Right) const
     *a += *b;
 }
 
-void Mat::operator -=(const Mat& Right) const
+void Mat::operator -=(const Mat& Right)
 {
   same_size(*this,Right);
   double *a = data;
@@ -145,6 +147,30 @@ void Mat::operator *=(const double Right)
   double *a = data;
   for(int i=0;i<size;++i, ++a)
     *a *= Right;
+}
+
+Mat Mat::operator *(const Mat& Right) const
+{
+  if(nx != Right.SizeY()) {
+    cout << "Mat::operator *= ERROR nx != Right.SizeY()" << endl;
+    abort();
+  }
+  Mat res(Right.SizeX(),ny);
+  
+  for(unsigned int i=0;i<res.SizeX();++i) {
+    for(unsigned int j=0;j<res.SizeY();++j) {
+      for(unsigned int k=0;k<nx;++k) {
+	res(i,j) += (*this)(k,j)*Right(i,k);
+      }
+    }
+  }
+  return res;
+}
+
+void Mat::operator *=(const Mat& Right)
+{
+  Mat res = (*this)*Right;
+  (*this) = res;
 }
 
 //=================================================================
