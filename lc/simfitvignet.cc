@@ -9,206 +9,221 @@
 
 //#define DEBUG
 
-static double sqr(const double& x) { return x*x; }
-
 TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
   : Kernel(Radius), Dx(Radius), Dy(Radius)
 { 
-
-  const int ic = int(Pt.x);
-  const int jc = int(Pt.y);
-  const double dxc = ic - Pt.x;
-  const double dyc = jc - Pt.y;
-  const double maxrad2 = sqr(Dao.Radius());
-  double dy2;
-  DPixel *ppsf=begin(), *ppdx=Dx.begin(), *ppdy=Dy.begin();
-
-  for (int j=-hSizeY; j<=hSizeY; ++j) 
-    {
-      dy2  = sqr(j-dyc);
-      for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf, ++ppdx, ++ppdy) 
-	{
-	  if (sqr(i-dxc)+dy2 < maxrad2)
-	    {
-	      *ppsf = Dao.Value(ic+i,jc+j, Pt.x, Pt.y, *ppdx, *ppdy);
-	    }
-	  else { *ppsf = *ppdx = *ppdy = 0.; }
-	}
-    }
+  Tabulate(Pt, Dao, Radius);
 }
 
 TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
-  : Kernel(), Dx(hSizeX, hSizeY), Dy(hSizeX, hSizeY)
+  : Kernel(Rect.Hx(), Rect.Hy()), Dx(hSizeX, hSizeY), Dy(hSizeX, hSizeY)
 { 
+  Tabulate(Pt, Dao, Rect);
+}
 
-  const double maxrad2 = sqr(Dao.Radius());
-  double dy2;
-  DPixel *ppsf=begin(), *ppdx=Dx.begin(), *ppdy=Dy.begin();
-  for (int j=Rect.ystart; j<Rect.yend; ++j)
+void TabulatedPsf::Resize(const int Hx, const int Hy)
+{
+  if (HSizeX() != Dx.HSizeX() ||
+      HSizeY() != Dx.HSizeY() ||
+      HSizeX() != Dy.HSizeX() ||
+      HSizeY() != Dy.HSizeY() ||
+      HSizeX() != Hx ||
+      HSizeX() != Hy)
     {
-      dy2  = sqr(j-Pt.y);
-      for (int i=Rect.xstart; i<Rect.xend; ++i, ++ppsf, ++ppdx, ++ppdy) 
-	{
-	  if (sqr(i-Pt.x)+dy2 < maxrad2)
-	    {
-	      *ppsf = Dao.Value(i,j, Pt.x, Pt.y, *ppdx, *ppdy);
-	    }
-	  else { *ppsf = *ppdx = *ppdy = 0.; }
-	}
+      Allocate(2*Hx+1, 2*Hy+1);
+      Dx.Allocate(Nx(), Ny());
+      Dy.Allocate(Nx(), Ny());     
     }
 }
 
-void TabulatedPsf::Scale(const double& s)
+void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)
 {
+  Resize(Radius, Radius);
+
+  const int ic = int(Pt.x);
+  const int jc = int(Pt.y);
+
   DPixel *ppsf = begin();
   DPixel *ppdx = Dx.begin();
   DPixel *ppdy = Dy.begin();
-  for (int i=Nx()*Ny(); i; --i, ++ppsf, ++ppdx, ++ppdy)
+
+  for (int j=-hSizeY; j<=hSizeY; ++j) 
+    for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf, ++ppdx, ++ppdy) 
+      {
+	*ppsf = Dao.Value(ic+i,jc+j, Pt, *ppdx, *ppdy);
+      }
+}
+
+void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
+{
+  Resize(Rect.Hx(), Rect.Hy());
+
+  DPixel *ppsf = begin();
+  DPixel *ppdx = Dx.begin();
+  DPixel *ppdy = Dy.begin();
+
+  for (int j=Rect.ystart; j<Rect.yend; ++j)
+    for (int i=Rect.xstart; i<Rect.xend; ++i, ++ppsf, ++ppdx, ++ppdy) 
+      {
+	*ppsf = Dao.Value(i,j, Pt, *ppdx, *ppdy);
+      }
+}
+
+void TabulatedPsf::Scale(const double& s)
+{  
+
+  DPixel *ppsf = begin();
+  DPixel *ppdx = Dx.begin();
+  DPixel *ppdy = Dy.begin();
+
+  for (int i=Nx()*Ny(); i; --i)
     {
-      *ppsf *= s;
-      *ppdx *= s;
-      *ppdy *= s;
+      *ppsf++ *= s;
+      *ppdx++ *= s;
+      *ppdy++ *= s;
     }
 }
 
 
 //=========================================================================================
+
+SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius)
+  : Vignet(Rim, Radius), psf(new DaoPsf(*Rim))
+{
+}
 
 SimFitRefVignet::SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius)
   : Vignet(Star, Rim, Radius), psf(new DaoPsf(*Rim)), Psf(*Star, *psf, Radius)
 {
 }
 
+// make sure that psf, vignet and data have proper sizes.
+// allocate if needed
+void SimFitRefVignet::Resize(const int Hx, const int Hy)
+{
+  if  (Hx < 0 || Hy < 0) 
+    {
+      cerr << " SimFitRefVignet::Resize(" << Hx << "," << Hy << ") : impossible \n";
+      return;
+    } 
+
+  // resize Data, Weight, Resid if necessary
+  Vignet::Resize(Hx,Hy);
+  Vignet::Allocate(Nx(), Ny());
+
+  // resize Psf, Psf.Dx, Psf.Dy if necessary
+  Psf.Resize(Hx,Hy);
+
+  // resize Galaxy 
+  makeInitialGalaxy();
+}
+
+void SimFitRefVignet::Load(const PhotStar *Star)
+{
+  if (!Star) return;
+  Vignet::Load(Star);
+  makeInitialGalaxy(); 
+  if (!psf) psf = new DaoPsf(*rim);
+  Psf.Tabulate(*Star, *psf, hx);
+  UpdatePsfResid();
+}
+
 void SimFitRefVignet::makeInitialGalaxy()
 {  
-
   // allocate galaxy as biggest vignet possible, so resizing it is easy.
   Galaxy.Allocate(Data.Nx(), Data.Ny(), 1);
 
   // initial galaxy: best resolution image - sky - [flux*psf]  
-  int hpx = Psf.HSizeX();
-  int hpy = Psf.HSizeY();
+  DPixel *pdat = Data.begin(), *pgal = Galaxy.begin(), *ppsf = Psf.begin();
 
-  for (int j=-hy; j<=hy; ++j) 
-    for (int i=-hx; i<=hx; ++i)
-      {
-	double pixStar=0.;
-	if (i<=hpx && i>=-hpx && j<=hpy && j>=-hpy && Star->flux != 0.)
-	  pixStar = Star->flux * Psf(i,j);
-	Galaxy(i,j) = Data(i,j) - Star->sky - pixStar;
-      }
+  for (int i=Nx()*Ny(); i ; --i)
+    {
+      *pgal++ = *pdat++ - Star->sky - Star->flux * *ppsf++;;
+    }
 }
+
 
 void SimFitRefVignet::UpdatePsfResid()
 {
   // re-allocate Resid if too small
-  if (hx > Resid.HSizeX() || hy > Resid.HSizeY())
-    {
-      cout << " SimFitRefVignet::UpdatePsfResid() : resizing residuals" << endl;
-      Resid = Kernel(hx,hy);
-    }
 
   cout << " SimFitRefVignet::UpdatePsfResid() : updating residuals with galaxy" << endl;
 
-  const double maxrad2 = sqr(psf->Radius());
-  const int ic = int(Star->x);
-  const int jc = int(Star->y);
-  const double dxc = Star->x - ic;
-  const double dyc = Star->y - jc;
+  DPixel *pdat = Data.begin(), *pres = Resid.begin(), *pgal = Galaxy.begin();
+  DPixel *ppsf = Psf.begin(), *ppdx = Psf.Dx.begin(), *ppdy = Psf.Dy.begin();
 
-  DPixel *pdat, *pres, *pgal;
-  DPixel *ppsf, *ppdx, *ppdy;
-
-  double dy2;
-
-  for (int j=-hy; j<=hy; ++j) 
-    {
-      pdat = &Data   (-hx,j);
-      pres = &Resid  (-hx,j);
-      ppsf = &Psf    (-hx,j);
-      ppdx = &Psf.Dx (-hx,j);
-      ppdy = &Psf.Dy (-hx,j);
-      pgal = &Galaxy (-hx,j);
-
-      dy2  = sqr(j-dyc);
-
-      for (int i=-hx; i<=hx; ++i, ++ppdx, ++ppdy) 
-	{
-	  if (sqr(i-dxc)+dy2 < maxrad2)
-	    {
-	      *ppsf = psf->Value(i+ic,j+jc, Star->x, Star->y, *ppdx, *ppdy);
-	    }
-	  else { *ppsf = *ppdx = *ppdy = 0.; }
-	  *pres = *pdat++ - Star->flux * *ppsf++ - *pgal++ - Star->sky; 
-	}
-    }
+  for (int j=ystart; j<yend; ++j)
+    for (int i=xstart; i<xend; ++i)
+      {
+	*ppsf = psf->Value(i, j, *Star, *ppdx, *ppdy);
+	*pres++ = *pdat++ - Star->flux * *ppsf - *pgal++ - Star->sky; 
+	++ppsf; ++ppdx; ++ppdy;
+      }
+    
 }
 
 //=========================================================================================
-SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const ReducedImage *Ref, 
-			   const int Radius)
-  : Vignet(Star, Rim, Radius), FitFlux(false)
+SimFitVignet::SimFitVignet(const ReducedImage *Rim)
+  : Vignet(Rim), FitFlux(false)
 {
-
-  BuildKernelPsf(Ref);
 }
 
+SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const SimFitRefVignet& Ref)
+  : Vignet(Star, Rim, 0), FitFlux(false)
+{  
+  BuildKernel(Ref.Image());
+  UpdatePsfResid(Ref);
+}
 
-void SimFitVignet::BuildKernelPsf(const ReducedImage *Ref)
+// make sure that psf, vignet and data have proper sizes.
+// allocate if needed, do only with a Star
+void SimFitVignet::Resize(const int Hx, const int Hy)
 {
 
   if (!Star) return;
 
-  PsfMatch psfmatch(*Ref,*rim);
+  // resize data, weight, resid if necessary
+  Vignet::Resize(Hx,Hy);
+
+  // resize psf if necessary
+  Psf.Resize(Hx,Hy);
+
+}
+
+void SimFitVignet::BuildKernel(const ReducedImage* Ref)
+{
+
+  if (!Star) return;
+
+  // build kernel
+  PsfMatch psfmatch(*Ref, *rim);
   {
-    std::string kernelpath = rim->Dir()+"/kernel_from_"+Ref->Name()+".xml";
-    if(FileExists(kernelpath.c_str())) {
-      KernelFit *kernel = new KernelFit();
-      obj_input<xmlstream> oi(kernelpath);
-      oi >> *kernel;
-      oi.close();
-      psfmatch.SetKernelFit(kernel);
-    }else{
-      std::cerr << "WARNING cannot find kernel " << kernelpath << ", so we do it" << std::endl;
-      psfmatch.FitKernel(false);
-      obj_output<xmlstream> oo(kernelpath);
-      oo << *(psfmatch.GetKernelFit());
-      oo.close();
-    }
+    const string kernelpath = rim->Dir()+"/kernel_from_"+Ref->Name()+".xml";
+    if(FileExists(kernelpath)) 
+      {
+	KernelFit *kernel = new KernelFit();
+	obj_input<xmlstream> oi(kernelpath);
+	oi >> *kernel;
+	oi.close();
+	psfmatch.SetKernelFit(kernel);
+      }
+    else
+      {
+	cerr << " SimFitVignet::BuildKernelPsf() : cannot find kernel " 
+	     << kernelpath << ", so we do it" << endl;
+	psfmatch.FitKernel(false);
+	obj_output<xmlstream> oo(kernelpath);
+	oo << *(psfmatch.GetKernelFit());
+	oo.close();
+      }
   }
 
   psfmatch.KernelToWorst(Kern, Star->x, Star->y);
-
-  // make psf=refpsf*kernel
-  TabulatedPsf refPsf(*Star, DaoPsf(*Ref), Hx() + Kern.HSizeX()); 
-
-  Psf = TabulatedPsf(refPsf.HSizeX()-Kern.HSizeX(), 
-		     refPsf.HSizeY()-Kern.HSizeY());
-
-  // resize properly vignets ready for convolution
-  Resize(refPsf.HSizeX()-Kern.HSizeX(), refPsf.HSizeY()-Kern.HSizeY());
 
 }
 
 void SimFitVignet::UpdatePsfResid(const SimFitRefVignet& Ref)
 {
-  // resize data if too small
-  // if (hx < Gal.HSizeX()-Kern.HSizeX() || hy <  Gal.HSizeY()-Kern.HSizeY()) 
-  //  Resize(Gal.HSizeX()-Kern.HSizeX(), Gal.HSizeY()-Kern.HSizeY());
- 
-  // re-allocate Resid if too small
-  if (hx > Resid.HSizeX() || hy > Resid.HSizeY()) 
-    {
-      cout << " SimFitVignet::UpdatePsfResid() : resizing residuals" << endl;
-      Resid = Kernel(hx,hy);
-    }
-
-  // re-allocate Psf if too small
-  if (Psf.HSizeX() < Ref.Psf.HSizeX()-Kern.HSizeX() || Psf.HSizeY() < Ref.Psf.HSizeY()-Kern.HSizeY()) 
-    {
-      cout << " SimFitVignet::UpdatePsfResid() : resizing Psf " << endl;
-      Psf = TabulatedPsf(Ref.Psf.HSizeX()-Kern.HSizeX(), Ref.Psf.HSizeY()-Kern.HSizeY());
-    }
 
   // convolve all of them at same time  
   double sump, sumx, sumy, sumg;
@@ -257,20 +272,6 @@ void SimFitVignet::UpdatePsfResid(const SimFitRefVignet& Ref)
 void SimFitVignet::UpdatePsfResid(const TabulatedPsf& RefPsf)
 {
 
-  // re-allocate Resid if too small
-  if (hx > Resid.HSizeX() || hy > Resid.HSizeY()) 
-    {
-      cout << " SimFitVignet::UpdatePsfResid() : resizing residuals" << endl;
-      Resid = Kernel(hx,hy);
-    }
-
-  // re-allocate Psf if too small
-  if (Psf.HSizeX() < RefPsf.HSizeX()-Kern.HSizeX() || Psf.HSizeY() < RefPsf.HSizeY()-Kern.HSizeY()) 
-    {
-      cout << " SimFitVignet::UpdatePsfResid() : resizing Psf " << endl;
-      Psf = TabulatedPsf(RefPsf.HSizeX()-Kern.HSizeX(),RefPsf.HSizeY()-Kern.HSizeY());
-    }
-
   // convolve all of them at same time  
   double sump, sumx, sumy;
   DPixel *pdat, *pres, *ppsf, *ppdx, *ppdy;
@@ -314,16 +315,6 @@ void SimFitVignet::UpdatePsfResid(const TabulatedPsf& RefPsf)
 
 void SimFitVignet::UpdateResid(const Kernel &RefGal)
 {
-  // resize data if too small
-  // if (hx < Gal.HSizeX()-Kern.HSizeX() || hy <  Gal.HSizeY()-Kern.HSizeY()) 
-  //  Resize(Gal.HSizeX()-Kern.HSizeX(), Gal.HSizeY()-Kern.HSizeY());
- 
-  // re-allocate Resid if too small
-  if (hx > Resid.HSizeX() || hy > Resid.HSizeY()) 
-    {
-      cout << " SimFitVignet::UpdateResid() : resizing residuals" << endl;
-      Resid = Kernel(hx,hy);
-    }
 
   double sumg;
   DPixel *pdat, *pres, *ppsf, *pkern, *prgal;
@@ -357,25 +348,14 @@ void SimFitVignet::UpdateResid(const Kernel &RefGal)
 // update residuals with existing psf, no galaxy
 void SimFitVignet::UpdateResid()
 {
-  // re-allocate Resid if too small
-  if (hx > Resid.HSizeX() || hy > Resid.HSizeY()) 
-    {
-      cout << " SimFitVignet::UpdateResid() : resizing residuals" << endl;
-      Resid = Kernel(hx,hy);
-    }
 
-  DPixel *pdat, *pres, *ppsf;
+  DPixel *pdat = Data.begin(), *pres = Resid.begin(), *ppsf = Psf.begin();
 
-  cout << " SimFitVignet::UpdateResid() : updating residuals" << endl;
-  for (int j=-hy; j<=hy; ++j) 
-    {
-      pdat = &Data  (-hx,j);
-      pres = &Resid (-hx,j);
-      ppsf = &Psf   (-hx,j);
-      for (int i=-hx; i<=hx; ++i, ++pres) 
-	{	
-	  *pres = *pdat++ - Star->flux * *ppsf++ - Star->sky;
-	}
+  cout << " SimFitVignet::UpdateResid() : updating residuals, no galaxy" << endl;
+
+  for (int i=Nx()*Ny(); i; --i)
+    {	
+      *pres++ = *pdat++ - Star->flux * *ppsf++ - Star->sky;
     }
 }
 

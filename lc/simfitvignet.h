@@ -42,6 +42,12 @@ public:
   //! tabulated derivative of the psf with y
   Kernel Dy;
 
+  void Resize(const int Hx, const int Hy);
+
+  void Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius);
+
+  void Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Rect);
+
   //! rescale psf and derivative by a factor
   void Scale(const double& scale);
 
@@ -55,12 +61,6 @@ public:
 
 class SimFitRefVignet : public Vignet {
 
-private:
-
-
-
-
-  
 public:
   
   //!
@@ -71,6 +71,10 @@ public:
 
   //! empty constructor allocate nothing
   SimFitRefVignet() { DaoPsf *p = 0; psf = p; }
+
+  //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels.
+  //! also initialize Psf if any, but assumes Kern not present.
+  SimFitRefVignet(const ReducedImage *Rim, const int Radius);
 
   //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels.
   //! also initialize Psf if any, but assumes Kern not present.
@@ -88,8 +92,9 @@ public:
   void UpdatePsfResid();
 
   //!
-  void Load(const PhotStar *RefStar) 
-  { Vignet::Load(RefStar); makeInitialGalaxy(); UpdatePsfResid(); }
+  void Load(const PhotStar *RefStar);
+
+  void Resize(const int Hx, const int Hy);
 
   //! enable "cout << SimFitRefVignet << endl"
   //friend ostream& operator << (ostream& stream, const SimFitRefVignet& myVignet);
@@ -104,9 +109,11 @@ public:
   //! empty constructor allocate nothing
   SimFitVignet() : FitFlux(false) {}
 
+  SimFitVignet(const ReducedImage *Rim);
+
   //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels
   //! loads the Kern with the Reference, and also builds the proper Psf.
-  SimFitVignet(const PhotStar *Star, const ReducedImage *Rim, const ReducedImage *Ref, const int Radius);
+  SimFitVignet(const PhotStar *Star, const ReducedImage *Rim, const SimFitRefVignet& Ref);
   
 
   // default destructor, copy constructor and assigning operator are OK
@@ -121,9 +128,10 @@ public:
   //! tabulated PSF and its derivatives to allow fast computation
   TabulatedPsf Psf;
 
-  //! 
-  void BuildKernelPsf(const ReducedImage *Ref);
+  void Resize(const int Hx, const int Hy);
 
+  //! 
+  void BuildKernel(const ReducedImage *Ref);
 
   //! update psf and residuals assuming the model = Star->flux[Kern*RefPsf] + Kern*RefGal + Star->sky
   void UpdatePsfResid(const SimFitRefVignet& Ref);
