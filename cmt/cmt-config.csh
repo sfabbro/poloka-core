@@ -11,6 +11,9 @@ endif
 # get includes necessary to compile this package with the help of cmt
 # get ldflags
 
+# au cas ou
+cmt config > /dev/null
+
 set packages = `cmt show uses | grep -v "#" | grep -v "CMT" | awk '{printf("%s ",$2);}' `
 
 
