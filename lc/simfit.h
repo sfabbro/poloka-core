@@ -102,6 +102,9 @@ public:
   //! allow to change full data set to another star
   void Load(LightCurve& Lc);
 
+  //! create vignets and get ready for fiiting 
+  void CreateAndLoad(LightCurve& LC);
+
   //! fill the entire matrix and vectors
   void FillMatAndVec();
 

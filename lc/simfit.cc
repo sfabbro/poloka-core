@@ -10,7 +10,7 @@
 #include <lapackutils.h>
 #include <blas++.h>
 
-//#define DEBUG
+#define DEBUG
 
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   :::::::::::::::::: SimFit stuff   ::::::::::::::::::::::::::
@@ -71,6 +71,7 @@ void SimFit::FindMinimumScale(const double &WorstSeeing)
 
 void SimFit::Load(LightCurve& Lc)
 {
+  
   if (Lc.size() != size()) 
     {
       cerr << " SimFit::Load() : Error : trying to load a LightCurve of different size \n";
@@ -80,6 +81,8 @@ void SimFit::Load(LightCurve& Lc)
   VignetRef.UpdatePsfResid();
 
   LightCurve::const_iterator itLc = Lc.begin();
+  const PhotStar* star = (*itLc);
+  cout << " SimFit::Load star = " << *star << endl;
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig, ++itLc)
     {      
       (*itVig)->Load(*itLc);
@@ -89,6 +92,44 @@ void SimFit::Load(LightCurve& Lc)
       else                               (*itVig)->UpdateResid();
     }
 }
+
+
+void SimFit::CreateAndLoad(LightCurve& LC)
+{
+#ifdef DEBUG
+  cout << "=======  Entering SimFit::CreateAndLoad  =======" << endl;
+#endif
+
+  // reserve space for all vignets
+  reserve(LC.size());
+  
+  // now create 4 fwhm maximum size vignettes
+  const double rad = 4.*2.3548;
+
+#ifdef DEBUG
+  cout << " Creating VignetRef with image " <<  LC.RefImage->Name() << endl;
+#endif 
+  // reference vignette (loaded at creation)
+  VignetRef = SimFitRefVignet(LC.Ref, LC.RefImage, int(ceil(LC.RefImage->Seeing()*rad)));
+#ifdef DEBUG
+  cout << " Checking PSF ... " << endl;
+  cout << " TYPE = " << VignetRef.psf->Type() << endl;
+  VignetRef.psf->dump(cout);
+  
+  cout << endl;
+#endif
+
+  if(fit_gal)
+    VignetRef.makeInitialGalaxy(); // make Galaxy image 
+  VignetRef.UpdatePsfResid();
+  
+#ifdef DEBUG
+  cout << "=======  SimFit::CreateAndLoad done  =======" << endl;
+#endif
+
+}
+
+
 
 void SimFit::Resize(const double &ScaleFactor)
 {
