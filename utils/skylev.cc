@@ -11,7 +11,7 @@ static void usage(const char *prog)
   cout << prog << " <fitsfile(s)> " << endl
        << " [-s (to separate levels for diff. amplifiers)] " 
        << endl;
-    exit(-1);
+    exit(EXIT_FAILURE);
 }  
 
 int main(int argc,char **args)
@@ -75,6 +75,6 @@ int main(int argc,char **args)
 	  }
       }    
     }
-  return 1;
+  return EXIT_SUCCESS;
 
 }
