@@ -96,6 +96,11 @@ std::string StringToLower(const std::string Source);
 //! removes a given pattern
 int RemovePattern(std::string &Source, const std::string &aPattern);
 
+//! substitute a given pattern (InPattern) for another (OutPattern)
+int SubstitutePattern(string &Source, const string &InPattern, 
+		      const string & OutPattern);
+
+
 //! Decompose string into substring separated by a char token
 void DecomposeString(std::vector<std::string> &SubStrings, const string &Source, const char token=' ');
 

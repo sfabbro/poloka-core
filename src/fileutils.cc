@@ -553,6 +553,24 @@ int RemovePattern(string &Source, const string &aPattern)
   return iter;
 }
 
+int SubstitutePattern(string &Source, const string &InPattern, 
+		      const string & OutPattern)
+{
+  //cerr << "Substituting Pattern " << InPattern << " for " << OutPattern << " in " <<Source << " : "  ;
+  if (OutPattern.find(InPattern) != Source.npos)
+    return(0);
+  int iter = 0;
+  unsigned pos = Source.find(InPattern);
+  while (pos != Source.npos)
+    {
+      Source.erase(pos, InPattern.length()); 
+      Source.insert(pos,OutPattern);
+      iter++;
+      pos = Source.find(InPattern);
+    }
+  //cerr << Source << " , occurences : " << iter << endl ;
+  return iter;
+}
 void DecomposeString(vector<string> &SubStrings, const string &Source, const char token)
 {
   unsigned start = 0;
