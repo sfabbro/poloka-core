@@ -30,16 +30,16 @@ int main(int nargs, char **args)
     }	
 
   if (refName=="NOREF") {usage(args[0]); exit(1);}
-  ReducedImage ref(refName);
+  ReducedImageRef ref = new ReducedImage(refName);
   
   for (ReducedImageCIterator it = imlist.begin(); it != imlist.end(); ++it)
     {
       ReducedImage *current = *it;
-      PsfMatch match(ref, *current);
+      PsfMatch match(ref, current);
       match.FitKernel();
       Kernel kern;
       match.KernelToWorst(kern,current->XSize()/2, current->YSize()/2);
-      string ker_name = ref.Name()+current->Name()+"_kernel.fits";
+      string ker_name = ref->Name()+current->Name()+"_kernel.fits";
       kern.writeFits(ker_name);
     }
 

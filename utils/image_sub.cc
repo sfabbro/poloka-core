@@ -37,11 +37,11 @@ int main(int nargs, char **args)
 
   
   if(makesub) {
-    ImageSubtraction sub("sub",*refimage,*newimage);
+    ImageSubtraction sub("sub",refimage,newimage);
     sub.MakeFits();
     oo <<*(sub.GetKernelFit());
   }else{
-    PsfMatch psfmatch(*refimage,*newimage,NULL,true);
+    PsfMatch psfmatch(refimage,newimage,NULL,true);
     psfmatch.FitKernel(true);
     oo << *(psfmatch.GetKernelFit());
   }
