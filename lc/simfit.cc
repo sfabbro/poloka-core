@@ -1299,23 +1299,21 @@ double SimFit::oneNRIteration(double OldChi2)
   const double minFact = 0.001;
   if (curChi2 > OldChi2) 
     {
-#ifdef DEBUG      
       cout << " SimFit::oneNRIteration(" 
 	   << OldChi2 << "):  chi2=" << curChi2 
 	   << " increased, reducing corrections" << endl;
-#endif
-
+     
       double fact = 1.;
       while ((curChi2 > OldChi2) && (fact > minFact))
 	{
 	  Update(-fact); if(fatalerror) return -12;
 	  fact *= 0.9;
-	  Update(-fact); if(fatalerror) return -12;
+	  Update(fact); if(fatalerror) return -12;
 	  curChi2 = computeChi2();
-#ifdef DEBUG
+
 	  cout << " SimFit::oneNRIteration(" 
 	       << OldChi2 << "):  curChi2=" << curChi2 << " fact=" << fact << endl;
-#endif
+
 	}
 
       // reducing corrections had no effect
@@ -1323,12 +1321,8 @@ double SimFit::oneNRIteration(double OldChi2)
 	{
 	  Update(-fact); if(fatalerror) return -12;
 	  curChi2 = computeChi2();
-#ifdef DEBUG
 	  cout << " SimFit::oneNRIteration(" 
 	       << OldChi2 << "):  chi2=" << curChi2 << " return to beginning \n";
-#endif
-
-	  curChi2 = OldChi2;
 	}
     }
 
@@ -1343,7 +1337,8 @@ bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
     return false;
   int iter = 0;
   double diff = 1000;
-  cout << " > SimFit::IterateAndSolve(" << MaxIter << "," << Eps << ") : initial chi2/dof = " << chi2/(ndata - nparams) << endl;
+  cout << " > SimFit::IterateAndSolve(" << MaxIter << "," << Eps << ") : initial chi2/dof = " << chi2/(ndata - nparams) 
+       << " ndata nparams " << ndata << " " << nparams << endl; 
   do
     {
       oldchi2 = chi2;
@@ -1351,8 +1346,9 @@ bool SimFit::IterateAndSolve(const int MaxIter,  double Eps)
       if(fatalerror)
 	return false;
       diff = fabs(chi2-oldchi2);
-      cout << "   Iteration " << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams) << endl;    
-      //cout << "   diff = " << diff << endl;
+      cout << "   Iteration " << iter << " chi2/dof = " << setprecision(4) << chi2/(ndata - nparams)   
+	   << " ndata nparams " << ndata << " " << nparams << endl; 
+//cout << "   diff = " << diff << endl;
     }while ((iter++ < MaxIter) && (diff>Eps));
   
   cout << "   SimFit::IterateAndSolve(): Done" << endl;
