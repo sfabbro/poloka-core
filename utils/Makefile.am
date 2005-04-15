@@ -17,7 +17,8 @@ bin_PROGRAMS = \
  compute enlargeimage calibrate coordfromimage enlargedead mask2dead \
  mkcat2 seeing mergelists \
  zpfitter \
- calibrationhacker
+ calibrationhacker \
+ modelpsf
 
 ###stretchcolor \
 ###stretchcolor_SOURCES = stretchcolor.cc
@@ -48,6 +49,12 @@ fitnight_LDFLAGS =  -ltoadslc -ltoadsdao
 modelvignet_SOURCES = modelvignet.cc
 modelvignet_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
 modelvignet_LDFLAGS =  -ltoadslc -ltoadsdao
+
+modelpsf_SOURCES = modelpsf.cc
+modelpsf_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
+modelpsf_LDFLAGS =  -ltoadslc -ltoadsdao
+
+
 
 calibrate_SOURCES = calibrate.cc
 calibrate_CXXFLAGS = -I$(top_srcdir)/dao -I$(top_srcdir)/lc $(AM_CPPFLAGS)
