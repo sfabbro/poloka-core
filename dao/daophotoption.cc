@@ -161,7 +161,7 @@ bool DaophotOptions::read(const string& FileName)
   while (getline(stream, line)) 
     {
       vector<string> s;
-      DecomposeString(s,line,'=');
+      DecomposeString(s,line,"=");
       if (s.size() != 2)
 	{
 	  cerr << "DaophotOptions::read() : Error reading line '" << line 

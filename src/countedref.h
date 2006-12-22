@@ -1,7 +1,7 @@
 #ifndef COUNTEDREF__H
 #define COUNTEDREF__H
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <iostream>
 
 
@@ -53,7 +53,7 @@ template <class T> class CountedRef {
       if (!p) return;
       (p->refCount())--;
       // tentative check :
-      if (p->refCount() < 0) {cerr << " problem in ~RefCount: aborting "  << endl; abort();}
+      if (p->refCount() < 0) {std::cerr << " problem in ~RefCount: aborting "  << std::endl; abort();}
       if (p->refCount() == 0) 
      	{delete p;} 
     }

@@ -3,11 +3,12 @@
 #define SIMFITVIGNET__H
 
 #include <countedref.h>
-#include <daophotpsf.h>
+//#include <daophotpsf.h>
 #include <reducedimage.h>
-
+#include <psfmatch.h>
 #include "photstar.h"
 #include "vignet.h"
+#include "imagepsf.h"
 
 //
 //! \file simfitvignet.h
@@ -18,25 +19,34 @@
 // uncomment this to use one daophot psf per image, kernels are still used for the galaxy and for the photometric ratio
 //#define ONEPSFPERIMAGE
 
+#ifdef STORAGE
 
-class TabulatedPsf : public Kernel {
+class TabulatedDaoPsf : public Kernel {
 
+private:
+  double mx; // moments to compute second derivative
+  double my; 
+  double mxx; 
+  double myy; 
+  double mxy; 
+  double det;
+  double integral;
 public:
   
   //! empty constructor allocate nothing
-  TabulatedPsf() {}
+  TabulatedDaoPsf() {}
   
   //! allocate psf and derivatives of half-sizes Hx and Hy
-  TabulatedPsf(const int Hx, const int Hy) : Kernel(Hx,Hy), Dx(Hx,Hy), Dy(Hx,Hy)  {}
+  TabulatedDaoPsf(const int Hx, const int Hy) : Kernel(Hx,Hy), Dx(Hx,Hy), Dy(Hx,Hy)  {}
   
   //! allocate psf and derivatives of a Radius
-  TabulatedPsf(const int Radius) : Kernel(Radius), Dx(Radius), Dy(Radius)  {}
+  TabulatedDaoPsf(const int Radius) : Kernel(Radius), Dx(Radius), Dy(Radius)  {}
   
   //! allocate psf and derivatives, and fill them with DaoPsf value on that Pt.
-  TabulatedPsf(const Point& Pt, const DaoPsf& Psf, const int Radius);
+  TabulatedDaoPsf(const Point& Pt, const DaoPsf& Psf, const int Radius);
 
   //! allocate psf and derivatives, and fill them with DaoPsf value on that Pt
-  TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const Window& Rect);
+  TabulatedDaoPsf(const Point& Pt, const DaoPsf& Dao, const Window& Rect);
 
   // default destructor, copy constructor and assigning operator are OK  
 
@@ -52,14 +62,73 @@ public:
 
   void Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Rect);
 
-  //! rescale psf and derivative by a factor
-  void Scale(const double& scale);
+  //! return the current norm of the psf
+  double Norm() const { return integral; }
+
+  double Mxx() const {return mxx;};
+  double Mxy() const {return mxy;};
+  double Myy() const {return myy;};
+  
+
+  //! enable "cout << TabulatedDaoPsf << endl"
+  //friend ostream& operator << (ostream & stream, const TabulatedDaoPsf& Psf);
+
+  void ComputeMoments();
+  
+  double Gaus(int i,int j) const;
+  double dGausdx2(int i,int j) const;
+  double dGausdy2(int i,int j) const;
+  double dGausdxdy(int i,int j) const;
+  
+  void writeGaussian(const string& filename) ;
+
+};
+#endif
+
+class TabulatedPsf : public Kernel {
+
+private:
+  double mx; // moments to compute second derivative
+  double my; 
+  double mxx; 
+  double myy; 
+  double mxy; 
+  double det;
+  double integral;
+public:
+  
+  //! empty constructor allocate nothing
+  TabulatedPsf() {}
+  
+  //! allocate psf and derivatives of half-sizes Hx and Hy
+  TabulatedPsf(const int Hx, const int Hy) : Kernel(Hx,Hy), Dx(Hx,Hy), Dy(Hx,Hy)  {}
+  
+  //! allocate psf and derivatives of a Radius
+  TabulatedPsf(const int Radius) : Kernel(Radius), Dx(Radius), Dy(Radius)  {}
+  
+  //! allocate psf and derivatives, and fill them with DaoPsf value on that Pt
+  TabulatedPsf(const Point& Pt, const ImagePSF& imagepsf, const Window& Rect);
+
+  // default destructor, copy constructor and assigning operator are OK  
+
+  //! tabulated derivative of the psf with x
+  Kernel Dx;
+
+  //! tabulated derivative of the psf with y
+  Kernel Dy;
+  
+  void Resize(const int Hx, const int Hy);
+
+  
+  void Tabulate(const Point& Pt, const ImagePSF& imagepsf, const Window& Rect);
 
   //! return the current norm of the psf
-  double Norm() const { return sum(); }
+  double Norm() const { return integral; }
 
-  //! enable "cout << TabulatedPsf << endl"
-  //friend ostream& operator << (ostream & stream, const TabulatedPsf& Psf);
+  double Mxx() const {return mxx;};
+  double Mxy() const {return mxy;};
+  double Myy() const {return myy;};
+  void ComputeMoments();
 };
 
 
@@ -68,30 +137,25 @@ class SimFitRefVignet : public Vignet {
 public:
   
   //!
-  CountedRef<DaoPsf> psf;
+  //CountedRef<DaoPsf> daopsf;
+  CountedRef<ImagePSF> imagepsf;
+  
 
   //! build a rough initial galaxy to start the iterative fit
   void makeInitialGalaxy();
 
   //! empty constructor allocate nothing
-  SimFitRefVignet(bool usegal=true) { DaoPsf *p = 0; psf = p; UseGal = usegal; }
+  SimFitRefVignet(bool usegal=true) { ImagePSF *p = 0; imagepsf = p; UseGal = usegal; }
   
   //! does not do much
   SimFitRefVignet(const ReducedImage *Rim, bool usegal=true);
-
-  //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels.
-  //! also initialize Psf if any, but assumes Kern not present.
-  SimFitRefVignet(const ReducedImage *Rim, const int Radius, bool usegal=true);
-
-  //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels.
-  //! also initialize Psf if any, but assumes Kern not present.
-  SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius, bool usegal=true);
-
+  
   // default destructor, copy constructor and assigning operator are OK
 
   //! tabulated PSF and its derivatives to allow fast computation
+  //TabulatedDaoPsf Psf;
   TabulatedPsf Psf;
-
+  
   //! the galaxy underneath at its resolution
   Kernel Galaxy;
 
@@ -120,22 +184,28 @@ private:
   bool kernel_updated;
   bool psf_updated;
   bool resid_updated;
-
+  bool gaussian_updated;
+  
 public:
 
 #ifdef ONEPSFPERIMAGE
-  CountedRef<DaoPsf> psf;
+  CountedRef<DaoPsf> daopsf;
 #endif
 
-  //! empty constructor allocate nothing
-  SimFitVignet() : FitFlux(false) {}
+  PsfMatch* psfmatch;
 
+  //! empty constructor allocate nothing
+  SimFitVignet();
+  
   SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref);
 
   //! extract vignet image and weight from a ReducedImage of a max radius of Nfwhm*Fwhm pixels
   //! loads the Kern with the Reference, and also builds the proper Psf.
   SimFitVignet( const PhotStar *Star, const ReducedImage *Rim,  SimFitRefVignet* Ref);
   
+  virtual ~SimFitVignet() {if(psfmatch) delete psfmatch;};
+
+  void ResetFlags();
   void ModifiedResid() {resid_updated = false;};
   
   // default destructor, copy constructor and assigning operator are OK
@@ -147,9 +217,12 @@ public:
   bool CanFitFlux; // do we need to fit the flux
   bool CanFitPos; //  do we need to fit the position
   bool CanFitSky; // do we need to fit the sky bg
+  bool CanFitGal; // 
   bool DontConvolve;
   bool forceresize;
   double inverse_gain;
+  double ronoise;
+  double skysub;
 
   //! a kernel to convolve a reference to match the current vignet
   Kernel Kern;
@@ -195,6 +268,12 @@ public:
 
   //! use Vignet::Chi2 with additionnal debugging info
   double Chi2() const;
+  
+  void RedoWeight();
+
+  //! 
+  double CentralChi2(int &npix) const;
+  
   
   //! write a lot of stuff, to use in case of problem 
   void DumpDebug() const;

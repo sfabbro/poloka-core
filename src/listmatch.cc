@@ -598,15 +598,17 @@ GtransfoLin *ListMatchupShift(const BaseStarList &L1, const BaseStarList &L2, co
 
 #ifdef STORAGE
 
-static StarMatchList *ListMatchCollect_Slow(const BaseStarList &L1, const BaseStarList &L2,const Gtransfo *Guess, const double MaxDist)
+// this is the old fashioned way...
+
+StarMatchList *ListMatchCollect_Slow(const BaseStarList &L1, const BaseStarList &L2,const Gtransfo *Guess, const double MaxDist)
 {
   StarMatchList *matches = new StarMatchList;
   /****** Collect ***********/
   for (BaseStarCIterator si = L1.begin(); si != L1.end(); ++si)
     {
-      Point *p1 = (*si);
-      Point p2 = Guess->apply(*p1);
-      BaseStar *neighbour = L2.FindClosest(p2);
+      const Point *p1 = (*si);
+      const Point p2 = Guess->apply(*p1);
+      const BaseStar *neighbour = L2.FindClosest(p2);
       //   BaseStar *neighbour = finder.FindClosest(p2,MaxDist);
       if (!neighbour) continue;
       double distance =p2.Distance(*neighbour); 
@@ -619,40 +621,13 @@ static StarMatchList *ListMatchCollect_Slow(const BaseStarList &L1, const BaseSt
     }
   return matches;
 }
-
-
-BaseStarList  *ListUnMatchCollect(const BaseStarList &L1, const BaseStarList &L2,
-		    const Gtransfo *Guess,  const double MaxDist)
-{
-  BaseStarList *unmatches = new BaseStarList;
-  /****** Collect ***********/
-  FastFinder finder(L2);
-  for (BaseStarCIterator si = L1.begin(); si != L1.end(); ++si)
-    {
-      BaseStar *star = *si;
-      Point *p1 = (*si);
-      Point p2 = Guess->apply(*p1);
-      BaseStar *neighbour = finder.FindClosest(p2,MaxDist);
-      
-      if (!neighbour) 
-	{
-	  unmatches->push_back(star);
-	}
-      else
-	{
-	  double distance =p2.Distance(*neighbour); 
-	  if (distance >= MaxDist)
-	    {
-
-	      unmatches->push_back(star);
-	    }
-	}
-    }
-  return unmatches;
-}
 #endif
 
-StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,const Gtransfo *Guess, const double MaxDist)
+// here is the real active routine:
+
+StarMatchList *ListMatchCollect(const BaseStarList &L1, 
+				const BaseStarList &L2,
+				const Gtransfo *Guess, const double MaxDist)
 {
   StarMatchList *matches = new StarMatchList;
   /****** Collect ***********/
@@ -672,20 +647,6 @@ StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,c
 	}
 
     }
-#ifdef STORAGE 
-  // tentatively: put the call to the slow strightforward code in the new fast one, and compare
-  // the matches count. just in case....
-  StarMatchList *matches_slow = ListMatchCollect_Slow(L1, L2, Guess, MaxDist);
-  if (matches_slow->size() != matches->size()) 
-    {
-      cerr << " CA ne va pas du tout avec le FastFinder " << endl;
-      cerr <<" writing match_fast.list and match_slow.list" << endl;
-      matches->write("match_fast.list"); matches_slow->write("matches_slow.list");
-    }
-  delete matches_slow;
-  // end of the tentative check.
-  // removed after extensive testing.
-#endif
   matches->SetTransfo(Guess);
   matches->SetChi2();
 

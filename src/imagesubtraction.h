@@ -13,16 +13,7 @@ string SubtractedName(const string &RefName, const string &NewName);
 //! For subtracting images using the Alard kernel fit technique. A basic assumption: Ref and New are already geometrically aligned.
 
 
-#include "persistence.h"
-
 class ImageSubtraction : public ReducedImage, public PsfMatch {
-
-
-  private :
-
-CLASS_VERSION(ImageSubtraction,1);
-#define ImageSubtraction__is__persistent
-
   public :
     //! the constructor takes a copy of both ReducedImage.
     ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage);
@@ -56,7 +47,7 @@ CLASS_VERSION(ImageSubtraction,1);
     bool MaskNullWeight();
 
     bool RunDetection(DetectionList &Detections,
-		      const BaseStarList* Positions = NULL);
+		      const BaseStarList* Positions = NULL,string name = "",bool fixed_pos = false );
 #ifdef STORAGE
     //!  DeadAndSatur frame is the OR of Ref and New dead and satur frames.
     bool MakeDeadAndSatur();
@@ -78,9 +69,7 @@ CLASS_VERSION(ImageSubtraction,1);
 
     ~ImageSubtraction();
 
-#ifndef SWIG
-    ClassDef(ImageSubtraction,1);
-#endif /* SWIG */
+
 };
 
 typedef CountedRef<ImageSubtraction> ImageSubtractionRef;

@@ -26,7 +26,7 @@
 /*************** SwarpCards   **************/
 
 #include <list>
-#include <pair.h>
+#include <map> /* only use pair, but no pair.h in modern stdlib */
 
 
 /* we do not use here datacards a la Peida (datacards.cc)
@@ -130,7 +130,7 @@ bool SwarpCards::write(const std::string &FileName)
       while (fgets(line,1024,f))
 	{
 	  char *p = line;
-	  while (*p == ' ' || *p == '\t' ) continue;
+	  while (*p == ' ' || *p == '\t' ) p++;
 	  if (*p == '\0') continue;
 	  if (*p == '#') continue;
 	  char first_word[256];
@@ -169,7 +169,7 @@ bool SwarpCards::write(const std::string &FileName)
   fprintf(out,"%s\n",comment.c_str());
   // keep track of overwritten keys
   if (removed != "")
-    fprintf(out,"# toads default superseeded :\n%s#end of superseeded keys",
+    fprintf(out,"# toads default superseeded :\n%s#end of superseeded keys\n",
 	    removed.c_str());
 
   for (KeyIterator i= begin(); i != end(); ++i)
@@ -230,7 +230,11 @@ public :
       }
     if (Group == NAXIS)
       {
-	From.CopyKey("NAXIS",*this); From.CopyKey("NAXIS1",*this); From.CopyKey("NAXIS2",*this);
+	/* don't use FitsHeader::CopyKey here: translations
+	   (NAXIS->ZNAXIS) are not handled */
+	this->AddOrModKey("NAXIS",int(From.KeyVal("NAXIS")));
+	this->AddOrModKey("NAXIS1",int(From.KeyVal("NAXIS1")));
+	this->AddOrModKey("NAXIS2",int(From.KeyVal("NAXIS2")));
       }
   }
 	
@@ -494,6 +498,16 @@ static string build_file_name(const std::string &Format, const std::string &ANam
   return link_name;
 }
 
+// substitute_extension("toto.fits.gz","xa")="toto.fits.xa"
+// this is different from SubstituteExtension.
+static string substitute_extension(const std::string &Original, 
+			   const std::string &NewExtension)
+{
+  const char *dot = strrchr(Original.c_str(),'.');
+  unsigned int dotpos = (dot)? dot-Original.c_str(): Original.size();
+  if (dotpos > Original.size()) return Original;
+  return Original.substr(0,dotpos)+NewExtension;  
+}
 
 bool extract_ascii_head(const std::string &InputHeadName,
 		       const Frame &SubFrame,
@@ -619,7 +633,8 @@ bool SwarpStack::MakeFits()
 		    << " misses a photometric zero point " << std::endl;
 	}
       // write fluxScale in a ascii header
-      AsciiHead ah(SubstituteExtension(imageSwarpName,".head"));
+#define SWARP_HEADER_EXT ".headforswarp"
+      AsciiHead ah(substitute_extension(imageSwarpName,SWARP_HEADER_EXT));
       ah.AddKey("FLXSCALE", fluxScale);
       // compute the satur level for this image 
       double this_satur = ri.Saturation();
@@ -631,7 +646,7 @@ bool SwarpStack::MakeFits()
     {
       extract_ascii_head(photomAstromReference->FitsName(),
 			 photomAstromReferenceFrame, 
-			 SubstituteExtension(FitsName(), ".head")
+			 substitute_extension(FitsName(),SWARP_HEADER_EXT)
 			 );
     }
   // setup datacards
@@ -639,6 +654,7 @@ bool SwarpStack::MakeFits()
   // directly write image and weight in the right place
   cards.AddKey("IMAGEOUT_NAME",FullFileName(FitsName()));
   cards.AddKey("WEIGHTOUT_NAME",FullFileName(FitsWeightName()));
+  cards.AddKey("HEADER_SUFFIX",SWARP_HEADER_EXT);
   /* 
      There are issues in how Swarp makes the interpolation from
      input pixels to output output projection (projapp.c):
@@ -658,7 +674,11 @@ bool SwarpStack::MakeFits()
   // tell swarp that weights are weights
   cards.AddKey("WEIGHT_TYPE","MAP_WEIGHT");
   // weighted average stack
-  cards.AddKey("COMBINE_TYPE","WEIGHTED");
+  
+  // --nrl 02/2006 in order to deal w/ the satellites...
+  cards.AddKey("COMBINE_TYPE","MEDIAN");
+  //  cards.AddKey("COMBINE_TYPE","WEIGHTED");
+
   // no astrometric flux rescaling 
   // (this is because Elixir does in principle the right job)
   /* I even tried without this card (i.e. with FSCALASTRO = FIXED
@@ -726,8 +746,8 @@ bool SwarpStack::MakeFits()
   // since we got here, swarp succeeded, so cleanup resamp files
 
   // and cleanup input files (links or actual files depending if they were compressed)
-  RemoveFiles(toRemove);
-  RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
+  //  RemoveFiles(toRemove);
+  //  RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
   return true;
 }
 
@@ -772,7 +792,7 @@ bool SwarpStack::MakeSatur()
       std::string inputSatur = ri.FitsSaturName();
       std::string swarpInput = build_file_name(SwarpTmpDir()+"%s.satur.fits",
 					       ri.Name());
-      std::string swarpHead = SubstituteExtension(swarpInput,".head");
+      std::string swarpHead = substitute_extension(swarpInput,SWARP_HEADER_EXT);
       if (!DecompressOrLinkImage(inputSatur,swarpInput))
 	{
 	  std::cerr << " could not prepare " << inputSatur << " for swarp " 
@@ -787,13 +807,14 @@ bool SwarpStack::MakeSatur()
 
   std::string swarpOutName =  SwarpTmpDir()+"satur32.fits";
   // extract the header of the calibrated.fits
-  extract_ascii_wcs(FitsName(), SubstituteExtension(swarpOutName,".head"));
+  extract_ascii_wcs(FitsName(), substitute_extension(swarpOutName,SWARP_HEADER_EXT));
 
   // setup datacards
   SwarpCards cards;
   cards.AddKey("IMAGEOUT_NAME", BaseName(swarpOutName));
   // I don't want a weight out of here. but swarp insists on doing one:
   cards.AddKey("WEIGHTOUT_NAME","/dev/null");
+  cards.AddKey("HEADER_SUFFIX",SWARP_HEADER_EXT);
   cards.AddKey("WEIGHT_TYPE","NONE");
   /* Do not approximate output projection (there are issues in the approximation)
      E.B has been informed */
@@ -834,8 +855,8 @@ bool SwarpStack::MakeSatur()
     } while (inOut.LoadNextSlice()); // read/write
   // remove temporary files
   remove(swarpOutName.c_str());
-  RemoveFiles(toRemove);
-  RemoveFiles(SubstitutePattern(toRemove,".satur.",".satur.resamp."));
+  //  RemoveFiles(toRemove);
+  //  RemoveFiles(SubstitutePattern(toRemove,".satur.",".satur.resamp."));
 
   // we are done !
   return true;

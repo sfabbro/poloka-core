@@ -31,7 +31,7 @@ public:
 
   //!
   void dump(ostream& stream = cout) const 
-  { for (const_iterator ri = begin(); ri != end(); ++ri) (*ri)->dump(stream);}
+  { for (const_iterator ri = this->begin(); ri != this->end(); ++ri) (*ri)->dump(stream);}
 
 };
 

@@ -3,7 +3,7 @@
 #define IMAGEMATCH__H
 
 
-#include "basestar.h"
+#include "sestar.h"
 class FitsHeader;
 class DbImage;
 class Gtransfo;
@@ -13,6 +13,9 @@ class GtransfoLin;
 /*! \file 
     \brief This file contains wrappers to call match guessing routines.
 */
+
+//! checks that necessary files exists, loads the catalog and filters it.
+bool ListAndFitsCheckForMatch(const DbImage &Im, SEStarList &Sl);
 
 //! tries to guess the Linear geometric transformation to go from List1 to List2. 
 /*! It uses
@@ -34,4 +37,10 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 
                     CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
 
+//! same as above but with already loaded catalogs. Use ListAndFitsCheckForMatch to lad and filter the catalog.
+/*! this routine was introduced to avoid reloading one of the catalogs when matching many images to the same reference */ 
+bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
+		    const DbImage &DbImage2, const SEStarList& SL2,
+		    CountedRef<Gtransfo> &One2Two, 
+		    CountedRef<Gtransfo>  &Two2One);
 #endif /* IMAGEMATCH__H */

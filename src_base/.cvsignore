@@ -1,0 +1,12 @@
+dbfileParse.c dbfileParse.h
+alltelinst.cc alltelinst.h
+*_dict.cc
+*_dict.h
+*__persister.h
+*.lo
+libtoadsbase.la
+.deps
+.libs
+Makefile
+Makefile.in
+

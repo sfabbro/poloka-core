@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+
+Import('g_env')
+local_env = g_env.Copy()
+
+EXTRA_DIST = [
+    'Makefile.am', 'SConscript'
+    ]
+
+HEADER_FILES = [
+    'fitsslice.h',  'histo2d.h',  'imageback.h',           'matvect.h',
+    'histo1d.h',    'histo4d.h',  'imageinterpolation.h'
+    ]
+
+SOURCE_FILES = [
+    'imageback.cc',
+    'matvect.cc',
+    'histo1d.cc',
+    'histo2d.cc',
+    'histo4d.cc',
+    'imageinterpolation.cc',
+    'fitsslice.cc']
+
+local_env.ActivateExternalPackage('cfitsio')
+local_env.AddInternalDep('.')
+local_env.AddInternalDep('src_base', 'toadsbase')
+shlib = local_env.SharedLibrary(target='toadsutils', source=SOURCE_FILES)
+
+g_env.InstallLibs([shlib])
+g_env.AddToDist(EXTRA_DIST + HEADER_FILES + SOURCE_FILES)
+

@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "sestar.h"
+#include "fastifstream.h"
 
 //********************   DEFINITION  SEStar   *********************
 
@@ -256,7 +257,7 @@ SEStar::writen(ostream& s)  const
 
 
 void
-SEStar::read_it(istream& r, const char * Format)
+SEStar::read_it(fastifstream& r, const char * Format)
 {
   BaseStar::read_it(r, Format);
   r >> Fluxmax()  ;
@@ -315,7 +316,7 @@ SEStar::read_it(istream& r, const char * Format)
   return ;
 }
 
-SEStar*  SEStar::read(istream& r, const char *Format)
+SEStar*  SEStar::read(fastifstream& r, const char *Format)
 {
   SEStar *pstar = new SEStar();  
   pstar->read_it(r, Format);
@@ -437,43 +438,14 @@ return (S1->Fluxmax() > S2->Fluxmax());
 }
 
 
-#ifdef USE_ROOT
-ClassImp(SEStar)
-
-/* To Generate the sestardict.cc file :
-LINKDEF_CONTENT : #pragma link C++ class SEStar+;
-*/
-#endif /* USE_ROOT */
 
 
 //********************   FINDEFINITION SEStar   *********************
 
 
-#include "rootstuff.h"
 #include "starlist.h"
 #include "starlist.cc" /* since starlist is a template class */
 
-
-#ifdef USE_ROOT
-template class StarListWithRoot<SEStar>;
-ClassImpT(StarListWithRoot,SEStar);
-
-/* comments to drive the Makefile part that runs rootcint
-RUN_ROOTCINT
-LINKDEF_CONTENT : #pragma link C++ class CountedRef<SEStar>-;
-LINKDEF_CONTENT : #pragma link C++ class list<CountedRef<SEStar> >;
-LINKDEF_CONTENT : #pragma link off function list<CountedRef<SEStar> >::unique();
-LINKDEF_CONTENT : #pragma link off function list<CountedRef<SEStar> >::sort();
-LINKDEF_CONTENT : #pragma link off function list<CountedRef<SEStar> >::merge(list <CountedRef<SEStar> >)&;
-LINKDEF_CONTENT : #pragma link C++ class StarList<SEStar>-;
-LINKDEF_CONTENT : ostream& operator << (ostream&, const StarList<SEStar>&);
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream&, const StarList<SEStar>&);
-LINKDEF_CONTENT : #pragma link C++ class StarListWithRoot<SEStar>-;
-LINKDEF_CONTENT : #pragma link C++ class StarList<SEStar>::iterator;
-LINKDEF_CONTENT : #pragma link C++ typedef SEStarIterator;
-*/
-#include "root_dict/sestardict.cc"
-#endif /* USE_ROOT */
 
 template class StarList<SEStar>; // because StarListWithRoot<> derives from StarList<>
 
@@ -667,7 +639,7 @@ void StarFinder(SEStarList const & stlse, SEStarList & PrettyStars)
 {
   SEStarList stl1;
   stlse.CopyTo(stl1);
-  stl1.sort(&DecreasingFlux);
+  stl1.FluxSort();
   stl1.CutTail(200);
   double mfwhm1, bin_fwhm1 = 0.2 ;
   HistoFwhmStarFinder(stl1, mfwhm1, bin_fwhm1);
@@ -711,7 +683,7 @@ void GalaxyFinder(SEStarList const & stlse,
 {
   SEStarList stl1;
   stlse.CopyTo(stl1);
-  stl1.sort(&DecreasingFlux);
+  stl1.FluxSort();
   stl1.CutTail(200);
   double mfwhm1, bin_fwhm1 = 0.2 ;
   HistoFwhmStarFinder(stl1, mfwhm1, bin_fwhm1);

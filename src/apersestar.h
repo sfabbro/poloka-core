@@ -8,13 +8,13 @@ class Image;
 
 #define BAD_GAUSS_MOMENTS 1
 
-// =================================================================
-// =================================================================
+
+class fastifstream;
+
 //
-// definition de la classe AperSEStar
+// definition of AperSEStar
 //
-// =================================================================
-// =================================================================
+
 //! A SEstar which has some aperture photometry added
 class AperSEStar : public SEStar
 {
@@ -30,8 +30,9 @@ class AperSEStar : public SEStar
     int nbad;
     int ncos; // number of bad pixels flagged as cosmics
     double fcos; // total flux of these pixels
+    double fother; // flux of other objects in aperture
 
-    Aperture() { radius=0; flux=0; eflux=0; nbad=0; ncos=0; fcos=0; }
+    Aperture() { radius=0; flux=0; eflux=0; nbad=0; ncos=0; fcos=0; fother=0;}
 
     bool operator < ( const Aperture &Right) const
     { return radius < Right.radius;}
@@ -41,20 +42,28 @@ class AperSEStar : public SEStar
   vector<Aperture> apers;
   double neighborDist;
   double neighborFlux;
+  bool   neighborContamination;
+  double maxFluxContamination;
   double gmxx, gmyy, gmxy;
   int gflag;
   
   private :
-  void zero() { neighborDist=-1; neighborFlux = -1; gflag=BAD_GAUSS_MOMENTS; gmxx = gmyy = gmxy = 0; }
+  void zero() { 
+    neighborDist=-1; 
+    neighborFlux = -1; 
+    neighborContamination=false; 
+    maxFluxContamination=-1; 
+    gflag=BAD_GAUSS_MOMENTS; gmxx = gmyy = gmxy = 0; }
 
  public:
   AperSEStar() {zero();}
   AperSEStar(const SEStar &sestar) : SEStar(sestar) {zero();}
   
   //! computes flux (& co) and stores it into an added Aperture instance.
-  void ComputeFlux(const Image& I, const Image &W, const Image& C,
+  void ComputeFlux(const Image& I, const Image &W, const Image& Cosmic, const Image &Seg,
 		   const double Gain, const double Radius);
 
+  void ComputePos(const Image&I, const Image &W);
   void ComputeShapeAndPos(const Image&I, const Image &W);
 
   Aperture InterpolateFlux(const double &Radius) const;
@@ -65,8 +74,8 @@ class AperSEStar : public SEStar
 
 
   std::string WriteHeader_(ostream & pr = cout, const char* i = NULL) const;
-  void read_it(istream& r, const char* Format);
-  static AperSEStar* read(istream& r, const char* Format); 
+  void read_it(fastifstream& r, const char* Format);
+  static AperSEStar* read(fastifstream& r, const char* Format); 
   void writen(ostream& s) const;
 };
 
@@ -124,8 +133,9 @@ typedef AperSEStarList::iterator AperSEStarIterator;
 typedef CountedRef<AperSEStar> AperSEStarRef;
 
 
-bool FindStarShapes(const AperSEStarList &List, double &SizeX, 
-		    double &SizeY, double &Corr);
+class StarScoresList;
+bool FindStarShapes(const AperSEStarList &List, double MinSN, double &SizeX, 
+		    double &SizeY, double &Corr, StarScoresList &Scores);
 
 
 #endif /* APERSESTAR__H */

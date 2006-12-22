@@ -1,7 +1,4 @@
 // This may look like C code, but it is really -*- C++ -*-
-
-
-
 #ifndef STARLIST__H
 #define STARLIST__H
 
@@ -17,6 +14,7 @@
 using namespace std;
 
 class Frame;
+class fastifstream;
 
 //! lists of Stars. 
 /*!     It is a template class, which means that the Star
@@ -37,13 +35,7 @@ obtained using 'new'. The corresponding
 'delete' are invoked in the destructor. */
 
 
-
 template<class Star> class StarList : public list <CountedRef<Star> >  {
-
-
-  //  CLASS_VERSION(StarList,1);
-  // #define StarList__is__persistent
-
   GlobalVal glob;
  
 public:
@@ -91,14 +83,14 @@ typedef typename list<Element>::iterator StarIterator;
   
   //! invokes dump(stream) for all Stars in the list. 
  void dump(ostream &stream = cout ) const { 
-    for (StarCIterator p = begin(); 
-	 p !=end(); ++p) (*p)->dump(stream);}
+    for (StarCIterator p = this->begin(); 
+	 p !=this->end(); ++p) (*p)->dump(stream);}
 
   //!a model routine to sort the list 
   /*! see DecreasingFlux() to see what it is, if you 
      want another sorting criterion) */
   // le premier de la liste a le plus grand flux
-  void FluxSort() { sort(&DecreasingFlux);}
+  void FluxSort();
 
   //! copy the head of the list at the  end of an other list (that may be empty on input)
   void ExtractHead(StarList<Star> &Out, int NHead) const;
@@ -121,7 +113,7 @@ typedef typename list<Element>::iterator StarIterator;
   /*! could be extended to other type of transformations. */
 
   template<class Operator> void ApplyTransfo(const Operator &Op) 
-    {for (StarIterator p = begin(); p !=end(); ++p) (*p)->Apply(Op);}
+    {for (StarIterator p = this->begin(); p != this->end(); ++p) (*p)->Apply(Op);}
 
   //! returns the closest Star from a given location. 
   Star* FindClosest(double X, double Y) const;
@@ -163,7 +155,7 @@ protected :
 
 private :
 
-  int read(istream & rd);
+  int read(fastifstream & rd);
 
 
 public :
@@ -177,30 +169,9 @@ public :
   //! enables \verbatim  cout << my_list; \endverbatim
 #ifndef SWIG
 template <class Star>  ostream & operator <<(ostream &stream, const StarList<Star> &List) 
-    {List.dump(stream); return stream; };
+    {List.dump(stream); return stream; }
 #endif 
 
 
-#ifdef USE_ROOT
-#include "rootstuff.h"
-template <class Star> class StarListWithRoot : public StarList<Star>, public TObject
-{
-public :
-
-  StarListWithRoot();
-  StarListWithRoot(const string &FileName);
-  StarListWithRoot(const char* FileName) {this->read(string(FileName));}
-  int write( const string &FileName);
-  int read(const string &FileName);
-  
-private :
-  int root_read(const string &FileName);
-  int root_write(const string &FileName);
-
-  //  bool root_write(const string &FileName);
-  ClassDefT(StarListWithRoot,1)
-    };
-
-#endif /* USE_ROOT */  
 
 #endif /* STARLIST__H */

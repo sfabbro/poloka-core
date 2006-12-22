@@ -1,12 +1,13 @@
+## this library is not compiled if sextractor is disable ( --disable-sex in configure)
 
-AM_CPPFLAGS = -Wall -I../src -I../objio -I../dao @XML_CFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
+if USESEXTRACTOR
+
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/src_base -I$(top_srcdir)/src_utils -I$(top_srcdir)/src -I$(top_srcdir)/dao -I$(top_srcdir)/psf -I$(top_builddir)/src_base -I$(top_builddir)/src_utils -I$(top_builddir)/src -I$(top_builddir)/dao  -I$(top_builddir)/psf @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
 
 #### -DFNAME
 
-AM_LDFLAGS  = -L../src -L../dao -L../objio -L@libdir@ -ltoadio @XML_LIBS@ CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
+AM_LDFLAGS  = -L$(top_builddir)/src_base -L$(top_builddir)/src_utils -L$(top_builddir)/src -L$(top_builddir)/dao  -L$(top_builddir)/psf -L@libdir@ -ltoadsbase -ltoadsutils -ltoads CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
 
-%_dict.cc : %.h
-	../objio/dictgen -o $@ $<
 
 lib_LTLIBRARIES = libtoadslc.la
 
@@ -21,7 +22,6 @@ simfitphot.cc_cppflags = $(optimize_it)
 lightcurve.cc_cppflags = $(optimize_it)
 
 libtoadslc_la_SOURCES =  \
-	lightcurvepoint_dict.cc \
 	lightcurvepoint.cc \
 	gausspsf.cc	 \
 	photstar.cc      \
@@ -33,6 +33,7 @@ libtoadslc_la_SOURCES =  \
 	simfitvignet.cc  \
 	simfit.cc        \
 	simfitphot.cc 	 
+#	lightcurvepoint_dict.cc 
 
 include_HEADERS = lightcurvepoint.h
 
@@ -51,5 +52,7 @@ if AUTOINSTALL
 	ln -fs @abs_builddir@/$* @prefix@/include/$*
 
 all : $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadslc.*)) $(patsubst %,@prefix@/include/%,${include_HEADERS})
+
+endif
 
 endif

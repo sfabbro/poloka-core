@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+
+Import('g_env')
+
+
+EXTRA_DIST = [
+    'SConscript',  'Makefile.am',
+    'Doxyfile.in', 'README.db',
+    'Doxyfile',    'refman.ps'
+]
+
+
+g_env.AddToDist(EXTRA_DIST)
+

@@ -752,3 +752,120 @@ Image ConvoleGauss1D1D( Image &InOut, const double SigKernX,
   return ConvoleGauss1D1D(InOut, SigKernX, SigKernY, Precision, InOut);
 }
 
+#ifdef FUTURE
+
+
+/* Here are 1D convolution routines, somehow tested, in which the
+   innermost loop runs over image pixels. This allows to optimize by
+   hand as done in the following example:
+
+static double scal_prod(double *x, double *y, const int size)
+{
+int nblock = size/10;
+int remainder = size - nblock*10;
+double sum = 0;
+for (int i=0; i<nblock; ++i)
+  {
+  DO10( sum+= (*x)*(*y); ++x; ++y;)
+  }
+ for (int i=0; i<remainder; ++i) {sum+= (*x)*(*y); ++x; ++y;}
+return sum;
+}
+
+
+These routine are already fast, and the scheme can easily be adapted to
+2D convolution.
+
+*/
+
+bool ImConv_1DX(const Image &In, const double *K, const int S, Image &Out)
+{
+  int hs = S/2;
+  if (2*hs+1 != S)
+    {
+      cout << " S should be odd ! " << endl;
+      return false;
+    }
+  int nx = In.Nx();
+  int ny = In.Ny();
+  if (!(In.SameSize(Out)))
+    {
+      cout << " In aNd Out should have the same size !! " << endl;
+      return false;
+    }
+  Out = 0;
+  const int loops = nx-2*hs;
+
+  for (int j=0; j<ny; ++j)
+    {
+      for (int k=-hs; k<=hs; ++k)
+	{
+	  Pixel *out = &Out(hs,j);
+	  Pixel *in = &In(hs+k,j); // sign convention choosen here
+	  double kernVal = K[k+hs];
+
+	  // this loop to "unroll"
+	  for (int kk=loops; kk; --kk)
+	    {
+	      *out += kernVal * (*in);
+	      out++; in++;
+	    }
+	}
+    }
+  return true;
+}
+
+
+bool ImConv_1DY(const Image &In, const double *K, const int S, Image &Out)
+{
+  int hs = S/2;
+  if (2*hs+1 != S)
+    {
+      cout << " S should be odd ! " << endl;
+      return false;
+    }
+  int nx = In.Nx();
+  int ny = In.Ny();
+  if (!(In.SameSize(Out)))
+    {
+      cout << " In aNd Out should have the same size !! " << endl;
+      return false;
+    }
+  Out = 0;
+  const int loops = nx-2*hs;
+
+  for (int j=hs; j<ny-hs; ++j)
+    {
+      for (int k=-hs; k<=hs; ++k)
+	{
+	  Pixel *out = &Out(0,j);
+	  Pixel *in = &In(0,j+k); // sign convention choosen here
+	  double kernVal = K[k+hs];
+
+	  // this loop to "unroll"
+	  for (int kk=loops; kk; --kk)
+	    {
+	      *out += kernVal * (*in);
+	      out++; in++;
+	    }
+	}
+    }
+  return true;
+}
+
+
+bool EnlargeMask(Image &InOut, const int Border)
+{
+
+  int s = 2*Border+1;
+  double *kernel1d = new double[s];
+  for (int i=0; i<s; ++i) kernel1d[i] = 1;
+  Image tmp(InOut.Nx(), InOut.Ny());;
+  bool ok= (ImConv_1DX(InOut, kernel1d, s, tmp) && ImConv_1DY(tmp, kernel1d, s, InOut));
+  delete [] kernel1d;
+  return ok;
+}
+
+
+#endif /*FUTURE */
+

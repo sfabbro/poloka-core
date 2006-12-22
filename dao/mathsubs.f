@@ -1153,7 +1153,8 @@ C
 C
 C#######################################################################
 C
-      REAL  FUNCTION  USEPSF (IPSTYP, DX, DY, BRIGHT, PAR, PSF, 
+      DOUBLE PRECISION  FUNCTION  USEPSF (IPSTYP, DX, DY, 
+     .     BRIGHT, PAR, PSF, 
      .     NPSF, NPAR, NEXP, NFRAC, 
      .     DELTAX, DELTAY, DVDXC, DVDYC)
 C

@@ -18,6 +18,9 @@ public:
   PhotStar(const SEStar &SStar);
 
   double sky, varflux, varx, vary, covxy, varsky, photomratio;
+  bool has_saturated_pixels;
+  double image_seeing;
+  double MJD;
   
   // photomratio needed to keep the information from simfitvignet -> lightcurve (we have to move this somewhere else)
 

@@ -39,6 +39,7 @@ public :
   void DoIt();
   void MakeFakeList();
   void MatchDetectionsWithFakes();
+  void MakeDetectionsWithFakes(string &ListName);
 private :
   ImageGtransfoRef  GetFirstTransfo(); 
   bool CheckTransfoHomogeneity();

@@ -12,6 +12,9 @@
 #include <lightcurve.h>
 #include <simfitphot.h>
 #include <vutils.h>
+#include <imageutils.h>
+#include <apersestar.h>
+#include <fastfinder.h>
 
 #include <map>
 #include <iomanip>
@@ -43,8 +46,13 @@ class CalibratedStar : public BaseStar {
   double ra,dec;
   double u,g,r,i,z,x,y;
   double ue,ge,re,ie,ze;
+  double neighborDist,neighborFlux;
+  double neighborFluxContamination;
+  double neighborNsigma;
   int id;
 };
+
+static double sqr(const double& x) {return x*x;};
 
 int main(int argc, char **argv)
 {
@@ -52,7 +60,7 @@ int main(int argc, char **argv)
   string catalogname = "";
   string matchedcatalogname = "calibration.list";
   vector<string> dbimages;
-  int maxnimages = 0;
+  size_t maxnimages = 0;
 
   if (argc < 7)  {usage(argv[0]);}
   for (int i=1; i<argc; ++i)
@@ -88,7 +96,7 @@ int main(int argc, char **argv)
   // put all of this info in a LightCurveList which is the food of the photometric fitter
   LightCurveList lclist;
   lclist.RefImage = new ReducedImage(referencedbimage);
-  for (unsigned int im=0;im<dbimages.size();++im) {
+  for (size_t im=0;im<dbimages.size();++im) {
     if ( maxnimages > 0 && im >=  maxnimages ) break;
     lclist.Images.push_back(new ReducedImage(dbimages[im]));
   }
@@ -105,7 +113,7 @@ int main(int argc, char **argv)
   Gtransfo* Pix2RaDec=0;
   WCSFromHeader(header, Pix2RaDec);
   Gtransfo *RaDec2Pix = Pix2RaDec->InverseTransfo(0.01,W);
-  Frame radecW = (W.ApplyTransfo(*Pix2RaDec)).Rescale(1.1);
+  Frame radecW = (ApplyTransfo(W,*Pix2RaDec)).Rescale(1.1);
 
   DictFile catalog(catalogname);
   
@@ -121,9 +129,18 @@ int main(int argc, char **argv)
   
   double mag;
   char name[100];
-  double mag_med;
-  double mag_rms;
+  
   map<RefStar*,CalibratedStar> assocs;
+  
+  // open catalog for match
+  string refimage_catalog = lclist.RefImage->AperCatalogName();
+  if( !FileExists(refimage_catalog)) {
+    cerr << "need aperse catalog of reference image to calibrate" << endl;
+    exit(EXIT_FAILURE);
+  }
+     
+  AperSEStarList starlist(refimage_catalog);
+  FastFinder finder((const BaseStarList&)starlist);
   
   for(DictFileCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
 
@@ -144,8 +161,96 @@ int main(int argc, char **argv)
     // check again
     if (!W.InFrame(star)) continue; // bye bye
     
+    
+    // now do the match to get better coordinates
+    const BaseStar * closest_basestar = NULL;  
+    const AperSEStar * second_closest_star 
+      = dynamic_cast<const AperSEStar *>(finder.SecondClosest(star,50.,closest_basestar)); // 10 pixels
+    if ( !closest_basestar) {
+      cerr << "ERROR cannot find star at " << star.x << " " << star.y << endl;
+      continue;
+    }
     count_ok++;
     
+    // mod coordinates
+    star.x = closest_basestar->x;
+    star.y = closest_basestar->y;
+    
+    // compute rough flux contamination
+    const AperSEStar * closest_star = dynamic_cast<const AperSEStar *>(closest_basestar);
+    double dist = 0;
+    double max_flux_contamination = 0;
+    double nsigma = 1.e6;
+    
+    // based on D2 ccd_35 : average is 2.378, 90%<3.1
+    double calibration_seeing = 3.1;
+    double calibration_aperture_radius = 5.*calibration_seeing;
+    double reference_seeing = lclist.RefImage->Seeing();
+    double seeing_scale = sqr(calibration_seeing/reference_seeing);
+    
+    if ( second_closest_star ) {
+      
+      const double &aper_radius = calibration_aperture_radius;
+      double mxx = second_closest_star->gmxx;
+      double myy = second_closest_star->gmyy;
+      double mxy = second_closest_star->gmxy;
+
+      // scale with best image seeing
+      mxx *= seeing_scale;
+      myy *= seeing_scale;
+      mxy *= seeing_scale;
+      
+      
+      Point dP =  *second_closest_star - *closest_basestar;
+      dist = sqrt(dP.x*dP.x+dP.y*dP.y);
+      
+      nsigma = 0;
+      bool is_inside = (dist<aper_radius);
+      double distance_scale = (dist - aper_radius)/dist;
+      if(dist<aper_radius) {
+	//cout << "whao , second_nearest position is inside aperture radius" << endl;
+	distance_scale *= -1;
+      }
+	
+      dP.x *= distance_scale;
+      dP.y *= distance_scale;
+      
+      // calcul du moment de l'objet   
+      double det = mxx*myy-mxy*mxy;
+      nsigma = sqrt((myy*dP.x*dP.x-2.*mxy*dP.x*dP.y+mxx*dP.y*dP.y)/det);
+      // for gaussian
+      double frac_gaus= erfc(nsigma/sqrt(2.))/2.;
+      
+      // for a moffat 2.5
+      // ------------------------------------------
+      double nsigma_moffat = nsigma*0.6547; // inside ~4 sigma radius 
+      double nsigma2 = nsigma_moffat*nsigma_moffat;
+      double frac_moffat = 0.1591549431*(-2*nsigma_moffat+(3.141592654-2*atan(nsigma_moffat))*(1.+nsigma2))/(1.+nsigma2);
+      
+      if(is_inside) {
+	frac_gaus   = 1.-frac_gaus;
+	frac_moffat = 1.-frac_moffat;
+      }
+
+      if(frac_moffat>frac_gaus)
+	max_flux_contamination = frac_moffat*second_closest_star->flux;
+      else
+	max_flux_contamination = frac_gaus*second_closest_star->flux;
+      
+      cout << "x,y,dist,ndist,mxx,mxy,myy,nsigma,fg,fm,rfrac="
+	   << closest_star->x << " "
+	   << closest_star->y << " " 
+	   << dist << " " 
+	   << dist - aper_radius << " " 	
+	   << mxx  << " " 
+	   << mxy  << " " 
+	   << myy  << " " 
+	   << nsigma  << " " 
+	   << frac_gaus << " " 
+	   << frac_moffat << " " 
+	   << max_flux_contamination/closest_star->flux << " "
+	   << endl;
+    }    
     
     // set flux
     star.flux=pow(10.,-0.4*mag);
@@ -161,9 +266,10 @@ int main(int argc, char **argv)
     rstar->ra = entry->Value("x"); // ra (deg)
     rstar->dec = entry->Value("y"); // dec (deg)
     rstar->jdmin = -1.e30; // always bright
-    rstar->jdmax = 1.e30;
+    rstar->jdmax = 1.e30;   
     lclist.Objects.push_back(rstar);
     
+      
     // and also creat a lc (something stupid in the design)
     LightCurve lc(rstar);
     for (ReducedImageCIterator im=lclist.Images.begin(); im != lclist.Images.end(); ++im) {
@@ -189,7 +295,16 @@ int main(int argc, char **argv)
     cstar.id=count_total;
     cstar.x=star.x;
     cstar.y=star.y;
-    
+    if(second_closest_star) {
+      cstar.neighborDist = dist;
+      cstar.neighborFlux = second_closest_star->flux;
+    }else{
+      cstar.neighborDist = closest_star->neighborDist;
+      cstar.neighborFlux = closest_star->neighborFlux;
+    }
+    cstar.neighborFluxContamination = max_flux_contamination;
+    cstar.neighborNsigma = nsigma;
+
     //keep a link between the two of them
     assocs[(RefStar*)rstar] = cstar;
     //if(count_ok>0)
@@ -200,9 +315,12 @@ int main(int argc, char **argv)
   cout << count_total_stars << " correct stars (with mag in band " << band << ") in the catalog" << endl;
   cout << count_ok << " stars in this image" << endl;
   
+  //exit(0); // DEBUG
+  
   // ok now let's do the fit
   SimFitPhot doFit(lclist,false);
-  doFit.dowrite=false; // don't write anything before all is done
+  doFit.bWriteVignets=false; // don't write anything before all is done
+  doFit.bWriteLC=false;
   
   // does everything
   // for_each(lclist.begin(), lclist.end(), doFit);
@@ -217,6 +335,8 @@ int main(int argc, char **argv)
   stream << "#error :" << endl;
   stream << "#sky :" << endl;
   stream << "#skyerror :" << endl;
+  stream << "#mjd :" << endl;
+  stream << "#seeing :" << endl; 
   stream << "#mag :" << endl;
   stream << "#mage :" << endl;
   stream << "#ra : initial " << endl;
@@ -235,16 +355,20 @@ int main(int argc, char **argv)
   stream << "#ze : from catalog" << endl;
   stream << "#img : image number" << endl;
   stream << "#star : start number in the catalog" << endl;
-  stream << "#chi2pdf : chi2 of PSF photometry" << endl;
+  stream << "#chi2pdf : chi2 pdf of total PSF photometry" << endl;
+  stream << "#satur : 1 if some pixels are saturated" << endl;
+  stream << "#neid : distance to nearest neighbor" << endl;
+  stream << "#neif : flux of nearest neighbor" << endl;
+  stream << "#neic : flux contamination due to nearest neighbor" << endl;
+  stream << "#neins : nsigma of nearest neighbor" << endl;
   stream << "#end" <<endl;
   stream << setprecision(12);
   
   
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
-
+    
     doFit(*ilc);
-
-
+    
     CalibratedStar cstar=assocs.find(ilc->Ref)->second;
     //cout << "=== " << cstar.r << " " << cstar.flux << " ===" << endl;
     int count_img=0;
@@ -254,9 +378,11 @@ int main(int argc, char **argv)
       const Fiducial<PhotStar> *fs = *it;
       if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
 	continue;
+      
       stream << fs->x << " ";
       stream << fs->y << " ";
       stream << fs->flux << " ";
+
       if(fs->varflux>0)
 	stream << sqrt(fs->varflux) << " ";
       else
@@ -266,6 +392,8 @@ int main(int argc, char **argv)
 	stream << sqrt(fs->varsky) << " ";
       else
 	stream << 0 << " ";
+      stream << fs->MJD << " ";
+      stream << fs->image_seeing << " ";
       
       // mag
       if (band=="u") stream << cstar.u << " " << cstar.ue << " ";
@@ -290,7 +418,16 @@ int main(int argc, char **argv)
       stream << cstar.ze << " ";
       stream << count_img << " "; 
       stream << cstar.id << " "; 
-      stream << chi2pdf << " ";      
+      stream << chi2pdf << " ";    
+      
+      if(fs->has_saturated_pixels)
+	stream << 1 << " ";  
+      else
+	stream << 0 << " ";  
+      stream << cstar.neighborDist << " "; 
+      stream << cstar.neighborFlux << " "; 
+      stream << cstar.neighborFluxContamination << " ";  
+      stream << cstar.neighborNsigma << " ";        
       stream << endl;
     }
   }

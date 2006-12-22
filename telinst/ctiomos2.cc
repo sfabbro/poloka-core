@@ -2,7 +2,7 @@
 did no check anything (miss images !)
 
  */
-
+#ifdef VIRTUAL_INSTRUMENTS
 class CtioMosaic2 : public VirtualInstrument {  /* TYPE_SELECTOR */
 
 public :
@@ -44,74 +44,4 @@ public :
 
 
 };
-
-#ifdef OLD_FITSTOAD
-FitsKey FitsHeader::CtioMosaic2Format(const string &KeyName) const
-{
-  if (KeyName == "TOADPIXS") {
-    double xpxsz = KeyVal("PIXSIZE1") ;
-    double ypxsz = KeyVal("PIXSIZE2") ;
-    return FitsKey(KeyName,0.5*(xpxsz+ypxsz));
-  }
-  if (KeyName == "TOADINST") return KeyVal("DETECTOR");
-  if (KeyName == "TOADFILT") return KeyVal("FILTER");
-  if (KeyName == "TOADEXPO") return KeyVal("EXPTIME");
-  if (KeyName == "TOADGAIN") return KeyVal("GAIN");
-  if (KeyName == "TOADRDON") return KeyVal("RDNOISE");
-  if (KeyName == "TOADRASC") return KeyVal("RA");
-  if (KeyName == "TOADDECL") return KeyVal("DEC");
-  
-  if (KeyName == "TOADEQUI") return KeyVal("EQUINOX");
-  if (KeyName == "TOADAIRM") return KeyVal("AIRMASS");
-  if (KeyName == "TOADUTIM") return KeyVal("TIME-OBS");
-  if (KeyName == "TOADDATE") 
-    {
-      int dd,mm,yy;
-      string keyval = KeyVal("DATEOBS");
-      if (sscanf(keyval.c_str(),"%d-%d-%d",& yy,&mm,&dd) == 3)
- 	{
-          char date_string[64];
-	  sprintf(date_string,"%d/%d/%d",dd,mm,yy);
- 	  return FitsKey(KeyName,string(date_string));
- 	}
-    };
-  if (KeyName == "TOADSCAN")
-    { 
-      string keyval = KeyVal("BIASSEC");
-      int x0,x1,y0,y1,nx,ny;
-      if (sscanf(keyval.c_str(),"[%d:%d,%d:%d]",&x0,&x1,&y0,&y1) == 4)
-	{
-	  nx = x1-x0+1;
-	  ny = y1-y0+1;	
-          char sec_charstar[64];
-          sprintf(sec_charstar,"[%d,%d;%d,%d]",x0,nx,y0,ny);
-	  return FitsKey(KeyName,string(sec_charstar));
-	}
-    }
-  if (KeyName == "TOADILLU")
-    {
-      string keyval = KeyVal("DATASEC");
-      int x0,x1,y0,y1,nx,ny;
-      if (sscanf(keyval.c_str(),"[%d:%d,%d:%d]",&x0,&x1,&y0,&y1) == 4)
-	{
-	  nx = x1-x0+1;
-	  ny = y1-y0+1;
-          char sec_charstar[64];
-	  sprintf(sec_charstar,"[%d,%d;%d,%d]",x0,nx,y0,ny);
-	  return FitsKey(KeyName, string(sec_charstar));
-	}
-    }
-  if (KeyName == "TOADTYPE") return KeyVal("OBSTYPE");
-  if (KeyName == "TOADOBJE") return KeyVal("OBJECT") ;
-  if (KeyName == "TOADCHIP") {return KeyVal("CHIPID");} // 
-  if (KeyName == "TOADBAND")
-    {
-      string Filter = KeyVal("FILTER");
-      return FitsKey(KeyName,Filter.substr(0,1)) ;
-    }
-  if (KeyName == "TOADNAMP") return FitsKey(KeyName,1);
-  
-  return FitsKey(KeyName,NOVAL);
-  
-}
 #endif

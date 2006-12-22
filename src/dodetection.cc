@@ -8,6 +8,7 @@
 #include "frame.h" 
 #include "datacards.h"
 #include "dodetection.h"
+#include "imageback.h"
 
 static double sqr(double x){return x*x;}
 
@@ -784,7 +785,7 @@ NewCvDetection( Image & img , Image & mask, CandidateStarList & stl,
 
   // On retire un fond global et on ne s'en occupe plus
   bool GlobBack = true;
-  if (GlobBack) { img.Surface(40,img);}
+  if (GlobBack) { ImageSurface(img,40,img);}
   
   //  FitsImage("back.fits",img);
   //declaration de l'image convoluee

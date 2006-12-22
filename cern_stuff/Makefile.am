@@ -2,8 +2,8 @@ EXTRA_DIST = kernnum/pilot.h
 
 lib_LTLIBRARIES = libcernstuff.la
 libcernstuff_la_SOURCES = \
- dfact.F  dfinv.F  eisrs1.F  feqn.inc  sfact.inc  tmprnt.F  tred2.F \
- dfeqn.F  dsinv.F  fact.inc  finv.inc  sfactd.inc   sfinv.inc  tql2.F
+ dfact.F  dfinv.F  eisrs1d.F  feqn.inc  sfact.inc  tmprnt.F  tred2d.F \
+ dfeqn.F  dsinv.F  fact.inc  finv.inc  sfactd.inc   sfinv.inc  tql2d.F
 
 ######## auto symbolic link #########
 # if configure is set with option --enable-autoinstall

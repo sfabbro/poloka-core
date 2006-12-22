@@ -1,0 +1,4 @@
+#!/bin/sh
+
+tar xvzf scons-local-0.96.90.tar.gz
+cd .. ; ln -s scons-local/scons.py scons

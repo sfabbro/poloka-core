@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "reducedimage.h"
+#include "polokaexception.h"
 
 static void usage(const char *prog)
 {
@@ -46,6 +47,9 @@ int main(int nargs, char **args)
   bool ok = true;
   for (unsigned k=0; k < names.size(); ++k)
     {
+
+      try{
+
       ReducedImage ri(names[k]);
       if (!ri.IsValid())
 	{
@@ -59,6 +63,11 @@ int main(int nargs, char **args)
 	  remove(fileName.c_str());
 	}
       ok &= ri.MakeAperCat();
+
+      }catch(PolokaException p) {
+	p.PrintMessage(cout);
+	ok=false;
+      }
     }
   return (ok=true) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

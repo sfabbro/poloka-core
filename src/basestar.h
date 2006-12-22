@@ -10,12 +10,14 @@
 #include <cstdio>
 #include <string>
 
-
 #include "point.h"
 #include "countedref.h"
 
+
 using namespace std;
 
+
+class fastifstream;
 
 // AVANT :
 // Le centre du pixel (i=0,j=0) (coordonnees IJ) 
@@ -29,8 +31,6 @@ using namespace std;
 #define MEMPIX2DISK 1
 
 
-#include "rootstuff.h" // empty include when not using Root
-
 #define DECALAGE_IJ_XY 0.
 #define DECALAGE_XY_IJ 0.
 /*! \file */
@@ -38,8 +38,7 @@ using namespace std;
 //! The base class for handling stars. Used by all matching routines.
 class BaseStar : public Point, public RefCount
 {
-  CLASS_VERSION(BaseStar,1);
-  #define BaseStar__is__persistent
+
   public : // si quelqu'un connait un moyen efficace d'eviter ca...
 double flux; 
 
@@ -57,9 +56,9 @@ double flux;
   //! .
   double Y() const { return y;}
 
-  static BaseStar* read(istream & rd, const char *format);
+  static BaseStar* read(fastifstream & rd, const char *format);
 
-  void  read_it(istream & rd, const char *format);
+  void  read_it(fastifstream & rd, const char *format);
   virtual void write(ostream &s = cout)const ;
   virtual void writen(ostream &s = cout)const ;
 

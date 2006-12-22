@@ -4,8 +4,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "persistence.h"
-
 #include "basestar.h"
 #include "astroutils.h"
 #include "sestar.h"
@@ -17,9 +15,6 @@ typedef enum StandardColor {NONE=0, VBAND, BBAND, UBAND, RBAND, IBAND};
 
 
 class StandardStar : public BaseStar {
-  CLASS_VERSION(StandardStar,1);
-  #define StandardStar__is__persistent
-
 public :
 
   double airmass; 
@@ -106,10 +101,6 @@ protected :
   double dvrmag;
   double drimag;
   double dvimag;
-
-#ifndef SWIG
-  ClassDef(StandardStar,1) // Root's stuff
-#endif
 
 };
 

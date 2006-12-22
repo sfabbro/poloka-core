@@ -41,6 +41,8 @@ int main(int nargs, char **args)
     }
 
   DicStarList outputList;
+  bool first =true;
+  unsigned firstNKeys = 0;
   for (unsigned k=0; k < listNames.size(); ++k)
     {
       string &listName = listNames[k];
@@ -79,6 +81,22 @@ int main(int nargs, char **args)
 	    }
 	  s.AddKey("chip",chip);
 	  s.AddKey("shoot", shoot);
+
+	  if (first)
+	    {
+	      firstNKeys = s.NKeys();
+	      first = false;
+	    }
+	  else
+	    {
+	      if (s.NKeys() != firstNKeys)
+		{
+		  cout << " no way to merge files with different number of keys !!! " << endl;
+		  cout << " stopping here " << endl;
+		  return EXIT_FAILURE;
+		}
+	    }
+	    
 	  // append to output list 
 	  outputList.push_back(*i); 
 	}

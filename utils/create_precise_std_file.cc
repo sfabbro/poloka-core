@@ -41,7 +41,7 @@ int main(int argc, char **argv)
       BaseStarList usnoLocalStarList;
       UsnoRead(RaMin,RaMax,DecMin,DecMax,RColor,usnoLocalStarList);
       ConvertMagToFlux(&usnoLocalStarList);
-      usnoLocalStarList.sort(DecreasingFlux);
+      usnoLocalStarList.FluxSort();
 
       BaseStar *usnoStar = usnoLocalStarList.front();
 

@@ -11,10 +11,6 @@
  
 //! The same Fiducial monitored in many images in a list
 class LightCurve : public list<CountedRef<Fiducial<PhotStar> > > {
-
-  CLASS_VERSION(LightCurve,1);
-#define LightCurve__is__persistent
-
 public:
   
   //! chi2 of the fit
@@ -54,7 +50,7 @@ public:
   void write_lc2fit(ostream &Stream = cout) const;
 
   //! writes in an xml file the lightcurve result (with LightCurvePoint)
-  void write_xml(const string &filename) const;
+  //  void write_xml(const string &filename) const;
   
   //! header for extended write  
   ostream& write_header(ostream &Stream) const;
@@ -64,6 +60,13 @@ public:
 
   //! allows extended write of the full Fiducial<PhotStar>
   friend ostream& operator << (ostream& Stream, const LightCurve& Lc);
+
+  // stuff for simfit
+  double totflux, vartotflux;
+  double galflux, vargalflux;
+  double totsky , vartotsky;
+  double resmean, resmed, resrms, resadev;
+
 };
 
 
@@ -72,10 +75,6 @@ public:
 //! The Images and Objects are offered for conviency. The LightCurve should not 
 //! copy the data in Images and Objects thanks to the CountedRef nature of the LightCurve and Fiducial
 class LightCurveList : public list<LightCurve> {
-
-  CLASS_VERSION(LightCurveList,1);
-#define LightCurveList__is__persistent
-
 public:
   
   //! empty constructor does strictly nothing
@@ -98,6 +97,8 @@ public:
   //! enables to write in a file and to dump on screen
   friend ostream& operator << (ostream& Stream, const LightCurveList& MyList);
 
+  //! dumps some useful info from the fit
+  void write(const string& filename) const;
 };
 
 

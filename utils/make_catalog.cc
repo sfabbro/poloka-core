@@ -11,6 +11,7 @@
 #include "dbimage.h"
 #include "reducedimage.h"
 #include "fileutils.h"
+#include "polokaexception.h"
 
 
 
@@ -26,7 +27,7 @@ void usage()
   cerr << "What is done is:" << endl ;
   cerr << " sextractor catalog and seeing computation if not already done,except when -o used" << endl ;
   cerr << " Datacards are read in $TOADSCARDS " << endl;
-  exit(-1);
+  exit(EXIT_FAILURE);
 }
 
 
@@ -87,18 +88,26 @@ int main(int argc, char **argv)
   
   DbImageList list(names); // expands correctly...
   int status = 1;
-
+  
   for (DbImageIterator it = list.begin(); it != list.end(); ++it)
     {
-      ReducedImage redimage(*it);
-      if (specif)
-	{
-	  status &= redimage.MakeCatalog(redo_from_beg, overwrite, savemasksat,pas_sub_fond,
-				     use_sigma_header);
-	  redimage.MakeCosmic();
-	}
-      else
-	status &= redimage.MakeCatalog();
+
+      try { 
+	
+	ReducedImage redimage(*it);
+	if (specif)
+	  {
+	    status &= redimage.MakeCatalog(redo_from_beg, overwrite, savemasksat,pas_sub_fond,
+					   use_sigma_header);
+	    redimage.MakeCosmic();
+	  }
+	else
+	  status &= redimage.MakeCatalog();
+
+      }catch(PolokaException p) {
+	p.PrintMessage(cout);
+	status = 0;
+      }
     }
   if (status) return EXIT_SUCCESS; else return EXIT_FAILURE;
 

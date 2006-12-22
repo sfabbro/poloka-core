@@ -4,6 +4,7 @@
 #include <cstdlib> /* for atoi */
 #include <unistd.h> // for link
 #include "fileutils.h"
+#include "stringlist.h"
 #include "dbimage.h"
 
 
@@ -138,16 +139,19 @@ return date;
 
 
 #include <stdarg.h>
+#include "dbconfigexception.h"
+
 
 static void FatalError(const char * Message,...)
 {
 cerr << " ******** a fatal error occured in the image database handling : *****" << endl;
+ char mess[8192];
 va_list args;
 va_start (args,Message);
-vfprintf (stderr,Message,args);
+ vsnprintf (mess,8192,Message,args);
 va_end(args);
-cerr << " ******* the job stops here *********** " << endl;
-exit(2);
+ cerr << mess;
+ throw (DbConfigException(mess));
 }
 
 
@@ -438,9 +442,7 @@ void DbImage::init_from_name()
        const Path* path = DbConfig()->GetImagePath(imageName);
       if (path) directory = AddSlash(AddSlash(path->path) + imageName);
     }
-  saveEverythingElse = false; // this image already exists
-      imageName = BaseName(imageName);
-  //  if (!FileExists(EverythingElseFileName())) saveEverythingElse = true;
+  imageName = BaseName(imageName);
   //if(!IsValid()) {
   //std::cerr << "ERROR in  DbImage::init_from_name cannot find " << imageName << endl;
   //}
@@ -463,7 +465,6 @@ bool DbImage::create(const string &ActualPath) // the actual creator
   
   // check that when retrieved, the image is the one just created
   DbImage db2(Name());
-  db2.saveEverythingElse = false; // the one we are creating now should save its own data (which may not exists yet)
 #if 0
   // very uninteresting
   if (! (*this == db2))
@@ -475,7 +476,6 @@ bool DbImage::create(const string &ActualPath) // the actual creator
       cerr << " retrieved : directory = " << directory;
     }
 #endif
-  saveEverythingElse = true; // it is a new image, so we have to write stuff down.
   return true;
 }
 
@@ -586,6 +586,7 @@ void DbConfigFile::init_image_names()
   AddNewImageName("","bias","bias.fits");
 
   AddNewImageName("","cosmic","cosmic.fits.gz");
+  AddNewImageName("","segmentation","segmentation.fits.gz");
   AddNewImageName("","satellite","satellite.fits.gz");
   AddNewImageName("","satur","satur.fits.gz");
 
@@ -639,7 +640,8 @@ static string image_name(const string &TypeName, const string &Dir,
   if (FileExists(fileName))  return fileName;
   fileName = withoutExtension+".fz";
   if (FileExists(fileName))  return fileName;
-
+  fileName = withoutExtension+".head";
+  if(FileExists(fileName)) return fileName;
   // the file does not exists yet. so generate its
   // name according to defaults
   return DbConfig()->NewImageName(TypeName,Dir,BaseName);
@@ -682,6 +684,11 @@ return "";
 string DbImage::AperCatalogName() const
 {
   return directory+"aperse.list";
+}
+
+string DbImage::StarCatalogName() const
+{
+  return directory+"standalone_stars.list";
 }
 
 string DbImage::ImagePsfName(const DbImagePsfKind Kind) const 
@@ -741,6 +748,12 @@ string DbImage::FitsCosmicName() const
 }
 
 
+string DbImage::FitsSegmentationName() const
+{
+  return image_name(TypeName(),directory,"segmentation");
+}
+
+
 string DbImage::FitsSatelliteName() const
 {
   return image_name(TypeName(),directory,"satellite");
@@ -783,6 +796,7 @@ string DbImage::GetFileName(const char* WhichFile) const
   if (strcmp(WhichFile,"dead")==0)   return FitsDeadName();
   if (strcmp(WhichFile,"back")==0)   return FitsBackName();
   if (strcmp(WhichFile,"cos")==0) return FitsCosmicName();
+  if (strcmp(WhichFile,"seg")==0) return FitsSegmentationName();
   if (strcmp(WhichFile,"satel")==0) {  return FitsSatelliteName();}
   if (strcmp(WhichFile,"miniback")==0)   return FitsMiniBackName();
   if (strcmp(WhichFile,"bias")==0)   return FitsBiasName();
@@ -795,37 +809,6 @@ string DbImage::GetFileName(const char* WhichFile) const
   if (strcmp(WhichFile,"usno")==0) return ImageMatchUsnoName();
   if (strcmp(WhichFile,"weight")==0) return FitsWeightName();
   return "";
-}
-
-DbImage::~DbImage()
-{
-  if (saveEverythingElse) writeEverythingElse();
-}
-
-#ifdef USE_ROOT
-#include "TFile.h"
-#endif /* USE_ROOT */
-
-bool DbImage::writeEverythingElse()
-{
-  if (!saveEverythingElse) return false;
-  string fileName = EverythingElseFileName();
-  //  cout << " writing \"EverythingElse\" file : " << fileName << endl;
-#ifdef USE_ROOT
-  TFile tFile(fileName.c_str(),"RECREATE");
-  if (!tFile.IsOpen())
-    {
-      cerr << " could not open " << fileName << endl;
-      return false;
-    }
-  Write();
-  // tFile.Close() called by destructor
-  saveEverythingElse = false;
-  return true;
-#else
-  //  cerr << " no way to write " << fileName << " without defining USE_ROOT " << endl;
-  return false;
-#endif /* USE_ROOT */
 }
 
 

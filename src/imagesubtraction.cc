@@ -56,7 +56,6 @@ ReducedImage *ImageSubtraction::Clone() const
 
 ImageSubtraction::~ImageSubtraction()
 {
-  writeEverythingElse();
 }
 
 bool ImageSubtraction::MakeFits()
@@ -313,8 +312,9 @@ string ImageSubtraction::CandCutScanName() const
 #include "detection.h"
 
 bool ImageSubtraction::RunDetection(DetectionList &Detections,
-				    const BaseStarList* Positions)
+				    const BaseStarList* Positions, string name,bool fix_pos)
 {
+  if (name == "") name =DetectionsName();
   if (!MakeFits() || !MakeWeight())
     {
       cerr << " cannot make (sub) catalog for " << Name() 
@@ -355,13 +355,29 @@ bool ImageSubtraction::RunDetection(DetectionList &Detections,
 				Seeing(), Seeing());
 	refDet.SetScoresFromRef(Detections, *Ref());
       }
-      Detections.write(DetectionsName());
+      Detections.write(name);
     }
   else
     { 
+      {
       DetectionProcess detectionProcess(FitsName(), FitsWeightName(), 
 					  Seeing(), Seeing());
-      detectionProcess.DetectionScoresFromPositions(*Positions, Detections);
+      detectionProcess.DetectionScoresFromPositions(*Positions, Detections,fix_pos);
+      }
+      {//block to save memory
+	/* fill in the Detection's block that concerns the ref:
+	   - flux on the ref under the SN (measured in the same conditions
+	   as the SN (this is why we use the sub Seeing() 
+	   rather tha ref.Seeing())
+	   - nearest object
+	*/
+	ReducedImage &ref = *Ref();
+	DetectionProcess refDet(ref.FitsName(), ref.FitsWeightName(), 
+				Seeing(), Seeing());
+	refDet.SetScoresFromRef(Detections, *Ref());
+       
+      }
+      Detections.write(name);
     }
   cout << "zero the pixel with null weight" << endl;
   MaskNullWeight();

@@ -4,9 +4,11 @@
 
 
 #include <string>
-
+#include "imagepsf.h"
+#define NO_PERS
+#ifndef NO_PERS
 #include "persistence.h"
-
+#endif
 #include "basestar.h"
 #include "sestar.h"
 
@@ -144,20 +146,19 @@ class ModelStar : public BaseStar
 
   virtual void writen(ostream & pr = cout) const;
   std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
-  virtual void    read_it(istream& r, const char *Format); 
-  static ModelStar* read(istream& r, const char* Format);
+  //  virtual void    read_it(istream& r, const char *Format); 
+  //  static ModelStar* read(istream& r, const char* Format);
 
   //! Addition to an image. Needs a transfo as explained above. Transfo = tf(ref->image). Update the saturation map according to new pixel values.
   void AddToImage(const Image &image, Image & dest, const Gtransfo *Transfo, 
-		  Image * psat=NULL, double satlevel=-1 ) const ;
+		  Image * psat=NULL, double satlevel=-1 ,double gain=1) const ;
 
 };
 
 
 class SimSNStar : public BaseStar 
 {
-  CLASS_VERSION(SimSNStar,1);
-  #define SimSNStar__is__persistent
+
 
   private:
   /*! concerning supernova: x, y, flux are in ref system */
@@ -189,8 +190,8 @@ class SimSNStar : public BaseStar
   std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
   virtual void    dumpn(ostream& s = cout) const;
   virtual void    dump(ostream& s = cout) const ;
-  virtual void    read_it(istream& r, const char *Format); 
-  static SimSNStar* read(istream& r, const char* Format);
+  //  virtual void    read_it(istream& r, const char *Format); 
+  //  static SimSNStar* read(istream& r, const char* Format);
 
   void NewFlux(double NewZeroPoint){flux = pow(10,(NewZeroPoint - mag_sn)*0.4);}
 
@@ -208,10 +209,8 @@ class SimSNStar : public BaseStar
 /* a Simulated Supernova, and a model star to add it on an image. */
 
 class SimSNWModelStar : public SimSNStar 
-{
-  CLASS_VERSION(SimSNWModelStar,1);
-  #define SimSNWModelStar__is__persistent
- 
+{  
+
  public:
 
   ModelStar model_on_ref ;
@@ -223,8 +222,8 @@ class SimSNWModelStar : public SimSNStar
   virtual void    dumpn(ostream& s = cout) const;
   virtual void    dump(ostream& s = cout) const ;
   std::string WriteHeader_(ostream &pr = cout, const char* i = NULL) const;
-  virtual void    read_it(istream& r, const char *Format); 
-  static SimSNWModelStar* read(istream& r, const char* Format);
+  //  virtual void    read_it(istream& r, const char *Format); 
+  //  static SimSNWModelStar* read(istream& r, const char* Format);
 
   //! As indicated in Name : select the closest star in SEStarList
   // of beautiful stars, and compute the integer shift, the photometric ratio
@@ -340,6 +339,7 @@ const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This);
 
 
 #include "image.h"
+#include "imagepsf.h"
 class DaoPsf;
 
 
@@ -349,5 +349,12 @@ void AddWDaoPsfToImage(DaoPsf const & daopsf, double xc, double yc,
 void AddListWDaoPsfToImage(DaoPsf const & daopsf, BaseStarList *List, 
 		       Image & img, 
 		       Image * psat=NULL, double saturation=-1);
-
+		       
+void AddWPsfToImage(ImagePSF &psf ,double xc, double yc, 
+		       double flux,Image & image,
+		       Image * psat,
+		       double saturation);
+void AddListWPsfToImage(ImagePSF &psf, BaseStarList *List,
+		       Image & img,  Image * psat,
+		       double saturation);		    
 #endif /* SIMSNSTAR__H */

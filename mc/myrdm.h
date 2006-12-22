@@ -10,7 +10,8 @@ class Image;
 double my_rndm();
 // give a seed computed on date to random()
 void RandomSeed();
-float NormalGaussRand();
+double NormalGaussRand();
+unsigned int Poisson(double mean);
 // tirage de x et y selon une loi gaussienne centree
 // en (0,0) de parametres sig_a, sig_b, theta
 // re-pompee de EROS

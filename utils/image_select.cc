@@ -1,6 +1,8 @@
+#include <sstream>
 #include <iostream>
 #include <vector>
 
+#include "stringlist.h"
 #include "frame.h"
 #include "gtransfo.h"
 #include "fileutils.h"
@@ -8,6 +10,7 @@
 #include "wcsutils.h"
 #include "fitsimage.h"
 #include "dbimage.h"
+#include "imageutils.h"
 
 static void usage(const char *progName)
 {
@@ -36,21 +39,26 @@ static void usage(const char *progName)
   exit(-1);
 }
 
-static bool DecodeFitsExpression(const FitsHeader &Head, const string&Exp)
+bool DecodeFitsExpression(const FitsHeader &Head, const string&Exp)
 {
-  vector<string> vs;
-  DecomposeString(vs,Exp);
-  if (vs[1] == "==") return string(Head.KeyVal(vs[0])) == vs[2];
-  if (vs[1] == "<") return double(Head.KeyVal(vs[0])) < atof(vs[2].c_str());
-  if (vs[1] == "<=") return double(Head.KeyVal(vs[0])) <= atof(vs[2].c_str());
-  if (vs[1] == ">") return double(Head.KeyVal(vs[0])) > atof(vs[2].c_str());
-  if (vs[1] == ">=") return double(Head.KeyVal(vs[0])) >= atof(vs[2].c_str());
-  if (vs[1] == "~=") 
-    {
-      string keyval(Head.KeyVal(vs[0]));
-      return keyval.find(vs[2]) != keyval.npos;
-    }
+  istringstream iss(Exp);
+  string keyname, op, keyval;
+  iss >> keyname >> op >> keyval;
+  if (!Head.HasKey(keyname)) return false;
 
+  if (op == "==") 
+    return string(Head.KeyVal(keyname)) == keyval;
+  if (op == "~=")
+    return string(Head.KeyVal(keyname)).find(keyval) != string::npos;
+  double dval = atof(keyval.c_str());
+  if (op == "<") 
+    return double(Head.KeyVal(keyname)) <  dval;
+  if (op == "<=") 
+    return double(Head.KeyVal(keyname)) <= dval;
+  if (op == ">") 
+    return double(Head.KeyVal(keyname)) >  dval;
+  if (op == ">=") 
+    return double(Head.KeyVal(keyname)) >= dval;
   return true;
 }
 
@@ -174,7 +182,7 @@ int main(int nargs, char **args)
 	  rad_is_true = false;
 	  if (WCSFromHeader(head, Pix2RaDec))
 	    {
-	      Frame sidFrame = pixFrame.ApplyTransfo(*Pix2RaDec);
+	      Frame sidFrame = ApplyTransfo(pixFrame,*Pix2RaDec);
 	      Frame overlap = sidFrame*sourceFrame;
 	      cout << "sidFrame " << sidFrame << endl;
 	      cout << "sourceFrame " << sourceFrame << endl;
@@ -192,6 +200,7 @@ int main(int nargs, char **args)
       // print image if selected
       if ((exp_is_true) && (date_is_true) && (rad_is_true) && (ref_is_true)) cout << *it << endl;
     }
+
   if (refhdr) delete refhdr;
 
   return EXIT_SUCCESS;

@@ -1,9 +1,11 @@
+EXTRA_DIST = daocommon.f
 
-AM_CPPFLAGS = -Wall -I../src -I../objio @XML_CFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
-#AM_FFLAGS   = -Wall -pedantic -W  -O3 -funroll-loops
-AM_FFLAGS   = -Wall -pedantic -W -ffortran-bounds-check
-AM_LDFLAGS  = -L../src -ltoads -L../objio -L@libdir@ -ltoadio -lg2c @XML_LIBS@ @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ 
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/src_base -I$(top_srcdir)/src @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
+AM_FFLAGS   = -Wall -pedantic -W  -O3 -funroll-loops -ffortran-bounds-check
+#AM_FFLAGS   = -Wall -pedantic -W -ffortran-bounds-check
+AM_LDFLAGS  = -L$(top_builddir)/src_base -L$(top_builddir)/src -ltoadsbase -ltoads -L@libdir@ -lg2c @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ 
 
+if USESEXTRACTOR
 
 lib_LTLIBRARIES = libtoadsdao.la
 
@@ -33,6 +35,8 @@ libtoadsdao_la_SOURCES = \
 	daophotpsf.cc	 \
 	daophotutils.cc 
 
+include_HEADERS = daophot.h cdaophot.h daophotio.h daophotoption.h daophotpsf.h daophotutils.h fitssubs.h
+
 
 ######## auto symbolic link #########
 # if configure is set with option --enable-autoinstall
@@ -46,5 +50,7 @@ if AUTOINSTALL
 	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
 
 all :  $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadsdao.*))
+
+endif
 
 endif

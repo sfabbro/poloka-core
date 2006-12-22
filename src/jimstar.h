@@ -4,8 +4,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "persistence.h"
-
 #include "basestar.h"
 //#include "astroutils.h"
 //#include "sestar.h"
@@ -17,10 +15,6 @@
 */
 
 class JimStar : public BaseStar {
-  CLASS_VERSION(JimStar,1);
-  #define JimStar__is__persistent
-  
-  
   public :
   
   

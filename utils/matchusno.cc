@@ -4,6 +4,7 @@
 #include "dbimage.h"
 #include "fileutils.h"
 #include "usnoutils.h"
+#include "polokaexception.h"
 
 static void usage(const char *pgname)
 {
@@ -21,7 +22,7 @@ int main(int argc, char **argv)
   list<string> dbImageList;
   if (argc < 2)
     {
-      usage(argv[0]);  return -1;
+      usage(argv[0]);  return EXIT_FAILURE;
     }
 
   char *fitsName = NULL;
@@ -62,22 +63,33 @@ int main(int argc, char **argv)
 
   if (fitsName && listName)
     {
-      FitsHeader head(fitsName);
-      if (head.HasKey("DZEROUSN")  && !overwrite && MatchPrefs.writeWCS && !MatchPrefs.asciiWCS)
-	{
-	  cout << "Match already done! " << endl;
-	  exit(EXIT_SUCCESS);
-	}	
-      if(UsnoProcess(fitsName,listName, NULL))
-	return EXIT_SUCCESS;
-      else
+
+      try {
+
+	FitsHeader head(fitsName);
+	if (head.HasKey("DZEROUSN")  && !overwrite && MatchPrefs.writeWCS && !MatchPrefs.asciiWCS)
+	  {
+	    cout << "Match already done! " << endl;
+	    exit(EXIT_SUCCESS);
+	  }	
+	if(UsnoProcess(fitsName,listName, NULL))
+	  return EXIT_SUCCESS;
+	else
+	  return EXIT_FAILURE;
+      }catch(PolokaException p) {
+	p.PrintMessage(cout);
 	return EXIT_FAILURE;
+      }
     }
   
-
+  
+  bool ok = true;
   for (list<string>::iterator i=dbImageList.begin(); i!= dbImageList.end(); ++i)
     {
       string name = *i;
+
+      try{ 
+
       DbImage dbimage(name);
       if (!dbimage.IsValid())
 	{
@@ -106,11 +118,17 @@ int main(int argc, char **argv)
 	  }	
       }
       if(!UsnoProcess(fitsFileName, catalogName, &dbimage))
-	return EXIT_FAILURE;
+	continue;
 
+      }catch(PolokaException p) {
+	p.PrintMessage(cout);
+	ok = false;
+      }
     } /* end of loop on arguments */
-
-  return EXIT_SUCCESS;
+  
+  if(ok)
+    return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }
 
 

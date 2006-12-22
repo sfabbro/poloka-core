@@ -53,9 +53,8 @@ StarMatchList* MatchSearchRotShift(BaseStarList &L1, BaseStarList &L2, const Mat
 StarMatchList* MatchSearchRotShiftFlip(BaseStarList &L1, BaseStarList &L2, const MatchConditions &Conditions);
 
 //! assembles star matches.
-/*! It  picks stars in L1, transforms them through Guess, and collects closest star
-in L2, and builds a match if closer than MaxDist). It then Refines the transformation by discarding apparent
-outlier pairs (more than 3 standard deviations away). */
+/*! It picks stars in L1, transforms them through Guess, and collects
+closest star in L2, and builds a match if closer than MaxDist). */
 
 StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,const Gtransfo *Guess, const double MaxDist);
 
@@ -63,7 +62,7 @@ StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2,c
 
 StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2, const double MaxDist);
 
-//! searches for a 2 dimentionnal shift using a very crude histogram method.
+//! searches for a 2 dimensional shift using a very crude histogram method.
 
 //! iteratively collect and fits, with the same transfo kind, until the residual increases
 StarMatchList *CollectAndFit(const BaseStarList &L1, const BaseStarList &L2,

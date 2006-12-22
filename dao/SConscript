@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+
+import os
+
+
+Import('g_env')
+local_env = g_env.Copy()
+
+EXTRA_DIST = [
+    'Makefile.am', 'SConscript',
+    'daocommon.f'
+    ]
+
+HEADER_FILES = [
+    'cdaophot.h',  'daophotio.h',      'daophotpsf.h',    'fitssubs.h',
+    'daophot.h',   'daophotoption.h',  'daophotutils.h'
+    ]
+
+SOURCE_FILES = [
+    'addstr.f',      'allstr.f',      'allstsubs.f',    'daotools.f',
+    'find.f',        'fotometry.f',    'fudge.f',
+    'getpsf.f',      'group.f',        'iosubs.f',
+    'mathsubs.f',    'getdaocommon.f', 'nstar.f',
+    'pckpsf.f',      'peak.f',         'sort.f',
+    'substar.f',     'unxsubs.f',      'fitssubs.c',
+    'daophot.cc',    'daophotio.cc',   'daophotoption.cc',
+    'daophotpsf.cc', 'daophotutils.cc'
+    ]
+
+
+local_env.ParseConfig('xml2-config --cflags')
+local_env.ParseConfig('xml2-config --libs')
+local_env.AddInternalDep('src_base', 'toadsbase')
+local_env.AddInternalDep('src',      'toads')
+local_env.AddInternalDep('objio',    'toadsio')
+local_env.ActivateExternalPackage('cfitsio')
+
+shlib = local_env.SharedLibrary(target='toadsdao', source=SOURCE_FILES)
+
+local_env.InstallLibs([shlib])
+local_env.InstallHeaders(HEADER_FILES)
+
+g_env.AddToDist(EXTRA_DIST + SOURCE_FILES + HEADER_FILES)
+
+
+
+
+#[ 'addstr.f',
+#              'allstr.f',
+#              'allstsubs.f',
+#              'daotools.f',
+#              'find.f',
+#              'fotometry.f',
+#              'fudge.f',
+#              'getpsf.f',
+#              'group.f',
+#              'iosubs.f',
+#              'mathsubs.f',
+#              'getdaocommon.f',
+#              'nstar.f',
+#              'pckpsf.f',
+#              'peak.f',
+#              'sort.f',
+#              'substar.f',
+#              'unxsubs.f',
+#              'fitssubs.c',
+#              'daophot.cc',
+#              'daophotio.cc',
+#              'daophotoption.cc',
+#              'daophotpsf.cc',
+#              'daophotutils.cc']
+
+
+
+
+# install targets
+#Import('libDir')
+#if libDir != '.':
+#    inst = local_env.Install(libDir, shlib)
+#    local_env.AddPostAction(inst, Chmod('$TARGETS', 0755))
+#    local_env.Clean('uninstall', inst)
+## headers ! 
+#g_env.Accumulate('#poloka-0.0.1/dao',
+#                 EXTRA_DIST + src_files)
+
+#INCLUDE_DIRS = [
+#    '#src_base',
+#    '#src'
+#    ]
+
+#LIB_DIRS = [
+#    '#' + local_env['builddir'] + '/src_base',
+#    '#' + local_env['builddir'] + '/src'
+#    ]
+
+#LIBS = [
+#    'toadsbase',
+#    'toads'
+#    ]
+
+#RPATH_DIRS = []
+#if prefix == '.':
+#    RPATH_DIRS.append(Dir('#src_base').abspath)
+#    RPATH_DIRS.append(Dir('#src').abspath)
+#else:
+#    RPATH_DIRS.append(Dir(prefix + os.sep + 'lib').abspath)
+
+
+#local_env.Append(CPPPATH=INCLUDE_DIRS)
+#local_env.Append(LIBPATH=LIB_DIRS)
+#local_env.Append(LIBS=LIBS)
+#for d in RPATH_DIRS:
+#    local_env.Append(LINKFLAGS='-Wl,--rpath -Wl,%s' % d)
+
+#SOURCE_FILES = Glob(includes=['*.f', '*.cc', '*.c'],
+#                    excludes=['daocommon.f',
+#                              'simfit.cc',
+#                              'simfitphot.cc'])

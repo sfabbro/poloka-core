@@ -32,8 +32,8 @@ found objects is stored in 2 different structures
 global parameters such as fluxes, errors, astrometry. One has to gather information in both,that is why this user handle has 2 pointer arguments. 
 Some description of the variable info can be found in 
 types.h, globals.h and param.h in sextractor sources.*/
-/* files types.h, analyse.c and scan.c habe been 
-   modified in sextractor code. also refine.c, to fixi a bug */
+/* files types.h, analyse.c and scan.c have been 
+   modified in sextractor code. also refine.c, to fix a bug */
 
 
 extern "C" {
@@ -135,6 +135,8 @@ typedef void (*_SexImgFill)(float x, float y);
 
 
 
+#include <vector>
+
 static 
 int 
 sex_proc(const AllForSExtractor & data,
@@ -142,7 +144,7 @@ sex_proc(const AllForSExtractor & data,
           double & Fond, double &SigmaFond)
 {
 
-  std::string toRemove;
+  std::vector<void *> toFree;
   memset(&prefs,0,sizeof(prefs));
   prefs.pipe_flag = 0;
   prefs.nimage_name = 1; // 1 seule image pour detection & photometrie
@@ -150,13 +152,15 @@ sex_proc(const AllForSExtractor & data,
 
   strcpy(prefs.prefs_name, data.SexConfigFileName.c_str());
 
-  char filename[256];
-  std::string imageName = data.DecompressIfNeeded(data.FitsFileName, toRemove);
-  strcpy(filename,imageName.c_str());
+  char filename[512];
+  strcpy(filename,data.FitsFileName.c_str());
   prefs.image_name[0] = filename;
 
+  // tell SExtractor to read its datacards.
   readprefs(prefs.prefs_name, NULL, NULL, 0);
   
+
+  // and now fill the remainder.
   strcpy(prefs.param_name, data.SexParamName.c_str());
   strcpy(prefs.nnw_name,data.SexNNWName.c_str() );
   strcpy(prefs.filter_name,data.SexFilterName.c_str());
@@ -170,33 +174,41 @@ sex_proc(const AllForSExtractor & data,
     }
   else
     {
-      if (strlen(data.FitsBackName.c_str()) != 0
-	  && strlen(data.FitsMiniBackName.c_str()) != 0 )
+      int nchecks = 0;
+      /* just a simple comment: SExtractor actually free's the prefs.check_name.
+	 so if you free them a second time, a (usualy delayed) crash should happen */
+      size_t namesize;
+      if ((namesize=strlen(data.FitsBackName.c_str())) != 0)
 	{
-	  if (prefs.check_name[0] != 0 )
-	    free(prefs.check_name[0]);
-	  prefs.check_name[0] = (char *)calloc(MAXCHAR,1);      
-	  strcpy(prefs.check_name[0],data.FitsBackName.c_str() );
-	  prefs.check_type[0] = CHECK_BACKGROUND;
-    
-	  if (prefs.check_name[1] != 0 )
-	    free(prefs.check_name[1]);
-	  prefs.check_name[1] = (char *)calloc(MAXCHAR,1);      
-	  strcpy(prefs.check_name[1], data.FitsMiniBackName.c_str() );
-	  prefs.check_type[1] = CHECK_MINIBACKGROUND;
-	  prefs.ncheck_name = 2 ;
-	  prefs.ncheck_type = 2 ;
+	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
+	  strcpy(prefs.check_name[nchecks],data.FitsBackName.c_str() );
+	  prefs.check_type[nchecks] = CHECK_BACKGROUND;	  
+	  nchecks++;
 	}
+      if ((namesize=strlen(data.FitsMiniBackName.c_str())) != 0 )
+	{  
+	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
+	  strcpy(prefs.check_name[nchecks], data.FitsMiniBackName.c_str() );
+	  prefs.check_type[nchecks] = CHECK_MINIBACKGROUND;
+	  nchecks++;
+	}
+      if ((namesize = strlen(data.FitsSegmentationName.c_str())) != 0 )
+	{  
+	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
+	  strcpy(prefs.check_name[nchecks], data.FitsSegmentationName.c_str() );
+	  cout << "Segmentation image requested " << data.FitsSegmentationName << endl;
+	  prefs.check_type[nchecks] = CHECK_SEGMENTATION;
+	  nchecks++;
+	}
+      prefs.ncheck_name = nchecks ;
+      prefs.ncheck_type = nchecks ;
     }
 
   if (strlen(data.FitsWeightName.c_str()))
     {
-      if (prefs.wimage_name[0] != 0 )
-	free(prefs.wimage_name[0]);
-      prefs.wimage_name[0] = (char *)calloc(MAXCHAR,1);     
-      std::string weightName = 
-	data.DecompressIfNeeded(data.FitsWeightName,toRemove);
-      strcpy(prefs.wimage_name[0],weightName.c_str());
+      prefs.wimage_name[0] = (char *)calloc(MAXCHAR,1);
+      toFree.push_back(prefs.wimage_name[0]);
+      strcpy(prefs.wimage_name[0],data.FitsWeightName.c_str());
       prefs.nwimage_name = 1 ; 
       prefs.weight_type[0]=WEIGHT_FROMWEIGHTMAP;
       prefs.nweight_type=1;
@@ -204,16 +216,14 @@ sex_proc(const AllForSExtractor & data,
       prefs.dweight_flag = 1;
       prefs.weightgain_flag=0; // weight map is not a gain map
       prefs.weight_thresh[1] = 0. ;// a mettre a zero
-      prefs.nweight_thresh = 1;
-      
+      prefs.nweight_thresh = 1;      
     }
 
 
   if (strlen(data.FitsMaskName.c_str()))
     {
-      if (prefs.fimage_name[0] != 0 )
-	free(prefs.fimage_name[0]);
-      prefs.fimage_name[0] = (char *)calloc(MAXCHAR,1);      
+      prefs.fimage_name[0] = (char *)calloc(MAXCHAR,1);
+      toFree.push_back(prefs.fimage_name[0]);
       strcpy(prefs.fimage_name[0],data.FitsMaskName.c_str() );
       prefs.nfimage_name = 1 ;
       prefs.flag_type[0] = FLAG_AND ;
@@ -260,8 +270,8 @@ sex_proc(const AllForSExtractor & data,
   Fond = thefield1.backmean;
   SigmaFond= thefield1.backsig ;
   
-  // cleanup temp files
-  RemoveFiles(toRemove);
+  // free the mallocs:
+  for (unsigned k=0; k<toFree.size(); ++k) free(toFree[k]);
 
   return 1;
 } 
@@ -304,8 +314,8 @@ static void MakeNumbers(SEStarList & stl)
 }
 
 // make a SEStarList on an image, encapsulage minimal
-
-int
+// this routine can only be called with a 
+static int
 _SEStarListMake(const AllForSExtractor & data,
 	       SEStarList &List, double & Fond, 
 	       double &SigmaFond,
@@ -328,12 +338,27 @@ _SEStarListMake(const AllForSExtractor & data,
 
 
 
-std::string ForSExtractor::DecompressIfNeeded(const std::string &InFileName,
-					      std::string &ToRemove) const
+void ForSExtractor::DecompressIfNeeded()
 {
-  std::string outFileName =  AddSlash(TempDir)+UniqueName+"."
-    +CutExtension(BaseName(InFileName))+".fits";
-  return DecompressImageIfNeeded(InFileName, outFileName, ToRemove);
+  string* names[2] = {&FitsFileName, &FitsWeightName};
+  for (unsigned k=0; k<sizeof(names)/sizeof(names[0]); ++k)
+    {
+      string &name = *(names[k]);
+      if (name != "") 
+	{
+	  string outFileName = AddSlash(TempDir)+UniqueName+"."
+	    +CutExtension(BaseName(name))+".fits";
+	  name = DecompressImageIfNeeded(name, outFileName, ToRemove);
+	}
+    }
+}
+
+
+ForSExtractor::~ForSExtractor()
+{
+  if (ToRemove != "")
+    cout << " removing " << ToRemove << endl;
+  RemoveFiles(ToRemove);
 }
 
 
@@ -346,57 +371,47 @@ AllForSExtractor::Print()
 void
 ForSExtractor::Print()
 {
-  cerr << "FitsFileName " << FitsFileName << endl ;
-  cerr << "FitsMaskName  " << FitsMaskName << endl ; 
-  cerr << "FitsBackName  " << FitsBackName << endl   ;
-  cerr << "FitsMiniBackName " << FitsMiniBackName << endl  ;
-  cerr << "saturation " << saturation << endl   ;
-  cerr << "back_type_manual : " ;
+  cout << "FitsFileName " << FitsFileName << endl ;
+  cout << "FitsMaskName  " << FitsMaskName << endl ; 
+  cout << "FitsBackName  " << FitsBackName << endl   ;
+  cout << "FitsMiniBackName " << FitsMiniBackName << endl  ;
+  cout << "FitsSegmentationName " << FitsSegmentationName << endl  ;
+  cout << "saturation " << saturation << endl   ;
+  cout << "back_type_manual : " ;
   if (back_type_manual == true)
-    cerr << "set " << endl << " a constant value = " << backmean 
+    cout << "set " << endl << " a constant value = " << backmean 
 	 << " is taken for the background "  << endl   ;
   else
-    cerr << "not set " << endl ;
-  cerr << "sigma_back : " ;
+    cout << "not set " << endl ;
+  cout << "sigma_back : " ;
   if (sigma_back < 0 )
-    cerr << "not specified" << endl ;
+    cout << "not specified" << endl ;
   else
-    cerr << sigma_back  << endl  ;
+    cout << sigma_back  << endl  ;
 }
 
 void
 AllForSExtractor::FillFromEnvironnement()
 {
-  const char *sextractor_dir = getenv("TOADSCARDS");
-  if (sextractor_dir == NULL )
+  string sextractor_dir = ".";
+  if (getenv("TOADSCARDS")) {
+    sextractor_dir = getenv("TOADSCARDS");
+    cout << " using SExtractor datacards from "  << sextractor_dir << endl;
+  }
+  else
+    cout << " TOADSCARDS not defined, use local directory  " << endl;
+  SexConfigFileName = sextractor_dir+"/default.sex";
+  if (getenv("SECARD1"))
     {
-      sextractor_dir = "." ;
-      cerr << "TOADSCARDS not defined, use local directory  " << endl;
-    }
-  else cerr << " using SExtractor datacards from "  << sextractor_dir << endl;
-
-  string sextr_dir = sextractor_dir ;
-  SexConfigFileName = sextr_dir+"/default.sex";
-  const char *default1 = getenv("SECARD1");
-  if (default1 != NULL )
-    {
-      SexConfigFileName = sextr_dir+"/default1.sex";
+      SexConfigFileName = sextractor_dir+"/default1.sex";
       cout << "Taking datacard: " << SexConfigFileName << endl ;
     }
-  SexParamName =sextr_dir+"/default.param" ;
-  SexNNWName   = sextr_dir+"/default.nnw";
-  SexFilterName   = sextr_dir+"/default.conv" ;
+  SexParamName = sextractor_dir+"/default.param" ;
+  SexNNWName   = sextractor_dir+"/default.nnw";
+  SexFilterName = sextractor_dir+"/default.conv" ;
 }
 
 
-
-
-
-
-
-
-
-  
 
 int
 SEStarListMake(const ForSExtractor & shortdata,
@@ -406,10 +421,13 @@ SEStarListMake(const ForSExtractor & shortdata,
 {
   AllForSExtractor data(shortdata);
   data.FillFromEnvironnement();
+  data.DecompressIfNeeded();
   int status = _SEStarListMake(data, List, Fond, SigmaFond,
 			      pmask_sat);
   return(status);
 }
+
+
 
 /********************************************/
 // Pour pouvoir recuperer le background a partir de la mini carte

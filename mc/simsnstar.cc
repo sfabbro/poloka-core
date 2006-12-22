@@ -3,13 +3,12 @@
 #include "gtransfo.h"
 #include "agaussian.h"
 #include "daophotpsf.h"
-
-
+#include "myrdm.h"
 #include <fstream>
 
 
 
-/********************* Model Star ********************/
+/********************* Model  Star ********************/
 
 ModelStar::ModelStar()
 : BaseStar(0.,0.,0.)
@@ -66,6 +65,7 @@ void ModelStar::writen(ostream & pr) const
   pr << ' ' << xShift << ' ' << yShift  << ' ' << stampsize << ' ' <<  photFactor ;
 }
 
+/*
 void ModelStar::read_it(istream& r, const char* Format)
 {
   BaseStar::read_it(r, Format);
@@ -80,13 +80,14 @@ ModelStar*  ModelStar::read(istream& r, const char *Format)
   pstar->read_it(r, Format);
   return(pstar);
 }
+*/
+
 
 static void 
 AddModelToImage(double xmod, double ymod, int xShift , int yShift,
 		double photFactor, double stampsize, const Image &image, 
-		Image & dest,  Image * psat, double satlevel) 
+		Image & dest,  Image * psat, double satlevel, double gain) 
 {
-
   int flagsaturated = 0 ;
   int xstart = int(xmod - stampsize + 0.5);
   int ystart = int(ymod - stampsize + 0.5);
@@ -99,8 +100,7 @@ AddModelToImage(double xmod, double ymod, int xShift , int yShift,
   xstart = max(xstart,0);
   ystart = max(ystart,0);
 
-
-
+ 
   double FFlux=0. ;
   int Aire = 0 ;  
   double  skylevel = 0. ;
@@ -114,8 +114,12 @@ AddModelToImage(double xmod, double ymod, int xShift , int yShift,
           int targeti = i + xShift;
 	  if (targeti < 0 ) continue;
           if (targeti >= dest.Nx()) break;
-
+	  
+	  // the CCD gain is in units of (e-/ADU)
 	  double val = ((double)image(i,j)- skylevel)*photFactor;
+	  // now set a random value for this image
+	  val = Poisson(val*gain)/gain;	  
+	  
 	  // total flux computed for debug.
 	  FFlux += val ;
 
@@ -159,18 +163,21 @@ AddModelToImage(double xmod, double ymod, int xShift , int yShift,
 	  Aire++;
 	}
     }
+  
+  //cout << "in AddModelToImage: photFactor, FFLux, satlevel = " << photFactor << " " << FFlux << " " << satlevel << endl;
+  
 } 
 
 
 void ModelStar::AddToImage(const Image &image, Image & dest, 
 			   const Gtransfo *Transfo, Image * psat,
-			   double satlevel) const
+			   double satlevel, double gain) const
 {
   double x_model, y_model ;
   Transfo->apply(x,y,x_model, y_model);
   AddModelToImage(x_model, y_model, xShift , 
 		  yShift, photFactor,	
-		  stampsize, image, dest, psat, satlevel);
+		  stampsize, image, dest, psat, satlevel, gain);
 }
 
 
@@ -243,6 +250,7 @@ void SimSNStar::writen(ostream & pr) const
 }
 
 
+/*
 void SimSNStar::read_it(istream& r, const char* Format)
 {
   BaseStar::read_it(r, Format);
@@ -255,12 +263,15 @@ void SimSNStar::read_it(istream& r, const char* Format)
   return;
 }
 
+
 SimSNStar*  SimSNStar::read(istream& r, const char *Format)
 {
   SimSNStar *pstar = new SimSNStar();  
   pstar->read_it(r, Format);
   return(pstar);
 }
+*/
+
 
 void 
 SimSNStarList::NewFlux(double NewZeroPoint)
@@ -317,7 +328,7 @@ const BaseStarList* SimSN2Base(const SimSNStarList * This)
 
 
 #include "starlist.cc" /* since starlist is a template class */
-template class StarList<SimSNStar>;  /* to force instanciation */
+template void StarList<SimSNStar>::CopyTo(StarList<SimSNStar>&) const;  /* to force instanciation */
 
 
 /*     ************** SimSNWModelStar ************** */
@@ -352,7 +363,7 @@ void SimSNWModelStar::writen(ostream & pr) const
   model_on_ref.writen(pr);
 }
 
-
+/*
 void SimSNWModelStar::read_it(istream& r, const char* Format)
 {
   SimSNStar::read_it(r, Format);
@@ -366,6 +377,7 @@ SimSNWModelStar*  SimSNWModelStar::read(istream& r, const char *Format)
   pstar->read_it(r, Format);
   return(pstar);
 }
+*/
 
 
 int integer_delta(double xsn, double xmodel)
@@ -553,7 +565,7 @@ const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This)
 { return (BaseStarList*) This;} 
 
 #include "starlist.cc" /* since starlist is a template class */
-template class StarList<SimSNWModelStar>;  /* to force instanciation */
+//template class StarList<SimSNWModelStar>;  /* to force instanciation */
 
 /***************** Utilitaires Dao **************/
 //The place for this is to be discussed with Seb
@@ -625,6 +637,67 @@ void AddListWDaoPsfToImage(DaoPsf const & daopsf, BaseStarList *List,
   for (BaseStarIterator it= List->begin(); it!= List->end(); ++it )
     {     
       AddWDaoPsfToImage(daopsf, (*it)->x, (*it)->y,  (*it)->flux,img,psat,saturation);
+    }
+}
+
+#include "imagepsf.h"
+void AddWPsfToImage(ImagePSF &psf ,double xc, double yc, 
+		       double flux,Image & image,
+		       Image * psat,
+		       double saturation)
+{
+int xmin,xmax,ymin,ymax;
+psf.StampLimits( xc,yc,xmin,xmax,ymin,ymax);
+
+ int flagsaturated = 0 ;
+  for ( int j =  ymin ;j < ymax ; j++)
+    {
+
+      for (int i = xmin; i < xmax ; i++)
+	{
+
+	  double val = psf.PSFValue(xc,yc,i,j) * flux;
+	  if ( (saturation > 0 ) && 
+	       (image(i,j)+ val > saturation ) )
+	    {
+	      image(i,j) = saturation ;
+	      if (psat != NULL)
+		{
+		  if (flagsaturated == 0 ) // la 1ere fois qu'on s'en apercoit
+		    if ((*psat)(i,j) == 0 ) // not saturated before, saturated because of SNe
+		      {
+			cerr << "SN is saturated (i= " 
+			     << i << ", j= " 
+			     << j << "), saturation = " 
+			     << saturation << ", image = " 
+			     << image(i,j) << ", new image val = " 
+			     << image(i,j)+ val  << endl ;
+			flagsaturated = 1; // pour ne pas le dire 36 fois
+		      }	
+		    
+		  (*psat)(i,j) = 1 ;
+		}
+	      else
+		if (flagsaturated == 0 )
+		  {
+		    cerr << "SN or SN zone  is saturated: " << endl ;
+		    flagsaturated = 1;
+		  }	      
+	    }
+	  else
+	    image(i,j) += val ; // il faudrait faire un tirage poissonien 
+	  // sur val.
+	}
+    }
+} 
+
+void AddListWPsfToImage(ImagePSF &psf, BaseStarList *List,
+		       Image & img,  Image * psat,
+		       double saturation)
+{
+  for (BaseStarIterator it= List->begin(); it!= List->end(); ++it )
+    {     
+      AddWPsfToImage( psf, (*it)->x, (*it)->y,  (*it)->flux,img,psat,saturation);
     }
 }
 

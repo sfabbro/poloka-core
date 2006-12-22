@@ -8,11 +8,7 @@
 #include "candidatestar.h"
 #include "sestar.h"
 
-#include "persistence.h"
-
 class CandStar {
-  CLASS_VERSION(CandStar,1);
-  #define CandStar__is__persistent
 public:
 int numero;
 
@@ -51,8 +47,6 @@ private:
 
 
 class CandStarList : public list<CandStar> {
-  CLASS_VERSION(CandStarList,1);
-  #define CandStarList__is__persistent
 public :
   CandStarList() {};
   CandStarList(const string &FileName) {read(FileName);};

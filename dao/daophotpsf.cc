@@ -135,7 +135,6 @@ double DaoPsf::Value(const int i, const int j, const double &Xc, const double &Y
 		      &npsf, &npar, &nexp, &nfrac, &deltax, &deltay, 
 		      &dvdxc, &dvdyc);  
 
-   
   // normalize daophot from internal cooking (see manual)
   double scale = pow(10, 0.4*(psfmag-DAOPHOT_APER_ZP));
   

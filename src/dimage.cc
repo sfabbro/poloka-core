@@ -303,13 +303,18 @@ void DImage::readFromImage(const string& FitsFileName, const Window &Rect, DPixe
 
 void DImage::writeInImage(const string& FitsFileName, const Window &Rect) const
 {
+  Pixel *fdata = new Pixel[nx*ny];
+  DPixel *dp = begin();
+  Pixel *p = fdata;
+  for (int i=ny*nx; i ; --i) {*p = *dp ; ++p; ++dp;}
   int status = 0;
   fitsfile *fptr = 0;
   long lbc[] = {Rect.xstart+1,Rect.ystart+1};
   long trc[] = {Rect.xend,Rect.yend};
   fits_open_file(&fptr, FitsFileName.c_str(), RW, &status);
-  fits_write_subset(fptr, TFLOAT, lbc, trc, data, &status);
+  fits_write_subset(fptr, TFLOAT, lbc, trc, fdata, &status);
   fits_close_file(fptr, &status);
+  delete [] fdata;
 
   if (status>0)  
     { 

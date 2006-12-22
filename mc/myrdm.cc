@@ -7,7 +7,7 @@ extern long random(void);
  
 #include <unistd.h>
 #include <sys/time.h> 
-
+ 
 
 #include "image.h"
 
@@ -47,15 +47,40 @@ double my_rndm()
 
 // tirage de x selon une loi gaussienne normee centree
 // re-pompee de EROS
-float NormalGaussRand()
+double NormalGaussRand()
 {
-double x,A,B;
+double A,B;
 A = my_rndm();
 while ( A == 0. ) A = my_rndm() ;
 B = my_rndm();
-x = sqrt(-2.*log(A))*cos(2. * M_PI *B);
-return( (float) x );
+return sqrt(-2.*log(A))*cos(2. * M_PI *B);
 }
+
+unsigned int Poisson(double mean)
+{
+// Generates a random integer N according to a Poisson law.
+// Coded from Los Alamos report LA-5061-MS
+// Prob(N) = exp(-mean)*mean^N/Factorial(N)
+//
+  int N;
+   if (mean <= 0) return 0;
+     // use a gaussian approximation for large values of mean
+   if (mean > 88) {
+     N = int(NormalGaussRand()*sqrt(mean) + mean + 0.5);
+     if(N<0) N=0;
+     return (unsigned int)N;
+   }
+   double expmean = exp(-mean);
+   double pir = 1;
+   N = -1;
+   while(1) {
+     N++;
+     pir *= my_rndm();
+     if (pir <= expmean) break;
+   }
+   return (unsigned int)N;
+}
+
 
 // ajouter a un pixel un bruit gaussien de sigma^2=valeur du pixel
 // en tenant compte du gain et du read-out noise

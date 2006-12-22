@@ -11,7 +11,7 @@ class RefStar : public Fiducial<PhotStar> {
 
 public:
 
-  RefStar() : jdmin(0), jdmax(0), ra(0), dec(0), varra(0), vardec(0), covradec(0), band('?') {}
+  RefStar() : name(""), type(0), jdmin(0), jdmax(0), varra(0), vardec(0), covradec(0), band('?')  {}
 
   RefStar(const ReducedImage *Rim) : Fiducial<PhotStar>(Rim) {}
   

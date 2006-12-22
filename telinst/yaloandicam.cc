@@ -1,3 +1,4 @@
+#ifdef VIRTUAL_INSTRUMENTS
 static double jd_ref1 = JulianDay(1, 11, 1999); // change in gain and readout
 static double jd_ref2 = JulianDay(8,  9, 2000); // a major date of increase in YALO DAQ
 
@@ -149,3 +150,4 @@ VirtualInstrument *YaloAndicam::Acceptor(const FitsHeader &Head)
     }
   return NULL;
 }
+#endif

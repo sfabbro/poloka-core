@@ -9,6 +9,9 @@
 #include "frame.h"
 #include "starmatch.h"
 #include "listmatch.h"
+#include "imageutils.h"
+#include "matvect.h"
+
 
 #ifndef M_PI
 #define  M_PI           3.14159265358979323846  /* pi */
@@ -307,7 +310,7 @@ StandardStarList* GetSelectedStandardStarList(const FitsHeader &header)
   Frame W(header);
   GtransfoLin Pix2RaDec;
   WCSLinTransfoFromHeader(header, Pix2RaDec);
-  Frame Wradec = W.ApplyTransfo(Pix2RaDec);
+  Frame Wradec = ApplyTransfo(W,Pix2RaDec);
 
   StandardColor couleur = GetColor(header);
 
@@ -377,7 +380,7 @@ int GetStandardZeroPoint(StandardStarList *standardList, SEStarList &sestarlist,
        StandardStar * stdstar = smi->s1;
        SEStar * catstar = smi->s2;
        //get rid of saturated and negative flux
-       double saturation = header.KeyVal("SATURLEV");
+       //double saturation = header.KeyVal("SATURLEV");
        stdstar->fluxpersec = catstar->flux/exposureTime;
        //	   stdstar->efluxpersec = catstar->EFlux()/exposureTime;
        stdstar->efluxpersec = sqrt(catstar->flux)/exposureTime;

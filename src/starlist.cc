@@ -9,7 +9,7 @@
 
 #include "starlist.h"
 #include "frame.h"
-
+#include "fastifstream.h"
 
 
 template<class Star> StarList<Star>::StarList(const string &FileName) /* to be changed if switch to Star rather than pointers to Stars */ 
@@ -18,7 +18,7 @@ template<class Star> StarList<Star>::StarList(const string &FileName) /* to be c
 }
 
 
-template<class Star> int StarList<Star>::read(istream & r)
+template<class Star> int StarList<Star>::read(fastifstream & r)
 {
   char c ;
   char buff[4096];
@@ -45,7 +45,7 @@ template<class Star> int StarList<Star>::read(istream & r)
         }
       else
 	{
-	  Star* s = Star::read(r, format);
+	  Star* s = dynamic_cast<Star*>(Star::read(r, format));
 	  // read the end of line, in case there are some items left
 	  r.getline(buff,4096);
 	  if (!s) 
@@ -67,7 +67,7 @@ StarList<Star>::read(const string &FileName)
 template<class Star> int 
 StarList<Star>::ascii_read(const string &FileName)
 {
-  ifstream rd(FileName.c_str());
+  fastifstream rd(FileName.c_str());
   if (!rd)
     {
       cout << "StarList cannot open :" << FileName << endl;
@@ -106,7 +106,7 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
     pr << '@' << globs[k] << endl;
 
   // check pr a faire avant, close a faire tout seul
-  const Star *theFirst = *(begin());
+  const Star *theFirst = this->front();
   // if (!theFirst) return 0;
   if (this->size() == 0) // it seems that we can have this->size(0 == 0 with this->front() != NULL !
     {
@@ -114,7 +114,7 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
       dummy.WriteHeader(pr);
     }
   else theFirst->WriteHeader(pr);
-  for (StarCIterator it= begin(); it!=end() ; it++ )
+  for (StarCIterator it= this->begin(); it!=this->end() ; it++ )
     {    
       (*it)->write(pr);
     }
@@ -131,7 +131,7 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
 template <class Star>  void StarList<Star>::ExtractHead(StarList<Star> &Out, int NHead) const
 {
 int count = 0;
-for (StarCIterator s= begin(); s!=end() && (count < NHead); ++s, count++)
+for (StarCIterator s= this->begin(); s!= this->end() && (count < NHead); ++s, count++)
   {
   Star *copy = new Star(*(*s));  /* to be changed if switch to Star rather than pointers to Stars */
   Out.push_back(copy);
@@ -143,7 +143,7 @@ template<class Star> Star* StarList<Star>::FindClosest(double X, double Y) const
 double min_dist2 = 1e30;
 const Star *minstar = NULL;
 double dist2;
-for (StarCIterator si = begin(); si!= end(); ++si) 
+for (StarCIterator si = this->begin(); si!= this->end(); ++si) 
    { 
    const Star *s = *si;
    dist2 = (X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y);
@@ -157,7 +157,7 @@ double min_dist2 = 1e30;
 const Star *minstar = NULL;
 double dist2;
  StarIterator si_res;
-for (StarIterator si = begin(); si!= end(); ++si) 
+for (StarIterator si = this->begin(); si!= this->end(); ++si) 
    { 
    const Star *s = *si;
    dist2 = (X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y);
@@ -179,7 +179,7 @@ template<class Star>bool StarList<Star>::HasCloseNeighbor(double X, double Y, do
   double dist2;
   double mindist2 = mindist*mindist;
   double maxdist2 = maxdist*maxdist;
-  for (StarCIterator si = begin(); si!= end(); ++si) 
+  for (StarCIterator si = this->begin(); si!= this->end(); ++si) 
     { 
       const Star *s = (*si); 
       dist2 = (X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y);
@@ -187,8 +187,8 @@ template<class Star>bool StarList<Star>::HasCloseNeighbor(double X, double Y, do
       if (minflux > 0 )
 	okflux = (s->flux > minflux);
       if (okflux && (dist2 > mindist2) && (dist2 < maxdist2)) {
-	cerr << "HasCloseNeighbor at dist : " << sqrt(dist2) << " Neighbor: " ;
-	s->dump();
+	//cerr << "HasCloseNeighbor at dist : " << sqrt(dist2) << " Neighbor: " ;
+	//s->dump();
 	return true;}
     }
   return false;
@@ -200,7 +200,7 @@ template<class Star> Star* StarList<Star>::ClosestNeighbor(double X, double Y, d
   double dist2;
   double mindist2 = mindist*mindist;
   double min_dist2 = 1e30;
-  for (StarCIterator si = begin(); si!= end(); ++si) 
+  for (StarCIterator si = this->begin(); si!= this->end(); ++si) 
     { 
       const Star *s = (*si); 
       dist2 = (X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y);
@@ -215,7 +215,7 @@ template<class Star> int StarList<Star>::NumberOfNeighbors(const double &X, cons
   int nstars = 0;
   double dist2 = distmax*distmax;
 
-  for (StarCIterator it = begin(); it!= end(); ++it) 
+  for (StarCIterator it = this->begin(); it!= this->end(); ++it) 
     { 
       const Star *s  = *it; 
       if ((X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y) < dist2) 
@@ -232,7 +232,7 @@ template<class Star> int StarList<Star>::AllNeighbors(StarList &NeighborList, co
   int nstars = 0;
   double dist2 = distmax*distmax;
   NeighborList.ClearList();
-  for (StarCIterator it = begin(); it!= end(); ++it) 
+  for (StarCIterator it = this->begin(); it!= this->end(); ++it) 
     { 
       const Star *s  = *it; 
       if ((X - s->x)*(X - s->x) + (Y - s->y)*(Y - s->y) < dist2) 
@@ -244,19 +244,29 @@ template<class Star> int StarList<Star>::AllNeighbors(StarList &NeighborList, co
   return nstars;
 }
 
+template<class Star>
+bool DecreasingFlux(const Star *S1, const Star *S2)
+{
+  return (S1->flux > S2->flux);
+}
+
+template<class Star>void StarList<Star>::FluxSort()
+{
+  this->sort(&DecreasingFlux<Star>);
+}
 
 template<class Star>void StarList<Star>::CutTail(const int NKeep)
 {
 int count = 0;
 StarIterator si;
-for (si = begin(); si != end() && count < NKeep; ++count, ++si);
-while ( si !=end() ) {si = erase(si);}
+for (si = this->begin(); si != this->end() && count < NKeep; ++count, ++si);
+while ( si != this->end() ) {si = erase(si);}
 }
 
 
 template<class Star>void StarList<Star>::ExtractInFrame(StarList<Star> &Out, const Frame &aFrame) const
 {
-  for (StarCIterator s= begin(); s!=end(); ++s)
+  for (StarCIterator s= this->begin(); s!= this->end(); ++s)
     {
       const Star *st  = *s;
       if (aFrame.InFrame(*st))
@@ -269,7 +279,7 @@ template<class Star>void StarList<Star>::ExtractInFrame(StarList<Star> &Out, con
 
 template<class Star>void StarList<Star>::CutEdges(const Frame &aFrame, float mindist) 
 {
-  for (StarIterator si= begin(); si!=end();)
+  for (StarIterator si= this->begin(); si!= this->end();)
     {
       if (aFrame.MinDistToEdges(**si) < mindist)
 	{
@@ -284,7 +294,7 @@ template<class Star>void StarList<Star>::CopyTo(StarList<Star> &Copy) const
 {
   Copy.ClearList();
   StarCIterator si;
-  for (si = begin(); si != end(); ++si) Copy.push_back(new Star(*(*si)));
+  for (si = this->begin(); si != this->end(); ++si) Copy.push_back(new Star(*(*si)));
 }
 
 #ifdef STORAGE

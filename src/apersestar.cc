@@ -5,119 +5,8 @@
 #include "apersestar.h"
 
 
-#define CHECK_BOUNDS
+#define CHECK_BOUNDS /* for Image bounds */
 #include "image.h"
-
-
-
-
-// premier probleme, quelle est la fraction de pixel couverte par un disque de rayon R ?
-// x_pix, y_pix coord du centre du pixel (de taille 1x1 par convention)
-
-static double sq(const double x) {return x*x;}
-
-static double fraction(double x_centre, double y_centre, double R, double x_pix, double y_pix)
-{
-  double x_min, x_max;
-	// Je m'arrange pour que le pixel soit dans le premier quadrant par rapport au centre du cercle
-	
-	if (x_pix < x_centre) {x_pix = 2.*x_centre - x_pix;};
-	if (y_pix < y_centre) {y_pix = 2.*y_centre - y_pix;};
-       
-	// Je m'arrange même pour qu'il soit dans la zone y>x
-	
-	if ((x_pix-x_centre)>(y_pix-y_centre))
-	{
-		double prov = x_pix; x_pix = y_pix; y_pix = prov;
-		prov = x_centre; x_centre = y_centre; y_centre = prov;
-	}
-	
-#ifdef DEBUG
-	cout << x_centre << " " << y_centre << " " << R << " " << x_pix << " " << y_pix << endl;
-#endif
-
-	// je definis les coordonnees par rapport au coin inf gauche du pixel
-
-	x_centre -= x_pix - 0.5;
-	y_centre -= y_pix - 0.5;
-
-#ifdef DEBUG
-	cout << "coord centre utilisees : " << x_centre << " " << y_centre << endl;
-#endif
-	// si la distance entre centre et bord inf gauch du pix est > R, le pixel est dehors (faux pour R petit)
-
-	if (sq(x_centre)+sq(y_centre) > pow(R,2.)) return 0.;
-
-	// si la distance entre centre et bord sup droit du pix est < R, le pixel est dedans (faux pour R petit)
-
-	if (pow(x_centre-1.,2.)+pow(y_centre-1.,2.) < R*R) return 1.;
-
-	// L'equation du cercle est y = y_centre + sqrt(R^2-(x-x_centre)^2)
-	
-	// 
-	// On calcule les intersections de ce cercle avec les bords du pixel.
-	//
-	
-		
-	// en quels points du bord inferieur du pixel passe le cercle.
-
-	x_min = x_centre - sqrt(R*R - sq(y_centre));
-	x_max = x_centre + sqrt(R*R - sq(y_centre));
-
-	if (x_min > x_max) { double prov = x_min; x_min=x_max; x_max=prov;}
-	
-#ifdef DEBUG
-	cout << "intersections bord inf : " << x_min << " " << x_max << endl;
-#endif
-
-	if (x_min < 0.) x_min = 0.;
-	if (x_max > 1.) x_max = 1.;
-
-
-	// Si le point UL du pixel n'est pas dans le cercle, il suffit de calculer l'integrale
-
-	double complement;
-	if (sq(x_centre)+sq(y_centre+1.) < R*R)
-	  {
-#ifdef DEBUG
-	    cout << "cas 1 : complement = 0" << endl;
-#endif
-	    complement = 0.;
-	  }
-	else
-	// Sinon il faut recalculer x_min, le point ou le cercle coupe le bord sup du pixel
-	  {
-	    double x_min1 = x_centre - sqrt(R*R - sq(y_centre-1.));
-	    double x_min2 = x_centre + sqrt(R*R - sq(y_centre-1.));
-
-#ifdef DEBUG
-	    cout << "intersections bord sup : " << x_min1 << " " << x_min2 << endl;
-#endif
-
-	    x_min = x_min1;
-	    if (x_min<x_min2) x_min=x_min2;
-	    complement = x_min;
-#ifdef DEBUG
-	    cout << "cas 2 :complement = " << x_min << endl;
-#endif
-	  }
-
-	//int(sqrt(R^2-x^2),x) = 1/2 x sqrt(R^2-x^2) + 1/2 R^2 arcsin (x/R)
-
-	double integrale = (x_max-x_centre) * sqrt(R*R - sq(x_max-x_centre))/2. 
-	  + R*R* asin ((x_max-x_centre)/R)/2. + y_centre*(x_max-x_centre);
-	integrale -= (x_min-x_centre) * sqrt(R*R - sq(x_min-x_centre))/2. 
-	  + R*R* asin ((x_min-x_centre)/R)/2. + y_centre*(x_min-x_centre);
-	integrale += complement;
-	  
-#ifdef DEBUG
-	cout << integrale << endl;
-#endif
-	
-	return x_min + integrale;	
-}
-
-
 
 
 /* concerning the choice of oversampling value, see comment at the end
@@ -125,9 +14,11 @@ static double fraction(double x_centre, double y_centre, double R, double x_pix,
 #define OVERSAMPLING 9
 
 
+static double sq(const double &x) { return x*x;}
+
 //! computes the aperture flux and associated scores and add one record to the apers vector.
 /*! if you want several aperures, call repeteadly the same routines, with increasing radiuses (far sake of efficiency) */
-void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C, 
+void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C, const Image &S, 
 			     const double Gain, const double Radius)
 {
   int imin = int(floor(x - Radius ));
@@ -151,6 +42,10 @@ void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C,
   
   int nx = I.Nx();
   int ny = I.Ny();
+
+  double fother = 0;
+
+  int thisStarNumber = this->num; // the S (Segmentation) image contains the "num" value of pixels that Sextractor attributed to objects
 
   for (int j = jmin; j <= jmax; ++j)
     for (int i = imin; i <= imax ; ++i)
@@ -181,18 +76,24 @@ void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C,
 	    continue;
 	  }
 	double w = W(i,j);
+	double pixVal = I(i,j);
 	if (w > 0)
 	  {
 	    var += frac/w;
-	    flux += frac * I(i,j);
+	    flux += frac * pixVal;
 	  }
 	else {
 	  nbad += frac; // was += frac ???
 	  if( C(i,j)>0 ) {
 	    ncos += frac;
-	    fcos += frac * I(i,j);
+	    fcos += frac * pixVal;
 	  }
 	}
+	int seg = int(S(i,j));
+	if (seg !=0 && seg != thisStarNumber)
+	  {
+	    fother+= frac*pixVal;
+	  }
       }
 
   // store the results
@@ -208,6 +109,7 @@ void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C,
   aper.nbad = int(ceil(nbad));
   aper.ncos = int(ceil(ncos));
   aper.fcos = fcos;
+  aper.fother = fother;
 
   // impose increasing order
   unsigned naper = apers.size();
@@ -217,7 +119,7 @@ void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C,
 
 /* When computing aperture fluxes, one may consider, for pixels on
 the aperture border, the fraction of their area that lies within the aperture.
-t
+
   If one choses oversampling (cut the pixel into smaller squares and count
 the fraction that have their center inside the aperture), 
 here are a few figures that justify the choice of oversampling by a factor 
@@ -264,6 +166,66 @@ AperSEStar::Aperture AperSEStar::InterpolateFlux(const double &Radius) const
 }
 
 
+
+// recompute the star position. 
+// generally used on strongly defocussed stars.
+// ==> we just compute the first order moment
+// 
+// It may be possible to also compute the 2d order moments
+// and weight them with a defocussed PSF model... 
+
+// should be the same as ComputePos, except that 
+// we do not weight w/ a gaussian PSF...
+void AperSEStar::ComputePos(const Image& I, const Image& W)
+{
+  int i,j;
+  double radius = 20;
+  
+  int nbad = 0;
+  int iter = 0;
+  
+  int nx = I.Nx(), ny = I.Ny();
+  double wX = x, wY = y;
+  double sumx=0., sumy=0., sumw=0.;
+  
+  int imin = int(floor(x-radius));
+  int imax = int(ceil(x+radius));
+  int jmin = int(floor(y-radius));
+  int jmax = int(ceil(y+radius));
+  
+  cout << "[ComputePos] Initial position: x=" << x << " y=" << y << endl;
+  while(iter < 10) 
+    {
+      iter++;
+      
+      for(j=jmin;j<=jmax;j++)
+	{
+	  if(j<0 || j>=ny) continue;
+	  for(i=imin;i<imax;i++) 
+	    {
+	      if(i<0 || i>=nx) continue;
+	      double dx = i-wX;
+	      double dy = j-wY;
+	      double w = W(i,j);
+	      if(w<0) { nbad+=1; continue; }
+	      double flx = I(i,j);
+	      sumx += flx*dx;
+	      sumy += flx*dy;
+	      sumw += flx;
+	    }
+	}
+      sumx /= sumw;
+      sumy /= sumw;
+      cout << "      dx=" << sumx
+	   << " dy=" << sumy << endl;
+      wX += sumx;
+      wY += sumy;
+    }
+  
+  x = wX;
+  y = wY;
+  cout << "[ComputePos] Final position: x=" << x << " y=" << y << endl;
+}
 
 
 void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
@@ -320,12 +282,15 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
 	    double dy = j-weightedY;
 	    double wg = wxx*dx*dx + wyy*dy*dy + 2.*wxy*dx*dy;
 	    if (wg > 16) continue; // 4 sigmas, and avoids overflows
-	    wg = exp(-0.5*wg);
+	    // test now if this useful pixel lies within image bounds
 	    if (i<0 || i>= nx || j<0 || j>=ny)
 	      {
 		nbad += 1;
 		continue;
 	      }
+            // Gaussian weighting "window function":
+	    wg = exp(-0.5*wg);
+	    // pixel weight
 	    double w = W(i,j);
 	    if (w <= 0)
 	      {
@@ -393,12 +358,18 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
       radius = max(4*sqrt(half_trace + sqrt(sq(half_trace) - det)),3.);
       radius = min(radius,50.);
 
-      wxx = 0.5*sumyy/det;
-      wyy = 0.5*sumxx/det;
-      wxy = -0.5*sumxy/det;
+      double new_wxx = 0.5*sumyy/det;
+      double new_wyy = 0.5*sumxx/det;
+      double new_wxy = -0.5*sumxy/det;
+      double eps = 1e-7;
+      bool stop_iter = (fabs(wxx-new_wxx)< eps && fabs(wyy-new_wyy)<eps 
+			&& fabs(wxy-new_wxy)<eps);
+      wxx = new_wxx;
+      wyy = new_wyy;
+      wxy = new_wxy;
+      if (stop_iter) break;
     }// end of iteration.
 
-  
   det = wxx*wyy-sq(wxy);
   // fill AperSestar scores :
   gmxx = wyy/det;
@@ -453,8 +424,9 @@ std::string AperSEStar::WriteHeader_(ostream & pr,
       pr << "#apnb" << kk << i << " : nb of bad pixels in aper (including cosmics)"<< endl;
       pr << "#apnc" << kk << i << " : nb of pixels flagged as cosmics" << endl;
       pr << "#apfc" << kk << i << " : flux of the pixels above" << endl;
+      pr << "#apfo" << kk << i << " : flux of the pixels attributed to other stars" << endl;
     }
-  return sestarFormat+ "AperSEStar 2"; 
+  return sestarFormat+ "AperSEStar 3"; 
 }
 
 
@@ -477,16 +449,19 @@ void AperSEStar::writen(ostream& s) const
       s << aper.nbad << ' ';
       s << aper.ncos << ' ';
       s << aper.fcos << ' ';
+      s << aper.fother << ' ';
     }
 }
 
 
-void AperSEStar::read_it(istream& r, const char* Format)
+#include "fastifstream.h"
+
+void AperSEStar::read_it(fastifstream& r, const char* Format)
 {
   SEStar::read_it(r, Format);
   int format = DecodeFormat(Format, "AperSEStar");
-  if(format != 2) {
-    cerr << "AperSEstar::read_it() version mismatch. The current version is 2!" << endl;
+  if(format != 2 && format != 3) {
+    cerr << "AperSEstar::read_it() version mismatch. The current version is 2 or 3!" << endl;
     abort();
   }
   r >> neighborDist 
@@ -506,10 +481,11 @@ void AperSEStar::read_it(istream& r, const char* Format)
       r >> aper.nbad;
       r >> aper.ncos;
       r >> aper.fcos;
+      if (format >=3) r >> aper.fother;
     }
 }
 
-AperSEStar* AperSEStar::read(istream& r, const char* Format)
+AperSEStar* AperSEStar::read(fastifstream& r, const char* Format)
 {
   AperSEStar *pstar = new AperSEStar();  
   pstar->read_it(r, Format);
@@ -583,11 +559,11 @@ int AperSEStarList::write(const std::string &FileName) const
 #include "histopeakfinder.h"
 #include "histo2d.h"
 
-bool FindStarShapes(const AperSEStarList &List, double &XSize, 
-		    double &YSize, double &Corr)
+bool FindStarShapes(const AperSEStarList &List, const double MinSN,
+		    double &XSize, double &YSize, double &Corr, 
+		    StarScoresList &scores)
 {
   Histo2d histo(30,0,10.,30,0.,10.);
-  StarScoresList scores;
   for (AperSEStarCIterator i = List.begin(); i != List.end(); ++i)
     {
       const AperSEStar &s = **i;
@@ -600,7 +576,7 @@ bool FindStarShapes(const AperSEStarList &List, double &XSize,
 	 is also poor: cut on S/N before entering into the
 	 "star clump finder".
       */
-      if (s.flux<0 || s.EFlux() < 0 || s.flux< 10 * s.EFlux()) continue;
+      if (s.flux<0 || s.EFlux() < 0 || s.flux< MinSN * s.EFlux()) continue;
       double xx = sqrt(s.gmxx);
       double yy = sqrt(s.gmyy);
       histo.Fill(xx,yy, s.Fluxmax());
@@ -639,7 +615,6 @@ bool FindStarShapes(const AperSEStarList &List, double &XSize,
     }
   return true;
 }
-
 
 
 

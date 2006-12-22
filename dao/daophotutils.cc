@@ -84,7 +84,7 @@ size_t SelectIsolatedStars(SEStarList& Slist, const Frame& Borders,
 
 size_t SelectTwoStars(SEStarList& Slist)
 {
-  Slist.sort(&DecreasingFlux);
+  Slist.FluxSort();
   Slist.CutTail(20);
   Slist.sort(&DecreasingFluxmax);
   Slist.CutTail(10);

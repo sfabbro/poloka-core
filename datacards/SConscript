@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+
+Import('g_env')
+
+
+EXTRA_DIST = [
+    'SConscript',      'Makefile.am',
+    'default.conv',    'default.sex',
+    'seeing.datacard', 'default.nnw',
+    'sub.datacard'
+    ]
+
+g_env.AddToDist(EXTRA_DIST)
+

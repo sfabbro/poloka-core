@@ -116,10 +116,6 @@ public :
   typedef vector<Component>::iterator ComponentIterator;
   typedef vector<Component>::const_iterator ComponentCIterator;
 
-#ifndef SWIG
-  ClassDef(ImageSum,1);
-#endif /*SWIG */
-
   ~ImageSum();
 
 private:

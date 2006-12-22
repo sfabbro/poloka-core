@@ -9,7 +9,7 @@
 static void full_path_image_name(char *new_name, const char *name)
 {
   char *c;
-  strcpy(new_name, getenv("PWD"));
+  strcpy(new_name, getenv("PWD")); /// warning!! this work only when images are in the current directory
   strcat(new_name,"/");
   strcat(new_name, name);
   if (strrchr(name,'.')) {c = strrchr(new_name,'.'); *c ='\0';}
@@ -27,23 +27,13 @@ int bitpix = 0;
 /******************************************************************************/
 void ATTACH(const char* image, int* open)
 {
-  char full_image_name[256], short_name[256];
   int iostatus = 0;
   long naxes[2];
 
-  /* Remove any whitespace around the filename. */
-  sscanf(image, "%s", short_name);
-
   if (*open) CLPIC("DATA");
-  full_path_image_name(full_image_name, short_name);
-
-  /*
-    printf(" short_name ='%s'\n",short_name);
-    printf(" full_image_name ='%s'\n",full_image_name);
-  */
 
   /* Open file */
-  fits_open_file(&imdata, full_image_name, READONLY, &iostatus);
+  fits_open_file(&imdata, image, READONLY, &iostatus);
   if (iostatus != 0) 
     {
       fits_report_error(stderr, iostatus);

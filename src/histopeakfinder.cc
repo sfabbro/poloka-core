@@ -190,8 +190,8 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 	  Ell = Ellipse(XGuess, YGuess, 12.*xBin, 12.*yBin, 0.);
 	  break;
 	}
-      wxx = 0.5*sumxx/det;
-      wyy = 0.5*sumyy/det;
+      wxx = 0.5*sumyy/det;
+      wyy = 0.5*sumxx/det;
       wxy = -0.5*sumxy/det;
     }
 

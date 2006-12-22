@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+
+import os
+#from config import Glob
+
+
+Import('g_env')
+local_env = g_env.Copy()
+
+
+EXTRA_DIST = [
+    'SConscript', 'Makefile.am'
+    ]
+
+HEADER_FILES = [
+  'daopsfphot.h',  'lcio.h',            'lightcurvepoint.h',  'simfit.h',        'vignet.h',
+  'fiducial.h',    'lightcurveguru.h',  'photstar.h',         'simfitphot.h',    'vignetphot.h',
+  'gausspsf.h',    'lightcurve.h',      'refstar.h',          'simfitvignet.h'
+  'lightcurvepoint_dict.h', 'LightCurvePoint__persister.h'
+  ]
+
+SOURCE_FILES = [
+    'lightcurve.cc',     'simfitvignet.cc',
+    'refstar.cc',        'vignet.cc',
+    'gausspsf.cc',       'lightcurvepoint.cc',  'simfit.cc',      'vignetphot.cc',
+    'lcio.cc',           'photstar.cc',         'simfitphot.cc',
+    'lightcurvepoint_dict.cc'
+    ]
+
+local_env.AddInternalDep('.')
+local_env.AddInternalDep('%s/src' % (local_env['builddir']))
+local_env.AddInternalDep('%s/lc' % (local_env['builddir']))
+local_env.AddInternalDep('objio',     'toadsio')
+local_env.AddInternalDep('src',       'toads')
+local_env.AddInternalDep('src_base',  'toadsbase')
+local_env.AddInternalDep('src_utils', 'toadsutils')
+local_env.AddInternalDep('dao',       'toadsdao')
+local_env.ParseConfig('xml2-config --cflags')
+local_env.ParseConfig('xml2-config --libs')
+
+#local_env.Depends(local_env.SharedObject(target='lightcurvepoint',
+#                                         source='lightcurvepoint.cc'),
+#                  'lightcurvepoint_dict.cc')
+
+local_env.Dictgen(target=['lightcurvepoint',
+                          'lightcurvepoint_dict.h'],
+                  source=['lightcurvepoint.h'])
+
+
+shlib = local_env.SharedLibrary(target='toadslc', source=SOURCE_FILES)
+
+
+g_env.InstallLibs([shlib])
+g_env.InstallHeaders(HEADER_FILES)
+g_env.AddToDist(EXTRA_DIST + HEADER_FILES + SOURCE_FILES)
+
+

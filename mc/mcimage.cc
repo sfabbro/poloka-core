@@ -1,5 +1,5 @@
 #include <iostream>
-
+ 
 #include "mcimage.h"
 
 #include "gtransfo.h"
@@ -7,8 +7,8 @@
 #include "simsnstar.h"
 #include "fitsimage.h"
 #include "reducedimage.h"
-#include "daophotpsf.h"
-#include "daophotutils.h"
+//#include "daophotpsf.h"
+//#include "daophotutils.h"
 #include "agaussian.h"
 
 
@@ -58,14 +58,22 @@ MCImage::MCImage(string name, const ReducedImageRef Ref, const ReducedImageRef s
 }
   
 
-SimSNStarList*  MCImage::PrepareList()
+SimSNStarList*  MCImage::PrepareList(double zp)
 {
+  
+  
+  cerr << "PrepareList" << endl;
   //SNList doit imperativement etre une  SimSNStarList.
   SimSNStarList *lsntf = new SimSNStarList;
+  cerr << "copy  list" << endl;
   SNList->CopyTo(*lsntf); // si c'est une SimSNWModelStarList 
   // ca plante.
+  cerr << "apply tranfo"<< endl;
   lsntf->ApplyTransfo(*Transfo_fromref);
-  lsntf->NewFlux(Source->ZP());
+  cerr << "new flux"<< endl;
+  if(zp > -90.0 ) lsntf->NewFlux(zp);
+  else lsntf->NewFlux(Source->ZP());
+  cerr << "Return"<< endl;
   return(lsntf);
 }
   
@@ -85,6 +93,13 @@ bool MCImage::MakeFits()
 
   {cerr << "Opening : " << Source->FitsName() << endl ;
    FitsImage img(Source->FitsName());
+   double zp = -99.0;
+   if (img.HasKey("MCZP")) 
+   	{
+	zp = img.KeyVal("MCZP");	
+	cout << "using MCZP = " << zp << " to generate image " << endl;
+	}
+   
  switch (Methode)
    { 
     case WModel :
@@ -99,11 +114,13 @@ bool MCImage::MakeFits()
    case WGaussian :
      {
        cerr <<"Adding FakeSupernova WGaussian" << endl ;
-       SimSNStarList* liste1 = PrepareList();
+       SimSNStarList* liste1 = PrepareList(zp); cerr << "list ok" << endl;
        if (liste1)
 	 {
 	   liste1->AddWGaussianToImage(Source->Seeing(),Source->Seeing(),0.,
 				     img, psat, saturlev);
+	   string list_name = Name()+"/fakes.list";
+	   liste1->write(list_name);
 	   delete liste1 ;
 	 }
        else
@@ -112,9 +129,11 @@ bool MCImage::MakeFits()
      }
    case WDaoPsf :
      {
-       
-       cerr <<"Adding FakeSupernova WDaoPsf" << endl ;
+
+/* ********************************************* Version DAOPHOT *******************************       
+       cerr <<"Adding FakeSupernova WDaoPsf version daophot" << endl ;
        SimSNStarList* liste = PrepareList();
+
        string psfName = Source->ImagePsfName();
        if (!FileExists(psfName.c_str()))
 	 {
@@ -133,7 +152,28 @@ bool MCImage::MakeFits()
        else
 	 return(false);
 	 
-       break ;
+       break ;*/
+		 
+// ******************************************* Version pierre *********************************		 
+		 
+       cerr <<"Adding FakeSupernova WDaoPsf version Pierre" << endl ;
+       SimSNStarList* liste = PrepareList(zp);
+
+       if (liste)
+	 {	 
+	 
+      ImagePSF psf(*Source);
+	   AddListWPsfToImage( psf, (BaseStarList*) liste, img, psat, saturlev);
+	   string list_name = Name()+"/fakes.list";
+	   liste->write(list_name);
+	   delete liste ;
+	 }
+       else
+	 return(false);
+	 
+       break ;		 
+	 
+		 
      }
     default:
       {

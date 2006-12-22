@@ -12,12 +12,15 @@
 #include "transformedimage.h"
 #include "gtransfo.h"
 #include "mcimage.h"
-
+ 
 #include "listmatch.h"
 #include "imagematch.h"
+#include "imageutils.h"
 
 //#define N_MCLOOP 3
 
+
+#include <starlist.cc>
 
 #include "toadscards.h"
 static AddMethod ReadMethod()
@@ -204,7 +207,8 @@ MCSub::MCSub(Sub const & ASub, const int imc): Sub(ASub), original_globnewname(A
 	    {
 	      ReducedImageRef ri = *i; 
 	      string nomfake = fak + ri->Name() ;
-	      MCImage mcim(nomfake,GeometricReference, ri, Addition_Method); 
+	      //	      MCImage mcim(nomfake,GeometricReference, ri,SNList ,Addition_Method); 
+	      MCImage mcim(nomfake,GeometricReference, ri, SNList,Addition_Method);  
 	      mcim.Execute(DoFits| DoCatalog | DoWeight|DoSatur);
 	      stackmci.push_back(nomfake);
 	    }
@@ -317,7 +321,7 @@ void MCSub::MakeFakeList()
 	  SEStarList stlref(GeometricReference->CatalogName());
 	  SEStarList BellesEtoiles;
 	  {FitsImage ref(GeometricReference->FitsName());
-	  double satur = ref.ComputeSaturation();
+	  double satur = ComputeSaturation(ref);
       
 	  cout << "Saturation for " << GeometricReference->Name() 
 	       << " : " << GeometricReference->Saturation() << endl ;
@@ -415,6 +419,8 @@ void MCSub::DoIt()
 {
   Sub::DoIt();
   cerr <<"fin de DoIt" << endl ;
+  string fakedetname = MCDir()+"fakedet.list";
+  MakeDetectionsWithFakes( fakedetname);
   MatchDetectionsWithFakes();
 }
 
@@ -443,4 +449,13 @@ void MCProcess(Sub const & ASub)
       sprintf(command,"l2tup %s", globalname.c_str());
       system(command); 
     }
+}
+
+void MCSub::MakeDetectionsWithFakes(string &ListName)
+{
+  BaseStarList* positions = (BaseStarList*) SNList ;
+  DetectionList detsOnGlobal;
+  GlobalSub->RunDetection(detsOnGlobal,positions,ListName,true);
+
+
 }

@@ -7,6 +7,8 @@
 
 #include "basestar.h"
 
+class fastifstream;
+
 /*! \file */
 //! Dictionnary Star  
 /*! with arbitrary number of (key,value), value=double 
@@ -14,7 +16,9 @@
 */
 
 class DicStar : public BaseStar {
-  
+ 
+  int rank; // position in the file.
+ 
   public :
   
   
@@ -22,18 +26,25 @@ class DicStar : public BaseStar {
   DicStar(double xx, double yy, double ff); 
   DicStar(const std::vector<string>& firstKeys, const std::vector<string>& newkeys); 
 
+
+  bool HasKey(const string &Key) const;
   void AddKey(const string &KeyName, const double &Val);
+
+  unsigned NKeys() const;
 
   double getval(const string& key) const;
   int setval(const string& key,double val);
 
+  //! position in the file
+  int Rank() const { return rank;}
+
   //! to read once the object is created 
-  virtual void    Read(istream& r, const char *Format); 
+  virtual void    Read(fastifstream& r, const char *Format); 
   
   //! to read and create the object  
-  static DicStar* read(const std::vector<string> &firstKeys, const std::vector<string>& newkeys, istream& r, const char *Format); 
+  static DicStar* read(const std::vector<string> &firstKeys, const std::vector<string>& newkeys, fastifstream& r, const char *Format); 
 
-  static DicStar* read( istream& r, const char *Format); 
+  static DicStar* read(fastifstream& r, const char *Format); 
   
 
   //!  to write the StarList header with the string appended to every ntuple variable (with no end)

@@ -7,13 +7,12 @@
 
 #include <iostream>
 
-#include "persistence.h"
-
 #include "basestar.h"
 #include "image.h"
 
 using namespace std;
 
+class fastifstream;
 
 //********************   DEFINITION SEStar   *********************
 
@@ -38,8 +37,6 @@ using namespace std;
 /*! The flux of BaseStar is   FLUX_BEST from SExtractor, i.e.
   FLUX_ISOCOR if not crowded,  FLUX_AUTO otherwise. */ 
 class SEStar : public BaseStar {
-  CLASS_VERSION(SEStar,1);
-  #define SEStar__is__persistent
 public:
   SEStar();
   SEStar(double xx, double yy, double ff);
@@ -224,11 +221,11 @@ public:
   virtual void    writen(ostream& s = cout) const ;
 
   //! to read once the object is created 
-  virtual void    read_it(istream& r, const char *Format); 
+  virtual void    read_it(fastifstream& r, const char *Format); 
 
    //! to read and create the object  
 
-  static SEStar* read(istream& r, const char* Format); 
+  static SEStar* read(fastifstream& r, const char* Format); 
 
   /* DOCF  to write the StarList header with the string ${}^{\star}i$
      appended to every ntuple variable (with no end)  */
@@ -290,10 +287,6 @@ protected:
   int iter;
   double chi;
   double sharp;
-
-#ifndef SWIG
-  ClassDef(SEStar,1) // Root's stuff.
-#endif /* SWIG */
 
 };
 

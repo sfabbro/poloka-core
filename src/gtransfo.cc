@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iterator> /* for ostream_iterator */
 #include "frame.h"
+#include "matvect.h"
 
 bool IsIdentity(const Gtransfo *a_transfo)
 { return (dynamic_cast<const GtransfoIdentity*>(a_transfo) != NULL);}
@@ -1570,7 +1571,7 @@ void GtransfoCub::GetValues(vector<NamedValue> &Values, const string &KeyHeader)
       cerr << "GtransfoCub::GetValues : unknown key Mapping scheme : "<< KeyHeader  << endl;
       return;
     }
-  for (unsigned int i=0; assoc[i].value != NULL ; ++i)
+  for (size_t i=0; assoc[i].value ; ++i)
     {
       Values.push_back(NamedValue(assoc[i].name, this->*(assoc[i].value)));
     }
@@ -1588,15 +1589,15 @@ void GtransfoCub::SetValues(vector<NamedValue> &Values, const string &KeyHeader)
       cerr << "GtransfoCub::SetValues : unknown key Mapping scheme : "<< KeyHeader  << endl;
       return;
     }
-  for (unsigned int i=0; i < Values.size(); ++i)
+  for (size_t i=0; i < Values.size(); ++i)
     {
       string name = Values[i].name;
-      unsigned int j;
-      for (j=0; assoc[j].value != NULL ; ++j)
+      size_t j;
+      for (j=0; assoc[j].value ; ++j)
         {
 	  if (assoc[j].name == name) break;
 	}
-      if (assoc[j].value == NULL)
+      if (!assoc[j].value)
 	{
 	  cerr << " GtransfoCub::SetValues : no item named " << name << endl;
 	  continue;

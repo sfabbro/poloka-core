@@ -4,7 +4,7 @@
 
 #include <cmath> 
 
-
+ 
 AGaussian::AGaussian()
 {
   xc=0.; 

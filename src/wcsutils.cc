@@ -9,6 +9,7 @@
 #include "fitstoad.h"
 #include "basestar.h" /* for MEMPIX2DISK */
 #include "stringlist.h"
+#include "imageutils.h"
 
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
@@ -613,7 +614,7 @@ double Arcmin2Area(const Frame &aFrame,const FitsHeader &Header)
   Gtransfo* pix2radec;
   if (WCSFromHeader(Header, pix2radec))
     {
-      Frame degframe = aFrame.ApplyTransfo(*pix2radec);
+      Frame degframe = ApplyTransfo(aFrame,*pix2radec);
       delete pix2radec;
       double ra,dec;
       RaDecFromWCS(Header,ra,dec);
@@ -647,7 +648,7 @@ double Arcmin2Overlap(const FitsHeader& Head1,const FitsHeader& Head2)
     {
       Frame frame1(Head1); // boundaries of the image
       Frame frame2(Head2); // boundaries of the image
-      Frame frame1in2 = frame1.ApplyTransfo(transfo1to2); //assume simple rotation      
+      Frame frame1in2 = ApplyTransfo(frame1,transfo1to2); //assume simple rotation      
       frame1in2 *= frame2;      
       if ((frame1in2.xMin < frame1in2.xMax) &&
 	  (frame1in2.yMin < frame1in2.yMax) &&
@@ -828,5 +829,133 @@ bool UpdateRaDec(FitsHeader &Header)
   delete pix2RaDec;
   return true;
 }
+
+//////////////////////////////////////////////////
+
+
+
+//used to compute the rotation/flip of coordinates given North and East directions
+// on the fits image. This provides if needed the 3rd argument of ComputeLinWCS.
+typedef enum {Up,Down,Right,Left} AxisDir;
+
+static GtransfoLin RotationFlip(const AxisDir NorthDir, const AxisDir EastDir)
+{
+  double a11 = 0;
+  double a12 = 0;
+  double a21 = 0;
+  double a22 = 0;
+  // tested with NorthDir=Down,EastDir=Left, and NorthDir=Left,EastDir=Down.
+  // It should then work for other cases.
+  switch (NorthDir)
+    {
+    case Up    : a22 =  1; break;
+    case Down  : a22 = -1; break;
+    case Right : a21 =  1; break;
+    case Left  : a21 = -1; break;
+    }
+  switch (EastDir)
+    {
+    case Up    : a12 =  1; break;
+    case Down  : a12 = -1; break;
+    case Right : a11 =  1; break;
+    case Left  : a11 = -1; break;
+    }
+  GtransfoLin rotFlip(0,0,a11,a12,a21,a22);
+  if (fabs(rotFlip.Determinant()) != 1.)
+    {
+      cerr << " RotationFlip computes a non unitary transfo :" << endl 
+	   << rotFlip << endl;
+    }
+  return rotFlip;
+}
+
+
+//! a handy routine to compute aWCS given a RaDec reference, and a possible rotation and flip.     
+static bool ComputeLinWCS(const FitsHeader &Head, 
+		     const Point &CrPix, 
+		     const GtransfoLin &RotFlip, 
+		     TanPix2RaDec &WCS)
+		     {
+  double pixscale = Head.KeyVal("TOADPIXS");
+  if (pixscale == 0)
+    {
+      cerr << " NO TOADPIXS in file " << Head.FileName() << " : cannot guess a WCS " << endl;
+      return false;
+    }
+  double ra,dec;
+  RaDec2000(Head, ra, dec);
+  
+  GtransfoLin cd = GtransfoLinScale(pixscale/(3600), pixscale/3600.)
+    *RotFlip
+    *GtransfoLinShift(-CrPix.x, -CrPix.y);
+  WCS = TanPix2RaDec(cd, Point(ra,dec));
+  return true;
+}
+
+
+
+// include alltelinst here
+typedef bool (*GuessLinWCS_Type)(const FitsHeader &Head, TanPix2RaDec &Guess);
+static std::map<string,GuessLinWCS_Type> WCS_Functions;
+static int Add2GuessWCSMap(const string &Name, GuessLinWCS_Type Function) {
+  WCS_Functions[Name]=Function;
+  return 0;
+}
+
+
+#define USE_WCS
+#ifdef VIRTUAL_INSTRUMENTS
+#undef VIRTUAL_INSTRUMENTS
+#endif
+#include "alltelinst.cc"
+
+
+bool GuessLinWCS(const FitsHeader &Header, TanPix2RaDec &Guess)
+{
+  string name = TelInstName(Header);
+  std::map<string,GuessLinWCS_Type>::const_iterator iter = WCS_Functions.find(name);
+  if (iter!=WCS_Functions.end()) {
+    cout << "yes, the instrument " << name << " has a specific WCS function" << endl;
+    if ( iter->second(Header,Guess) )
+      return true;
+  }
+  
+  cout  << " trying default GuessLinWCS" << endl;
+  
+  // the tel/inst specific procedure failed. try the default one ...
+  
+  if (HasLinWCS(Header)) return TanLinWCSFromHeader(Header,Guess);
+  
+  return ComputeLinWCS(Header, Header.ImageCenter(), GtransfoIdentity(), Guess);  
+}
+
+static void TestWCSimplementation(const FitsHeader &Head) {
+  TanPix2RaDec wcs;
+  cout << " test GuessLinWCS " << endl;
+  if (GuessLinWCS(Head,wcs))
+    {
+      cout << " considered successful " << endl;
+      cout << wcs << endl;
+    }
+  else cout << " return false " << endl;
+  cout << " test SkyRegion " << endl << SkyRegion(Head) << endl;
+}
+
+// tell fitstoad to use this function to test WCS
+static int tata = SetTestWCS(TestWCSimplementation);
+
+Frame SkyRegion(const FitsHeader &Header)
+{
+  int nx,ny;
+  Header.ImageSizes(nx,ny);
+  TanPix2RaDec Pix2RaDec;
+  if (!GuessLinWCS(Header, Pix2RaDec)) return Frame();
+  cout << " Lin WCS Guess " << Pix2RaDec << endl;
+  Point p00 = Pix2RaDec.apply(Point(0,0));
+  Point p11 = Pix2RaDec.apply(Point(nx,ny));
+  return Frame(p00,p11);
+}
+
+
 
 

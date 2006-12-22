@@ -1,6 +1,7 @@
 #include "cluster.h"
 #include "reducedimage.h"
 #include "fitsimage.h"
+#include "polokaexception.h"
 
 void usage(char * ProgName)
 {
@@ -35,9 +36,13 @@ int main(int nargs, char ** argv)
 
 
  DbImageList list(names); // expands correctly...
+ bool ok = true;
  
   for (DbImageIterator it = list.begin(); it != list.end(); ++it)
     {
+
+      try{
+
       ReducedImage redimage(*it);
       
       /*
@@ -48,7 +53,13 @@ int main(int nargs, char ** argv)
 	FitsImage(redimage.FitsSatelliteName(), header,mask);
 	*/
       redimage.MakeSatellite();
-	
-    }
+      }catch(PolokaException p) {
+	p.PrintMessage(cout);
+	ok = false;
+      }
 
+    }
+  if(ok)
+    return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }

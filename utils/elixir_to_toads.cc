@@ -6,13 +6,12 @@
 #include "frame.h"
 #include "reducedimage.h"
 #include "histo1d.h"
-#include "superflat.h"
 #include "fitstoad.h" 
 #include "fringeutils.h"
 
 
 
-static bool elixir_process(ReducedImage &Rim, bool old_fringe_method, bool always_defringe, bool never_defringe)
+static bool elixir_process(ReducedImage &Rim, bool always_defringe, bool never_defringe)
 {
   
   FitsImage *elixir = new FitsImage(Rim.ElixirName());
@@ -21,7 +20,7 @@ static bool elixir_process(ReducedImage &Rim, bool old_fringe_method, bool alway
       cerr << "elixir_to_toads : invalid file : "  << Rim.Name() << endl;
       return false;
     }
-
+  
   // copy and forget the input
   FitsImage image(Rim.FitsName(),*elixir,*elixir);
   delete elixir; elixir = NULL;
@@ -36,36 +35,24 @@ static bool elixir_process(ReducedImage &Rim, bool old_fringe_method, bool alway
   if(!never_defringe) {
     string band = StringToUpper(image.KeyVal("TOADBAND"));
     if (band == "I" || band =="Z") {
-      if(old_fringe_method) {
-	if(! FringeUtils::IsDefringed(image) || always_defringe ) {
-	  cout << " removing fringes " << endl;
-	  FitsImage fringemap(Rim.FitsFringeName());
-	  if(!fringemap.IsValid()) {
-	    cout << "ERROR in elixir_to_toads , fringemap " << Rim.FitsFringeName() << " is not valid" << endl;
-	    return false;
+      if(! FringeUtils::IsDefringed(image) || always_defringe ) {
+	if(! FringeUtils::IsDefringedWithNewMethod(image)) {
+	  cout << " removing fringes with the new method" << endl;
+	  float nsigma = 3;
+	  if(band == "Z")
+	    nsigma = 5;
+	  if(FringeUtils::RemoveFringes(image,Rim.FitsFringeName(),0,nsigma,0,1)!=0) {
+	    cout << "ERROR in elixir_to_toads at FringeUtils::RemoveFringes" << endl;
 	  }
-	  RemoveFringes(image, fringemap, true);
-	  image.AddOrModKey("FRINGED","SUB","Fringe pattern subtracted");
-	}
-      }else{
-	if(! FringeUtils::IsDefringed(image) || always_defringe ) {
-	  if(! FringeUtils::IsDefringedWithNewMethod(image)) {
-	    cout << " removing fringes with the new method" << endl;
-	    float nsigma = 3;
-	    if(band == "Z")
-	      nsigma = 5;
-	    if(FringeUtils::RemoveFringes(image,Rim.FitsFringeName(),0,nsigma,0,1)!=0) {
-	      cout << "ERROR in elixir_to_toads at FringeUtils::RemoveFringes" << endl;
-	    }
-	    image.AddOrModKey("FRINGED","SUBNEW","Fringe pattern subtracted (new method)");
-	  }
+	  image.AddOrModKey("FRINGED","SUBNEW","Fringe pattern subtracted (new method)");
 	}
       }
     }
   }
+  
 
 
-
+  
   // find saturation level
   // Why was this code copied from the library??
   // this is a shame!
@@ -130,7 +117,7 @@ static bool elixir_process(ReducedImage &Rim, bool old_fringe_method, bool alway
 
 void DumpHelp(const char *programname) {
   cout << programname << "  <DbImage(s)> " << endl 
-       << " option:  --old_fringe_method (use old method to remove fringes)" << endl
+       << " option:  " << endl
        << "          --always_defringe (try to defringe image in any case (if the fringe pattern is a new one)" << endl
        << "          --never_defringe" << endl
        << endl
@@ -150,15 +137,10 @@ int main(int argc,char **argv)
     DumpHelp(argv[0]);
   
   bool never_defringe = false;
-  bool old_fringe_method = false;
   bool always_defringe = false;
   
   vector<string> filenames;
   for (int i=1; i< argc; ++i) {
-    if (!strcmp(argv[i],"--old_fringe_method")) {
-      old_fringe_method = true;
-      continue;
-    }
     if (!strcmp(argv[i],"--always_defringe")) {
       always_defringe = true;
       continue;
@@ -173,14 +155,15 @@ int main(int argc,char **argv)
   
 
   bool ok = true;
-  int nimages = filenames.size();
+  size_t nimages = filenames.size();
   if(nimages<=0) {
     cout << "missing input image(s)" << endl;
     DumpHelp(argv[0]);
   }
-  for(int im=0;im<nimages;im++) {
-    ReducedImage im(filenames[im]);
-    ok &= elixir_process(im,old_fringe_method,always_defringe,never_defringe);
+
+  for(size_t i=0; i<nimages; i++) {
+    ReducedImage im(filenames[i]);
+    ok &= elixir_process(im,always_defringe,never_defringe);
   }
 
   return (ok ? EXIT_SUCCESS: EXIT_FAILURE);

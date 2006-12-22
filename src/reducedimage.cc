@@ -1,10 +1,9 @@
 #include <iostream>
+#include <memory> // for auto_ptr
 
 #include "fitsimage.h"
-#include "fileutils.h"
 #include "reducedimage.h"
 #include "astroutils.h"
-#include "frame.h"
 #include "fitstoad.h"
 #include "sestar.h"
 #include "cluster.h"
@@ -12,6 +11,9 @@
 #include "cluster2.h"
 #include "imagebinning.h"
 #include "wcsutils.h"
+#include "imageutils.h" // ConvolveSegMask
+#include "fitsexception.h"
+
 
 /* it seems that a constructor cannot call another constructor:
    hence put a routine that both call */
@@ -115,10 +117,18 @@ void ReducedImage::FillSExtractorData(ForSExtractor & data,
     {
       cout << "Weighting from " << FitsWeightName() << endl ;
       data.FitsWeightName = FitsWeightName();
+
+      /* The "BadImage" flags 0 weight pixels. SExtractor ignore 0 weight
+	 pixels for computing object scores, but does NOT flag objects 
+	 affected by 0 weight pixels. But it flags objects which make use
+	 of pixels flagged in the flag images. This is why we build this 
+	 "BadImage", just for SExtractor. It is deleted when we are done.
+      */
       if (MakeBad())
 	data.FitsMaskName = FitsBadName(); // flag image for SExtractor process
-      else
+	else 
 	data.FitsMaskName = "" ;
+	
     }
   else 
     {     
@@ -210,7 +220,10 @@ ReducedImage::ReAddBackground_and_ResetKeys()
     }
 }
 
+#define READ_IF_EXISTS(VAR,TAG,TYPE) \
+if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
 
+#include "imageback.h"
 
 bool
 ReducedImage::MakeCatalog(bool redo_from_beg, 
@@ -228,6 +241,12 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 	  return true;
 	}
     }
+
+   if (!HasImage())
+     {
+       cerr << " cannot make catalog without image " << endl;
+       return false;
+     }
 
    // if the background has already been subtracted,then its value will be taken as 0. (but SExtractor will re-compute the sigma)and it won't in any case be subtracted again.
   bool fond_deja_soustrait = BackSub();
@@ -280,18 +299,30 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   // fabrication de la carte de poids
    if (! HasWeight() )
      {
-       MakeWeight();
+       if (!MakeWeight()) return false;
      }
 
-  ForSExtractor data ;
-  
 
+
+
+  DataCards cards(DefaultDatacards());
+  int use_poloka_back = 1;
+  READ_IF_EXISTS(use_poloka_back, "USE_POLOKA_BACK", IParam);
+
+  
    // the background is subtracted if we do want to subtract it AND  if it wasn't subtracted before. 
   bool soustraire_fond = !(fond_deja_soustrait) && !pas_sub_fond;
 
-  // the background map is saved only if it is subtracted.
-  bool sauver_fond = soustraire_fond ;
+  /*
+  The background map is saved only if it is subtracted, and we use SExtractor back (rather than Poloka back)
+  */
+
+  bool sauver_fond = (use_poloka_back == 0);
+
+  ForSExtractor data ;
   FillSExtractorData(data,fond_deja_soustrait,sauver_fond, use_sigma_header);
+  // assign the name of the "SEGMENTATION" image. Temporary name.
+  data.FitsSegmentationName = data.UniqueName+"seg.fits";
   data.Print();
   double Fond = 0., SigmaFond = 0. ;
   FitsImage *pmasksat = NULL ;
@@ -305,7 +336,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
     }
   SEStarList stlse ;
   int status = SEStarListMake(data, stlse, Fond, SigmaFond, pmasksat);
-  if (status == 0) {if (pmasksat) delete pmasksat; return 0;}
+  if (status == 0) {return 0;}
 
   // we re-flag for saturation here
   int nsat = FlagSaturatedStars(stlse, data.saturation);
@@ -318,33 +349,133 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 	 << FitsSaturName() << endl ;
     cout << " we have " << pmasksat->SumPixels() 
 	 << " pixels flagged as saturated" << endl;
-    delete pmasksat; // causes the actual writing.
+    delete pmasksat;
+    pmasksat = NULL;
     }
 
   SetSESky(Fond, "SExtractor computed background");
   SetSESigma(SigmaFond, "SExtractor computed sigma on background"); 
   // set back to zero in starlist and correct saturation in image
-  if (soustraire_fond)
+
+  //compression of the object mask
+  FitsImage *segmentationMask = NULL;
+  if (!FileExists(data.FitsSegmentationName))
     {
-      // set back ("Fond() ") of stars to zero.
-      SetStarsBackground(stlse,0.);
-      // update saturation level in image header
-      SetOriginalSaturation(Saturation(),"Original saturation level before sky subtraction"); 
-      SetSaturation(Saturation()-Fond,"Saturation level corrected from sky subtraction"); 
-      SetBackLevel(0.," SExtractor Background subtracted"); // activates BackSub 
-      // subtracting background and saving image
-      if(true)
-	{
-	  cout << "TOADS: Subtracting Image Background" << endl ;
-	  FitsImage back(FitsBackName(), RO);
-	  FitsImage img(FitsName(), RW);
-	  img -= back ;
-	  cout << " removing the background image computed by sextractor : " 
-	       << endl << FitsBackName() << endl;
-	  remove(FitsBackName().c_str());
-	}
+      cout << " ReducedImage::MakeCatalog : cannot find object mask " <<data.FitsSegmentationName << endl;
+    }
+  else
+    {
+      // "process" the segmentation mask :  it gets compressed on disk.
+      FitsImage sexOutput(data.FitsSegmentationName);
+      segmentationMask = new FitsImage(FitsSegmentationName(), sexOutput, sexOutput );
+      /* the "segmentation image" has a span depending on the number of objects in the catalog.
+	 So we adapt the disk representation to the actual number of entries in the catalog */
+      int bitpix = (stlse.size() > 32000)? 32 : 16;
+      segmentationMask->AddOrModKey("BITPIX",bitpix); 
+
+      segmentationMask->AddOrModKey("INT_DATA",true, " this is integer data ");
+      segmentationMask->Write(); // write it before we mess it up
+      // and remove the mask provided  by Sextractor.
+      remove(data.FitsSegmentationName.c_str());
     }
 
+
+  if (soustraire_fond)
+    {
+      if (use_poloka_back)
+	{
+	  FitsImage *weight = NULL;
+	  int poloka_back_object_mask_border = 5;
+	  if (segmentationMask)
+	    {
+	      READ_IF_EXISTS(poloka_back_object_mask_border,"POLOKA_BACK_OBJECT_MASK_BORDER",IParam);
+	      
+	      cout << " convolving object mask with bordersize = " << poloka_back_object_mask_border << endl;
+	      ConvolveSegMask(*segmentationMask, *segmentationMask, poloka_back_object_mask_border);
+	      {
+		string cvName = CutExtension(segmentationMask->FileName())
+		  +".cv."+FileExtension(segmentationMask->FileName());
+		FitsImage toto(cvName,*segmentationMask,*segmentationMask);
+	      }
+	      // build a weight image with objects masked
+
+	      // "invert" the mask
+	      Pixel *end = segmentationMask->end();
+	      for (Pixel *pm = segmentationMask->begin(); pm < end; ++pm) if (*pm == 0) *pm=1; else *pm = 0;
+	      weight = new FitsImage(FitsWeightName());	  
+	      (*weight) *= (*segmentationMask);
+	      delete segmentationMask; segmentationMask = NULL;		
+	    }
+	  else
+	    {
+	      cout << " could not mask object pixels when computing sky of " << Name() << endl;
+	      return false;
+	    }
+	  if (true)
+	    {
+	      // read mesh size from datacards
+	      int poloka_back_mesh_sizex = 256;
+	      int poloka_back_mesh_sizey = poloka_back_mesh_sizex;
+	      if (cards.HasKey("POLOKA_BACK_MESH_SIZE"))
+		{
+		  poloka_back_mesh_sizex = poloka_back_mesh_sizey = cards.IParam("POLOKA_BACK_MESH_SIZE");
+		}
+	      else
+		{
+		  READ_IF_EXISTS(poloka_back_mesh_sizex,"POLOKA_BACK_MESH_SIZEX", IParam);
+		  poloka_back_mesh_sizey = poloka_back_mesh_sizex;
+		  READ_IF_EXISTS(poloka_back_mesh_sizey,"POLOKA_BACK_MESH_SIZEY", IParam);
+		}
+	      // simple  isn't it?
+	      cout << "TOADS: Computing Image Background with mesh = " 
+		   <<  poloka_back_mesh_sizex << ',' << poloka_back_mesh_sizey << endl;
+	      FitsImage im(FitsName(), RW);
+	      
+	      ImageBack back(im, poloka_back_mesh_sizex, poloka_back_mesh_sizey, weight);
+	      delete weight;
+	      { // save the mini back
+		FitsImage miniBack(FitsMiniBackName(), back.BackValue());
+		miniBack.AddOrModKey("SEXBKGSX", poloka_back_mesh_sizex);
+		miniBack.AddOrModKey("SEXBKGSY", poloka_back_mesh_sizey);
+		miniBack.AddOrModKey("BITPIX",-32);
+		miniBack.AddOrModKey("EXTRAPIX",poloka_back_object_mask_border,
+				     " by how many pixels we enlarged the segmentation sex patches");
+		miniBack.AddCommentLine("Poloka Computed Miniback (class ImageBack)");
+	      }
+	      cout << "TOADS: Subtracting Image Background" << endl ;
+	      Image *largeBack = back.BackgroundImage();
+	      im -= *largeBack;
+	      delete largeBack;
+	    }
+	  // set back ("Fond() ") of stars to zero.
+	  //      SetStarsBackground(stlse,0.);
+	  // update saturation level in image header
+	  SetOriginalSaturation(Saturation(),"Original saturation level before sky subtraction"); 
+	  SetSaturation(Saturation()-Fond,"Saturation level corrected from sky subtraction"); 
+	  SetBackLevel(0.," Poloka background (with masked objects) subtracted"); // activates BackSub 
+	}
+      else // subtract sextractor background
+	{
+	  // set back ("Fond() ") of stars to zero.
+	  SetStarsBackground(stlse,0.);
+	  // update saturation level in image header
+	  SetOriginalSaturation(Saturation(),"Original saturation level before sky subtraction"); 
+	  SetSaturation(Saturation()-Fond,"Saturation level corrected from sky subtraction"); 
+	  SetBackLevel(0.," SExtractor Background subtracted"); // activates BackSub 
+	  // subtracting background and saving image
+	  if(true)
+	    {
+	      cout << "TOADS: Subtracting Image Background" << endl ;
+	      FitsImage back(FitsBackName(), RO);
+	      FitsImage img(FitsName(), RW);
+	      img -= back ;
+	      cout << " removing the background image computed by sextractor : " 
+		   << endl << FitsBackName() << endl;
+	      remove(FitsBackName().c_str());
+	    }
+	}// end of sex back subtraction
+    } // end of back subtraction
+  if (segmentationMask) delete segmentationMask; segmentationMask = NULL;
 
   if (HasBad())
     {
@@ -360,7 +491,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   SetSeeing(sortiese.seeing, "SExtractor computed seeing (pixels, sigma)"); 
   sortiese.Print();
 
-  MakeWeight();
+  MakeWeight(); // updates a few things
 
   stlse.write(CatalogName());
 
@@ -409,11 +540,20 @@ bool ReducedImage::MakeCatalog()
    (so that the number of bad pixels accounts for saturation),
    but this cannot be done for shape computation
 
+
+   This routine could now be split in 2 routines to allow the aperture
+   fluxes being computed at positions obtained by other means than the
+   ones implemented here (e.g.  the catalog from an other image...)
+
 */
 
 
 static double sq(const double &x) {return x*x;}
 
+
+
+#include "histopeakfinder.h"
+#include "fitsslice.h" // for FitsParallelSlices
 
 bool ReducedImage::MakeAperCat()
 {
@@ -436,36 +576,70 @@ bool ReducedImage::MakeAperCat()
       return false;
     }
 
-  FitsImage W(FitsWeightName());
-  FitsImage I(FitsName());
-  FitsImage C(FitsCosmicName());
+  //this code now "slices" the input images in order to accomodate monsters
 
-  if (!bool(I.KeyVal("BACK_SUB")))
+  int ySliceSize = 500;
+  int sliceOverlap = 110;
+
+  AperSEStarList apercat(seList); // copy of SExtractor catalog.
+
+  // first pass on the pixels : compute shapes (and positions)
+  {
+
+    FitsParallelSlices slices(ySliceSize,sliceOverlap);
+
+    slices.AddFile(FitsName());
+
+    if (!bool(slices[0]->KeyVal("BACK_SUB")))
+      {
+	cout << " ReducedImage::MakeAperCat : this code cannot accomodate images with background left" << endl;
+	return false;
+      }
+    
+    slices.AddFile(FitsWeightName());
+    
+    
+    double yStarMin = 0;
+    do  // loop on image slices
+      {
+	double yStarMax = (slices.LastSlice())? slices.ImageJ(ySliceSize): slices.ImageJ(ySliceSize)-55;
+	
+	double offset = slices.ImageJ(0);
+	for (AperSEStarIterator i = apercat.begin(); i != apercat.end(); ++i)
+	  {
+	    AperSEStar &s = **i;
+	    if (s.y < yStarMax && s.y >= yStarMin)
+	      {
+		s.y -= offset;
+		s.ComputeShapeAndPos(*slices[0],*slices[1]);
+		s.y += offset;
+	      }
+	  }
+	yStarMin = yStarMax;
+      }
+    while(slices.LoadNextSlice());
+  } // end of first pass
+
+
+  // compute the "seeing" from the star cluster locus in object shape space
+  double seeing = Seeing();
+  double xSize, ySize, corr;
+  StarScoresList scores;
+  if (FindStarShapes(apercat, 20, xSize, ySize, corr, scores))
     {
-      cout << " this code cannot accomodate images with background left" << endl;
-      return false;
+      double mxx = sq(xSize);
+      double myy = sq(ySize);
+      double mxy = corr*xSize*ySize;
+      seeing = pow(mxx*myy-sq(mxy),0.25);
     }
+  cout << Name() << " star shapes " << xSize << ' ' << ySize << ' ' 
+       << corr  << endl;
+  cout << Name () << ": old seeing " <<  Seeing() << " new " << seeing << endl;
+  
 
 
-  AperSEStarList apercat(seList);
-
-
-  for (AperSEStarIterator i = apercat.begin(); i != apercat.end(); ++i)
-    {
-      AperSEStar &s = **i;
-      s.ComputeShapeAndPos(I,W);
-    }
-
-
-  // set weight = 0 for saturated pixels ?
-  // yes. If not, saturated spikes within apertures may contribute
-  // to the flux without any notice.
-  {// open a block so that the satur image disappears after usage.
-    FitsImage satur(FitsSaturName());
-    Image &w = W;
-    w *= (1-satur);
-  }
-
+  // various minor things to do before computing aperture photometry
+  FitsHeader  I(FitsName());
 
   //try to figure out a gain
   double gain = I.KeyVal("TOADGAIN");
@@ -484,9 +658,27 @@ bool ReducedImage::MakeAperCat()
 
   
   // get aperture radius, either from datacards or provide defaults
+  bool fixed_aper_rads = false;
   vector<double> rads;
   DataCards cards(DefaultDatacards());
-  if (cards.HasKey("APER_RADS"))
+  
+  // FIXED APERTURE RADIUS, in ARCSECONDS ... 
+  // may be used for the calibration.
+  if (cards.HasKey("FIXED_APER_RADS")) 
+    {
+      cout << " using FIXED APER RAD values: ";
+      fixed_aper_rads = true;
+      int n = cards.NbParam("FIXED_APER_RADS");
+      for(int i=0;i<n;i++) 
+	{
+	  double r = cards.DParam("FIXED_APER_RADS",i);
+	  r /= double(I.KeyVal("TOADPIXS"));
+	  cout << " " << r;
+	  rads.push_back(r);
+	}
+      cout << "\n";
+    }
+  else if (cards.HasKey("APER_RADS")) 
     {
       int n = cards.NbParam("APER_RADS");
       for (int i=0; i < n ; ++i) rads.push_back(cards.DParam("APER_RADS",i));
@@ -496,35 +688,129 @@ bool ReducedImage::MakeAperCat()
       cout << " no APER_RADS card in " << DefaultDatacards()  << endl
 	   << " resorting to internal defaults " << endl;
       double def[] = {2.,2.5,3.,3.5,4.,5.,7.5,10.,15.,20.};
+      // canadian rads
+      //      double def[] = {2.705, 4.057, 5.409, 6.762, 8.114, 10.819, 13.524, 16.228, 18.933, 21.638, 27.047};
       for (unsigned i =0; i < sizeof(def)/sizeof(def[0]); ++i)
 	rads.push_back(def[i]);
     }
 
-
-  double seeing = Seeing();
-  double xSize, ySize, corr;
-  if (FindStarShapes(apercat, xSize, ySize, corr))
-    {
-      double mxx = sq(xSize);
-      double myy = sq(ySize);
-      double mxy = corr*xSize*ySize;
-      seeing = pow(mxx*myy-sq(mxy),0.25);
-    }
-  cout << Name() << " star shapes " << xSize << ' ' << ySize << ' ' 
-       << corr  << endl;
-  cout << Name () << ": old seeing " <<  Seeing() << " new " << seeing << endl;
-
   unsigned nrads = rads.size();
-  for (unsigned k=0; k < nrads; ++k) rads[k] *= seeing;
+  if(!fixed_aper_rads) 
+      for (unsigned k=0; k < nrads; ++k) rads[k] *= seeing;
+  
   double maxNeighborDist = rads[nrads-1];
 
   apercat.SetNeighborScores(*AperSE2Base(&apercat),maxNeighborDist);
 
-  for (AperSEStarIterator i = apercat.begin(); i != apercat.end(); ++i)
-    {
-      AperSEStar &s = **i;
-      for (unsigned k = 0; k < nrads; ++k) s.ComputeFlux(I,W,C,gain,rads[k]);
-    }
+  // we are all set for second traversal of pixels : aperure photometry
+  {
+    int safetyMargin = int(rads[nrads-1])+2;
+
+    FitsParallelSlices slices(ySliceSize,2*safetyMargin);
+    slices.reserve(6); // so that slices[x] does not change after a push_back.... used below
+
+
+    slices.AddFile(FitsName());
+    Image &I = (*slices[0]);
+    slices.AddFile(FitsWeightName());
+    Image &W = (*slices[1]);
+
+    // set weight = 0 for saturated pixels ?
+    // yes. If not, saturated spikes within apertures may contribute
+    // to the flux without any notice.
+    bool hasSatur = HasSatur();
+    Image *satur = NULL;
+    if (hasSatur)
+      {
+	slices.AddFile(FitsSaturName());
+	satur = slices.back();
+      }
+
+    // nasty temporary hack allowing not to use the slow and buggy cosmic filter:
+    // either it is already done and we use the output, or it is not done and we just go
+    // without cosmics.
+    // To be "exception safe", we declare an auto_ptr to clear the allocated memory if any:
+    auto_ptr<Image> del_cosmic(NULL);
+    Image *cosmic = NULL;
+    if (FileExists(FitsCosmicName()))
+      {
+	slices.AddFile(FitsCosmicName());
+	cosmic = slices.back();
+      }
+    else
+      {
+	cosmic = new Image(slices[0]->Nx(), slices[0]->Ny());
+	del_cosmic.reset(cosmic); // will delete cosmic when del_cosmic goes out of scope
+      }
+    
+
+    // we may also miss the "segmentation image"
+    // same trick with exception safe call to delete using auto_ptr
+    auto_ptr<Image> del_segmentation(NULL);
+    Image *segmentation = NULL;
+    if (FileExists(FitsSegmentationName()))
+      {
+	slices.AddFile(FitsSegmentationName());
+	segmentation = slices.back();
+      }
+    else
+      {
+	segmentation = new Image(slices[0]->Nx(), slices[0]->Ny());
+	del_segmentation.reset(segmentation); // will delete segmentation when del_segmentation goes out of scope
+      }
+
+    // for the y limits take something 
+    // larger than the image so that all objects will be processed
+    double yStarMin = -100;
+    do // loop on image slices
+      {
+	double yStarMax = (slices.LastSlice())? slices.ImageJ(ySliceSize): slices.ImageJ(ySliceSize)-safetyMargin;
+
+	if (slices.LastSlice()) yStarMax += 100;
+
+	// saturated pixels are considered as bad pixels.
+	if (hasSatur) W *= (1.-(*satur));
+
+	double offset = slices.ImageJ(0);
+	for (AperSEStarIterator i = apercat.begin(); i != apercat.end(); ++i)
+	  {
+	    AperSEStar &s = **i;
+	    if (s.y < yStarMax && s.y >= yStarMin)
+	      {
+		s.y -= offset;
+		for (unsigned k = 0; k < nrads; ++k) s.ComputeFlux(I,W,*cosmic,*segmentation,gain,rads[k]);
+		s.y += offset;
+	      }
+	  }
+	yStarMin = yStarMax;
+      }
+    while(slices.LoadNextSlice());
+
+  } // end of second  pass through the pixels. End of block releases image buffers.
+
+    // check that each star was processed only once
+    for (AperSEStarIterator i = apercat.begin(); i != apercat.end();)
+      {
+	const AperSEStar &s = **i;
+	if (s.apers.size() == nrads)
+	  {
+	    ++i; continue;
+	  }
+	cout << " ERROR : ReducedImage::MakeAperCat : the star at " << Point(s) 
+	     << " has " << s.apers.size() << " apertures instead of " << nrads << endl;
+	if (s.apers.size() == 0)
+	  {
+	    cout << " dropping this object " << endl;
+	    i = apercat.erase(i);
+	  }
+	else
+	  {
+	    cout << " aborting ! " << endl;
+	    ++i;
+	    abort();
+	  }
+      } // end loop on checking number of aper meaurements.
+
 
   // write some global stuff (radius and seeing, and neighbor cut)
   
@@ -544,10 +830,56 @@ bool ReducedImage::MakeAperCat()
     }
 
   apercat.write(aperCatName);
+  return true;
+}
+
+		      
+bool ReducedImage::MakeStarCat()
+{
+  if (!MakeAperCat()) 
+    {
+      cout << " MakeStarList : miss aper catalog for image " << Name() << endl;
+      return false;
+    }
+  string starCatName = StarCatalogName();
+  if (FileExists(starCatName)) return true;
+
+  double xSize, ySize, corr;
+  StarScoresList scores;
+  AperSEStarList apercat(AperCatalogName());
+  if (!FindStarShapes(apercat, 20, xSize, ySize, corr, scores))
+    {
+      cout << " MakeStarList : could not find the star locus for " 
+	   << Name() <<endl;
+      return false;
+    }
+
+  DataCards cards(DefaultDatacards());
+  double sigCut = 5;
+  if (cards.HasKey("STARLIST_SIG_CUT")) sigCut = 
+    cards.DParam("STARLIST_SIG_CUT");
+
+  // recycling apercat magically copies the global keys to output.
+  apercat.clear();
+  for (StarScoresCIterator i = scores.begin(); i != scores.end(); ++i)
+    {
+      const StarScores &scores = **i;
+      if (scores.nSig<sigCut) // it lies within the star cluster
+	{
+	  const AperSEStar &a = dynamic_cast< const AperSEStar &>(*scores.star);
+	  apercat.push_back(&a);
+	}
+    }
+  GlobalVal &glob = apercat.GlobVal();
+  glob.AddKey("STARSIGCUT", sigCut);
+
+
+  cout << "MakeStarCat() : writing " << starCatName << endl;
+  apercat.write(starCatName);
 
   return true;
 }
-		      
+
   
 
 bool ReducedImage::IsToadsWeight()
@@ -587,8 +919,6 @@ bool ReducedImage::IsToadsWeight()
   and to make a routine that updates according to what is missing
   and what is available
 */ 
-
-
 
 
 
@@ -695,25 +1025,35 @@ bool ReducedImage::MakeWeight()
   
   if (! HasWeight() ) // wasn't there or was destroy in last loop.
     {
-      pweights = new FitsImage(FitsWeightName(), FitsHeader(FitsName())); 
+      FitsHeader head(FitsName());
+      if (!head.IsValid())
+	{
+	  cout << " ReducedImage::MakeWeight : cannot Make Weight without original image ... " << endl;
+	  return false;
+	}
+      pweights = new FitsImage(FitsWeightName(), head); 
       cout << " Creating  weight map :" << pweights->FileName() << endl;
       // impose that zeros are preserved after FITS write/read
       pweights->PreserveZeros(); 
-      *pweights += 1. ; 
+      *pweights += 1.; 
     }
 
+
+  // use auto_ptr to trigger the call to FitsImage destructor
+  auto_ptr<FitsImage> no_use(pweights);
+
   FitsImage &weights = *pweights; // does nothing!
-
-
+  weights.EnableWrite(false); // prevent writing of partial files.
 
   /* kill pixels which are too low (usually unidentified bad columns)
      or central area of saturated stars (on some instruments) */
   if (addlow)
     {
-      FitsImage image(FitsName()); // important: don't open RW here
+      FitsHeader head(FitsName()); // important: don't open RW here
       // wait for image to be back subtracted:
-      if (image.HasKey("BACK_SUB") && bool(image.KeyVal("BACK_SUB")))
+      if (head.HasKey("BACK_SUB") && bool(head.KeyVal("BACK_SUB")))
 	{
+	  FitsImage image(FitsName()); // important: don't open RW here
 	  Pixel mean,sigma;
 	  image.MeanSigmaValue(&mean, & sigma);
 	  double threshold = mean - 10. * sigma;
@@ -810,7 +1150,12 @@ bool ReducedImage::MakeWeight()
       weights.MultiplyBySquare(flat) ;
       weights.AddOrModKey("FLATPIXS",true," this weight accounts for flat variations");
       cout << " accounting for flat variations in " << FitsWeightName() << endl;
+
     }
+
+  // end of weight ingredients arithmetics
+
+
   // print some statistics
   {
     FitsImage im(FitsName());
@@ -818,10 +1163,10 @@ bool ReducedImage::MakeWeight()
       cout << Name() << " Image/Weight stats : " 
 	   << ImageAndWeightError(im,weights) << endl;
   }
-  if (pweights) delete pweights;
+  weights.EnableWrite(true);
   return(true);
 }
-#include "fitsslice.h"
+
 
 bool ReducedImage::MakeBad()
 { 
@@ -901,6 +1246,11 @@ bool ReducedImage::MakeCosmic()
     clock_t tstart = clock();
   {
     FitsHeader head(FitsName());
+    if (!head.IsValid())
+      {
+	cout << " cannot Make cosmics without Image " << endl;
+	return false;
+      }
     if ("Swarp" == string(head.KeyVal("TOADINST")))
       {
 	{
@@ -1382,7 +1732,13 @@ double ReducedImage::SigmaBack() const
       if (head.HasKey("SKYSIGMA")) return double(head.KeyVal("SKYSIGMA")); // set when transforming the image
       if (head.HasKey("SEXSIGMA")) return double(head.KeyVal("SEXSIGMA")); // set when making the catalog.
       if (head.HasKey("SKYSIGEX")) return double(head.KeyVal("SKYSIGEX")); // set when flatfielding
-      cerr << " no way to figure out SigmaBack in " << Name() << endl;
+      cerr << " no information about SigmaBack in header of " << Name() << ", compute it" << endl;
+      {
+	FitsImage image(FitsName());
+	Pixel sky,sig;
+	image.SkyLevel(&sky, &sig);
+	return sig;
+      }
       return 0;
     }
   else
@@ -1644,6 +2000,22 @@ double ReducedImage::ModifiedModifiedJulianDate() const
   return UNDEFINED;
 }
 
+double ReducedImage::ModifiedJulianDate() const
+{
+  string fileName = FitsName();
+  if (FileExists(fileName))
+    {
+      FitsHeader head(FitsName());
+      return head.KeyVal("TOADMJD");
+    }
+  else
+    {
+      cerr << " ReducedImage::ModifiedJulianDate() cannot compute JulianDay for file " 
+	   << fileName << endl;
+    }
+  return UNDEFINED;
+}
+
 
 
 bool ReducedImage::SetJulianDate(const double &Value, const string Comment)
@@ -1688,7 +2060,9 @@ string ReducedImage::Instrument() const
 
 bool ReducedImage::SameChipFilterInst(const ReducedImage &Other,const bool Warn) const
 {
-  return FitsHeader(FitsName()).SameChipFilterInst(FitsHeader(Other.FitsName()), Warn);
+  FitsHeader head(FitsName());
+  FitsHeader otherhead(FitsName());
+  return head.SameChipFilterInst(otherhead, Warn);
 }
 
 bool ReducedImage::SameChipFilterInstNight(const ReducedImage &Other,const bool Warn) const
@@ -1706,7 +2080,9 @@ bool ReducedImage::SamePhysicalSize(const ReducedImage &OtherImage) const
 
 double ReducedImage::OverlapArcmin2(const ReducedImage& Other) const
 {
-  return Arcmin2Overlap(FitsHeader(FitsName()), FitsHeader(Other.FitsName()));
+  FitsHeader head(FitsName());
+  FitsHeader otherhead(Other.FitsName());
+ return Arcmin2Overlap(head, otherhead);
 }
 
 Gtransfo *ReducedImage::RaDecToPixels() const
@@ -1808,17 +2184,6 @@ bool ReducedImage::IsGoodImage() const
 
 ReducedImage::~ReducedImage()
 {
-  /* the call also exists in the base class destructor (~DbImage), but
-  when we reach it, the object in hand is no longer a derived object, and hence
-  the  called Streamer (in the root framework) is DbImage::Streamer.
-  This is not a bad C++ feature, since when we reach DbImage::~DbImage, 
-  the private data of ReducedImage (if any) is no longer meaningful :
-  if this destructor contained delete satements, they would be called 
-  before ~DbImage. hope this is clear, but just remember that if you want your
-  own inheritant of ReducedImage save its private data, you *DO* have to call
-  writeEverythingElse in its destructor. This routine is protected against
-  multiple calls for the same object. */
-  writeEverythingElse();
 }
 
 //! enlarge satured clusters in order to get rid of diffraction spikes (aigrettes en francais)
@@ -1906,7 +2271,8 @@ bool ReducedImage::FlagDiffractionSpikes() {
   
   // save satur in fits
   {
-    FitsImage saturfits(FitsSaturName(),FitsHeader(FitsSaturName()),satur); // this is an astuce to write gzip compressed fits image
+    FitsHeader shead(FitsSaturName());
+    FitsImage saturfits(FitsSaturName(),shead,satur); // this is an astuce to write gzip compressed fits image
     saturfits.AddCommentLine("This satur file was modified by ReducedImage::FlagDiffractionSpikes");
   }
   cout << "Ending ReducedImage::FlagDiffractionSpikes" << endl;
@@ -1989,7 +2355,8 @@ bool BoolImageOr(ReducedImageList &List,
       cerr << " could not find all ingredients for " << OutFitsName  << endl;
     }
   sum->Simplify(0.1);
-  FitsImage out(OutFitsName, FitsHeader(firstName), *sum);
+  FitsHeader fhead(firstName);
+  FitsImage out(OutFitsName, fhead, *sum);
   delete sum;
   out.ModKey("BITPIX",8);
   out.AddOrModKey("IMCOUNT",count);
@@ -2042,8 +2409,8 @@ bool BoolImageAnd(ReducedImageList &List,
   double cut = List.size()-0.5;
   sum->Simplify(cut);
 
-
-  FitsImage out(OutFitsName, FitsHeader(firstName), *sum);
+  FitsHeader fhead(firstName);
+  FitsImage out(OutFitsName, fhead, *sum);
   delete sum;
   out.ModKey("BITPIX",8);
   out.AddOrModKey("IMCOUNT",count);
@@ -2087,36 +2454,22 @@ Frame CommonFrame(ReducedImageList &RedList)
 }
 
 
-
-
-
-ReducedImageRef ReducedImageRead(const char *Name)
+ReducedImageCIterator ReducedImageList::Find(const string &Name) const
 {
-  return ReducedImageRead(string(Name));
+  ReducedImageCIterator i=begin();
+  for ( ; i != end(); ++i)
+    if ((*i)->Name() == Name) break;
+  return i;
 }
-			  
-#include <objio.h>
-#include <persistence.h>
-#include <typemgr.h>
-#include "reducedimage_dict.h"
 
-ReducedImageRef ReducedImageRead(const string &Name)
-{
-  DbImage ri(Name);
-  if (!ri.IsValid()) 
-    {cerr << Name << " : No such ReducedImage " << endl; 
-    return CountedRef<ReducedImage>();}
-  string fileName = ri.EverythingElseFileName();
-  if (!FileExists(fileName)) 
-    { cerr << Name << " : does not have a " << fileName << " file " << endl; 
-    return CountedRef<ReducedImage>();
-    }
-  ReducedImageRef result;
-  obj_input<xmlstream> oo(fileName);
-  oo >> result;
-  oo.close();
-  return result;
-}
+
+//ReducedImageRef ReducedImageRead(const char *Name)
+//{
+//  return ReducedImageRead(string(Name));
+//}
+	
+
+
 
   
 

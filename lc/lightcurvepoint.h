@@ -8,15 +8,10 @@
 
 
 #include "countedref.h"
-#include "persistence.h"
 
 //! lightcurve result
 class LightCurvePoint: public RefCount {
 public:
-  CLASS_VERSION(LightCurvePoint,1);
-#define LightCurvePoint__is__persistent
-
-
   LightCurvePoint();
   double julianday;
   double flux;
@@ -41,15 +36,15 @@ public:
     }
   }
 
-  friend ostream& operator << (ostream &Stream, const LightCurvePoint &lcp) { 
-    Stream << setiosflags(ios::fixed);
-    Stream << setw(14) << setprecision(2) << lcp.julianday
-	   << setw(15) << setprecision(3) << lcp.flux
-	   << setw(15) << setprecision(3) << lcp.eflux
-      //   << setw(15) << setprecision(3) << lcp.mag
-      //   << setw(15) << setprecision(3) << lcp.emag_minus
-      //   << setw(15) << setprecision(3) << lcp.emag_plus
-	   << setw(15) << setprecision(3) << lcp.zeropoint;
+  friend std::ostream& operator << (std::ostream &Stream, const LightCurvePoint &lcp) { 
+    Stream << std::setiosflags(std::ios::fixed);
+    Stream << std::setw(14) << std::setprecision(2) << lcp.julianday
+	   << std::setw(15) << std::setprecision(3) << lcp.flux
+	   << std::setw(15) << std::setprecision(3) << lcp.eflux
+      //   << std::setw(15) << std::setprecision(3) << lcp.mag
+      //   << std::setw(15) << std::setprecision(3) << lcp.emag_minus
+      //   << std::setw(15) << std::setprecision(3) << lcp.emag_plus
+	   << std::setw(15) << std::setprecision(3) << lcp.zeropoint;
     return Stream;
   }
 

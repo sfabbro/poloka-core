@@ -3,7 +3,7 @@
 // Last change: Time-stamp: <13-May-2002 15:48:19 seb>
 //
 //
-
+#ifdef VIRTUAL_INSTRUMENTS
 class VltFors : public VirtualInstrument {/* TYPE_SELECTOR */
 public:
   static VirtualInstrument *Acceptor(const FitsHeader &Head); // at the end for prototyping
@@ -245,3 +245,4 @@ VirtualInstrument* VltFors::Acceptor(const FitsHeader &Head)
   if (inst == "FORS1") return new VltFors1;
   return NULL;
 }
+#endif

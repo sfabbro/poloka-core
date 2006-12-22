@@ -1,12 +1,13 @@
 #!/bin/sh 
 # 
-# $Id: autogen.sh,v 1.1 2004/02/23 10:49:47 nrl Exp $
+# $Id: autogen.sh,v 1.2 2006/12/22 13:35:40 guy Exp $
 # 
 # autogen.sh 
 # 
 # run the autotools in the correct order.
 #
 
+test -d config || mkdir config
 autoheader
 aclocal -I m4
 libtoolize --copy --force

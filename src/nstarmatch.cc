@@ -7,6 +7,25 @@
 #include "vutils.h" /* for DArrayMedian */
 #include "fastfinder.h"
 
+TStarList::TStarList(const BaseStarList& slist, const Gtransfo& transfo) {
+  for(BaseStarCIterator it = slist.begin(); it != slist.end(); ++it) {
+    push_back(new TStar(**it,transfo));
+  }
+}
+
+string TStar::WriteHeader_(ostream & stream, const char*i) const
+{ 
+  return original->WriteHeader_(stream,i);
+};
+
+
+void TStar::writen(ostream &s) const 
+{
+  original->writen(s);
+}
+
+
+//==============================================================
 
 void NStarMatch::AddMatch(const BaseStar &Match, const unsigned Index)
 {

@@ -17,7 +17,8 @@ static void usage(const char *prog)
        << std::endl
        << " - tags characters are used to tag output in the order of input lists (eg -t griz) " << endl
        << " - matches with less than <minCount> are dropped if provided" 
-       << "     (set to 2 for 2 input lists by default)" << endl;
+       << "     (set to 2 for 2 input lists by default)" << endl
+       << "-f find transformation" <<  endl;
   
   exit(1);
 }
@@ -30,6 +31,7 @@ int main(int nargs, char **args)
   std::string outName;
   std::string tags;
   int minCount = 0;
+  bool fittransfo = false;
   for (int i=1; i <nargs; ++i)
     {
       char *arg = args[i];
@@ -44,6 +46,7 @@ int main(int nargs, char **args)
 	case 'o' : ++i; outName = args[i]; break;
 	case 't' : ++i; tags = args[i]; break;
 	case 'n' : ++i; minCount = atoi(args[i]); break;
+	case 'f' : fittransfo = true; break;
 	default: std::cerr << "don't understand " << arg << std::endl; 
 	  usage(args[0]); break;
 	}
@@ -82,7 +85,10 @@ int main(int nargs, char **args)
      behaviour (when joinlist only handled 2 input lists) */
   if (minCount == 0 /* not provided */ && names.size() == 2)
     minCount = 2;
-
+  
+  // update this
+  MatchConditions Conditions;
+  
 
   NStarMatchList nsm;
   for (unsigned k=0; k < names.size(); ++k)
@@ -96,11 +102,23 @@ int main(int nargs, char **args)
       cout << " read " << l.size() << " objects from " << names[k] << endl;
       string tag;
       if (tags != "") tag = tags.substr(k,1);
-      nsm.MatchAnotherList((const BaseStarList &) l, matchCut, 
-			   l.EmptyStar(), tag);
-      //      if (k==1) check_list(nsm, " dans la boucle");
+      if(fittransfo && k!=0) {
+	StarMatchList* mlist = MatchSearchRotShift((BaseStarList &) l, (BaseStarList &)nsm,  Conditions);
+	mlist->SetTransfoOrder(3);
+	mlist->RefineTransfo(10);
+	CountedRef<Gtransfo> transfo = mlist->Transfo();
+	TStarList tlist((const BaseStarList &) l,*transfo);
+	TStar *empty = new TStar(*(l.EmptyStar()),*transfo);
+	nsm.MatchAnotherList((const BaseStarList &) tlist, matchCut, 
+			     empty, tag);
+	
+      }else{
+	nsm.MatchAnotherList((const BaseStarList &) l, matchCut, 
+			     l.EmptyStar(), tag);
+	//      if (k==1) check_list(nsm, " dans la boucle");
+      }
     }
-
+  
   if (minCount) nsm.ApplyCountCut(minCount);
 
 

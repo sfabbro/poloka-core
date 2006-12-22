@@ -1,6 +1,8 @@
 // 
 // \file globalval.cc
 // 
+// Last modified: $Date: 2006/12/22 13:35:41 $
+// By:            $Author: guy $
 // 
 #include <iostream>
 #include <sstream>
@@ -224,7 +226,7 @@ bool GlobalVal::ProcessLine(const string &Line)
 
   vector<string> &values = (*this)[key];
   string strtmp = s;
-  DecomposeString(values, strtmp, ' ');
+  DecomposeString(values, strtmp, " ");
   return true;
 }
 

@@ -6,7 +6,6 @@
 #include "sestar.h"
 #include "reducedimage.h"
 #include "frame.h"
-#include "rootstuff.h"
 #include "countedref.h"
 
 class Image;
@@ -58,16 +57,8 @@ typedef CountedRef<ImageTransfo> ImageTransfoRef;
 
 /*! geometric transfo of a reduced image.  */
 
-#include "persistence.h"
-
 class ImageGtransfo : public ImageTransfo {
  private:
-
-CLASS_VERSION(ImageGtransfo,1)
-#define ImageGtransfo_is_persistent
-
-
-
   string geomRefName; 
   GtransfoRef transfoFromRef;
   GtransfoRef transfoToRef;
@@ -122,11 +113,7 @@ when you request the name of a data file (e.g. FitsName()).
 To geometrically align a set of images on the same reference, use
   ImagesAlign(). If you want to sum them, uses ImagesAlignAndSum() */
 class TransformedImage : public ReducedImage {
- private:
-
-CLASS_VERSION(TransformedImage,1)
-#define TransformedImage_is_persistent
-
+private:
   ImageTransfoRef transfo;
   string sourceName;
   ReducedImageRef source;  //!
@@ -199,7 +186,7 @@ string TransformedName(const string &ToTransform, const string &Ref);
 /*! ToDo may be constructed using the tags DoFits DoCatalog DoDead DoSatur, e.g. provide
    DoCatalog|DoDead to get catalog and dead frame on top of the default image itself. */
 
-int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, ReducedImageList &Aligned, const int ToDo);
+int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, ReducedImageList &Aligned, const int ToDo,bool use_wcs=false);
 
 
 

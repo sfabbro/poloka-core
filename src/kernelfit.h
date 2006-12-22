@@ -50,49 +50,48 @@ convolution kernels. see astro-ph 9903111 & astro-ph 9712287
 
 #include <vector>
 
-#include "persistence.h"
-
-
 
 struct XYPower  /* to handle and compute things like x**n*y**m */
 {  
-  CLASS_VERSION(XYPower,1);
-  #define XYPower__is__persistent
-  
   /* was separated from other stuff because we need 2 of them : one for the spatial variations of the kernel,
    and one for the spatial variation of the background (see in OptParams) */
   int Degree;
   vector<int> Xdeg; // values of x exponant of monomials
   vector<int> Ydeg; // values of exponant for x and y of monomials
-  unsigned int Nterms() const {return Xdeg.size();};
+  size_t Nterms() const {return Xdeg.size();};
 
   /* the value of monomial of rank q (where q < Nterms) */
-  double Value(const double X, const double Y, const int q) const;
+  double Value(const double X, const double Y, const size_t q) const;
 
   /* default constructor: Value(x,y,0) will return 1. */
   XYPower() { SetDegree(0);};
   XYPower(int Degree) { SetDegree(Degree);};
   void SetDegree(const int Degree);
   ~XYPower() {};
-
+  
+  //! read the polynomial from a stream
+  void read(std::istream& stream);
+  
+  //! write the polynomial to a stream
+  void write(std::ostream& stream) const;
+  
   void dump(std::ostream &stream = std::cout) const{
     stream << "XYPower Xdeg ";
-    for(unsigned int i=0;i<Xdeg.size() ;++i)
+    for(size_t i=0;i<Xdeg.size() ;++i)
       stream << Xdeg[i] << " ";
      stream << "Ydeg ";
-    for(unsigned int i=0;i<Ydeg.size() ;++i)
+    for(size_t i=0;i<Ydeg.size() ;++i)
        stream << Ydeg[i] << " ";    
   }
 #ifndef SWIG
   friend ostream& operator << (ostream &stream, const XYPower &s)
-  { s.dump(stream); return stream;}
+  { s.write(stream); return stream;}
+  friend istream& operator >> (istream &stream, XYPower &s)
+  { s.read(stream); return stream;}
 #endif
 };
 
 class OptParams {
-  CLASS_VERSION(OptParams,1);
-  #define OptParams__is__persistent
-
 public :
   int HKernelSize; /*  actual size = 2*HKernelSize+1 */
 
@@ -114,13 +113,20 @@ public :
   int HStampSize;
 
   int MaxStamps;
-
+  bool UniformPhotomRatio;
   OptParams(); /* default values */
   void OptimizeSizes(double BestSeeing, double WorstSeeing);
   void OptimizeSpatialVariations(const int NumberOfStars);
   int StampSize() const { return 2*HStampSize+1;}
   /* DOCF returns the size of the convolved stamps */
   int   ConvolvedSize() const { return 2*(HStampSize - HKernelSize) + 1;}
+  
+  //! read object contents from a stream
+  void read(std::istream& stream);
+  
+  //! write object contents to a stream
+  void write(std::ostream& stream) const;
+  
   void dump(std::ostream &stream = std::cout) const {
     stream << "OptParams " << endl;
     stream << " KernVar " <<  KernVar << endl;
@@ -128,8 +134,12 @@ public :
     stream << " SepBackVar " <<  SepBackVar << endl;
   }
 #ifndef SWIG
+  //  friend ostream& operator << (ostream &stream, const OptParams &s)
+  //  { s.dump(stream); return stream;}
   friend ostream& operator << (ostream &stream, const OptParams &s)
-  { s.dump(stream); return stream;}
+  { s.write(stream); return stream;}
+  friend istream& operator >> (istream &stream, OptParams &s)
+  { s.read(stream); return stream;}
 #endif 
 };
 
@@ -139,9 +149,6 @@ public :
 //! A class to fit a convolution kernel between 2 images by least squares.
 class KernelFit  :  public RefCount 
 {
-  CLASS_VERSION(KernelFit,1);
-  #define KernelFit__is__persistent
-
   public :
 //! pointer to 'best' image (smaller seeing).
   const Image *BestImage; //!
@@ -177,7 +184,7 @@ class KernelFit  :  public RefCount
   int HKernelSizeX() const { return optParams.HKernelSize;}
   int HKernelSizeY() const { return optParams.HKernelSize;}
 
-  int mSize; /* the size of the matrix m */
+  size_t mSize; /* the size of the matrix m */
   double *m;  /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */ // we don't save it  
   double *b;  /* the normal equations (i.e. grad(chi2) = 0) right hand side */ // we don't save it 
   vector<double> solution; //[mSize]/* the weights of various kernels */
@@ -254,7 +261,13 @@ void BestImageConvolve(int UpdateKernStep = 100);
 
 Image *VarianceConvolve(const Image &Source, int UpdateKern = 100);
 
-
+  
+  //! read object contents from a stream
+  void read(std::istream& stream);
+  
+  //! read object contents to a stream
+  void write(std::ostream& stream) const;
+  
   void dump(std::ostream &stream = std::cout) const{
     stream << "KernelFit ";
     stream << optParams << std::endl;
@@ -269,8 +282,12 @@ Image *VarianceConvolve(const Image &Source, int UpdateKern = 100);
   }
   
 #ifndef SWIG
+  //  friend ostream& operator << (ostream &stream, const KernelFit &s)
+  //  { s.dump(stream); return stream;}
   friend ostream& operator << (ostream &stream, const KernelFit &s)
-  { s.dump(stream); return stream;}
+  { s.write(stream); return stream;}
+  friend istream& operator >> (istream &stream, KernelFit &s)
+  { s.read(stream); return stream;}
 #endif
 
 private:

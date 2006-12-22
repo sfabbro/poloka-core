@@ -1,32 +1,40 @@
 #include <psfmatch.h>
- 
+#include <fstream> 
 #include "simfitvignet.h"
 
 // for kernel persistence
-#include "kernelfit_dict.h"
-#include "objio.h"
-#include "typemgr.h"
+//#include "kernelfit_dict.h"
+//#include "objio.h"
+//#include "typemgr.h"
 
+#define DEBUG_KERNEL
 
+// uncomment this to include model in weigths
+//#define VALCUTOFF 0. 
 
-#define VALCUTOFF 0.
+// uncomment this to normalize  psf, warning: need to modify those functions to do this:
+// SimFitRefVignet::UpdatePsfResid
+// SimFitVignet::UpdateResid_psf_gal
+// SimFitVignet::UpdateResid_psf
+// 
+#define NORMALIZE_PSF 
 
-TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
-  : Kernel(Radius), Dx(Radius), Dy(Radius)
-{ 
-  Tabulate(Pt, Dao, Radius);
-}
+static double sq(double x) {return x*x;};
 
-TabulatedPsf::TabulatedPsf(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
+////////////////////////////////////////////////////////////////////////////////////
+//  TabulatedPsf
+////////////////////////////////////////////////////////////////////////////////////
+
+TabulatedPsf::TabulatedPsf(const Point& Pt, const ImagePSF& imagepsf, const Window& Rect)
   : Kernel(Rect.Hx(), Rect.Hy()), Dx(hSizeX, hSizeY), Dy(hSizeX, hSizeY)
 { 
-  Tabulate(Pt, Dao, Rect);
+  Tabulate(Pt, imagepsf, Rect);
 }
 
 void TabulatedPsf::Resize(const int Hx, const int Hy)
 {
 #ifdef FNAME
-  cout << " > TabulatedPsf::Resize(const int Hx, const int Hy)" << endl;
+  cout << " > TabulatedDaoPsf::Resize(const int Hx, const int Hy)" << endl;
 #endif
 
 #ifdef DEBUG
@@ -64,10 +72,178 @@ void TabulatedPsf::Resize(const int Hx, const int Hy)
 #endif
 }
 
-void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)
+void TabulatedPsf::Tabulate(const Point& Pt, const ImagePSF& imagepsf, const Window& Rect)
+{
+  Resize(Rect.Hx(), Rect.Hy());
+  DPixel *ppsf = begin();
+  DPixel *ppdx = Dx.begin();
+  DPixel *ppdy = Dy.begin();
+  Vect der(2);
+  integral = 0;
+  for (int j=Rect.ystart; j<Rect.yend; ++j)
+    for (int i=Rect.xstart; i<Rect.xend; ++i, ++ppsf, ++ppdx, ++ppdy) 
+      {
+	*ppsf = imagepsf.PSFValue(Pt.x,Pt.y,i,j,&der);
+	*ppdx = der(0);
+	*ppdy = der(1);
+	integral += *ppsf;
+      }
+  
+  // normalization
+#ifdef NORMALIZE_PSF 
+  double norme = 1./integral;
+  ppsf = begin();
+  ppdx = Dx.begin();
+  ppdy = Dy.begin();
+  
+  for (int j=-hSizeY; j<=hSizeY; ++j) 
+    for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf, ++ppdx, ++ppdy) 
+      {
+	*ppsf *= norme;
+	*ppdx *= norme;
+	*ppdy *= norme;
+      }
+  integral=1;
+#endif
+
+  
+
+}
+
+void TabulatedPsf::ComputeMoments() {
+  integral = 0;
+  DPixel *ppsf = begin();
+  for (int j=-hSizeY; j<=hSizeY; ++j) {
+    for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf) {
+      integral += (*ppsf);
+    }
+  }
+  
+
+  double wxx=0.5;
+  double wyy=0.5;
+  double wxy=0;
+  int iter=0;
+  mx = 0;
+  my = 0;
+  det=0;
+  while (iter < 10)
+    {
+      iter++;
+      
+      double sumx = 0;
+      double sumy = 0;
+      double sumxx = 0;
+      double sumyy = 0;
+      double sumxy = 0;
+      double sumw = 0;
+      
+      DPixel *ppsf = begin();
+      for (int j=-hSizeY; j<=hSizeY; ++j) {
+	for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf) {
+	  double dx = i-mx;
+	  double dy = j-my;
+	  double wg = wxx*dx*dx + wyy*dy*dy + 2.*wxy*dx*dy;
+	  if (wg > 16) continue; // 4 sigmas, and avoids overflows
+	  wg = exp(-0.5*wg);
+	  wg *= (*ppsf);
+	  sumx += wg*dx;
+	  sumy += wg*dy;
+	  sumxx += wg*dx*dx;
+	  sumyy += wg*dy*dy;
+	  sumxy += wg*dx*dy;
+	  sumw += wg;
+	}
+      }
+      
+      sumx /= sumw;
+      sumy /= sumw;
+      sumxx /= sumw;
+      sumyy /= sumw;
+      sumxy /= sumw;
+      
+      mx += sumx;
+      my += sumy;
+      sumxx -= sq(sumx);
+      sumyy -= sq(sumy);
+      sumxy -= sumx*sumy;
+      
+      det = sumxx*sumyy - sq(sumxy);
+      wxx = 0.5*sumyy/det;
+      wyy = 0.5*sumxx/det;
+      wxy = -0.5*sumxy/det;
+    } // end of iteration.
+  
+  det = wxx*wyy-sq(wxy);
+  mxx = wyy/det;
+  myy = wxx/det;
+  mxy = -wxy/det;
+  det = 1./det;
+  
+  
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+//  TabulatedDaoPsf
+////////////////////////////////////////////////////////////////////////////////////
+#ifdef STORAGE
+TabulatedDaoPsf::TabulatedDaoPsf(const Point& Pt, const DaoPsf& Dao, const int Radius)
+  : Kernel(Radius), Dx(Radius), Dy(Radius)
+{ 
+  Tabulate(Pt, Dao, Radius);
+}
+
+TabulatedDaoPsf::TabulatedDaoPsf(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
+  : Kernel(Rect.Hx(), Rect.Hy()), Dx(hSizeX, hSizeY), Dy(hSizeX, hSizeY)
+{ 
+  Tabulate(Pt, Dao, Rect);
+}
+
+void TabulatedDaoPsf::Resize(const int Hx, const int Hy)
 {
 #ifdef FNAME
-  cout << " > TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)" << endl;
+  cout << " > TabulatedDaoPsf::Resize(const int Hx, const int Hy)" << endl;
+#endif
+
+#ifdef DEBUG
+ cout << "before Hx Hy HSizeX() HSizeY() Nx() Ny() hSizeX hSizeY " 
+       << Hx << " "
+       << Hy << " "
+       << HSizeX() << " "
+       << HSizeY() << " "
+       << Nx() << " "
+       << Ny() << " "
+       << hSizeX << " "
+       << hSizeY << endl;
+#endif
+  if (HSizeX() != Dx.HSizeX() ||
+      HSizeY() != Dx.HSizeY() ||
+      HSizeX() != Dy.HSizeX() ||
+      HSizeY() != Dy.HSizeY() ||
+      HSizeX() != Hx ||
+      HSizeX() != Hy)
+    {
+      Allocate(2*Hx+1, 2*Hy+1);
+      Dx.Allocate(Nx(), Ny());
+      Dy.Allocate(Nx(), Ny());
+    }
+#ifdef DEBUG
+  cout << "after Hx Hy HSizeX() HSizeY() Nx() Ny() hSizeX hSizeY " 
+       << Hx << " "
+       << Hy << " "
+       << HSizeX() << " "
+       << HSizeY() << " "
+       << Nx() << " "
+       << Ny() << " "
+       << hSizeX << " "
+       << hSizeY << endl;
+#endif
+}
+
+void TabulatedDaoPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)
+{
+#ifdef FNAME
+  cout << " > TabulatedDaoPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius)" << endl;
 #endif
 
   Resize(Radius, Radius);
@@ -80,25 +256,30 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius
   DPixel *ppdy = Dy.begin();
   
 
-  double integrale = 0;
+  integral = 0;
 
   for (int j=-hSizeY; j<=hSizeY; ++j) 
     for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf, ++ppdx, ++ppdy) 
       {
 	*ppsf = Dao.Value(ic+i,jc+j, Pt, *ppdx, *ppdy);
-	integrale += *ppsf;
+	integral += *ppsf;
       }
   
-  if(!(integrale>0.5)) {
-    cout << "Very strange psf integral in TabulatedPsf::Tabulate (1) : " << integrale << endl;
+  cout << " PSF_INTEGRAL " << Pt.x << " " << Pt.y << " " << integral << endl;
+
+  if(!(integral>0.5)) {
+    cout << "Very strange psf integral in TabulatedDaoPsf::Tabulate (1) : " << integral << endl;
     cout << "hSizeX,hSizeX=" << hSizeX << "," << hSizeY << endl;
     cout << "better quit (first write psf as fits)" << endl;
     writeFits("psf_DEBUG.fits");
     abort();
   }
 
+
+#ifdef NORMALIZE_PSF
   // normalization
-  double norme = 1./integrale;
+  double norme = 1./integral;
+  
   ppsf = begin();
   ppdx = Dx.begin();
   ppdy = Dy.begin();
@@ -110,9 +291,14 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const int Radius
 	*ppdx *= norme;
 	*ppdy *= norme;
       }
+
+  integral = 1;
+#endif
+  
+  ComputeMoments();
 }
 
-void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
+void TabulatedDaoPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Rect)
 {
 
   Resize(Rect.Hx(), Rect.Hy());
@@ -121,27 +307,28 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Re
   DPixel *ppdx = Dx.begin();
   DPixel *ppdy = Dy.begin();
 
-  double integrale = 0;
+  integral = 0;
 #ifdef DEBUG
-  cout << "in  TabulatedPsf::Tabulate DUMP , Pt.x, Pt.y = " << Pt.x << " " << Pt.y << endl;
+  cout << "in  TabulatedDaoPsf::Tabulate DUMP , Pt.x, Pt.y = " << Pt.x << " " << Pt.y << endl;
 #endif
   for (int j=Rect.ystart; j<Rect.yend; ++j)
     for (int i=Rect.xstart; i<Rect.xend; ++i, ++ppsf, ++ppdx, ++ppdy) 
       {
 	*ppsf = Dao.Value(i,j, Pt, *ppdx, *ppdy);
-	integrale += *ppsf;
+	integral += *ppsf;
       }
-
-  if(!(integrale>0.5)) {
-    cout << "Very strange psf integral in TabulatedPsf::Tabulate (2) : " << integrale << endl;
+  cout << " PSF_INTEGRAL " << Pt.x << " " << Pt.y << " " << integral << endl;
+  if(!(integral>0.5)) {
+    cout << "Very strange psf integral in TabulatedDaoPsf::Tabulate (2) : " << integral << endl;
     cout << "Rect=" << Rect << endl;
     cout << "better quit (first write psf as fits)" << endl;
     writeFits("psf_DEBUG.fits");
     abort();
   }
 
-  // normalization
-  double norme = 1./integrale;
+// normalization
+#ifdef NORMALIZE_PSF 
+  double norme = 1./integral;
   ppsf = begin();
   ppdx = Dx.begin();
   ppdy = Dy.begin();
@@ -153,49 +340,162 @@ void TabulatedPsf::Tabulate(const Point& Pt, const DaoPsf& Dao, const Window& Re
 	*ppdx *= norme;
 	*ppdy *= norme;
       }
+  integral=1;
+#endif
+  
+  ComputeMoments();
 }
 
-void TabulatedPsf::Scale(const double& s)
-{  
 
+//#define DEBUG_GAUS
+void TabulatedDaoPsf::ComputeMoments() {
+#ifdef FNAME
+  cout << " > TabulatedDaoPsf::ComputeMoments()" << endl;
+#endif
+#ifdef DEBUG_GAUS
+  cout << " > TabulatedDaoPsf::ComputeMoments()" << endl;
+#endif
+
+  integral = 0;
   DPixel *ppsf = begin();
-  DPixel *ppdx = Dx.begin();
-  DPixel *ppdy = Dy.begin();
-
-  for (int i=Nx()*Ny(); i; --i)
-    {
-      *ppsf *= s;
-      *ppdx *= s;
-      *ppdy *= s;
-      ++ppsf; ++ ppdx; ++ppdy;
+  for (int j=-hSizeY; j<=hSizeY; ++j) {
+    for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf) {
+      integral += (*ppsf);
     }
+  }
+  
+
+  double wxx=0.5;
+  double wyy=0.5;
+  double wxy=0;
+  int iter=0;
+  mx = 0;
+  my = 0;
+  det=0;
+  while (iter < 10)
+    {
+      iter++;
+      
+      double sumx = 0;
+      double sumy = 0;
+      double sumxx = 0;
+      double sumyy = 0;
+      double sumxy = 0;
+      double sumw = 0;
+      
+      DPixel *ppsf = begin();
+      for (int j=-hSizeY; j<=hSizeY; ++j) {
+	for (int i=-hSizeX; i<=hSizeX; ++i, ++ppsf) {
+	  double dx = i-mx;
+	  double dy = j-my;
+	  double wg = wxx*dx*dx + wyy*dy*dy + 2.*wxy*dx*dy;
+	  if (wg > 16) continue; // 4 sigmas, and avoids overflows
+	  wg = exp(-0.5*wg);
+	  wg *= (*ppsf);
+	  sumx += wg*dx;
+	  sumy += wg*dy;
+	  sumxx += wg*dx*dx;
+	  sumyy += wg*dy*dy;
+	  sumxy += wg*dx*dy;
+	  sumw += wg;
+	}
+      }
+      
+      sumx /= sumw;
+      sumy /= sumw;
+      sumxx /= sumw;
+      sumyy /= sumw;
+      sumxy /= sumw;
+      
+      mx += sumx;
+      my += sumy;
+      sumxx -= sq(sumx);
+      sumyy -= sq(sumy);
+      sumxy -= sumx*sumy;
+      
+      det = sumxx*sumyy - sq(sumxy);
+      wxx = 0.5*sumyy/det;
+      wyy = 0.5*sumxx/det;
+      wxy = -0.5*sumxy/det;
+    } // end of iteration.
+  
+  det = wxx*wyy-sq(wxy);
+  mxx = wyy/det;
+  myy = wxx/det;
+  mxy = -wxy/det;
+  det = 1./det;
+
+#ifdef DEBUG_GAUS
+  cout << "TabulatedDaoPsf::ComputeMoments: mx,my,mxx,myy,mxy = " 
+       << mx << ", "
+       << my << ", "
+       << mxx << ", "
+       << myy << ", "
+       << mxy << endl;
+  
+  cout << "TabulatedDaoPsf::ComputeMoments: det = " << det << endl;
+  cout << "TabulatedDaoPsf::ComputeMoments: integral = " << integral << endl;
+  cout << "TabulatedDaoPsf::ComputeMoments Gaus,dGausdx2,dGausdy2,dGausdxdx(0,0) = " 
+       << Gaus(0,0) << ", "
+       << dGausdx2(0,0) << ", "
+       << dGausdy2(0,0) << ", "
+       << dGausdxdy(0,0)
+       << endl;
+  cout << "TabulatedDaoPsf::ComputeMoments Gaus,dGausdx2,dGausdy2,dGausdxdx(2,2) = " 
+       << Gaus(2,2) << ", "
+       << dGausdx2(2,2) << ", "
+       << dGausdy2(2,2) << ", "
+       << dGausdxdy(2,2)
+       << endl;
+  
+  
+    
+#endif
 }
 
 
+double TabulatedDaoPsf::Gaus(int i,int j) const {
+  //cout << "TabulatedDaoPsf::Gaus " << det << " " << integral << " " << integral/(6.2831853072*sqrt(det)) << endl;
+
+  return integral/(6.2831853072*sqrt(det))*exp(-1./2./det* ( myy*sq(i-mx)+mxx*sq(j-my)-2*mxy*(i-mx)*(j-my) ) ); 
+}
+
+
+double  TabulatedDaoPsf::dGausdx2(int i,int j) const {
+  double dGausdx_over_Gaus = ( mxy*(j-my) - myy*(i-mx) )/det;
+  return Gaus(i,j)*( -myy/det + sq(dGausdx_over_Gaus) );
+}
+
+double  TabulatedDaoPsf::dGausdy2(int i,int j) const {
+  double dGausdy_over_Gaus = ( mxy*(i-mx) - mxx*(j-my) )/det;
+  return Gaus(i,j)*( -mxx/det + sq(dGausdy_over_Gaus) );
+}
+
+double  TabulatedDaoPsf::dGausdxdy(int i,int j) const {
+  double dGausdx_over_Gaus = ( mxy*(j-my) - myy*(i-mx) )/det;
+  double dGausdy_over_Gaus = ( mxy*(i-mx) - mxx*(j-my) )/det;
+  return Gaus(i,j)*( mxy/det + dGausdx_over_Gaus*dGausdy_over_Gaus);
+}
+
+void  TabulatedDaoPsf::writeGaussian(const string& filename)  {
+  ComputeMoments();
+  Kernel tabulatedgaussian = (*this);
+  for(int j=-hSizeY;j<=hSizeY;++j)
+    for(int i=-hSizeX;i<=hSizeX;++i)
+      tabulatedgaussian(i,j) = Gaus(i,j);
+  tabulatedgaussian.writeFits(filename);
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////
+//  SimFitRefVignet
+////////////////////////////////////////////////////////////////////////////////////
 //=========================================================================================
 SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim,bool usegal)
-  : Vignet(Rim), psf(new DaoPsf(*Rim))
+  : Vignet(Rim), imagepsf(new ImagePSF(*Rim,false))
 {
 #ifdef FNAME
   cout << " > SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim)" << endl;
-#endif
-  UseGal=usegal;
-}
-
-SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius,bool usegal)
-  : Vignet(Rim, Radius), psf(new DaoPsf(*Rim))
-{
-#ifdef FNAME
-  cout << " > SimFitRefVignet::SimFitRefVignet(const ReducedImage *Rim, const int Radius)" << endl;
-#endif
-  UseGal=usegal; 
-}
-
-SimFitRefVignet::SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius,bool usegal)
-  : Vignet(Star, Rim, Radius), psf(new DaoPsf(*Rim)), Psf(*Star, *psf, Radius)
-{
-#ifdef FNAME
-  cout << " > SimFitRefVignet(const PhotStar *Star, const ReducedImage *Rim, const int Radius)" << endl;
 #endif
   UseGal=usegal;
 }
@@ -218,8 +518,8 @@ void SimFitRefVignet::Resize(const int Hx, const int Hy)
   Vignet::Resize(Hx,Hy);
   
   // resize Psf, Psf.Dx, Psf.Dy 
-  Psf.Tabulate(*Star,*psf,*this);
-
+  Psf.Tabulate(*Star,*imagepsf,*this);
+  
   // resize Galaxy 
   if(UseGal) {
     if(Galaxy.Nx()!=Data.Nx() || Galaxy.Ny()!=Data.Ny())
@@ -232,13 +532,22 @@ void SimFitRefVignet::Load(const PhotStar *Star)
 #ifdef FNAME
   cout << " > SimFitRefVignet::Load(const PhotStar *Star)" << endl;
 #endif
+#ifdef VALCUTOFF
+  cout << "VALCUTOFF is defined" << endl;
+#endif
+#ifdef NORMALIZE_PSF 
+  cout << "NORMALIZE_PSF is defined" << endl;
+#endif
+
+
+
   if (!Star) return;
   Vignet::Load(Star);
+
+  //printf(" in SimFitRefVignet::Load x,y = %10.10g,%10.10g\n",Star->x,Star->y);
   
-  printf(" in SimFitRefVignet::Load x,y = %10.10g,%10.10g\n",Star->x,Star->y);
-  
-  if(!psf) psf = new DaoPsf(*rim);
-  Psf.Tabulate(*Star, *psf, *this);
+  if(!imagepsf) imagepsf = new ImagePSF(*rim,false);
+  Psf.Tabulate(*Star, *imagepsf, *this);
   if(UseGal) {
     makeInitialGalaxy(); 
   }
@@ -275,17 +584,18 @@ void SimFitRefVignet::UpdatePsfResid()
     cout << " > SimFitVignet::UpdatePsfResid() : updating residuals without galaxy" << endl;
 #endif
   // re-allocate Resid if too small
+
+  Psf.Tabulate(*Star, *imagepsf, *this);
   
   DPixel *pdat = Data.begin(), *pres = Resid.begin();
   DPixel *ppsf = Psf.begin(), *ppdx = Psf.Dx.begin(), *ppdy = Psf.Dy.begin();
-  
+
+
   if(UseGal) {
     DPixel  *pgal = Galaxy.begin();
     for (int j=ystart; j<yend; ++j)
       for (int i=xstart; i<xend; ++i)
 	{
-	  *ppsf = psf->Value(i, j, *Star, *ppdx, *ppdy); 
-	  //*ppsf = psf->Value(i+ic, j+jc, *Star, *ppdx, *ppdy); 
 	  *pres = *pdat - Star->flux * *ppsf - *pgal - Star->sky; // JG 
 	  ++ppsf; ++ppdx; ++ppdy; ++pres; ++pdat; ++pgal; // JG
 	}
@@ -294,7 +604,6 @@ void SimFitRefVignet::UpdatePsfResid()
     for (int j=ystart; j<yend; ++j)
       for (int i=xstart; i<xend; ++i)
 	{
-	  *ppsf = psf->Value(i, j, *Star, *ppdx, *ppdy); 
 	  *pres = *pdat - Star->flux * *ppsf - Star->sky;
 	  ++ppsf; ++ppdx; ++ppdy; ++pres; ++pdat;
 	}
@@ -304,32 +613,51 @@ void SimFitRefVignet::UpdatePsfResid()
 
 void SimFitRefVignet::SetStar(const PhotStar *RefStar) {
   Star = RefStar;
-  cout << " in SimfitRefVignet::SetStar x,y=" << Star->x << "," << Star->y << endl;
+  //cout << " > SimfitRefVignet::SetStar x,y=" << Star->x << "," << Star->y << endl;
 }
 
 //=========================================================================================
-void SimFitVignet::SetStar(const PhotStar *RefStar) {
-  Star = RefStar;
+
+void SimFitVignet::ResetFlags() {
+  // state of components
   kernel_updated = false;
   psf_updated = false;
   resid_updated = false;
-   forceresize = true;
-  cout << " in SimfitVignet::SetStar x,y=" << Star->x << "," << Star->y << endl;
+  gaussian_updated = false;
+  // things that are to be fitted
+  FitFlux = false;
+  FitPos = false;
+  UseGal = false;
+  forceresize = true;
+  // things that can be fitted
+  CanFitFlux=true;
+  CanFitSky=true;
+  CanFitPos=true;
+  CanFitGal=true;
+}
+
+void SimFitVignet::SetStar(const PhotStar *RefStar) {
+  Star = RefStar;
+  ResetFlags();
+  //cout << " in SimfitVignet::SetStar x,y=" << Star->x << "," << Star->y << endl;
 } 
 
+SimFitVignet::SimFitVignet() {
+  ResetFlags();
+  psfmatch = 0;
+}
 
 SimFitVignet::SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref)
   : Vignet(Rim)
 {
   VignetRef = Ref;
-  kernel_updated = false;
-  psf_updated = false;
-  resid_updated = false;
-  FitFlux = false;
-  FitPos = false;
-  UseGal = false;
-  forceresize = true;
-  inverse_gain = 1./Rim->Gain();
+  ResetFlags();
+
+  double gain = Rim->Gain();
+  inverse_gain = gain>0 ? 1./gain : 1.;
+  ronoise = Rim->ReadoutNoise();
+  skysub = Rim->OriginalSkyLevel();
+  psfmatch = 0;
 }
 
 SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimFitRefVignet* Ref)
@@ -339,15 +667,9 @@ SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimF
   cout << " > SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,  const SimFitRefVignet& Ref)" << endl;
 #endif
   VignetRef = Ref;
-  kernel_updated = false;
-  psf_updated = false;
-  resid_updated = false;
-  FitFlux = false;
-  FitPos = false;
-  UseGal = false;
-  forceresize = true;
+  ResetFlags();
   inverse_gain = 1./Rim->Gain();
-  //Update();
+  psfmatch = 0;
 }
 
 void SimFitVignet::AutoResize() {
@@ -385,7 +707,7 @@ void SimFitVignet::Update()
   }
   if(!kernel_updated)
     BuildKernel();
-
+  
   if(!psf_updated)
     BuildPsf();
   
@@ -405,22 +727,22 @@ void SimFitVignet::Update()
   if (hx_data !=  hx_weight || hx_data != hx_resid || hx_data != hx_psf
       || hy_data !=  hy_weight || hy_data != hy_resid || hy_data != hy_psf ) {
 #else
- if (hx_data !=  hx_weight || hx_data != hx_resid
+  if (hx_data !=  hx_weight || hx_data != hx_resid
       || hy_data !=  hy_weight || hy_data != hy_resid ) {
 #endif
-    cout << "   SimFitVignet::Update ERROR wrong size " << endl;
-    cout << Kern << endl;
-    cout << Data << endl;
-    cout << Weight << endl;
-    cout << Resid << endl;
-    cout << Psf << endl;
-    abort();
+      cout << "   SimFitVignet::Update ERROR wrong size " << endl;
+      cout << Kern << endl;
+      cout << Data << endl;
+      cout << Weight << endl;
+      cout << Resid << endl;
+      cout << Psf << endl;
+      abort();
   }
 #endif 
 
   if(!resid_updated) { 
 #ifdef ONEPSFPERIMAGE
-    BuildPsf(); // this loads a daophot psf
+    BuildPsf(); // this loads a psf
     if(UseGal)
       UpdateResid_gal();
     else
@@ -432,7 +754,14 @@ void SimFitVignet::Update()
       UpdateResid_psf();
 #endif
   }
+
+  if(!gaussian_updated) {
+    Psf.ComputeMoments(); // compute psf approximation with a gaussian
+    gaussian_updated=true;
+  }
+
 }
+  
 
   // check whether there are weights>0 on the position of the star,
   // if not, FitFlux=false 
@@ -452,6 +781,7 @@ void SimFitVignet::CheckWeight() {
     CanFitFlux=false;
     CanFitSky=false;
     CanFitPos=false;
+    CanFitGal=false;
   }
 }
 
@@ -480,6 +810,7 @@ void SimFitVignet::Resize( int Hx_new,  int Hy_new)
     kernel_updated = false;
     resid_updated  = false;
     forceresize = false;
+    gaussian_updated = false;
   }
   Update();
 }
@@ -491,19 +822,19 @@ void  SimFitVignet::BuildPsf() {
 
 #ifndef ONEPSFPERIMAGE
   
-  if(!VignetRef->psf) {
+  if(!VignetRef->imagepsf) {
     cout << "SimFitVignet::BuildPsf ERROR VignetRef has no psf" <<endl;
     abort();
   }
-  // we jsut want to allocate size for this Psf
-  //Psf.Tabulate(*Star,*(VignetRef->psf),*this);
+  // we just want to allocate size for this Psf
   Psf.Resize(Hx(),Hy());
 
+  //Psf.Tabulate(*Star,*(VignetRef->psf),*this);
   // now scale this according to kernel integral
-  if(!kernel_updated)
-    BuildKernel();
-  double photomratio = Kern.sum();
-  Psf*=photomratio;
+  //if(!kernel_updated)
+  //BuildKernel();
+  //double photomratio = Kern.sum();
+  //Psf*=photomratio;
   
 #else
   
@@ -511,7 +842,13 @@ void  SimFitVignet::BuildPsf() {
     psf = new DaoPsf(*rim);
   }
   Psf.Tabulate(*Star,*psf,*this);
-
+  // now scale this according to kernel integral
+  if(!kernel_updated)
+    BuildKernel();
+  double photomratio = Kern.sum();
+  Psf*=photomratio;
+  
+  gaussian_updated=true;
 #endif
   
   psf_updated = true;
@@ -525,39 +862,56 @@ void SimFitVignet::BuildKernel()
 #endif
   if (!Star) return;
   
-  // build kernel
-  PsfMatch psfmatch(VignetRef->Image(), rim,NULL,true);
-  {
-    const string kernelpath = rim->Dir()+"/kernel_from_"+VignetRef->Image()->Name()+".xml";
-    if(FileExists(kernelpath)) 
-      {
-	KernelFit *kernel = new KernelFit();
-#ifdef DEBUG
-	cout << "   Reading kernel " << kernelpath << " ..." << endl;
-#endif 
-	obj_input<xmlstream> oi(kernelpath);
-	oi >> *kernel;
-	oi.close();
-#ifdef DEBUG
-	cout << "   done" << endl;
+  if(! psfmatch ) {
+
+#ifdef DEBUG_KERNEL
+    cout << "KERNEL: no psfmatch in memory" << endl;
 #endif
-	psfmatch.SetKernelFit(kernel);
+
+    psfmatch = new PsfMatch(VignetRef->Image(), rim,NULL,true);
+    
+    const string kernelpath = rim->Dir()+"kernel_from_"+VignetRef->Image()->Name()+".dat";
+    if(FileExists(kernelpath)) {
+      
+#ifdef DEBUG_KERNEL
+      cout << "KERNEL: load from file" << endl;
+#endif
+
+      KernelFit * kernel_fit = new KernelFit();
+      cout << "   Reading kernel " << kernelpath << " ..." << endl;
+      {
+	ifstream kstream(kernelpath.c_str());
+	kernel_fit->read(kstream);
       }
-    else
+      // OOO NEW PERSISTER HERE OOO
+      //      obj_input<xmlstream> oi(kernelpath);
+      //      oi >> *kernel_fit;
+      //      oi.close();
+      cout << "   done" << endl;
+      
+      psfmatch->SetKernelFit(kernel_fit);
+    
+    } else
       {
 	
-#ifdef DEBUG
+#ifdef DEBUG_KERNEL
+    cout << "KERNEL: compute kernel" << endl;
+#endif
+	
 	cout << " SimFitVignet::BuildKernelPsf() : cannot find kernel " 
 	     << kernelpath << ", so we do it" << endl;
-#endif
-	psfmatch.FitKernel(false);
-	obj_output<xmlstream> oo(kernelpath);
-	oo << *(psfmatch.GetKernelFit());
-	oo.close();
+	
+	psfmatch->FitKernel(false);
+	
+	// write kernel
+	// OOO NEW PERSISTER HERE OOO
+	//	obj_output<xmlstream> oo(kernelpath);
+	//	oo << *(psfmatch->GetKernelFit());
+	//	oo.close();
       }
   }
-
-  psfmatch.KernelToWorst(Kern, Star->x, Star->y);
+  
+  psfmatch->KernelToWorst(Kern, Star->x, Star->y);
   Star->photomratio = Kern.sum();
   kernel_updated = true;
 }
@@ -798,6 +1152,28 @@ void SimFitVignet::UpdateResid()
    resid_updated = true;
 }
 
+void SimFitVignet::RedoWeight()
+{  
+  //  if (Image()->HasWeight()) 
+  //    Weight.readFromImage(Image()->FitsWeightName(), *this, 0);
+
+  DPixel *pw   = Weight.begin();
+  DPixel *pow  = OptWeight.begin();
+  DPixel *pdat = Data.begin();
+  DPixel *pres = Resid.begin();
+  
+  // avoid dividing by zero while keeping the zeros
+  for (int i=Nx()*Ny(); i; --i) {
+    double count = fabs((*pres - *pdat) * inverse_gain);
+    double invweight = (*pw >0) ? 1./(*pw) : 0.;
+    *pow =  (invweight>0) ? 1./(invweight+count) : 0.;
+    ++pres;
+    //double var = (*pdat + skysub)*inverse_gain + ronoise*ronoise;
+    //*pow = 1./var;
+    ++pow; ++pdat; ++pw;
+  }
+}
+
 
 
 void SimFitVignet::DumpDebug() const {  
@@ -817,18 +1193,25 @@ void SimFitVignet::DumpDebug() const {
   Kern.writeFits(name+"_kern_DEBUG.fits");
 }
 
-
+static double sqr(const double& x) { return x*x; }
 
 double SimFitVignet::Chi2() const {
   
   double chi2 = 0;
-  DPixel *pow=OptWeight.begin(), *pres=Resid.begin();
-  for (int i=Nx()*Ny(); i; --i, ++pres)
-    chi2 += *pow++ * (*pres) * (*pres);
-  
-  if(chi2>=0)
-    return chi2;
-  
+  DPixel *pow=OptWeight.begin(), *pres=Resid.begin();//, *pdat = Data.begin();
+  for (int i=Nx()*Ny(); i; --i, ++pres, ++pow) {
+    chi2 += *pow * sqr(*pres);
+
+    // do this when redoing weight with Poisson noise from star & galaxy
+    // Gauss MLE, NIMPA A 457, p.394, eq (28) 
+    //double invw = (*pow)>0 ? 1./(*pow) : 1;
+    //double ci = skysub + *pdat++;
+    //double cip = sqrt(0.25 + sqr(ci)) - 0.5;
+    //chi2 += log(invw/cip) - sqr(ci - cip)/cip;
+  }
+
+  if (chi2 >= 0) return chi2;
+
   // now debug 
   cout << "############# SimFitVignet::Chi2 ERROR chi2=" << chi2 << " #############" << endl;
   DumpDebug();
@@ -836,6 +1219,27 @@ double SimFitVignet::Chi2() const {
   abort();
 }
  
+double SimFitVignet::CentralChi2(int &npix) const {
+  
+  double chi2 = 0;
+  
+  int chx = int(ceil(sqrt(Psf.Mxx())));
+  int chy = int(ceil(sqrt(Psf.Myy())));
+  if(chx>hx)
+    chx=hx;
+  if(chy>hy)
+    chy=hy;
+  
+  
+  for(int j=-chy;j<=chy;j++)
+    for(int i=-chx;i<=chx;i++)
+      chi2 += OptWeight(i,j)*Resid(i,j)*Resid(i,j);
+  
+  npix = (2*chx+1)*(2*chy+1);
+  return chi2;
+}
+ 
+
 
 
 

@@ -74,4 +74,14 @@ Image ConvoleGauss1D1D( const Image &In, const double SigKernX,
 //! Same as above but convole (correctly) "in place". returns the kernel.
 Image ConvoleGauss1D1D( Image &InOut, const double SigKernX, 
 		       const double SigKernY, const double Precision);
+
+
+/*
+
+There are 2 more convolution routines stored at the end of
+convolution.cc written long after the ones above. Have a look at those
+if you worry about speed.
+
+*/
+
 #endif /* CONVOLUTION__H */

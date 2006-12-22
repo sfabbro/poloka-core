@@ -20,7 +20,7 @@ class MCImage : public ReducedImage
 
   AddMethod Methode ;
   
-SimSNStarList*  PrepareList();
+SimSNStarList*  PrepareList(double zp=-99.0);
 public :
   MCImage(string name, const ReducedImageRef source, const GtransfoRef Transfo, SimSNStarList* List, AddMethod a_method  ); 
   MCImage(string name,const ReducedImageRef source, SimSNStarList* List, AddMethod a_method  );

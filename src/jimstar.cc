@@ -12,6 +12,7 @@
 #include "listmatch.h"
 #include "jimstar.h"
 #include "astroutils.h"
+#include "imageutils.h"
 
 #ifndef M_PI
 #define  M_PI           3.14159265358979323846  /* pi */
@@ -44,7 +45,7 @@ void JimStar::Read(istream& r, const char *Format) {
   //  char Name[16];
   //  char Ra[12];
   //  char Dec[12];
-  int format = DecodeFormat(Format, "JimStar");
+  DecodeFormat(Format, "JimStar");
   
   r >> x;
   r >> y;
@@ -128,7 +129,7 @@ JimStarList* GetSelectedJimStarList(const FitsHeader &header, const Frame &W, co
   WCSFromHeader(header, Pix2RaDec);
   Gtransfo *RaDec2Pix = Pix2RaDec->InverseTransfo(0.01,W);
   
-  Frame radecW = (W.ApplyTransfo(*Pix2RaDec)).Rescale(1.1);
+  Frame radecW = (ApplyTransfo(W,*Pix2RaDec)).Rescale(1.1);
   // cout << "radecW = " << radecW << endl;
   
   JimStarList *stdstarlist = new JimStarList(standardfile);

@@ -3,8 +3,6 @@
 
 #include <string>
 
-#include "persistence.h"
-
 #include "sestar.h"
 #include "starlist.h"
 
@@ -14,9 +12,6 @@ class Gtransfo;
 
 class SENearStar : public SEStar 
 {
-  CLASS_VERSION(SENearStar,1);
-  #define SENearStar__is__persistent
-
  private:
   
   int xShift, yShift;

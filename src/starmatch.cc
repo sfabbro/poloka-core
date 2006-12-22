@@ -22,41 +22,6 @@ ostream& operator << (ostream &stream, const StarMatchList &List)
   return stream;
 } 
 
-/*
-use a custom Streamer (-) in the previous statement to avoid
-making "Point" known to Root
-*/
-
-#ifdef USE_ROOT
-
-void StarMatch::Streamer(TBuffer &R__b)
-{
-   UInt_t R__s, R__c;
-   if (R__b.IsReading()) {
-      Version_t R__v = R__b.ReadVersion(&R__s, &R__c); if (R__v) { }
-      R__b >> point1.x;
-      R__b >> point1.y;
-      R__b >> point2.x;
-      R__b >> point2.y;
-      BaseStar *s;
-      R__b >> s; s1 = s;
-      R__b >> s; s2 = s;
-      R__b.CheckByteCount(R__s, R__c, StarMatch::IsA());
-   } else {
-      R__c = R__b.WriteVersion(StarMatch::IsA(), kTRUE);
-      R__b << point1.x;
-      R__b << point1.y;
-      R__b << point2.x;
-      R__b << point2.y;
-      R__b << (BaseStar *) s1;
-      R__b << (BaseStar *) s2;
-      R__b.SetByteCount(R__c, kTRUE);
-   }
-}
-
-#endif /*USE_ROOT */
-
-
 double *StarMatchList::Dist2() const
 {
   StarMatchCIterator smi;
@@ -379,30 +344,5 @@ double FitResidual(const double Chi2, const StarMatchList &S, const Gtransfo &T)
   return sqrt(Chi2/(2.*S.size()-T.Npar()));
 }
 
-
-/*
-RUN_ROOTCINT
-LINKDEF_CONTENT : #pragma link C++ class StarMatch-;
-LINKDEF_CONTENT : #pragma link C++ class StarMatchList+;
-LINKDEF_CONTENT : #pragma link C++ class list<StarMatch>;
-LINKDEF_CONTENT : #pragma link C++ class list<StarMatch>::iterator;
-LINKDEF_CONTENT : #pragma link off function list<StarMatch>::remove(const StarMatch&);
-LINKDEF_CONTENT : #pragma link off function list<StarMatch>::unique();
-LINKDEF_CONTENT : #pragma link off function list<StarMatch>::sort();
-LINKDEF_CONTENT : #pragma link off function list<StarMatch>::merge(list<StarMatch>&);
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream &, const StarMatch &);
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream &, const StarMatchList &);
-*/
-
-#ifdef USE_ROOT
-
-#include "rootstuff.h"
-
-ClassImp(StarMatch);
-ClassImp(StarMatchList);
-
-#include "root_dict/starmatchdict.cc"
-
-#endif /* USE_ROOT */
 
 

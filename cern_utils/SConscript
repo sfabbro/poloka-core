@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+
+import os
+
+Import('g_env')
+local_env = g_env.Copy()
+
+
+EXTRA_DIST = ['Makefile.am', 'SConscript', 'list_utils.c']
+
+NOINST_HEADER_FILES = [
+    'hbook.h'
+    ]
+
+SOURCE_FILES = [
+    'l2tup.cc',
+    'im2tup.cc'
+    ]
+
+
+# dependencies
+local_env.AddInternalDep('.')
+local_env.AddInternalDep('src_base', 'toadsbase')
+local_env.AddInternalDep('src')
+local_env.ActivateExternalPackage('cfitsio')
+local_env.ActivateExternalPackage('cern')
+
+#local_env.AddExternalDep(None,
+#                         ['/home/nrl/software/cfitsio/v2r440/Linux-i686'],
+#                         ['cfitsio'])
+#local_env.AddExternalDep(None,
+#                         ['/usr/local/cern/pro/lib'],
+#                         ['packlib', 'nsl', 'crypt', 'dl', 'g2c'])
+
+l2tup  = local_env.Program('l2tup', ['l2tup.cc'])
+im2tup = local_env.Program('im2tup', ['im2tup.cc'])
+
+local_env.InstallProgs([l2tup, im2tup])
+
+g_env.AddToDist(EXTRA_DIST + SOURCE_FILES + NOINST_HEADER_FILES)
+

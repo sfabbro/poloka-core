@@ -1,4 +1,4 @@
-
+#ifdef VIRTUAL_INSTRUMENTS
 class HstWfpc2 : public VirtualInstrument { /* TYPE_SELECTOR */
 
 public :
@@ -42,51 +42,4 @@ public :
   };
 
 };
-
-#ifdef STORAGE
-FitsKey FitsHeader::HstWfpc2Format(const string &KeyName) const
-{
-  if (KeyName == "TOADNAMP") return FitsKey(KeyName,1);
-  if (KeyName == "TOADINST") return KeyVal("INSTRUME");
-  if (KeyName == "TOADPIXS") return FitsKey(KeyName,0.1);
-  if (KeyName == "TOADFILT") return KeyVal("FILTNAM1");
-  if (KeyName == "TOADEXPO") return KeyVal("EXPTIME");
-  if (KeyName == "TOADGAIN") return KeyVal("ATODGAIN");
-  // check the crap with PHOTFLAM or PHOTZPT for a proper calib.
-  if (KeyName == "TOADRDON") return FitsKey(KeyName,0.72);  
-  if (KeyName == "TOADRASC") 
-      {
-	  double rastr=KeyVal("RA_TARG");
-	  return FitsKey(KeyName,RaDegToString(rastr));
-      }
-  if (KeyName == "TOADDECL")       
-      {
-	  double decstr=KeyVal("DEC_TARG");
-	  return FitsKey(KeyName,DecDegToString(decstr));
-      }
-
-  if (KeyName == "TOADEQUI") return KeyVal("EQUINOX");
-  if (KeyName == "TOADAIRM") return FitsKey(KeyName,0.0);
-  if (KeyName == "TOADUTIM") return KeyVal("EXPSTART");
-  if (KeyName == "TOADDATE") return KeyVal("DATE-OBS");
-  if (KeyName == "TOADSCAN") 
-    {
-      string sec  = "not yet implemented";
-      return FitsKey(KeyName,sec);
-    }
-  if (KeyName == "TOADILLU") 
-    {
-      string sec  = "not yet implemented";
-      return FitsKey(KeyName,sec);
-    }
-  if (KeyName == "TOADTYPE") return KeyVal("IMAGETYP");
-  if (KeyName == "TOADOBJE") return KeyVal("TARGNAME");
-  if (KeyName == "TOADCHIP") return KeyVal("DETECTOR");
-  if (KeyName == "TOADBAND")
-    {
-      string filter = KeyVal("FILTNAM1");
-      return FitsKey(KeyName,ToadBand(StringToUpper(filter)));	  
-    }
-  return FitsKey(KeyName,NOVAL);      
-}
 #endif

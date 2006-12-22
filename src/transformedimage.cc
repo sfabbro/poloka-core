@@ -7,6 +7,7 @@
 #include "fitsimage.h"
 #include "wcsutils.h"
 #include "fileutils.h"
+#include "imageutils.h"
 
 string TransformedName(const string &ToTransform, const string &Ref)
 {
@@ -110,8 +111,8 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   int nx_aligned = int(outputImageSize.Nx());
   int ny_aligned = int(outputImageSize.Ny());
   
-  transformedImage = Original.GtransfoImage(*transfoFromRef, int(nx_aligned),
-					   int(ny_aligned), DefaultVal, 3); 
+  transformedImage = GtransfoImage(Original,*transfoFromRef, int(nx_aligned),
+				   int(ny_aligned), DefaultVal, 3); 
   
   /* write in the header the frame coordinates */
   Frame frame(dynamic_cast<const FitsHeader&> (Original));
@@ -124,7 +125,7 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   GtransfoLin lintransfoToRef = transfoFromRef->
     LinearApproximation(Frame(transformedImage).Center(), 
 			min(nx_aligned,ny_aligned)).invert();
-  frame = frame.ApplyTransfo(lintransfoToRef);
+  frame = ApplyTransfo(frame,lintransfoToRef);
   
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));
@@ -246,7 +247,7 @@ void ImageGtransfo::TransformWeightImage(const FitsImage &Original,
   int ny_aligned = int(outputImageSize.Ny());
   Image &transformedVariance = Transformed;
   transformedVariance = 
-    inputWeights.GtransfoImage(*transfoFromRef, int(nx_aligned),
+    GtransfoImage(inputWeights,*transfoFromRef, int(nx_aligned),
 			       int(ny_aligned), 0, 3, true);
   {
     Pixel min,max;
@@ -285,7 +286,7 @@ void ImageGtransfo::TransformWeightImage(const FitsImage &Original,
   GtransfoLin lintransfoToRef = transfoFromRef->
     LinearApproximation(Point(nx_aligned/2, ny_aligned/2), 
 			min(nx_aligned,ny_aligned)).invert();
-  frame = frame.ApplyTransfo(lintransfoToRef);
+  frame = ApplyTransfo(frame,lintransfoToRef);
 
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));
@@ -392,7 +393,6 @@ TransformedImage::TransformedImage(const string &TransformedName,
   init(Source,Transfo);
   // should we call Create by default here? answer : yes as a trial
   Create("here");
-  saveEverythingElse = true;
 }
 
 
@@ -400,26 +400,9 @@ TransformedImage::TransformedImage(const string &TransformedName,
 
 TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 {
-  string fileName =   EverythingElseFileName();
-  if (FileExists(fileName))
-    {
-      read_single_object_file(fileName.c_str(), (TObject *) this);
-    }
 }
 
 
-
-#ifdef STORAGE //?? c'est quoi ???
-ReducedImageRef TransformedImage::Source() const
-{ 
-  if (!source)
-    { /* to have a const routine that changes the object: */
-      TransformedImage *p = (TransformedImage *) this;
-      p->source = ReducedImageRead(sourceName);
-    }
-  return source;
-}
-#endif
 
 void TransformedImage::dump(ostream& s) const
 {
@@ -431,8 +414,8 @@ void TransformedImage::dump(ostream& s) const
 
 const  ImageGtransfoRef TransformedImage::IMAGEGTransfo() const
 { 
-  // transfo est elle une ImageGtransfo ?
-  const ImageGtransfo *test = transfo; // par la classe template.
+  // is the stored transfo an  ImageGtransfo ?
+  const ImageGtransfo *test = transfo; 
   if (!test) { cerr << "Dynamic cast failed in TransformedImage::GTransfo " << endl ; return ImageGtransfoRef();} // ie NULL
   ImageGtransfoRef gref(test);
   return(gref);
@@ -447,20 +430,20 @@ const Gtransfo* TransformedImage::FromRef() const
 }
 
 #ifdef STORAGE
-ReducedImageRef TransformedImage::GeometricReference()
-{
-  const ImageGtransfoRef gref = IMAGEGTransfo();
-  if (gref == NULL ) return CountedRef<ReducedImage>(); // soit = NULL
-  geomRef = ReducedImageRead(gref->GeomRefName());
-  return geomRef;
-}
+//ReducedImageRef TransformedImage::GeometricReference()
+//{
+//  const ImageGtransfoRef gref = IMAGEGTransfo();
+//  if (gref == NULL ) return CountedRef<ReducedImage>(); // soit = NULL
+//  geomRef = ReducedImageRead(gref->GeomRefName());
+/  return geomRef;
+//}
 
-string TransformedImage::GeomRefName() const
-{
-   const ImageGtransfoRef gref = IMAGEGTransfo();
-  if (gref == NULL) return NULL;
-  return (gref->GeomRefName());
-}
+//string TransformedImage::GeomRefName() const
+//{
+//   const ImageGtransfoRef gref = IMAGEGTransfo();
+//  if (gref == NULL) return NULL;
+//  return (gref->GeomRefName());
+//}
 #endif
 
 bool  TransformedImage::MakeCatalog() 
@@ -592,14 +575,13 @@ ReducedImage *TransformedImage::Clone() const
 
 TransformedImage::~TransformedImage()
 {
-  writeEverythingElse();
 }
 
 
 /******************* utilities ***********************/
 
 int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, 
-		ReducedImageList &Aligned, const int ToDo)
+		ReducedImageList &Aligned, const int ToDo, bool use_wcs)
 {
 #ifdef DEBUG
   cout << " > ImagesAlign(...) " << endl;
@@ -616,28 +598,33 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 	  continue;
         }
       string transformedName = TransformedName(currentName, Reference.Name());
-#ifdef STORAGE
-      // if we test here about some work already beeing done, this has the consequence that
-      // the transformation will not be seeked, and not stored
-      ReducedImage *alignedCurrent = new ReducedImage(transformedName);
-
-      if (!alignedCurrent->ActuallyReduced())
-	{
-	  ImageGtransfo imTransfo(Reference,*current);
-	  delete alignedCurrent;
-	  alignedCurrent = 
-	    new TransformedImage(transformedName, *current, &imTransfo);
-	  // create the Fits images + user requests, as doc says.
-	  alignedCurrent->Execute(DoFits | ToDo); 
-	}
-      else cout << " " << transformedName << " already produced" << endl;
-#endif
-      ImageGtransfo imTransfo(Reference,*current);
+      
+      ImageGtransfo *imTransfo;
+      if(use_wcs) {
+	Gtransfo* wcs_reference;
+	WCSFromHeader(Reference.FitsName(),wcs_reference);
+	Gtransfo* wcs_current;
+	WCSFromHeader(current->FitsName(),wcs_current);
+	Frame frame_reference = Reference.UsablePart();
+	Frame frame_current = current->UsablePart();
+	
+	Gtransfo *direct = GtransfoCompose(wcs_reference->InverseTransfo(0.01,frame_reference),wcs_current);
+	Gtransfo *invert = GtransfoCompose(wcs_current->InverseTransfo(0.01,frame_current),wcs_reference);
+	imTransfo = new ImageGtransfo(invert,direct,frame_reference,"");
+	delete wcs_reference;
+	delete wcs_current;
+	delete direct;
+	delete invert;
+      }else{
+	imTransfo = new ImageGtransfo(Reference,*current);
+      }
+      
       TransformedImage *alignedCurrent =
-	new TransformedImage(transformedName, *current, &imTransfo);
+	new TransformedImage(transformedName, *current, imTransfo);
       // create the Fits images + user requests, as doc says.
       alignedCurrent->Execute(DoFits | ToDo); 
       Aligned.push_back(alignedCurrent);
+      delete imTransfo;
     }
   return Aligned.size();
 }

@@ -123,7 +123,7 @@ static bool IsLocalMax( Image const & img , int x , int y , int half_square_size
 {
   int tx = img.Nx() ;
   int ty = img.Ny() ;
-  float val;
+  float val=0;
   if ( ( x > 0 ) && ( x < tx ) &&
        ( y > 0 ) && ( y < ty ) )
     val = img(x,y);
@@ -531,6 +531,7 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
   double varXX = 0, varYY = 0, varXY = 0;
   double sumPsf = 0;
   int area = 0;
+  int bad = 0;
   for (int l=-d; l <= d; l++)
     {
       for (int m=-d; m <=d ;  m++)
@@ -547,6 +548,7 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
 	      const double val = (*image)(xu,yu)- back;
 	      if (dist2 <rad_weight2) 
 		{
+
 		  double psfVal  = exp(-(dist2)/(2*sigFilter*sigFilter));
 		  sumPsf += psfVal; // sum psf
 		  double Wi = psfVal*localWeight;
@@ -572,6 +574,7 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
 		  aperFlux += val*localWeight;
 		  aperFluxDeno += localWeight;
 		  area++;
+		  if(localWeight == 0.0) bad++;
 		}
             }
         }
@@ -601,6 +604,7 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
     }
   Det.aperFlux = (aperFluxDeno >0)? area*aperFlux/aperFluxDeno : 0;
   Det.Area() = area;
+  Det.NBad() = bad;
 }
 
 #include "vutils.h" // for FarrayMedian
@@ -812,6 +816,7 @@ void DetectionProcess::DetectionScoresFromPositions(const BaseStarList & Pos,
 #include "reducedimage.h"
 #include "wcsutils.h"
 #include "gtransfo.h"
+#include "sestar.h"
 
 void DetectionProcess::SetScoresFromRef(DetectionList &List, 
 					const ReducedImage &Ref)
@@ -876,7 +881,9 @@ Detection::Detection(const double X, const double Y, const double Flux)
 }
 
 
-void Detection::read_it(istream& r, const char * Format)
+#include "fastifstream.h"
+
+void Detection::read_it(fastifstream& r, const char * Format)
 {
   if (Format) {}; // avoid a warning
   BaseStar::read_it(r, Format);
@@ -914,7 +921,7 @@ void Detection::read_it(istream& r, const char * Format)
 }
 
 
-Detection* Detection::read(istream& r, const char* Format)
+Detection* Detection::read(fastifstream& r, const char* Format)
 {
   //awful stuff (we do not have a persistence system..)
   if (strstr(Format,"MatchedDetection"))
@@ -1031,14 +1038,13 @@ std::string MatchedDetection::WriteHeader_(ostream & stream,
 }
 
 
-MatchedDetection* MatchedDetection::read(istream& r, const char* Format)
+MatchedDetection* MatchedDetection::read(fastifstream& r, const char* Format)
 {
   const char *subFormat = strstr(Format," Detection");
   Detection *d = Detection::read(r, subFormat);
   MatchedDetection *result = new MatchedDetection(*d);
   delete d;
   unsigned count;
-  cout << result->x << " " <<result->y << endl ;
   r >> count;
   for (unsigned k=0; k<count ; ++k)
     {

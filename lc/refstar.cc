@@ -7,6 +7,7 @@ ostream& operator << (ostream &Stream, const RefStar &Star)
   return Stream;
 }
 
+/*
 RefStar* RefStar::read(istream & Stream, const char *Format)
 {
   RefStar *rstar = new RefStar;
@@ -23,6 +24,8 @@ RefStar* RefStar::read(istream & Stream, const char *Format)
   rstar->PhotStar::read(Stream, Format);
   return rstar;
 }
+*/
+
 
 void RefStar::writen(ostream &Stream) const
 {
@@ -57,6 +60,6 @@ string RefStar::WriteHeader_(ostream & Stream, const char* Num) const
 }
 
 // instantiate
-#include <starlist.cc>
-template class StarList<RefStar>;
+//#include <starlist.cc>
+//template class StarList<RefStar>;
 

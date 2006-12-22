@@ -1,4 +1,4 @@
-
+#ifdef VIRTUAL_INSTRUMENTS
 class WhtWfc : public VirtualInstrument { /* TYPE_SELECTOR */
 public:
   string TelInstName() const {return "WhtWfc";};
@@ -17,3 +17,4 @@ public:
   // as find on the web http://www.ing.iac.es/Astronomy/observing/instruments.html
   RETURN_A_VALUE(TOADPIXS,0.24);
 };
+#endif

@@ -1,11 +1,16 @@
 #include <math.h>
 #include <iostream>
 #include <iomanip>
+#include <string>
 
 #include "kernelfit.h"
 #include "basestar.h"
 #include "vutils.h"
 #include "matvect.h"
+
+#include "iohelpers.h"
+
+
 
 //#define DEBUG
 
@@ -73,7 +78,7 @@ int KernelFit::FitDifferentialBackground(const double NSig)
   /* symetrize */
   for (int q1=0; q1<nterms; ++q1) 
     for (int q2 = q1+1; q2<nterms; ++q2) A(q2,q1) = A(q1,q2); 
-  if (!MatSolve(&A(0,0),nterms,&B(0)))
+  if (!MatSolveLapack(&A(0,0),nterms,&B(0)))
     {
       cerr << " could not compute differential background !!!!" << endl;
       return 0;
@@ -539,7 +544,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
  // delete [] backCoeff;
  /* return a symtetrized matrix ... safer than too assume anything 
     about calling routine*/
-for (int i=0; i<mSize; ++i) for (int j=i+1; j<mSize; ++j) StampM[i*mSize+j] = StampM[j*mSize+i];
+for (size_t i=0; i<mSize; ++i) for (size_t j=i+1; j<mSize; ++j) StampM[i*mSize+j] = StampM[j*mSize+i];
 
  cout << setprecision(oldprec);
  cout.flags(old_flags);
@@ -638,10 +643,15 @@ KernVar.SetDegree(2); // degree of spatial variations of the kernel
 BackVar.SetDegree(2); //degree of spatial variations of the background
 SepBackVar.SetDegree(-1); //degree of spatial variations of the background if you want to fit it separately
  NSig = 4;
+UniformPhotomRatio = true;
  string dataCardsName = DefaultDatacards();
+ 
  if (FileExists(dataCardsName))
    {
      DataCards cards(dataCardsName);
+     if (cards.HasKey("KFIT_MAX_STAMPS")) {
+       MaxStamps = cards.IParam("KFIT_MAX_STAMPS");
+     }
      if (cards.HasKey("KFIT_SIG_GAUSS"))
        {
 	 int nGauss = cards.NbParam("KFIT_SIG_GAUSS");
@@ -682,6 +692,12 @@ SepBackVar.SetDegree(-1); //degree of spatial variations of the background if yo
 	 int deg = cards.IParam("KFIT_SEPBACKVAR_DEG");
 	 SepBackVar.SetDegree(deg); // degree of spatial variations of the background
        }
+     
+     if (cards.HasKey("KFIT_MAX_STAMPS")) 
+       MaxStamps = cards.IParam("KFIT_MAX_STAMPS");
+     if (cards.HasKey("KFIT_UNIFORM_PHOTOMRATIO")) 
+       UniformPhotomRatio = cards.IParam("KFIT_UNIFORM_PHOTOMRATIO") == 1;
+
    } // if (has datacards)
 }
   
@@ -734,6 +750,45 @@ void OptParams::OptimizeSpatialVariations(const int NumberOfStars)
     }
 }
 
+
+void OptParams::read(istream& stream)
+{
+  string tmp_str;
+  int version;
+  stream >> tmp_str >> version;
+  read_member(stream, tmp_str, HKernelSize);
+  read_member(stream, tmp_str, NGauss);
+  read_member(stream, tmp_str, Sigmas);
+  read_member(stream, tmp_str, Degrees);
+  read_member(stream, tmp_str, NSig);
+  read_member(stream, tmp_str, KernVar);
+  read_member(stream, tmp_str, BackVar);
+  read_member(stream, tmp_str, SepBackVar);
+  read_member(stream, tmp_str, HStampSize);
+  read_member(stream, tmp_str, MaxStamps);
+  read_member(stream, tmp_str, UniformPhotomRatio);
+}
+
+
+void OptParams::write(ostream& stream) const
+{
+  stream << "[OptParams] " << 0;
+  write_member(stream, "HKernelSize", HKernelSize);
+  write_member(stream, "NGauss", NGauss);
+  write_member(stream, "Sigmas", Sigmas);
+  write_member(stream, "Degrees", Degrees);
+  write_member(stream, "NSig", NSig);
+  write_member(stream, "KernVar", KernVar);
+  write_member(stream, "BackVar", BackVar);
+  write_member(stream, "SepBackVar", SepBackVar);
+  write_member(stream, "HStampSize", HStampSize);
+  write_member(stream, "MaxStamps", MaxStamps);
+  write_member(stream, "UniformPhotomRatio", UniformPhotomRatio);
+}
+
+
+
+
 void XYPower::SetDegree(const int DegreeValue)
 {
 Degree = DegreeValue;
@@ -752,11 +807,30 @@ for (int xdeg=0; xdeg <=Degree; ++xdeg)
 
 
 
-double XYPower::Value(const double X, const double Y, const int q) const
+double XYPower::Value(const double X, const double Y, const size_t q) const
 {
-  if (q>=Nterms()) {cerr << "  XYPower::Value ..."  << endl; abort();}
+  if ((unsigned int)q>=Nterms()) {cerr << "  XYPower::Value ..."  << endl; abort();}
 // my_pow(double,int) is about 5 times faster than pow(double,doublke)
   return my_pow(X/100.,Xdeg[q])*my_pow(Y/100.,Ydeg[q]); 
+}
+
+
+void XYPower::read(istream& stream)
+{
+  string tmp_str;
+  int version;
+  stream >> tmp_str >> version;
+  read_member(stream, tmp_str, Degree);
+  read_member(stream, tmp_str, Xdeg);
+  read_member(stream, tmp_str, Ydeg);
+}
+
+void XYPower::write(ostream& stream) const
+{
+  stream << "[XYPower] " << 0;
+  write_member(stream, "Degree", Degree);
+  write_member(stream, "Xdeg", Xdeg);
+  write_member(stream, "Ydeg", Ydeg);
 }
 
 
@@ -815,11 +889,17 @@ for (int i=0; i< convolvedSize; ++i)
   // furthermore, although we weight for chi2, we don't seem to weight 
   // for the matrix-vector filling.
 
+  if((InvGain*w_value+VSky)<0) {
+    cout << "KernelFit::StampChi2 FATAL neg. weight" << endl;
+    stamp.chi2 = -1;
+    return stamp.chi2;
+  }
+
   chi2 += res*res/(InvGain*w_value+VSky);
   }
 stamp.chi2 = chi2;
  if(chi2<0) {
-   cout << "KernelFit::StampChi2 WARNING xc,yc,chi2 = " << xc << "," << yc << "," << chi2 << endl;  
+   cerr << " KernelFit::StampChi2 WARNING xc,yc,chi2 = " << xc << "," << yc << "," << chi2 << endl;  
  } 
 return chi2;
 }
@@ -896,8 +976,6 @@ delete [] chi2s;
 }
 
 
-#define CONST_INTEGRAL
-
 int KernelFit::Solve()
 {
  int oldprec = cout.precision();
@@ -905,11 +983,12 @@ int KernelFit::Solve()
  ios::fmtflags  old_flags = cout.flags(); 
  cout << resetiosflags(ios::fixed) ;
  cout << setiosflags(ios::scientific) ;
- if (solution.size()!=mSize) solution.resize(mSize);
-
-#ifdef CONST_INTEGRAL /* i.e. the integral of the kernel (photometric ratio) is constant over the image */
+ if (solution.size()!=(unsigned int)mSize) solution.resize(mSize);
+ int inversion;
+ // i.e. the integral of the kernel (photometric ratio) is constant over the image
+ if (optParams.UniformPhotomRatio) {
 // use Lagrange multipliers technique
- cerr <<"integral of kernel is assumed to be constant." << endl ;
+ cout <<" Integral of kernel is assumed to be constant." << endl ;
 int nKern = Kernels.size();
 int nc = optParams.KernVar.Nterms() -1; // number of constraints
 int totSize = mSize + nc;
@@ -918,15 +997,15 @@ memset(mprime,0,sizeof(double)*totSize*totSize);
 double *bprime = new double [totSize];
 memset(bprime,0,sizeof(double)*totSize);
 memcpy(bprime,b,sizeof(double)*mSize);
-for (int i=0; i<mSize; ++i)
-  for (int j=0; j<mSize; ++j)
+for (size_t i=0; i<mSize; ++i)
+  for (size_t j=0; j<mSize; ++j)
     {
     mprime[i*totSize+j] = m[i*mSize+j];
     }
 for (int ik=0; ik < nKern; ++ik)
   {
   double kern_int = Kernels[ik].sum();
-  for (int ic =1; ic < optParams.KernVar.Nterms(); ++ic)
+  for (size_t ic =1; ic < optParams.KernVar.Nterms(); ++ic)
     {
     int ip = KernIndex(ik,ic);
     int jp = mSize+ic-1;
@@ -934,27 +1013,27 @@ for (int ik=0; ik < nKern; ++ik)
     }
   }
 // have to use a lin eq. solver that accomodates non posdef matrices : mprime is NOT posdef.
-int inversion=MatSolve(mprime,totSize,bprime);
-cout << " inversion " << inversion << endl;
+inversion=MatSolveLapack(mprime,totSize,bprime);
+cout << " Kernel Inversion: " << inversion << endl;
 if (inversion)
   {
     solution.resize(mSize);
-    for(unsigned int i=0; i<mSize;i++) {
+    for(size_t i=0; i<mSize;i++) {
       solution[i]=bprime[i];
     }
     //memcpy(solution,bprime,sizeof(double)*mSize);
     delete [] mprime;
     delete [] bprime;
   }
-
-#else /* NO CONSTRAINT on the variations of kernel integral */
+ }
+ else {// NO CONSTRAINT on the variations of kernel integral
 /* operate on a copy, to preserve m */
 double *mprime = new double[mSize*mSize];
 double *bprime = new double[mSize];
 memcpy(mprime, m, mSize*mSize*sizeof(double));
 memcpy(bprime,b, mSize*sizeof(double));
-int inversion = MatSolve(mprime, mSize, bprime);
- cout << " inversion " << inversion << endl;
+inversion = MatSolveLapack(mprime, mSize, bprime);
+ cout << " Kernel Inversion: " << inversion << endl;
 if (inversion)
   {
     solution.resize(mSize);
@@ -964,7 +1043,7 @@ if (inversion)
     delete [] mprime;
     delete [] bprime;
   }
-#endif
+}
 
 Kernel kernel_at_center( optParams.HKernelSize, optParams.HKernelSize);
 KernCompute(kernel_at_center, BestImage->Nx()/2, BestImage->Ny()/2);
@@ -980,8 +1059,8 @@ KernCompute(kernel_at_center, BestImage->Nx()/2, BestImage->Ny()/2);
  if (optParams.BackVar.Nterms()) 
    {
      cout << setprecision(10);
-     cout << " differential background " << endl;
-     for (int ib=0; ib< optParams.BackVar.Nterms(); ++ib) cout << solution[BackIndex(ib)] << " " ;
+     cout << " Differential background: " << endl;
+     for (size_t ib=0; ib< optParams.BackVar.Nterms(); ++ib) cout << solution[BackIndex(ib)] << " " ;
      cout << endl;
    }
 
@@ -1000,7 +1079,7 @@ double KernelFit::BackValue(const double&x, const double &y) const
   if (optParams.BackVar.Nterms()==0)
     {
       val= diffbackground[0]; /* the constant in the polynomial .. */
-      for (int ib=1; ib < optParams.SepBackVar.Nterms(); ++ib)
+      for (size_t ib=1; ib < optParams.SepBackVar.Nterms(); ++ib)
 	{
 	  val += diffbackground[ib]*optParams.SepBackVar.Value(x,y,ib);
 	}
@@ -1008,7 +1087,7 @@ double KernelFit::BackValue(const double&x, const double &y) const
   else
     {
       val= solution[BackIndex(0)]; /* the constant in the polynomial .. */
-      for (int ib=1; ib < optParams.BackVar.Nterms(); ++ib)
+      for (size_t ib=1; ib < optParams.BackVar.Nterms(); ++ib)
 	{
 	  val += solution[BackIndex(ib)]*optParams.BackVar.Value(x,y,ib);
 	}
@@ -1041,12 +1120,13 @@ contains the stars elligible to fit the kernel.
 int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &WorstSeeing)
 {
  optParams.OptimizeSizes(BestSeeing, WorstSeeing);
- optParams.OptimizeSpatialVariations(List.size());
+ cout << " Max stamps = " << optParams.MaxStamps << endl;
+ optParams.OptimizeSpatialVariations(min(optParams.MaxStamps,int(List.size())));
 
  // sizes may have changed since last call so:
  if (BestImageStamps) delete BestImageStamps;
  BestImageStamps = new  
-       StampList(*BestImage, List, optParams.HStampSize, optParams.MaxStamps);
+   StampList(*BestImage, List, optParams.HStampSize, optParams.MaxStamps);
  DeallocateConvolvedStamps();
 
  nstamps = BestImageStamps->size();
@@ -1072,7 +1152,7 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
    cout << " finished computation of m and b" << endl;
   if (!Solve())
     {
-    cout << " inversion failed  " << endl;
+    cerr << " KernelFit: Inversion failed  " << endl;
     delete BestImageStamps; BestImageStamps = NULL;
     DeallocateConvolvedStamps();
     return 0;
@@ -1085,6 +1165,43 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
   nstamps = BestImageStamps->size();
   if (BestImageStamps) { delete BestImageStamps; BestImageStamps = NULL;}
   return 1;
+}
+
+
+void KernelFit::read(istream& stream)
+{
+  string tmp_str;
+  int version;
+  stream >> tmp_str >> version;
+  read_member(stream, tmp_str, BestImageBack);
+  read_member(stream, tmp_str, WorstImageBack);\
+  read_member(stream, tmp_str, SkyVarianceWorstImage);
+  read_member(stream, tmp_str, WorstImageGain);
+  read_member(stream, tmp_str, KernAtCenterSum);
+  read_member(stream, tmp_str, optParams);
+  read_member(stream, tmp_str, mSize);
+  read_member(stream, tmp_str, solution);
+  read_member(stream, tmp_str, diffbackground);
+  read_member(stream, tmp_str, chi2);
+  read_member(stream, tmp_str, nstamps);
+}
+
+
+void KernelFit::write(ostream& stream) const
+{
+  stream << "[KernelFit] " << 0;
+  stream << setprecision(12);
+  write_member(stream, "BestImageBack", BestImageBack);
+  write_member(stream, "WorstImageBack", WorstImageBack);\
+  write_member(stream, "SkyVarianceWorstImage", SkyVarianceWorstImage);
+  write_member(stream, "WorstImageGain", WorstImageGain);
+  write_member(stream, "KernAtCenterSum", KernAtCenterSum);
+  write_member(stream, "optParams", optParams);
+  write_member(stream, "mSize", mSize);
+  write_member(stream, "solution", solution);
+  write_member(stream, "diffbackground", diffbackground);
+  write_member(stream, "chi2", chi2);
+  write_member(stream, "nstamps", nstamps);
 }
 
 

@@ -2,8 +2,11 @@
 #ifndef FIDUCIAL__H
 #define FIDUCIAL__H
 
+#include <iomanip>
+
 #include <countedref.h>
 #include <reducedimage.h>
+#include <iomanip>
 
 //! a template to use when an pointer element belongs to an image
 template<class S> 
@@ -54,7 +57,7 @@ public:
   friend ostream& operator << (ostream &Stream, const Fiducial<S>& Fs)
   {
     ios::fmtflags oldflags = Stream.flags();
-    Stream << setiosflags(ios::fixed);
+    Stream.setf(ios::fixed);
     if (Fs.rim)
       Stream << setw(12) << setprecision(2) << Fs.rim->JulianDate()
 	     << int(Fs.rim->Band()[0]);

@@ -9,27 +9,24 @@
 ###########     Parameters for fake supernova generation
 #
 #loop on simulation to obtain a good statistic
-@MC_N_LOOP 3
+@MC_N_LOOP 1
 #choices are:WITH_MODEL, WITH_GAUSSIAN, WITH_DAOPSF  
-@ADDITION_METHOD WITH_MODEL
+@ADDITION_METHOD WITH_DAOPSF
 #choices are: FAKES_RANDOM, FAKES_INHOST, 
 #             FAKES_ADAPTED, FAKES_ONGRID
-@GENERATION_METHOD FAKES_RANDOM
+@GENERATION_METHOD FAKES_ADAPTED
 # number of fake SNe added on the images
-@NUMBER_OF_FAKES 300
+@NUMBER_OF_FAKES 2000
 # magnitude range of SNe magnitude (g,r,i filters)
-@MIN_FAKE_MAG_I 22
+@MIN_FAKE_MAG_I 20
 @MAX_FAKE_MAG_I 26
-@MIN_FAKE_MAG_R 23
+@MIN_FAKE_MAG_R 20
 @MAX_FAKE_MAG_R 27
-MIN_FAKE_MAG_R 22
-MAX_FAKE_MAG_R 23
-@MIN_FAKE_MAG_G 23
+@MIN_FAKE_MAG_R 20
+@MAX_FAKE_MAG_R 26
+@MIN_FAKE_MAG_G 20
 @MAX_FAKE_MAG_G 27
-# in case of a generation adapted to the host flux
-# SNe mag simulated in the range [host mag. + MIN_DELTA_MAG, host mag. + MAX_DELTA_MAG] AND [MIN_FAKE_MAG,MAX_FAKE_MAG] 
-@MIN_DELTA_MAG 0
-@MAX_DELTA_MAG 1
+
 # in case of a grid generation:
 @XSIZE_GRID 0
 @YSIZE_GRID 0
@@ -39,9 +36,126 @@ MAX_FAKE_MAG_R 23
 #
 # end of DatSim
 ##
-#
-#
+
+################### lcsim data
+@ISLCSIM TRUE
+#### HOSTMODE : SE_CAT or PHOTO_Z
+@HOSTMODE SE_CAT
+@HOST_CAT_D1 /sps/snls10/MC/catalogues/D1_ccd24_ok.list
+@HOST_CAT_D2
+@HOST_CAT_D3
+@HOST_CAT_D4
+
+# in case of a generation adapted to the host flux
+# SNe mag simulated in the range [host mag. + MIN_DELTA_MAG, host mag. + MAX_DELTA_MAG] AND [MIN_FAKE_MAG,MAX_FAKE_MAG] 
+@MIN_DELTA_MAG -0.5
+@MAX_DELTA_MAG 3.0
+
+## positionning of fakes in host galaxies :  normalize radial position : k= 0 => center 		k = 1 => border 	k>1 outside
+@K_MIN 0.0
+@K_MAX 4.0
+
+# polynome imag to redshift for adapted to host
+@IMAG_TO_RED_A0 -91.33
+@IMAG_TO_RED_A1 13.52
+@IMAG_TO_RED_A2 -0.668
+@IMAG_TO_RED_A3 0.01103
+@IMAG_TO_RED_A4 0.0
+
+@H_EXTINCTION_MODE 1
+@H_EXTINCTION_A 0.0
+@H_EXTINCTION_B 0.0
+
+@REDSHIFT_MODE 1
+@REDSHIFT_A 0.2
+@REDSHIFT_B 1.2
+
+@STRETCH_MODE 2
+@STRETCH_A 0.15
+@STRETCH_B 0.95
+
+@DELTADAY_MIN +10
+@DELTADAY_MAX -10
+
+@ALPHA_MODE 1 
+@ALPHA_A 1.4
+@ALPHA_B 1.4
+
+@COLOR_MODE 1
+@COLOR_A -0.2
+@COLOR_B 0.4
+
+@BETA_MODE 1
+@BETA_A 2.3
+@BETA_B 2.3
+
+@H_RV_MODE 0
+@H_RV_A 0 
+@H_RV_B 0
+
+@MW_RV_MODE 1
+@MW_RV_A 3.1 
+@MW_RV_B 3.1
+
+@DISPERSION_MODE 2
+@DISPERSION_A 0.153
+@DISPERSION_B 0.0
+
+#instrument
+@INSTRUMENT MEGACAM
+
+#cosmo model
+@H0 63.6
+@OMEGAM 0.3
+@OMEGAX 0.7
+@W0 -1.0
+@W1  0.0  
+
+#default masters
+@D1_MASTER_I D1_i_0_ref
+@D1_MASTER_R D1_r_0_ref
+@D1_MASTER_G D1_g_0_ref
+@D1_MASTER_Z D1_z_0_ref
+
+@D2_MASTER_I 
+@D2_MASTER_R 
+@D2_MASTER_G 
+@D2_MASTER_Z
+
+@D3_MASTER_I 
+@D3_MASTER_R
+@D3_MASTER_G 
+@D3_MASTER_Z 
+
+@D4_MASTER_I masterref_D4_i
+@D4_MASTER_R masterref_D4_r 
+@D4_MASTER_G masterref_D4_g 
+@D4_MASTER_Z masterref_D4_z
+
+######
+# background subtraction in REducedImage::MakeCatalog
+## poloka or sextracto back algorithm
+@USE_POLOKA_BACK 1
+## if you put 0 above the following (POLOKA_PACK) items are irrelevant
+
+## enlarge pixel patches of detected objects by (pixels) to mask them when computing sky back map
+@POLOKA_BACK_OBJECT_MASK_BORDER 4
+
+# size of the back patches
+@POLOKA_BACK_MESH_SIZE 256
+# POLOKA_BACK_MESH_SIZEX and POLOKA_BACK_MESH_SIZEY are also understood... 
+
+
 ###########     KernelFits params
+#
+#
+#  The kernel base
+#
+# 1 = Alard, 2 = delta
+# not implemented ==> Alard
+# @KFIT_KERNEL_BASIS 1
+#
+#  KFIT_SIG_GAUSS and KFIT_DEG_GAUSS only apply to Alard basis.
 #
 # the basis used to fit is made from Pol(u,v)*Gaussian.
 #
@@ -52,6 +166,15 @@ MAX_FAKE_MAG_R 23
 # corresponding degrees of polynomials:
 #
 @KFIT_DEG_GAUSS 6 4 2
+#
+# Do we assume a uniform photom ratio (i.e. uniform kernel integral) ?
+# not implemented.
+# @KFIT_UNIFORM_PHOTOM_RATIO 1
+#
+# maximum number of stamps (i.e. number of objects used to fit)
+#
+@KFIT_MAX_STAMPS 150
+#
 #
 # size of the kernel in number of (guessed) kernel sigma
 #
@@ -132,79 +255,64 @@ MAX_FAKE_MAG_R 23
 ##
 #######   end of DatStack
 #
+###############   PSF section ####################
+# can be GAUSSIAN MOFFAT20 MOFFAT25(def) MOFFAT30
+@PSF_ANALYTIC_KIND MOFFAT25
 #
+# degree of 2D polynomial for spatial variation of the parameters 
+# of the analytic PSF
+@PSF_SPATIAL_ANALYTIC_VAR_DEG 1
+##
+# degree of 2D polynomials for spatial variation of the pixelized residuals
+@PSF_SPATIAL_PIX_VAR_DEG 1
+##
+#outlier rejection of training stars (sigmas from median)
+@PSF_NSIG_CHI2_CUT 4
 #
+##
+# PSF half size in units of IQ sigma
+@PSF_NSIG_HALF_SIZE 5
 #
+##
+# Degree of non linearity of CCD response: -1 = no non-linearity
+# this datacard is not ignoreded in the mainstream of PSF modelling (makepsf).
+# It is only read by "fitlin"
+#@PSF_NON_LINEARITY_DEGREE 1
 #
+
+## PSF output options (information output only, the psf itself 
+#	goes into the DbImage, whatever you put here). Providing filename
+## triggers the corrsponding output
 #
-#**** OBSOLETE parameters for detection 
+# where to write things (Default in the current DbImage)
+#@PSF_OUTPUT_DIR
 #
+##
+# Residual fits images of the pixelized residuals (as many images as 
+# polynomial coefficients), at each iteration
+#@PSF_ALL_RESIDUALS_FILE_NAME
+# 
+##
+# same as above but only at last iteration:
+#@PSF_LAST_RESIDUAL_FILENAME  psfpix
 #
-@DETEC_PRLEVEL 0
-#************** Detector choice 
-#  (0:SE, 1:SimpleDetection, 2:CvDetection, 3:SEDetection+Cv Cut)
+##
+# A tuple that contains all the pixles used to fit the PSF, 
+# together with the fit results:
+#@PSF_RESIDUALS_TUPLE_FILENAME
 #
-@DETEC_TYPE 2
-#************** Detection parameters for SExtractor
-# scale factor of image sigma (for SExtractor)
-@DETEC_SCALESIG 0.4
-# radius for local flux, noise etc. computation (in sigma_seeing)
-@DETEC_RAD_NSEEING 2.5
+##
 #
-#************* Detection parameters for SimpleDetection and CvDetection:
-# radius in which bad pixels are excluded (in sigma_seeing)
-@DETEC_RBAD_NSEEING 2.
-# idem (absolute value)
-@DETEC_RBAD 0.
-#  radius  in which the pixel must be a local-maximum (in sigma_seeing)
-@DETEC_RMAXLOC_NSEEING 2.
-# idem (absolute value) 
-@DETEC_RMAXLOC 1. 
-# radius for local flux, noise etc. computation (in sigma_seeing)
-@DETEC_RAD_NSEEING 2.5
-# idem (absolute value) 
-@DETEC_RAD 0.
-# amplitude cut in sigma background
-@DETEC_SAMP_NSIG 2.
-# amplitude cut (absolute value) - only for SimpleDetection
-@DETEC_SAMP 0.
-# flux cut in sigma on convolved image 
-# (if SimpleDetection, the flux cut is computed according 
-# to DETEC_SAMP, DETEC_RBAD and seeing)
-@DETEC_SFLUX_NSIG 3.
-#idem  (absolute value) -  not used any more
-@DETEC_SFLUX 0.
-#
-#
-#************** Cut Parameters
-# min. distance between detection on new, new1 and new2 
-@DETEC_DMIN 2.
-# radius for local noise computation
-@DETEC_RAD 0.
-# min. signal to noise cut on sub-image 1 
-@DETEC_SN_1 4.
-# min. signal to noise cut on sub-image 2
-@DETEC_SN_2 4.
-#  min. signal to noise cut on sub
-@DETEC_SN 3.5
-#
-# not used any more
-@DETEC_DREF 3.
-#
-# not used any more
-@DETEC_N_RING 200.
-#
-#
-# cut anti-tache : cut sur flux ds un anneau de rayon
-# 3 et 4 seeing divise par le flux ds un rayon de 3 seeing
-# mettre a 0.5 voire 0.2 si il y a des taches
-@DETEC_N_RING_PRCT 200
-#
-# not used any more
-@DETEC_FRAC_FREF 0.
-# not used any more
-@DETEC_FRAC_AREF 0.
-# cut percentage increase
-@DETEC_FRAC_FAREF 0.03
-#
-########## end of obsolete section
+# an image of the filed with only the residuals at the location of training
+#stars
+@PSF_RESIDUALS_IMAGE_FILENAME
+############ end of PSF section ################
+
+############ APERCATS section ############
+# 
+#@FIXED_APER_RADS   0.5  1.0  1.5  2.0  3.0  4.0  5.0  6.0  8.0  10. 12.
+
+
+
+
+

@@ -2,7 +2,7 @@
   Attempting to add VLT ISAAC as one instrument.
 
 */
- 
+#ifdef VIRTUAL_INSTRUMENTS
 class VltIsaac : public VirtualInstrument { /* TYPE_SELECTOR */
 public:
   string TelInstName() const {return "VltIsaac";};
@@ -81,3 +81,4 @@ public:
   SIMPLE_TRANSLATOR(TOADTYPE,"HIERARCH ESO DPR TYPE");
 
 };
+#endif

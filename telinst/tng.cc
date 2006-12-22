@@ -1,3 +1,4 @@
+#ifdef VIRTUAL_INSTRUMENTS
 class TngLrs : public VirtualInstrument { /* TYPE_SELECTOR */
 public:
   static VirtualInstrument *Acceptor(const FitsHeader &Head)
@@ -123,16 +124,6 @@ public:
     return result;
   }
 
-  bool GuessLinWCS(const FitsHeader &Head, TanPix2RaDec &Guess) const;
-
 };
-
-bool TngLrs::GuessLinWCS(const FitsHeader &Head, TanPix2RaDec &Guess) const
-{
-// Ra,Dec at image center, North = down, East = left
-  return ComputeLinWCS(Head,Head.ImageCenter(),
-		       RotationFlip(Down,Left),
-		       Guess);
-}
-
+#endif
 

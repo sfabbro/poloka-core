@@ -1,0 +1,10 @@
+*_dict.cc
+*_dict.h
+*__persister.h
+*.lo
+.cvsignore
+.deps
+.libs
+Makefile
+Makefile.in
+libtoadsutils.la

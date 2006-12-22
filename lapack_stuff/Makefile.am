@@ -22,6 +22,11 @@ liblapackstuff_la_SOURCES = \
 		  ieeeck.f  \
 		  ilaenv.f  \
 		  lsame.f   \
+		  dgesv.f \
+		  dgetf2.f \
+		  dgetrf.f \
+		  dgetrs.f \
+		  dlaswp.f \
 	dsysv.f \
 	dsytrf.f \
 	dsytrs.f \
@@ -32,7 +37,7 @@ liblapackstuff_la_SOURCES = \
 	dger.f \
 	dsytf2.f \
 	dsyr.f \
-		  xerbla.f  
+	xerbla.f  
 
 ######## auto symbolic link #########
 # if configure is set with option --enable-autoinstall

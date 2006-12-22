@@ -1,11 +1,12 @@
 #include <string>
 #include <iostream>
+#include <fstream>
 
 #include "swarpstack.h"
 
 static void usage(const std::string &ProgName)
 {
-  std::cerr << ProgName << " -o <outName> [-r <RefName>] [-c cardsName] dbimages..." 
+  std::cerr << ProgName << " -o <outName> [-r <RefName>] [-c cardsName] [-i dbimlist] dbimages..." 
 	    << std::endl;
   std::cerr << "          when a ref is provided, the output image is geometrically aligned with ref " << std::endl;
   exit(1);
@@ -16,6 +17,7 @@ int main(int nargs, char **args)
   ReducedImageList ril;
   std::string outName;
   std::string cardsName;
+  std::string dbimlist;
   ReducedImage *ref = NULL;
   for (int i=1; i<nargs; ++i)
     {
@@ -27,6 +29,7 @@ int main(int nargs, char **args)
 	    case 'r' : ++i; ref = new ReducedImage(args[i]); break;
 	    case 'o' : ++i; outName = args[i]; break;
 	    case 'c' : ++i; cardsName = args[i]; break;
+	    case 'i' : ++i; dbimlist = args[i]; break;
 	    default : usage(args[0]);
 	    }
 	  continue;
@@ -41,6 +44,22 @@ int main(int nargs, char **args)
 	      delete ri;
 	    }
 	}
+    }
+  
+  if(dbimlist!="") 
+    {
+      char buff[512];
+      ifstream ifs(dbimlist.c_str());
+      while(ifs.good()) {
+	ifs.getline(buff,512);
+	ReducedImage* ri = new ReducedImage(buff);
+	if(ri->IsValid())
+	  ril.push_back(ri);
+	else {
+	  std::cerr << " cannot find " << buff << std::endl;
+	  delete ri;
+	}
+      }
     }
 
   if (ref && !ref->HasImage())

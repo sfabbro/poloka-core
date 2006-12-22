@@ -1,8 +1,6 @@
 #ifndef  YQUEMSTAR__H 
 #define  YQUEMSTAR__H
 
-#include "persistence.h"
-
 #include "candidatestar.h"
 #include "datdetec.h"
 
@@ -13,9 +11,6 @@
 
 
 class YquemStar : public CandidateStar {
-  CLASS_VERSION(YquemStar,1);
-  #define YquemStar__is__persistent
-
 public:
 SEStar StarRef;
 double dass_ref ;

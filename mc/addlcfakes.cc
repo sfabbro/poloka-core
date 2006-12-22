@@ -4,7 +4,7 @@
 #include "sestar.h"
 
 
-
+ 
 
 #include "fitsimage.h"
 #include "reducedimage.h"
@@ -192,13 +192,14 @@ void SNAdder::GenerateImages() const
       PseudoCopyDbImage(inputName, outputName);
       ReducedImage out(outputName);
       FitsImage outFits(out.FitsName(),RW);
+      outFits.SetWriteAsFloat();
       list<ModelStar>::const_iterator s;
       for (s = epoch.additions.begin(); s!= epoch.additions.end(); ++s)
 	{
-	  s->AddToImage(outFits, outFits, &identity);
+	  s->AddToImage(outFits, outFits, &identity,0,-1,out.Gain());
 	  Point where = *s;
 	  cout << " adding at " << where << " in " << outFits.FileName() 
-	       << " with phot factor " << s->PhotFactor() << endl;
+	       << " with phot factor " << s->PhotFactor() << " (gain=" << out.Gain() << ")" << endl;
 	}
     }
 } 
@@ -225,6 +226,13 @@ bool SNAdder::GenerateLightCurveFile(const string &ConfigFileName,
       double mindate,maxdate;
       sn->GetMinMaxDates(mindate,maxdate);
       fprintf(f,"%f %f DATE_MIN=%f DATE_MAX=%f NAME=fake_%d TYPE=0 BAND=%s\n",
+	      sn->modelStar.x + sn->xShift, 
+	      sn->modelStar.y + sn->yShift ,
+	      mindate,
+	      maxdate,
+	      count,
+	      band.c_str());
+      fprintf(f,"%f %f DATE_MIN=%f DATE_MAX=%f NAME=fixed_fake_%d TYPE=-1 BAND=%s\n",
 	      sn->modelStar.x + sn->xShift, 
 	      sn->modelStar.y + sn->yShift ,
 	      mindate,

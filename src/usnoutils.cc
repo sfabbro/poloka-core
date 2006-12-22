@@ -19,6 +19,8 @@
 #include "fitstoad.h"
 #include "listmatch.h"
 #include "fastfinder.h"
+#include "imageutils.h"
+
 
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
@@ -67,8 +69,6 @@ int GetUsnoZeroPoint(const StarMatchList *MatchingList, UsnoColor Color, double 
   cout << "  GetUsnoZeroPoint : " << n << " matches survived clipped mean " << endl;
   delete [] zp;
 
-  // Hack for B band : SN zeropoint at z=0.4 is 0.7mag higher    
-  if (Color==BColor) zeropoint += 0.7;
   cout << "Zeropoint = " << zeropoint << " +- " << errzero << endl; 
  
   return 1;
@@ -424,8 +424,6 @@ static bool check_guess(const GtransfoLin &Guess)
 }
   
 
-
-
 //! Guesses the transfo from sestarlist to catalog.  
 /*! TangentPoint denote the tangent point used to project the USNO
   catalog on a tangent plane, with coordinates expressed in degrees.
@@ -499,7 +497,7 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
 
       MatchConditions conditions;
       // areas : 
-      double usnoWindowSizeInPix = usnoFrame.ApplyTransfo(UsnoToPix).Area();
+      double usnoWindowSizeInPix =ApplyTransfo(usnoFrame,UsnoToPix).Area();
       double imageSize = Frame(header).Area();
       
       conditions.NStarsL1 = 80;
@@ -637,7 +635,7 @@ static void FillMatchFile(const FitsHeader &Header, const SEStarList &ImageList,
   // collect the whole catalog
   
   Frame pixFrame(Header); // boundaries of the image
-  Frame raDecFrame = pixFrame.ApplyTransfo(Pix2RaDec);
+  Frame raDecFrame = ApplyTransfo(pixFrame,Pix2RaDec);
   Frame bigraDecFrame = raDecFrame.Rescale(1.1);
   BaseStarList unusedUsno;
   UsnoRead( bigraDecFrame, RColor, unusedUsno);
@@ -672,7 +670,8 @@ static void FillMatchFile(const FitsHeader &Header, const SEStarList &ImageList,
 //! fills a file to be used when building finding charts, or to check the match.
 static void FillMatchFile(const DbImage &Image, const Gtransfo &Pix2RaDec, const StarMatchList &MatchList)
 {
-   FillMatchFile(FitsHeader(Image.FitsImageName(Calibrated)),
+  FitsHeader head(Image.FitsImageName(Calibrated));
+   FillMatchFile(head,
 		 SEStarList(Image.ImageCatalogName()), MatchList,
 		 Pix2RaDec, Image.Dir()+"/match_usno.dat");
 }
@@ -1115,7 +1114,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	    }
 	  else 
 	    {
-	      FillMatchFile(FitsHeader(fitsFileName), sestarlist, 
+	      FitsHeader head(fitsFileName);
+	      FillMatchFile(head, sestarlist, 
 			    *accurateMatch, pix2RaDec,
 			    DirName(fitsFileName)+"/match_usno1.dat");
 	    } 
@@ -1192,7 +1192,6 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       }
   return true;
 }
-
 
 
 

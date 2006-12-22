@@ -70,7 +70,7 @@ int main(int argc, char **argv)
   
   // compute and subtract back image 
   Image outImage(inFits.Nx(),inFits.Ny());
-  inFits.Surface(backStep,outImage);
+  ImageSurface(inFits,backStep,outImage);
   float sigsky=0.0,dumb=0.0;
   outImage.MeanSigmaValue(&dumb,&sigsky);
   if (justback) outImage += skylev;

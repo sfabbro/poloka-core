@@ -1,3 +1,4 @@
+#ifdef VIRTUAL_INSTRUMENTS
 class NttSusi :  public VirtualInstrument { /* TYPE_SELECTOR */
 
 public :
@@ -21,3 +22,4 @@ public :
 
 
 };
+#endif

@@ -11,14 +11,21 @@ int main(int argc, char** argv) {
     return -1;
   ReducedImage image(argv[1]);
   DaoPsf psf(image);
-  
+
+  double seeing = image.Seeing(); // sigma pixel
+
   Point Pt;
   int step = 40;
-  int hy = step;
-  int hx = step;
+  int hy = int(seeing*2.);
+  int hx = hy;
   
   DPixel ppdx,ppdy,psfval;
   DPixel integrale;
+  
+  cout << "# x :" << endl;
+  cout << "# y :" << endl;
+  cout << "# i :" << endl;
+  cout << "# end" << endl;
 
   // loop in all image area
   if(true) {
@@ -40,7 +47,7 @@ int main(int argc, char** argv) {
 	  }
 	}
       }
-      cout <<  ic << "," << jc << " integral= " << integrale << endl;
+      cout <<  ic << " " << jc << " " << integrale << endl;
     }
   }else{
   

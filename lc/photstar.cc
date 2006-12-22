@@ -7,17 +7,17 @@
 PhotStar::PhotStar()
   : BaseStar(0,0,0), sky(0.), varflux(0.), varx(0.), vary(0.), 
     covxy(0.), varsky(0.), photomratio(1.)
-{}
+{has_saturated_pixels = false; image_seeing=0; MJD=0;}
 
 PhotStar::PhotStar(const BaseStar &BStar)
   : BaseStar(BStar), sky(0.), varflux(0.), varx(0.), vary(0.), 
     covxy(0.), varsky(0.), photomratio(1.)
-{}
+{has_saturated_pixels = false; image_seeing=0; MJD=0;}
 
 PhotStar::PhotStar(const SEStar &SStar)
   : BaseStar(SStar), sky(SStar.Fond()), varflux(SStar.EFlux()*SStar.EFlux()),
     varx(0.), vary(0.), covxy(0.), varsky(0.), photomratio(1.)
-{}
+{has_saturated_pixels = false; image_seeing=0; MJD=0;}
 
 void PhotStar::writen(ostream &Stream) const
 {
@@ -33,6 +33,8 @@ void PhotStar::writen(ostream &Stream) const
   Stream << setprecision(old);
 }
 
+
+/*
 PhotStar* PhotStar::read(istream & Stream, const char *Format)
 {
   PhotStar *pstar = new PhotStar();
@@ -47,6 +49,8 @@ PhotStar* PhotStar::read(istream & Stream, const char *Format)
 
   return 0;    
 }
+*/
+
 
 void PhotStar::dumpn(ostream &Stream) const
 {
@@ -69,6 +73,6 @@ string PhotStar::WriteHeader_(ostream & Stream, const char* Num) const
 }
 
 // Force instanciation
-#include <starlist.cc>
-template class StarList<PhotStar>; 
+//#include <starlist.cc>
+//template class StarList<PhotStar>; 
 

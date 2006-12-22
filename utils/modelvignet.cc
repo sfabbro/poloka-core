@@ -26,8 +26,13 @@ int main(int argc, char **argv)
   int radius = 20;
   
   PhotStar* star = lc.Ref;
-  SimFitRefVignet *vignet = new SimFitRefVignet(star,lc.Ref->Image(),radius);
   
+  //SimFitRefVignet *vignet = new SimFitRefVignet(star,lc.Ref->Image(),window);
+  SimFitRefVignet *vignet = new SimFitRefVignet(lc.Ref->Image());
+  vignet->Resize(radius,radius);
+  vignet->Load(star);
+  
+
   // read galaxy
   Kernel galaxy;
   string galname = "galaxy_sn.fits";
@@ -89,7 +94,7 @@ int main(int argc, char **argv)
   
   // update PSF
   vignet->Resize(hx,hy);
-  vignet->Psf.Tabulate(Point(x,y),*(vignet->psf),(const Window&)*vignet);
+  vignet->Psf.Tabulate(Point(x,y),*(vignet->imagepsf),(const Window&)*vignet);
   
   // create an image with and without sn
   DImage image((2*hx+1)*2+1,(2*hy+1));

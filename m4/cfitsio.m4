@@ -1,6 +1,6 @@
 # -*- autoconf -*-
 # 
-# $Id: cfitsio.m4,v 1.6 2004/02/23 13:14:11 guy Exp $
+# $Id: cfitsio.m4,v 1.7 2006/12/22 13:35:40 guy Exp $
 # 
 # autoconf macro to check the cfitsio installation
 # Nicolas Regnault <regnault@in2p3.fr> Feb. 2004.
@@ -71,16 +71,17 @@ AC_DEFUN([CHECK_CFITSIO],[
    echo "*** Please check your cfitsio installation and try again.           "
    AC_MSG_ERROR(aborting.)
   ])
-
+ CFITSIO_LIBDIR=""
  if test -n "$cfitsio_libs" ; then
-  CFITSIO_LDFLAGS="-L$cfitsio_libs -lcfitsio"
+  CFITSIO_LIBDIR="$cfitsio_libs"
  elif test -n "$CFITSIOHOME" ; then
-  CFITSIO_LDFLAGS="-L$CFITSIOHOME/lib -lcfitsio" 
+  CFITSIO_LIBDIR="$CFITSIOHOME/lib"
  elif test -n "$FROGSHOME" ; then
-  CFITSIO_LDFLAGS="-L$FROGSHOME/lib -lcfitsio"
+  CFITSIO_LIBDIR="$FROGSHOME/lib"
  elif test -n "$prefix" && test "$prefix" != "NONE" ; then
-  CFITSIO_LDFLAGS="-L$prefix/lib -lcfitsio"
+  CFITSIO_LIBDIR="$prefix/lib"
  fi
+ CFITSIO_LDFLAGS="-Wl,--rpath -Wl,$CFITSIO_LIBDIR -L$CFITSIO_LIBDIR -lcfitsio"
  LDFLAGS="$LDFLAGS $CFITSIO_LDFLAGS -lm"
  AC_CHECK_LIB(cfitsio,main,,
   [echo "*** Library libcfitsio not found.                                   "

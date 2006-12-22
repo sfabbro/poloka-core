@@ -1,3 +1,4 @@
+#ifdef VIRTUAL_INSTRUMENTS
 class KeckILris : public VirtualInstrument { /* TYPE_SELECTOR */
 
 public :
@@ -74,71 +75,7 @@ public :
     return result;
   }
 };
-
-#ifdef FITSTOADS
-//*********************************************************************
-FitsKey FitsHeader::KeckIILrisFormat(const string &KeyName) const
-{
-  if (KeyName == "TOADNAMP") return FitsKey(KeyName,2);
-  if (KeyName == "TOADINST") return KeyVal("PONAME");
-  if (KeyName == "TOADPIXS") return FitsKey(KeyName,0.215);
-  if (KeyName == "TOADFILT") return KeyVal("REDFILT");
-  if (KeyName == "TOADEXPO") return KeyVal("EXPOSURE");
-  if (KeyName == "TOADGAIN") 
-     {
-	if (HasKey("GAIN")) return KeyVal("GAIN");
-	else return FitsKey(KeyName,(1.97+2.1)/2.0);
-     }
-  if (KeyName == "TOADRDON") return FitsKey(KeyName,(6.3+6.6)/2.0);
-  if (KeyName == "TOADRASC") return KeyVal("RA");
-  if (KeyName == "TOADDECL") return KeyVal("DEC");
-  if (KeyName == "TOADEQUI") return KeyVal("EQUINOX");
-  if (KeyName == "TOADAIRM") return KeyVal("AIRMASS");
-  if (KeyName == "TOADUTIM") return KeyVal("UT");
-  if (KeyName == "TOADDATE") 
-    {
-      string keyval;
-      if (HasKey("DATE-OBS")) keyval = KeyVal("DATE-OBS");
-      else keyval= KeyVal("DATE");
-      int dd,mm,yy;
-      if (sscanf(keyval.c_str(),"%d/%d/%d",&dd,&mm,&yy) == 3)
- 	{ 
-	  char date_charstar[64];
-	  sprintf(date_charstar,"%d/%d/%d",dd,mm,yy+1900);
-	  return FitsKey(KeyName,string(date_charstar));
-	}
-      if (sscanf(keyval.c_str(),"%d-%d-%d",&yy,&mm,&dd) == 3)
- 	{ 
-	  char date_charstar[64];
-	  sprintf(date_charstar,"%d/%d/%d",dd,mm,yy);
-	  return FitsKey(KeyName,string(date_charstar));
-	}
-    } 
-
-  if (KeyName == "TOADSCAN") 
-    {
-      //Only considering the right side of overscan
-      string sec  = "[2091,80;1,2048]";
-      return FitsKey(KeyName,sec);
-    }
-  if (KeyName == "TOADILLU") 
-    {
-      string sec  = "[240,1640;1,2048]";
-      return FitsKey(KeyName,sec);
-    }
-  if (KeyName == "TOADTYPE") return KeyVal("IMAGETYP");
-  if (KeyName == "TOADOBJE") return KeyVal("OBJECT");
-  if (KeyName == "TOADCHIP") return FitsKey(KeyName,1);
-  if (KeyName == "TOADBAND")
-    {
-      string filter = KeyVal("REDFILT");
-      return FitsKey(KeyName,ToadBand(StringToUpper(filter)));	  
-    }
-  return FitsKey(KeyName,NOVAL);      
-}
-//*********************************************************************
 #endif
-
 
 
 

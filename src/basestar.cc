@@ -26,7 +26,9 @@ in memory.
 */
 
 
-void BaseStar::read_it(istream & rd, const char *format)
+#include "fastifstream.h"
+
+void BaseStar::read_it(fastifstream & rd, const char *format)
 {
  int formatValue = 0;
  if (format) 
@@ -40,7 +42,8 @@ void BaseStar::read_it(istream & rd, const char *format)
 }  
 
 
-BaseStar* BaseStar::read(istream & rd, const char *format)
+
+BaseStar* BaseStar::read(fastifstream & rd, const char *format)
 {
   BaseStar *p = new BaseStar();
   p->read_it(rd, format);
@@ -87,43 +90,7 @@ bool IncreasingMag(const BaseStar *S1, const BaseStar *S2)
 return (S1->flux < S2->flux);
 }
 
-#include "rootstuff.h"
 
-ClassImp(BaseStar)
-
-/* To Generate the %dict.cc file :
-RUN_ROOTCINT
-LINKDEF_CONTENT : #pragma link C++ class Point;
-LINKDEF_CONTENT : #pragma link C++ function operator<<(ostream &, const Point&);
-LINKDEF_CONTENT : #pragma link C++ class BaseStar-;
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream &, const BaseStar &);
-
-use a custom Streamer (-) in the previous statement to avoid
-making "Point" known to Root
-*/
-
-#ifdef USE_ROOT
-
-void BaseStar::Streamer(TBuffer &R__b)
-{
-   // Stream an object of class BaseStar. hand made
- 
-   UInt_t R__s, R__c;
-   if (R__b.IsReading()) {
-      Version_t R__v = R__b.ReadVersion(&R__s, &R__c); if (R__v) { }
-      R__b >> x;
-      R__b >> y;
-      R__b >> flux;
-      R__b.CheckByteCount(R__s, R__c, BaseStar::IsA());
-   } else {
-      R__c = R__b.WriteVersion(BaseStar::IsA(), kTRUE);
-      R__b << x;
-      R__b << y;
-      R__b << flux;
-      R__b.SetByteCount(R__c, kTRUE);
-   }
-}
-#endif /*USE_ROOT */
 
 
 /**************** BaseStarList ******************/
@@ -141,31 +108,7 @@ return atoi( p + strlen(StarName));
 
 #include "starlist.cc" /* since starlist is a template class */
 
-#ifdef USE_ROOT
-template class StarListWithRoot<BaseStar>; /* to force instanciation */
-ClassImpT(StarListWithRoot,BaseStar)
 
-  /* all ancestors of StarListWithRoot<T>  ave to be bound explicitely to cint,
-     because I did not find what triggers that by default (because semetimes, it 
-     just happens by itself) */
-
-/* comments to drive the Makefile part that runs rootcint
-RUN_ROOTCINT
-
-LINKDEF_CONTENT : #pragma link C++ class CountedRef<BaseStar>;
-LINKDEF_CONTENT : #pragma link C++ class list<CountedRef<BaseStar> >;
-LINKDEF_CONTENT : #pragma link off function list<CountedRef<BaseStar> >::unique();
-LINKDEF_CONTENT : #pragma link off function list<CountedRef<BaseStar> >::sort();
-LINKDEF_CONTENT : #pragma link off function list<CountedRef<BaseStar> >::merge(list <CountedRef<BaseStar> >)&;
-LINKDEF_CONTENT : #pragma link C++ class StarList<BaseStar>;
-LINKDEF_CONTENT : #pragma link C++ class StarList<BaseStar>::iterator;
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream &, const StarList<BaseStar> &);
-LINKDEF_CONTENT : #pragma link C++ class StarListWithRoot<BaseStar>-;
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream &, const BaseStar &);
-LINKDEF_CONTENT : #pragma link C++ function operator << (ostream &, const BaseStarList &);
-*/
-#include "root_dict/basestardict.cc"
-#endif /* ifdef USE_ROOT */
 
 // whatever happens (root or not), StarList<BaseStar> has to be instanciated
 template class StarList<BaseStar>; /* to force instanciation */

@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+
+Import('g_env')
+
+
+EXTRA_DIST = [
+    'SConscript',
+    '__init__.py', 'Package.py'
+    ]
+
+g_env.AddToDist(EXTRA_DIST)
+

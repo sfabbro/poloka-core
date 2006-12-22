@@ -9,6 +9,7 @@
 #include "fitsimage.h"
 #include "dbimage.h"
 #include "fileutils.h"
+#include "polokaexception.h"
 
 
 static void usage()
@@ -86,9 +87,14 @@ if (argc <=1)
 
 
 int ninfo = which_info.size();
-
+ bool ok = true;
 for (int in = 0 ; in < int(names.size()); in++)
   {
+
+   
+    try{
+
+
   if (ninfo == 0)
     {
     fits_header_process(names[in], requested_keys, names[in]);
@@ -118,8 +124,18 @@ for (int in = 0 ; in < int(names.size()); in++)
 	  }
       }
     }
+
+    }catch(PolokaException p){
+      
+      p.PrintMessage(cout);
+      ok = false;
+
+    };
+
   }
-return EXIT_SUCCESS;
+ if(ok)
+   return EXIT_SUCCESS;
+ return EXIT_FAILURE;
 }
 
 

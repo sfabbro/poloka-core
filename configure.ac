@@ -16,13 +16,6 @@ AM_INIT_AUTOMAKE
 AC_CANONICAL_HOST
 AM_DISABLE_STATIC
 
-# default prefix for installation is in the current dir
-AC_PREFIX_DEFAULT([`\pwd`/installarea])
-
-# optional features
-
-
-AC_SUBST(CMTPACKAGE,"`\basename $PWD`")
 
 
 # Checks for programs.
@@ -38,14 +31,15 @@ AC_PROG_YACC
 AM_PROG_LEX
 AC_PROG_MAKE_SET
 AC_PATH_PROG(DOXYGEN,doxygen)
-SWIG_PROG(1.3.20)
-SWIG_ENABLE_CXX
+
 
 
 CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 
 # Checks for libraries.
-AM_PATH_PYTHON(2.0.0)
+### AM_PATH_PYTHON(2.0.0)
+
+
 # FIXME: Replace `main' with a function in `-lcrypt':
 AC_CHECK_LIB([crypt], [main])
 # FIXME: Replace `main' with a function in `-ldl':
@@ -54,16 +48,72 @@ AC_CHECK_LIB([dl], [main])
 AC_CHECK_LIB([g2c], [main])
 # FIXME: Replace `main' with a function in `-lnsl':
 AC_CHECK_LIB([nsl], [main])
-AM_PATH_XML2(2.6.2)
+
+
+# disable objio to remove swig and xml dependence 
+#AC_ARG_ENABLE(objio,
+#[AC_HELP_STRING([--disable-objio],[Do not use persistence, all programs using it will no be compiled, no need for xml nor swig ])],
+#[objio=false],
+#[ objio=true])
+#AM_CONDITIONAL(OBJIOENABLE, test x$objio = xtrue)
+
+#if test  x$objio = xtrue ; then
+#AM_PATH_XML2(2.6.2)
+#SWIG_PROG(1.3.20)
+#SWIG_ENABLE_CXX
+#fi
+
+# Check sex 
+AC_ARG_ENABLE(sex,
+[AC_HELP_STRING([--disable-sex],[Do not use sextractor, all programs using it will no be compiled ])],
+[sex=false
+ # and set cmt flags to null
+SEX_CFLAGS=""
+SEX_LDFLAGS=""
+AC_SUBST(SEX_CFLAGS)
+AC_SUBST(SEX_LDFLAGS)
+],
+[ sex=true])
+AM_CONDITIONAL(USESEXTRACTOR, test x$sex = xtrue)
+
+# whether to compile the MC code or not
+AC_ARG_ENABLE(mc,
+[AC_HELP_STRING([--enable-mc],[compile the Monte-Carlo Code])],
+[mc=true
+ MC_CFLAGS=""
+ MC_LDFLAGS=""
+ AC_SUBST(MC_CFLAGS)
+ AC_SUBST(MC_LDFLAGS)
+],)
+AM_CONDITIONAL(ENABLE_MC, test x$mc = xtrue)
+
 
 # Use CMT to link packages, see cmt/configure.in
 AC_ARG_ENABLE(cmt,
 [AC_HELP_STRING([--enable-cmt],[use cmt to find external software (default is NO)])],
 [CHECK_CMT],
 [ # else put here the additionnal software to check
-CHECK_CFITSIO(2.470)
+CHECK_CFITSIO(2.400)
+if test  x$sex = xtrue ; then
 CHECK_SEX
+ # and set cmt flags to null
+CMT_CFLAGS=""
+CMT_LDFLAGS=""
+AC_SUBST(CMT_CFLAGS)
+AC_SUBST(CMT_LDFLAGS)
+fi
 ])
+
+# Use imagemagick to output some vignettes in gif
+AC_ARG_ENABLE(imagemagick,
+[AC_HELP_STRING([--enable-imagemagick],[compile some utils using imagemagick (default is NO)])],
+[
+imagemagick=true
+CHECK_IMAGEMAGICK
+],
+[imagemagick=false])
+AM_CONDITIONAL(IMAGEMAGICK, test x$imagemagick = xtrue)
+
 
 ######## auto symbolic link #########
 # if configure is set with option --enable-autoinstall
@@ -120,27 +170,33 @@ CPPFLAGS="-g -Wall"
 CFLAGS="-g -Wall"
 FFLAGS="-g"
 
+# default prefix for installation is in the current dir
+AC_PREFIX_DEFAULT([`\pwd`/installarea])
+
+# optional features
+
+AC_SUBST(CMTPACKAGE,"`\basename $PWD`")
 
 
 AC_CONFIG_FILES([Makefile
 		 cmt/requirements
 		 cmt/version.cmt
-                 bindings/Makefile
                  cern_stuff/Makefile
                  lapack_stuff/Makefile
                  dao/Makefile
+                 psf/Makefile
+                 simphot/Makefile
                  datacards/Makefile
-                 doc/Makefile
-                 doc/Doxyfile
-                 objio/Makefile
+		 src_base/Makefile
+		 src_utils/Makefile
+		 flat/Makefile
                  src/Makefile
   		 lc/Makefile
 	         mc/Makefile
                  telinst/Makefile
                  utils/Makefile
 		 cern_utils/Makefile
-                 repack-config
-                 repack.spec
+		 imagemagick_utils/Makefile
 ])
 
 AC_OUTPUT

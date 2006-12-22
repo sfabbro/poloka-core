@@ -18,9 +18,14 @@ public:
   }
 
   TStar(const BaseStar &ActualStar, const BaseStar &JustForPos) : BaseStar(JustForPos), original(&ActualStar) {}
+  virtual void writen(ostream &s = cout)const ;
+  virtual string WriteHeader_(ostream & stream = cout, const char*i = NULL) const ;
 };
     
-
+class TStarList : public StarList<TStar> {
+  public :
+    TStarList(const BaseStarList& slist, const Gtransfo& tranfo);
+};
 
 #include <vector>
 

@@ -1,3 +1,4 @@
+#ifdef VIRTUAL_INSTRUMENTS
 class Jkt : public VirtualInstrument {
 public:
   static VirtualInstrument *Acceptor(const FitsHeader &Head);// at the end for prototyping
@@ -7,16 +8,7 @@ public:
   SIMPLE_TRANSLATOR(TOADEQUI,"EQUINOX");
   SIMPLE_TRANSLATOR(TOADUTIM,"UTSTART");
   SIMPLE_TRANSLATOR(TOADEXPO,"EXPTIME");
-  bool GuessLinWCS(const FitsHeader &Head, TanPix2RaDec &Guess) const;
 };
-
-bool Jkt::GuessLinWCS(const FitsHeader &Head, TanPix2RaDec &Guess) const
-{
-// Ra,Dec at image center, North = down, East = left
-  return ComputeLinWCS(Head,Head.ImageCenter(),
-		       RotationFlip(Down,Left),
-		       Guess);
-}
 
 // it is obviously useless to have 2 derived classes if they do not overload
 // anything. But it seems that apart form the bias and ill regions the 2 
@@ -151,3 +143,4 @@ VirtualInstrument *Jkt::Acceptor(const FitsHeader &Head)
   if (CheckKey(Head,"DETECTOR","TEK1")) return new JktTek1;
   return NULL;
 }
+#endif

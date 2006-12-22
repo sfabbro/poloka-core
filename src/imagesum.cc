@@ -532,10 +532,10 @@ bool ImageSum::MakeFits()
   if (averageWeightSum) for (unsigned k=0; k < components.size(); ++k)
       components[k].averageWeight /= averageWeightSum;
 
-  FitsImage stack(fileName, FitsHeader(components[0].Ri->FitsName()));
+  FitsHeader head(components[0].Ri->FitsName());
+  FitsImage stack(fileName, head);
   stack.SetWriteAsFloat();
-  FitsImage weightImage(FitsWeightName(), 
-			FitsHeader(components[0].Ri->FitsName()));
+  FitsImage weightImage(FitsWeightName(), head);
 
   // to make sure that 0 remain 0 after FITS write/read in 16 bits format:
   weightImage.PreserveZeros(); 
@@ -844,8 +844,6 @@ bool ImageSum::MakeSatur()
 
 ImageSum::~ImageSum()
 {
-  // write the (Root) file that contains the class info, if needed.
-  writeEverythingElse();
 }
 
 

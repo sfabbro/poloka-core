@@ -14,14 +14,8 @@ class Stamp;
 
 //! A class that wraps calls to KernelFit. Used both to carry out subtractions (ImageSubtraction) and just kernel fitting (for the light curve).
 
-#include "persistence.h"
-
 class PsfMatch {
 private:
-
-  CLASS_VERSION(PsfMatch,1);
-  #define PsfMatch__is__persistent
-
   bool ref_is_best;
   ReducedImageRef best,worst;
   string refName, newName;
@@ -43,6 +37,8 @@ public:
   int FilterStarList(const double MaxDist=1);
   double PhotomRatio() const {return photomRatio;}
   double Chi2() const;
+  int Nstars() const;
+  int Nparams() const;
   double SigmaBack() const {return sigmaBack;}
   Frame Intersection() const {return intersection;}
   void KernelToWorst(Kernel &Result, const double &x, const double &y) const;

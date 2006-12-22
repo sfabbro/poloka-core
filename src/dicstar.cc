@@ -8,12 +8,14 @@
 #include "dicstar.h"
 
 
+#include "fastifstream.h"
+
 DicStar::DicStar()
   : BaseStar(0.,0.,0.) {
   Set_to_Zero();
   firstkeys.push_back("x");
   firstkeys.push_back("y");
-  firstkeys.push_back("flux");  
+  firstkeys.push_back("flux");
 }
 
 DicStar::DicStar(double xx, double yy, double ff)
@@ -35,15 +37,30 @@ DicStar::DicStar(const std::vector<string>& firstKeys, const std::vector<string>
 }
 
 
+bool DicStar::HasKey(const string &Key) const
+{
+  for(unsigned int i=0; i<key.size() ;i++)
+    if(key[i]==Key) return true;
+  return false;
+}
+
 void DicStar::AddKey(const string &KeyName, const double &Val)
 {
   key.push_back(KeyName);
   val.push_back(Val);
 }
 
+
+unsigned DicStar::NKeys() const
+{
+  return (key.size()+3);
+}
+
+
 void DicStar::Set_to_Zero() 
 {
   x = y = flux = 0;
+  rank = 0;
   for(unsigned int i=0;i<val.size();i++) val[i] = 0;
 }
 
@@ -64,13 +81,17 @@ double DicStar::getval(const string &thekey) const {
       return val[i];
     }
   }
+  if (thekey == firstkeys[0]) return x;
+  if (thekey == firstkeys[1]) return y;
+  if (thekey == firstkeys[2]) return flux;
+
   cerr << "DicStar::getval unknown key " << thekey << endl; 
   return 0;
 }
 
 
 
-void DicStar::Read(istream& r, const char *Format) {
+void DicStar::Read(fastifstream& r, const char *Format) {
   
   BaseStar::read_it(r, Format);
   //int format = DecodeFormat(Format, "DicStar");
@@ -80,14 +101,14 @@ void DicStar::Read(istream& r, const char *Format) {
 }
 
 
-DicStar* DicStar::read(const std::vector<string> &firstKeys, const std::vector<string>& newkeys, istream& r, const char *Format) {
+DicStar* DicStar::read(const std::vector<string> &firstKeys, const std::vector<string>& newkeys, fastifstream& r, const char *Format) {
   
   DicStar *pstar = new DicStar(firstKeys,newkeys);
   pstar->Read(r,Format);
   return(pstar);
 }
 
-DicStar* DicStar::read( istream& r, const char *Format) {
+DicStar* DicStar::read( fastifstream& r, const char *Format) {
   
   DicStar *pstar = new DicStar();
   pstar->Read(r,Format);
@@ -155,7 +176,7 @@ DicStarList::DicStarList(const string &FileName) {
   
   
   
-  ifstream rd(FileName.c_str());
+  fastifstream rd(FileName.c_str());
   if (!rd)
     {
       cout << "DicList cannot open :" << FileName << endl;
@@ -168,6 +189,7 @@ DicStarList::DicStarList(const string &FileName) {
   char *format = 0;
   ClearList();
   int line = 0;
+  int star_count = 0;
   while( rd >> c ) // to test eof
     {
       rd.unget() ;
@@ -212,6 +234,7 @@ DicStarList::DicStarList(const string &FileName) {
 	    {
 	      return ;
 	    }
+	  s->rank = ++star_count; // call the first one 1 !
 	  push_back(s);
 	}
     }

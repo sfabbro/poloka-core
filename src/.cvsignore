@@ -4,5 +4,9 @@ alltelinst.cc alltelinst.h
 *_dict.h
 *__persister.h
 *.lo
-
-
+libtoads.la
+.deps
+.libs
+Makefile
+Makefile.in
+dbfileLex.c

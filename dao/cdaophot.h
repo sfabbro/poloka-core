@@ -91,10 +91,10 @@ PROTOCCALLSFFUN12(INT,RDPSF,rdpsf,STRING,PINT,FLOATV,PINT,FLOATV,PINT,PINT,PINT,
 
 /*! returns PSF value on a point distant of (dx,dy) of a star located on (deltax,deltay) */
 #define USEPSF usepsf_
-float USEPSF(const int *ipstyp, const float *dx, const float *dy,  const float *bright, 
-	     const float *par, const float *psf,
-	     const int *npsf, const int *npar, const int *nexp, const int *nfrac, 
-	     const float *deltax, const float *deltay, float *dvdxc, float *dvdyc);
+double USEPSF(const int *ipstyp, const float *dx, const float *dy,  const float *bright, 
+	      const float *par, const float *psf,
+	      const int *npsf, const int *npar, const int *nexp, const int *nfrac, 
+	      const float *deltax, const float *deltay, float *dvdxc, float *dvdyc);
 
 /*! This is the subroutine which does the actual one-star least-squares profile fit for DAOPK */
 #define PKFIT pkfit_

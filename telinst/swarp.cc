@@ -1,8 +1,4 @@
-
-
-#include "wcsutils.h"
-#include "astroutils.h" /* for Ra and Dec string <-> deg convertions */
-
+#ifdef VIRTUAL_INSTRUMENTS
 class Swarp: public VirtualInstrument {  /* TYPE_SELECTOR */
 
 public :
@@ -14,9 +10,6 @@ public :
   { if  (string(Head.KeyVal("SOFTNAME")) == "SWarp") return new Swarp; 
   else return NULL;}
   
-  bool GuessLinWCS(const FitsHeader &Head, TanPix2RaDec &Guess) const;
-
-
   // translators
   TRANSLATOR_DEC(TOADPIXS)
   {
@@ -54,11 +47,5 @@ public :
   }
 
 };
-
-
-bool Swarp::GuessLinWCS(const FitsHeader &Head, TanPix2RaDec &Guess) const
-{  
-  if (HasLinWCS(Head)) return TanLinWCSFromHeader(Head,Guess);
-  else return false;
-}
+#endif
 

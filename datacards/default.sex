@@ -13,10 +13,10 @@ PARAMETERS_NAME /dev/null	# name of the file containing catalog contents
 #------------------------------- Extraction ----------------------------------
 
 DETECT_TYPE	CCD		# "CCD" or "PHOTO" (*)
-FLAG_IMAGE	flag.fits	# filename for an input FLAG-image
+#FLAG_IMAGE	flag.fits	# filename for an input FLAG-image
 DETECT_MINAREA	5		# minimum number of pixels above threshold
 #THRESH_TYPE ABSOLUTE
-DETECT_THRESH	2.		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+DETECT_THRESH	2.0		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 ANALYSIS_THRESH	1.5		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 
 FILTER		N		# apply filter for detection ("Y" or "N")?
@@ -50,7 +50,7 @@ STARNNW_NAME	 /dev/null	# Neural-Network_Weight table filename
 
 #------------------------------ Background -----------------------------------
 
-BACK_SIZE	64		# Background mesh: <size> or <width>,<height>
+BACK_SIZE	256		# Background mesh: <size> or <width>,<height>
 BACK_FILTERSIZE	3		# Background filter: <size> or <width>,<height>
 
 BACKPHOTO_TYPE	GLOBAL		# can be "GLOBAL" or "LOCAL" (*)

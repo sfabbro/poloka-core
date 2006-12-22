@@ -3,9 +3,9 @@
 #include "image.h"
 #include "myrdm.h"
 #include "transformedimage.h"
-
-
-
+#include "fakeobject.h"
+#include "gtransfo.h"
+#include "wcsutils.h"
 #include "reducedimage.h"
 #include "fitsimage.h"
 #include "toadscards.h"
@@ -37,7 +37,8 @@ DatSim::Read(const string &FileName, string const & filter)
 // Reads the parameters for the simulation
 void DatSim::LitDataCards(DataCards &Data, string const & filter)
 {
-  hasZeroPoint = Data.HasKey("ZERO_POINT");
+  Islcsim = false;
+  hasZeroPoint = Data.HasKey("ZERO_POINT");  
   if (hasZeroPoint) zeroPoint = Data.DParam("ZERO_POINT");
   else zeroPoint = 99;
 
@@ -53,8 +54,11 @@ void DatSim::LitDataCards(DataCards &Data, string const & filter)
     Methode = Random; 
 
   if (strstr(line.c_str(),"FAKES_ONGRID"))
-    Methode = Damier ; 
-
+    Methode = Damier ;
+     
+   line = Data.SParam("ISLCSIM");
+    if (strstr(line.c_str(),"TRUE")) Islcsim = true;
+    
   numberOfFakes = Data.IParam("NUMBER_OF_FAKES");
   double i_minMag = Data.DParam("MIN_FAKE_MAG_I");
   double i_maxMag = Data.DParam("MAX_FAKE_MAG_I");
@@ -76,7 +80,7 @@ void DatSim::LitDataCards(DataCards &Data, string const & filter)
   double r_maxGalMag=26 ; 
   double g_maxGalMag=26 ;
   // all objects with mag > LimGalMag are identified as galaxies
-  double i_LimGalMag = 24 ;
+  double i_LimGalMag = 23 ;
   double r_LimGalMag = 24.5 ;
   double g_LimGalMag = 24. ;
 
@@ -480,6 +484,21 @@ void
 ForSim::Fill(ReducedImage const & RefImage)
 {
  
+  {
+  FitsHeader largeHead(RefImage.FitsName());
+  Frame largeFrame(largeHead, WholeSizeFrame);
+  Gtransfo *largePix2RaDec;
+  if (!WCSFromHeader(largeHead, largePix2RaDec))
+  {
+  cerr << " ERROR : cannot handle a large reference without a WCS " 
+ 	 << endl;
+  exit(1);
+  }
+  RaDecToPix = 
+  largePix2RaDec->InverseTransfo(0.1 /* accuracy in pixels*/, largeFrame);
+  delete largePix2RaDec;
+  }
+ 
   if (datsim.HasZeroPoint())
     zero_point = datsim.ZeroPoint();
   else 
@@ -505,8 +524,8 @@ ForSim::Fill(ReducedImage const & RefImage)
 	   << YCCD << endl;
     }
  
-  // to generate in galaxies, we nned a galaxy list
-  if (datsim.Methode == InHost || datsim.Methode == AdaptedToHost)
+  // to generate in galaxies, we need a galaxy list
+  if ((datsim.Methode == InHost || datsim.Methode == AdaptedToHost) && datsim.Islcsim== false)
     // if it was already set, don't overwrite it
     if (BellesGal.size() == 0)
       {
@@ -599,12 +618,45 @@ ForSim::Construct_SNList_WHost(SimSNStarList & SNList)
   cerr << NSN<< " supernovae generated in host." << endl ;
 }
 
+void ForSim::ConstructSNwithList(SimSNStarList & SNList)	
+ {	
+ 	if(!FileExists("fakesn.list"))
+ 	{
+ 		cerr << "fakesn.list not find : abort" << endl;
+ 		exit(1);
+ 	}
+ 	FakeObjectList snlist("fakesn.list");
+ 	cout << "snlist.size " << snlist.size()<< endl;
+ 	
+ 	for ( FakeObjectIterator it =snlist.begin();it!=snlist.end();it++)
+ 	{
+ 	
+       double x,y;
+       double sn_mag= (*it)->Mag() ;
+       double sn_flux = pow(10,0.4*(zero_point-sn_mag));
+       RaDecToPix->apply((*it)->Ra(),(*it)->Dec(),x, y);
+       
+       SimSNStar *p = new SimSNStar(x,y,sn_flux);
+       p->Mag_SN() = sn_mag ;
+       SNList.push_back(p);
+ 
+ 	
+ 	}
+ 
+ }
+
+
+
+
+
+
 // ********** Enrobage de tout ca. **********
   
 void 
 ForSim::MakeListSN(SimSNStarList & SNList)
 {    
-  switch (datsim.Methode)
+ if (datsim.Islcsim) ConstructSNwithList(SNList);
+else switch (datsim.Methode)
     { 
     case  Random :
       cout << "Generating random Fakes list." << endl;

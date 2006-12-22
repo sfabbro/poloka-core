@@ -21,6 +21,7 @@ PsfMatch::PsfMatch(const ReducedImageRef Ref, const ReducedImageRef New, const P
 {
    refName = Ref->Name();
   newName = New->Name();
+  ref_is_best = true; // by default
   if (APreviousMatch) 
     { 
       fit = APreviousMatch->fit;
@@ -102,6 +103,20 @@ static bool GoodForFit(const SEStar *Star, const double &SaturLev, const double 
 	  );
 }
 
+static bool check_weights(const Image& weight, const double& x, const double& y,  const int &hsize) {
+  
+  int xmin = int(x)-hsize; if(xmin<0) return false;
+  int xmax = int(x)+1+hsize; if(xmax>=weight.Nx()) return false;
+  int ymin = int(y)-hsize; if(ymin<0) return false;
+  int ymax = int(y)+1+hsize; if(ymax>weight.Ny()) return false;
+  
+  
+  for(int j=ymin; j<ymax; j++)
+    for(int i=xmin; i<xmax; i++)
+      if( weight(i,j)==0) return false;
+  return true;
+}
+
 string PsfMatch::NotFilteredStarListName()
 {
   string ListName = "/kept.list";
@@ -132,6 +147,9 @@ int PsfMatch::FilterStarList(const double MaxDist)
   double minsignaltonoiseratio = 10;
   cout << "  cuts satur bmin " << saturLevBest << " " << bMinBest << endl;
   FastFinder worstFinder(*SE2Base(&worstStarList));
+
+ 
+  
   for (SEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); )
     {
       SEStar *sb = *sibest;
@@ -150,7 +168,33 @@ int PsfMatch::FilterStarList(const double MaxDist)
 	  sibest = bestStarList.erase(sibest);
 	}
     }
-
+  // get size of stamps to check for null weights for all selected objects
+  OptParams optparams;
+  optparams.OptimizeSizes(best->Seeing(),worst->Seeing());
+  // open weights
+  FitsImage weight(best->FitsWeightName());
+  {
+    FitsImage satur(best->FitsSaturName());
+    weight *= (1-satur);
+  }
+  {
+    FitsImage worst_weight(worst->FitsWeightName());
+    weight *= worst_weight;
+  }
+  {
+    FitsImage satur(worst->FitsSaturName());
+    weight *= (1-satur);
+  }
+  int hsize = optparams.HKernelSize+optparams.HStampSize;
+  
+  for (SEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); )
+    {
+      SEStar *sb = *sibest;
+      if( check_weights(weight,sb->x,sb->y,hsize)) 
+	++sibest;
+      else
+	sibest = bestStarList.erase(sibest);
+    } 
   
   if (getenv("DUMP_FIT_LIST"))
     bestStarList.write("fitting_objects.list");
@@ -182,8 +226,10 @@ init_and_do_the_fit(const BaseStarList& objectsUsedToFit,
   // Variance for the Chi2
   Pixel mean,sigma;
 
-  Frame dataRegionW(FitsHeader(worst->FitsName()));
-  Frame dataRegionB(FitsHeader(best->FitsName()));
+  FitsHeader hworst(worst->FitsName());
+  FitsHeader hbest(best->FitsName());
+  Frame dataRegionW(hworst);
+  Frame dataRegionB(hbest);
   fit->DataFrame = dataRegionW*dataRegionB;
   fit->WorstImage->SkyLevel(dataRegionW,&mean,&sigma);
   fit->SkyVarianceWorstImage = sigma*sigma;
@@ -232,8 +278,23 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   cout << " Frame limits for the fit: " << intersection;
 
   KernelFitRef direct_fit = init_and_do_the_fit(objectsUsedToFit,best,worst);
-  fit = direct_fit; // le precedent fit est delete au decrochage
 
+  // check if fit exists
+  if(direct_fit==NULL) {
+    cout << "PsfMatch_SUMMARY_best_worst_kernelphotomratio_sextractorratio_nstamps_chi2/dof " 
+	 << best->Name() << " "
+	 << worst->Name() << " "
+	 << -1 << " " // photomRatio
+	 << 0 << " "  // sexRatio
+	 << 0 << " "  // nstamps
+	 << -1 << " " // chi2
+	 << endl;
+    return false;
+  }
+
+
+  fit = direct_fit; // le precedent fit est delete au decrochage
+  
   // HERE IS THE CUT FOR THE SWAP OF IMAGES WHEN SEEINGS ARE CLOSE BY
   // I put the cut at 4 which is 3 sigmas from the mean of chi2 distribution
   // for all d3 subtractions from mars 2003 to june 2003
@@ -315,6 +376,9 @@ bool PsfMatch::FitKernel(const bool KeepImages)
 }
 
 double PsfMatch::Chi2() const {return fit->chi2;}
+int PsfMatch::Nstars() const {return fit->NStampsUsed();}
+int PsfMatch::Nparams() const {return fit->mSize;}
+
 
 #include "quali_box.h"
 
@@ -373,7 +437,8 @@ void PsfMatch::ConvolveBest(ReducedImage &ConvImage)
   if (!fit) FitKernel(true /* keep images in memory */);
   else fit->BestImage =  new FitsImage(best->FitsName());
   if (!fit->ConvolvedBest) fit->BestImageConvolve();
-  FitsImage cImage(ConvImage.FitsName(), FitsHeader(worst->FitsName()), 
+  FitsHeader hworst(worst->FitsName()); 
+  FitsImage cImage(ConvImage.FitsName(), hworst,
 		   Image(worst->XSize(),worst->YSize()));
   cImage.SetWriteAsFloat();
   cImage.AddOrModKey("KERNREF",best->Name().c_str(), " name of the seeing reference image");
@@ -403,7 +468,8 @@ void PsfMatch::ConvolveBest(ReducedImage &ConvImage)
   cout << "In convolvebest:  weights: ConvImage.FitsWeightName = " << ConvImage.FitsWeightName() << endl;
   cout << "In convolvebest:  weights: best->FitsWeightName = " << best->FitsWeightName() << endl; 
 #endif
-  FitsImage weight(ConvImage.FitsWeightName(), FitsHeader(best->FitsWeightName()));
+  FitsHeader hbest(best->FitsWeightName());
+  FitsImage weight(ConvImage.FitsWeightName(), hbest);
 #ifdef DEBUG_PsfMatch
   cout << "In convolvebest: VarianceConvolve" << endl;
 #endif
@@ -431,7 +497,8 @@ bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
     }
 
   //Produce the image and header. Choose the Ref Header to get it's WCS.
-  FitsImage subImage(RImage.FitsName(), FitsHeader(Ref()->FitsName()));
+  FitsHeader href(Ref()->FitsName());
+  FitsImage subImage(RImage.FitsName(), href);
   subImage.ModKey("BITPIX",16); // 16 bits are enough
   Image &theSubtraction = subImage;
   if (!fit->ConvolvedBest) fit->BestImageConvolve();

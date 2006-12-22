@@ -2,7 +2,7 @@
 #include <functional> // bind2nd
 #include <iterator>   // ostream_iterator
 #include <iomanip>    // setw, fixed ...
-
+#include <fstream>
 #include <fitsimage.h>
 #include <reducedimage.h>
 
@@ -11,9 +11,9 @@
 
 // for io
 #include "lightcurvepoint.h"
-#include "lightcurvepoint_dict.h"
-#include "objio.h"
-#include "typemgr.h"
+//#include "lightcurvepoint_dict.h"
+//#include "objio.h"
+//#include "typemgr.h"
 
 
 // instantiate
@@ -60,7 +60,7 @@ void LightCurve::write_lc2fit(ostream& Stream) const
 
   ios::fmtflags oldflags = Stream.flags();
 
-  if (front()->Image()) Stream << "#Date : (days since January 1st, 2003)\n";
+  if (front()->Image()) Stream << "#Date : (MJD)\n";
   Stream << "#Flux : in units of ADU in reference image\n"  
          << "#Fluxerr : \n"
 	 << "#ZP : elixir zp\n";
@@ -68,14 +68,15 @@ void LightCurve::write_lc2fit(ostream& Stream) const
   Stream << "@INSTRUMENT MEGACAM\n";
   Stream << "@BAND " << Ref->band << "\n";
   Stream << "@MAGSYS AB\n";
-  
+  Stream.setf(ios::fixed);
+
   LightCurvePoint lcp;
   for (LightCurve::const_iterator it = begin(); it != end(); ++it)
     {      
       const Fiducial<PhotStar> *fs = *it;
       if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
 	continue;
-      lcp.julianday = fs->Image()->ModifiedModifiedJulianDate();
+      lcp.julianday = fs->Image()->ModifiedJulianDate();
       lcp.flux = fs->flux;
       lcp.eflux = sqrt(fs->varflux);
       //lcp.computemag(elixir_zp);
@@ -125,31 +126,31 @@ void LightCurve::write_short(ostream& Stream) const
   Stream.flags(oldflags);
 }
 */
-void LightCurve::write_xml(const string &filename) const
-{
-#ifdef FNAME
-  cout << " > LightCurve::write_xml" << endl;
-#endif
-
-  double elixir_zp = computeElixirZeroPoint();
-  
-  // fill a list of LightCurvePoint
-  std::vector< CountedRef<LightCurvePoint> > lcpoints;  
-  for (LightCurve::const_iterator it = begin(); it != end(); ++it)
-    {      
-      const Fiducial<PhotStar> *fs = *it;
-      CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
-      lcp->julianday = fs->Image()->ModifiedModifiedJulianDate();
-      lcp->flux = fs->flux;
-      lcp->eflux = sqrt(fs->varflux);
-      lcp-> computemag(elixir_zp);
-      lcpoints.push_back(lcp);
-    }
-  // now write this list in a file
-  obj_output<xmlstream> oo(filename);
-  oo << lcpoints;
-  oo.close();
-}
+ //void LightCurve::write_xml(const string &filename) const
+ //{
+ //#ifdef FNAME
+ //  cout << " > LightCurve::write_xml" << endl;
+ //#endif
+ //
+ //  double elixir_zp = computeElixirZeroPoint();
+ //  
+ //  // fill a list of LightCurvePoint
+ //  std::vector< CountedRef<LightCurvePoint> > lcpoints;  
+ //  for (LightCurve::const_iterator it = begin(); it != end(); ++it)
+ //    {      
+ //      const Fiducial<PhotStar> *fs = *it;
+ //      CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
+ //      lcp->julianday = fs->Image()->ModifiedModifiedJulianDate();
+ //      lcp->flux = fs->flux;
+ //      lcp->eflux = sqrt(fs->varflux);
+ //      lcp-> computemag(elixir_zp);
+ //      lcpoints.push_back(lcp);
+ //    }
+ //  // now write this list in a file
+ //  obj_output<xmlstream> oo(filename);
+ //  oo << lcpoints;
+ //  oo.close();
+ //}
 
 
 ostream& operator << (ostream& Stream, const CountedRef<Fiducial<PhotStar> > &Star)
@@ -173,12 +174,18 @@ LightCurveList::LightCurveList(istream& LcFileStream)
   lc_read(LcFileStream, Objects, Images);
   
   RefImage = Objects.front()->Image();
+  cout << " > LightCurveList::LightCurveList() : read " 
+       << Objects.size() << " objects, " 
+       << Images.size() << " images. Reference is " 
+       << RefImage->Name() << endl;
 
   // fill up the light curve
+  int nobj=0;
   for (RefStarCIterator it = Objects.begin(); it != Objects.end(); ++it)
     {
       LightCurve lc(*it);
       // foreach object, link the list of images
+      cout << flush << " > LightCurveList::LightCurveList() : filling object " << nobj++ << "\r";
       for (ReducedImageCIterator im=Images.begin(); im != Images.end(); ++im) {
 	PhotStar *fidPhot = new PhotStar(BaseStar((*it)->x, (*it)->y, 0.));
 	lc.push_back(*im, fidPhot); // add one image and one PhotStar
@@ -186,10 +193,7 @@ LightCurveList::LightCurveList(istream& LcFileStream)
       push_back(lc);
     }  
   
-  
-
-  cout << " LightCurveList::LightCurveList() : " << size() 
-       << " objects " << Images.size() << " images \n";
+  cout << endl;
 }
 
 ostream& operator << (ostream& Stream, const LightCurveList& Fiducials)
@@ -244,4 +248,66 @@ double LightCurve::computeElixirZeroPoint() const {
     return 0;
   }
   return 2.5*log10(expo) + PHOT_C + PHOT_K*(AIRMASS-1.) + 2.5*log10(photomratio); // if photomratio>1, flux in ref < flux photometric => mag in ref > mag  photometric
+}
+
+void LightCurveList::write(const string& filename) const
+{
+  ofstream out(filename.c_str());
+  out << "# jdmin : \n"
+      << "# jdmax : \n"
+      << "# x :\n"
+      << "# y :\n"
+      << "# flux :\n"
+      << "# sky :\n"
+      << "# varx :\n"
+      << "# vary :\n"
+      << "# covxy :\n"
+      << "# varflux :\n"
+      << "# varsky :\n"
+      << "# totflux : \n"
+      << "# totsky :\n"
+      << "# galflux :\n"
+      << "# vargalflux :\n"
+      << "# vartotflux :\n"
+      << "# vartotsky :\n"
+      << "# chi2 :\n"
+      << "# ndf : \n"
+      << "# resmean :\n"
+      << "# end \n";
+
+  for (LightCurveList::const_iterator it = begin(); it != end(); ++it) {
+    if (fabs(it->Ref->jdmin)>1e11 && fabs(it->Ref->jdmax)>1e11) {
+      out.setf(ios::scientific);
+      out.unsetf(ios::fixed);
+      out << setprecision(1) << it->Ref->jdmin << ' '
+	  << setprecision(1) << it->Ref->jdmax << ' ';
+    } else {
+      out.unsetf(ios::scientific);
+      out.setf(ios::fixed); 
+      out << setprecision(4) << setw(11) << it->Ref->jdmin << ' '
+	  << setprecision(4) << setw(11) << it->Ref->jdmax << ' ';
+    }
+    out.unsetf(ios::scientific);
+    out.setf(ios::fixed); 
+    out << setprecision(4) << setw(11) << it->Ref->x << ' '
+	<< setprecision(4) << setw(11) << it->Ref->y << ' '
+	<< setprecision(4) << setw(11) << it->Ref->flux << ' '
+	<< setprecision(4) << setw(11) << it->Ref->sky << ' '
+	<< setprecision(7) << setw(9) << it->Ref->varx << ' '
+	<< setprecision(7) << setw(9) << it->Ref->vary << ' '
+	<< setprecision(7) << setw(9) << it->Ref->covxy << ' '
+	<< setprecision(6) << setw(13) << it->Ref->varflux << ' '
+	<< setprecision(6) << setw(13) << it->Ref->varsky << ' '
+	<< setprecision(2) << setw(12) << it->totflux << ' '
+	<< setprecision(2) << setw(12) << it->totsky << ' '
+	<< setprecision(2) << setw(12) << it->galflux << ' '
+	<< setprecision(2) << setw(12) << it->vargalflux << ' '
+	<< setprecision(2) << setw(12) << it->vartotflux << ' '
+	<< setprecision(2) << setw(12) << it->vartotsky << ' '
+	<< setprecision(4) << setw(11) << it->chi2 << ' '
+	<< setw(11) << it->ndf << ' '
+	<< setprecision(4) << setw(11) << it->resmean
+	<< endl;
+  }
+    
 }

@@ -6,13 +6,16 @@
 class SimFitPhot {
 private:
   SimFit zeFit;
-
+  
 public:
 
   SimFitPhot(LightCurveList& Fiducials,bool usegal=true);
   
   void operator() (LightCurve& Lc);
-  bool dowrite;
+  bool bWriteVignets;
+  bool bWriteLC;
+  bool bOutputDirectoryFromName;
+  
 };
 
 

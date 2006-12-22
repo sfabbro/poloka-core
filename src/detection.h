@@ -1,13 +1,14 @@
 #ifndef DETECTION__H
 #define DETECTION__H
-
+#define NO_PERS
 #include <string>
 #include "basestar.h"
 
+class fastifstream;
+
 class Detection : public BaseStar
 {  
-  CLASS_VERSION(Detection,1);
-  #define Detection__is__persistent 
+
   
  private:
   double eFlux;
@@ -39,7 +40,7 @@ class Detection : public BaseStar
   double localback ; // local background as computed by detector
  
     //! temporary, for IO's
-  void read_it(istream& r, const char* Format);
+  void read_it(fastifstream& r, const char* Format);
 
 
   public:
@@ -88,6 +89,7 @@ class Detection : public BaseStar
   int NBad() const { return nBad;}
   int &NBad() { return nBad;}
 
+  double Sig2NoiseCv() const { return sig2NoiseCv;}
   double Sig2Noise() const { return sig2Noise;}
 
   double Ra() const {return ra;}
@@ -96,11 +98,14 @@ class Detection : public BaseStar
   double Dec() const {return dec;}
   double &Dec() { return dec;}
 
-  friend class DetectionProcess;
+  double FluxRef() const {return fluxRef;}
+  double &FluxRef() { return fluxRef;}
+  
+    friend class DetectionProcess;
 
   // IO's
   std::string WriteHeader_(ostream & stream, const char*i) const;
-  static Detection* read(istream& r, const char* Format);
+  static Detection* read(fastifstream& r, const char* Format);
   void writen(ostream &s) const ;
 };
 
@@ -207,7 +212,7 @@ class MatchedDetection : public Detection
   bool CompatibleSig2Noise(const double &Fact) const;
   bool CompatiblePosition(const double &DistMax) const;
   std::string WriteHeader_(ostream & stream, const char*i) const;
-  static MatchedDetection* read(istream& r, const char* Format);
+  static MatchedDetection* read(fastifstream& r, const char* Format);
   void writen(ostream &s) const ;
 };
 
@@ -221,8 +226,18 @@ class MatchedDetectionList : public StarList<MatchedDetection>
   StringList imageNames;
 
  public:
-  MatchedDetectionList(const DetectionList &L);
+
+  //! From a file.
+  MatchedDetectionList(const string &FileName) 
+    :StarList<MatchedDetection>(FileName) {}
+
+  //! the "upgrade" constructor. Impose explicit calls for sake of clarity
+  explicit  MatchedDetectionList(const DetectionList &L);
+
+  //!
   MatchedDetectionList(){}
+
+
   void ApplyCuts();
 
   bool OneToOneAssoc(const string &ImageName, DetectionList &L);

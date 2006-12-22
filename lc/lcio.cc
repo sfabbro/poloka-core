@@ -6,7 +6,6 @@ using namespace std;
 
 #include "lcio.h"
 
-
 // routine to read an object in a lightcurve file. 
 // so far kept local to this program
 static RefStar* read_object(const string& line)
@@ -15,8 +14,8 @@ static RefStar* read_object(const string& line)
   DecomposeString(words, line);
   if (words.size() < 2)
     {
-      cerr << " read_object(" << line << ") : Error: \n";
-      cerr << "    format is wrong " << endl;
+      cerr << " read_object() Error: wrong format in line \n'"
+	   << line << "'\n";
       return false;
     }
 
@@ -29,20 +28,19 @@ static RefStar* read_object(const string& line)
   for ( ; it != words.end(); ++it)
     {
       vector<string> option;
-      DecomposeString(option, *it, '=');
+      DecomposeString(option, *it, "=");
       if      (option[0]=="DATE_MIN") star->jdmin = atof(option[1].c_str());
       else if (option[0]=="DATE_MAX") star->jdmax = atof(option[1].c_str());
-      else if (option[0]=="NAME")     star->name  = option[1];
-      else if (option[0]=="TYPE")     star->type  = atoi(option[1].c_str());
-      else if (option[0]=="BAND")     star->band  = option[1][0];
-      
-      else cerr << " read_object(" << line << ") : Error: \n" 
-		<< " unknown argument :'" << option[0] << "'\n";
+      else if (option[0]=="NAME")  star->name  = option[1];
+      else if (option[0]=="TYPE")  star->type  = atoi(option[1].c_str());
+      else if (option[0]=="BAND")  star->band  = option[1][0];      
+      else cerr << " read_object() Error: unknown argument :'" << option[0] 
+		<< "' in line \n   '" << line << "'\n";
     }
 
   if ((star->jdmin > 0) && (star->jdmax > 0) && (star->jdmin >= star->jdmax))
     {
-      cerr << " read_object(" << line << ") : Error: \n";
+      cerr << " read_object() Error: \n";
       cerr << "    dates are not correct " << endl;
       return false;
     }
@@ -62,7 +60,7 @@ static ReducedImage* read_image(const string& line)
 
   if (!red->ActuallyReduced())
     {
-      cerr << " read_image('" << line << "') : Error: dbimage '" 
+      cerr << " read_image() Error: dbimage '" 
 	   << words.front() << "' was not reduced " << endl;
       delete red;
       return 0;

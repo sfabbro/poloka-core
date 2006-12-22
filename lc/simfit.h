@@ -35,8 +35,6 @@ const unsigned int WriteVignetsInfo  = 128;
 const unsigned int WriteMatrices  = 256;
 
 
-
-
 typedef ImageList<SimFitVignet>::iterator SimFitVignetIterator;
 typedef ImageList<SimFitVignet>::const_iterator SimFitVignetCIterator;
 
@@ -53,7 +51,8 @@ private:
   bool use_gal;           // one can use the galaxy model but not fit it
   bool dont_use_vignets_with_star; // this when you want to fit the galaxy only, see 
   bool fatalerror; // internal bool to quit without core dump
-  
+  bool inverted; //check if matrix was inverted
+
   // vector and matrices for the system Mat*Params=Vec
   Vect Vec;            // vector r.h.s and Params when solved
   Mat PMat;            // matrix l.h.s then covariance matrix when inverted
@@ -94,7 +93,7 @@ private:
   double oneNRIteration(double oldchi2);
 
   // handling of errors
-  void SimFit::FatalError(const char* comment);
+  void FatalError(const char* comment);
 
 public:
 
@@ -131,16 +130,40 @@ public:
   bool GetCovariance();
 
   //! update the vignets with the current solution, possibily apply a scale factor to the solution
-  bool Update(double Factor=1.);
+  bool Update(double Factor=1., bool print=true);
 
   //! fill, fit and shit: do everything
-  void DoTheFit(int MaxIter=10, double epsilon=0.01);
+  bool DoTheFit(int MaxIter=10, double epsilon=0.01);
 
   //! returns the chi2 of the current fit
   double Chi2() const { return chi2; }
 
   //! returns the number of degrees of freedom of the current fit
   int Dof() const { return ndata-nparams; }
+
+  //! sigma scale for the variance parameters
+  double VarScale() const;
+
+  //! returns the total flux for the galaxy
+  double GalFlux() const;
+
+  //! returns the variance for the total flux of the galaxy
+  double VarGalFlux() const;
+
+  //! returns the total flux for all the nights
+  double TotFlux() const;
+
+  //! returns the variance for TotFlux()
+  double VarTotFlux() const;
+  
+  //! returns the total sky for all the nights
+  double TotSky() const;
+
+  //! returns the variance for TotSky()
+  double VarTotSky() const;
+
+  //! gets the mean, median, rms and absolute deviation for all the residual pixels
+  double MeanMedianRms(double& med, double& rms, double& adev) const;
 
   //! returns the current used scale factor for vignets
   double Scale() const { return scale; }
@@ -182,6 +205,9 @@ public:
   
   //! Check Consistency of vignets
   bool CheckConsistency() const;
+
+  void Chi2PosMap();
+  
 
   //! enable "cout << SimFit << endl;"
   friend ostream& operator << (ostream& Stream, const SimFit& SimFit);

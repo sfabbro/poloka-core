@@ -4,9 +4,6 @@
 #include <matvect.h>
 
 #include "lightcurvepoint.h"
-#include "lightcurvepoint_dict.h"
-#include "objio.h"
-#include "typemgr.h"
 #include "dictfile.h"
 
 using namespace std;
@@ -190,6 +187,7 @@ int main(int argc, char **argv)
   {
     {
       ofstream st("flux_per_expo_covmat.dat");
+      st.setf(ios::fixed);
       st << FluxCovarianceMat;
       st.close();
     }
@@ -197,6 +195,7 @@ int main(int argc, char **argv)
     
     {
       ofstream st("flux_per_night_covmat.dat");
+      st.setf(ios::fixed);
       st <<  FluxPerNightCovMat;
       st.close();
     }
@@ -204,6 +203,7 @@ int main(int argc, char **argv)
     
     {
       ofstream st("flux_per_expo_weightmat.dat");
+      st.setf(ios::fixed);
       st << FluxWeightMat;
       st.close();
     }
@@ -211,6 +211,7 @@ int main(int argc, char **argv)
     
     {
       ofstream st("flux_per_night_weightmat.dat");
+      st.setf(ios::fixed);
       st <<  AtWA;
       st.close();
     }
@@ -218,7 +219,7 @@ int main(int argc, char **argv)
     
   }
   
-
+  /*
   // now we read the lightcurve point list to get julian dates and zero point
   vector< CountedRef<LightCurvePoint> > lcpoints;
   {
@@ -237,26 +238,26 @@ int main(int argc, char **argv)
       //cout << endl;
     }
   }
-  
+  */
   DictFile lcdata("lc2fit.dat");
   string instrumentName = lcdata.GlobalValue("INSTRUMENT");
   string bandName = lcdata.GlobalValue("BAND");
   string magSystem = lcdata.GlobalValue("MAGSYS");
   
-  if(false) {
-    cout << lcpoints.size() << endl;
-    for(unsigned int expo=0;expo<lcpoints.size();++expo) {
-      cout 
-	<< expo << " " 
-	<< lcpoints[expo]->flux << " " 
-	<< lcpoints[expo]->julianday-2452854.0 << endl;
-    }
-  }
-
+  
   // get zero point 
-  double zp = lcpoints[0]->zeropoint;
+  double zp = lcdata.front().Value("ZP");
   //cout << "zp=" << zp << endl;
-
+  
+  // read light curve points
+  vector< CountedRef<LightCurvePoint> > lcpoints;
+  for (DictFileCIterator line = lcdata.begin(); line != lcdata.end(); 
+       ++line) {
+    CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
+    lcp->julianday = line->Value("Date");
+    lcp->flux = line->Value("Flux");
+    lcpoints.push_back(lcp);
+  }
 
   ofstream outputlc("lc2fit_per_night.dat");
   outputlc << "#Date : (days since January 1st, 2003)\n"
@@ -266,6 +267,7 @@ int main(int argc, char **argv)
   outputlc << "@INSTRUMENT " << instrumentName << endl;
   outputlc << "@BAND " << bandName << endl;
   outputlc << "@MAGSYS " << magSystem << endl;
+  outputlc.setf(ios::fixed);
   
   
   vector< CountedRef<LightCurvePoint> > newlcpoints;
@@ -295,14 +297,6 @@ int main(int argc, char **argv)
   }
   outputlc.close();
   
-  // save it also in xml
-  obj_output<xmlstream> oo("lc_per_night.xml");
-  oo << newlcpoints;
-  oo.close();
-
-  
-  // done !!
-
   return 0;
 }
 

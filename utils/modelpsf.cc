@@ -26,8 +26,9 @@ int main(int argc, char **argv)
   int radius = 20;
   
   PhotStar* star = lc.Ref;
-  SimFitRefVignet *vignet = new SimFitRefVignet(star,lc.Ref->Image(),radius);
- 
+  //SimFitRefVignet *vignet = new SimFitRefVignet(star,lc.Ref->Image(),radius);
+  SimFitRefVignet *vignet = new SimFitRefVignet(lc.Ref->Image());
+
   int hx,hy;
   {
     // get size of reference data vignet 
@@ -117,7 +118,7 @@ int main(int argc, char **argv)
   
   // update PSF
   vignet->Resize(hx,hy);
-  vignet->Psf.Tabulate(Point(x,y),*(vignet->psf),(const Window&)*vignet);
+  vignet->Psf.Tabulate(Point(x,y),*(vignet->imagepsf),(const Window&)*vignet);
   for(int j=-hy;j<=hy;++j) {
       for(int i=-hx;i<=hx;++i) {
 	vignet->Psf(i,j)*=fluxmax;

@@ -71,6 +71,7 @@ in the future, could be "un-static-fied".
 
 
 struct DatSim {
+    bool Islcsim;
     MethodeSim Methode ;
     int numberOfFakes;
     int delta_x ;
@@ -88,7 +89,7 @@ struct DatSim {
   bool hasZeroPoint;
   double zeroPoint;
   
-  DatSim() { numberOfFakes = 500; xsize_damier =0 ;ysize_damier=0; delta_x = 100 ; delta_y = 100 ; minMag = 22; maxMag = 26; maxGalMag=26 ;  LimGalMag = 24 ; deltaMagmin=0. ; deltaMagmax=1. ;}
+  DatSim() { Islcsim= false ;numberOfFakes = 500; xsize_damier =0 ;ysize_damier=0; delta_x = 100 ; delta_y = 100 ; minMag = 22; maxMag = 26; maxGalMag=26 ;  LimGalMag = 24 ; deltaMagmin=0. ; deltaMagmax=1. ;}
     //! read parameters for simulation in datacards. magnitude are set according filter (default = i)
   DatSim(const string &FileName, string const & filter = "");
   void Read(const string &FileName, string const & filter = "");
@@ -144,7 +145,7 @@ class ForSim {
 public :   
 
   //For the SN carateristics generation :
-  //*************************************
+  // *************************************
   //! read from defaults or copied from a given DatSim 
   DatSim datsim ;
  //!  host gal in coor of ref.      
@@ -156,6 +157,7 @@ public :
   //! facultatif
   //! size of the image frame where the SN are added (for grid simulation).
   int XCCD, YCCD ;
+  CountedRef<Gtransfo> RaDecToPix;
 
   
  
@@ -181,6 +183,7 @@ private :
   void Construct_SNList_Damier(SimSNStarList & SNList);  
   void Construct_SNList_WHost(SimSNStarList & SNList);
 
+  void ConstructSNwithList(SimSNStarList & SNList);
 
 };
     

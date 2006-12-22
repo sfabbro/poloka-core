@@ -8,6 +8,7 @@ use cfitsio v2r440
 use sex v222
 
 include_dirs "@prefix@/include" 
-macro @CMTPACKAGE@_cflags   "-I@prefix@/include @XML_CFLAGS@" 
-macro @CMTPACKAGE@_cppflags   "-I@prefix@/include @XML_CFLAGS@" 
-macro @CMTPACKAGE@_linkopts   "-Wl,-rpath @prefix@/lib -L@prefix@/lib -ltoadslc -ltoadsmc -ltoadsdao -ltoads -llapackstuff -ltoadio -lcernstuff @XML_LIBS@" 
+macro @CMTPACKAGE@_cflags   "-I@prefix@/include " 
+macro @CMTPACKAGE@_cppflags   "-I@prefix@/include " 
+macro @CMTPACKAGE@_linkopts   "-Wl,-rpath @prefix@/lib -L@prefix@/lib -ltoads -ltoadsutils -ltoadsbase -llapackstuff -lcernstuff " 
+macro @CMTPACKAGE@_linkopts_full   "-Wl,-rpath @prefix@/lib -L@prefix@/lib -ltoadslc  -ltoadsdao -ltoads -ltoadsflat -ltoadsutils -lpsf -ltoadsbase -llapackstuff -lcernstuff " 

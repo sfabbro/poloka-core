@@ -40,8 +40,11 @@ int main(int nargs, char **args)
   
   // now transform image
   TransformedImage transformed(newimagename,*refimage,&transfo);
-  transformed.Execute(DoFits | DoCatalog | DoSatur | DoWeight);
-  
+  transformed.Execute(DoFits | DoCatalog | DoSatur | DoWeight | DoCosmic);
+
+  FitsHeader head(transformed.FitsName());
+  head.AddOrModKey("XMARGIN", marginx, "X margin width of enlarged image");
+  head.AddOrModKey("YMARGIN", marginy, "Y margin width of enlarged image");
   
   return EXIT_SUCCESS;
 }

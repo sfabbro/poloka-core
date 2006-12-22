@@ -36,14 +36,21 @@ static void KeepGoodForMatch(SEStarList &List)
 }
 
 // utility to check existence of list and fits image and cut the list for a max of 500 brightest objects
-static bool ListAndFitsCheck(const DbImage &Im, SEStarList &Sl, string &FitsName)
+bool ListAndFitsCheckForMatch(const DbImage &Im, SEStarList &Sl)
 {
-  string listName = Im.ImageCatalogName();
+  string listName = Im.AperCatalogName();
+  
   if (!FileExists(listName))
     {
-      cerr << " ListAndFitsCheck : FAILURE no catalog for " << Im.Name() << endl;
-      return false;
+      cerr << " ListAndFitsCheck : WARNING no aperse catalog for " << Im.Name() << ", using sextractor" << endl;
+      listName = Im.ImageCatalogName();
+      if (!FileExists(listName))
+	{
+	  cerr << " ListAndFitsCheck : FAILURE no sextractor catalog for " << Im.Name() << endl;
+	  return false;
+	}
     }
+  cout << " ListAndFitsCheck : MESSAGE, using catalog " << listName << endl;
   Sl.read(listName);
   KeepGoodForMatch(Sl);
   if (Sl.size() <= 3)
@@ -52,7 +59,7 @@ static bool ListAndFitsCheck(const DbImage &Im, SEStarList &Sl, string &FitsName
       return false;
     }
 
-  FitsName = Im.FitsImageName(Calibrated);
+  string FitsName = Im.FitsImageName(Calibrated);
   if (!FileExists(FitsName))
     {
       cerr << " ListAndFitsCheck : FAILURE no calibrated image for " <<  Im.Name() << endl;
@@ -337,19 +344,27 @@ bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2,
     }
 
   cout << " ImageListMatch : preparing lists and images \n" ;
-  SEStarList sl1,sl2;
-  string fitsname1, fitsname2;
+  SEStarList sl1, sl2;
 
-  if (!ListAndFitsCheck(DbImage1, sl1, fitsname1) || 
-      !ListAndFitsCheck(DbImage2, sl2, fitsname2))
+  if (!ListAndFitsCheckForMatch(DbImage1, sl1) || 
+      !ListAndFitsCheckForMatch(DbImage2, sl2))
     return false;
 
-  FitsHeader head1(fitsname1), head2(fitsname2);
+  return ImageListMatch(DbImage1, sl1, DbImage2, sl2, One2Two, Two2One);
+}
+
+bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
+		    const DbImage &DbImage2, const SEStarList& SL2,
+		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One)
+{
+  string fitsName1 = DbImage1.FitsImageName(Calibrated);
+  string fitsName2 = DbImage2.FitsImageName(Calibrated);
+  FitsHeader head1(fitsName1), head2(fitsName2);
   BaseStarList bl1,bl2;
 
   cout << " ImageListMatch : doing a first guess \n" ;
-  CutList(sl1, bl1);
-  CutList(sl2, bl2);
+  CutList(SL1, bl1);
+  CutList(SL2, bl2);
 
   // 1 - Try a bunch of method to get an initial match
   if (!MatchGuess(bl1, bl2, head1, head2, One2Two, Two2One)) 
@@ -363,8 +378,8 @@ bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2,
     }
   
   // keep only objects in common transformed frame
-  FrameList(sl1, head2, One2Two, bl1);
-  FrameList(sl2, head1, Two2One, bl2);
+  FrameList(SL1, head2, One2Two, bl1);
+  FrameList(SL2, head1, Two2One, bl2);
   
   // 2 - Refine the initial match with initial full list in framed match
   cout << " ImageListMatch : refining initial guess \n" ;

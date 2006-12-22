@@ -108,10 +108,9 @@ bool WCS3TransfoFromHeader(const string &FitsImageName, GtransfoCub &CubicCorr,
 //! update RA, DEC and EPOCH based on WCS transfo and Frame in header
 bool UpdateRaDec(FitsHeader &Header);
 
-//enum WCSStat {Innacurate = 0, Accurate = 1};
-//!
-//WCSStat WCSStatus(const FitsHeader &Head);
+bool GuessLinWCS(const FitsHeader &Header, TanPix2RaDec &Guess);
 
+Frame SkyRegion(const FitsHeader &Header);
 
 
 #endif /* WCSUTILS__H */

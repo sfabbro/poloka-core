@@ -26,9 +26,12 @@ using namespace std;
 
 #include "dbimage.h" // for inheritance.
 #include "frame.h"
-#include "sextractor_box.h"
-#include "fileutils.h" // for FileExist
+#include "fileutils.h" // for FileExists
 #include "countedref.h"
+
+class Gtransfo;
+
+class ForSExtractor;
 
 /*! \file reducedimage.cc reducedimage.h */
 /*!
@@ -42,16 +45,12 @@ using namespace std;
    
 */
 
-#include "persistence.h"
-
+//class Gtransfo;
 class ReducedImage : public DbImage
 {
 
 
 private :
-  CLASS_VERSION(ReducedImage,1);
-  #define ReducedImage__is__persistent
-
   // take care if you add any pointer here : 
   // the default copy constructor then has to be written
   bool actuallyReduced;//!
@@ -138,6 +137,10 @@ Usefull in case of artificially smoothed images
 
   //! produces aperture photometry on the objects from the SE catalog
   virtual bool MakeAperCat();
+
+
+  //! Extracts stars form the AperCat
+  virtual bool MakeStarCat();
   
 //! MakeCatalog_ImageBizarre() is for sum-images, or convolved images, for which we do not want to subtract the background map, nor compute the saturated pixels map, and for which we provide the value of the sigmabackground. overwrite is set to true.
   bool MakeCatalog_ImageBizarre(){ 
@@ -298,7 +301,8 @@ Usefull in case of artificially smoothed images
   double JulianDate() const;
   bool SetJulianDate(const double &Value, const string Comment = "");
   double ModifiedModifiedJulianDate() const;
-
+  double ModifiedJulianDate() const;
+  
   //! signal to noise at magnitude 23
   double SignalToNoise23() const;
   bool SetSignalToNoise23(const double &Value, const string Comment = "");
@@ -434,10 +438,10 @@ typedef CountedRef<ReducedImage> ReducedImageRef;
 
 
 //! to Reload an already existing ReducedImage
-ReducedImageRef ReducedImageRead(const char *Name);
+//ReducedImageRef ReducedImageRead(const char *Name);
 
 //! to Reload an already existing ReducedImage
-ReducedImageRef ReducedImageRead(const string &Name);
+//ReducedImageRef ReducedImageRead(const string &Name);
 
 //! allows to sort a list in increasing seeing order
 bool IncreasingSeeing(const ReducedImage* one, const ReducedImage* two); 
@@ -455,6 +459,7 @@ bool DecreasingArea(const ReducedImage* one, const ReducedImage* two);
 /***************** ReducedImageList *************************/
 
 #include "imagelist.h"
+#include "stringlist.h"
 
 class ReducedImageList : public ImageList<ReducedImage> {
 public :
@@ -465,6 +470,9 @@ public :
   }
   ReducedImageList(const bool ShouldDelete = true) 
     : ImageList<ReducedImage>(ShouldDelete) {};
+
+  const_iterator Find(const string &Name) const;
+
 };
 
 typedef ReducedImageList::iterator       ReducedImageIterator;

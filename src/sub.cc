@@ -11,6 +11,7 @@
 #include "imagesubtraction.h"
 #include "reducedutils.h"
 #include "swarpstack.h"
+#include "imageutils.h"
 
 /*! \page newsubfile Syntax of the "subfile"
 a subfile is a very simple text file that describes what should be 
@@ -441,7 +442,7 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
 	   << current.Name() << endl 
 	   << *current2Large;
       Frame currentFrame(currentHead, WholeSizeFrame); // 
-      currentFrame = currentFrame.ApplyTransfo(*current2Large);
+      currentFrame = ApplyTransfo(currentFrame,*current2Large);
       /* if we are at the first image in the loop we have to initialize
 	 "toExtract", else we just "increment" it so that we have the union
 	 of all input images at the end */
@@ -666,33 +667,33 @@ int Sub::DoIt()
 int Sub::ExpectedMagLim()
 {
   double nsigma = 3.0;
-  int Nimages = AllNew.size() + 1;
+  size_t Nimages = AllNew.size() + 1;
   static double* photomRatio = new double[Nimages];
   static double* sigmaSeeing = new double[Nimages];
   static double* sigmaSky = new double[Nimages];
   double ZPT;
 
-  ReducedImage Ref(Ref.front());
+  ReducedImage ref(Ref.front());
   ReducedImageList unalignedNewImages(&AllNew);
 
   photomRatio[0] = 1.0;
-  sigmaSeeing[0] = Ref.Seeing();
-  sigmaSky[0] = Ref.SigmaBack();
-  ZPT = Ref.AnyZeroPoint();
+  sigmaSeeing[0] = ref.Seeing();
+  sigmaSky[0] = ref.SigmaBack();
+  ZPT = ref.AnyZeroPoint();
 
   int j=1;
   for (ReducedImageIterator i = unalignedNewImages.begin(); i != unalignedNewImages.end(); ++i)
     {
       ReducedImage *ri = *i;
       double err;      
-      photomRatio[j] = QuickPhotomRatio(*ri,Ref,err);
+      photomRatio[j] = QuickPhotomRatio(*ri, ref, err);
       sigmaSeeing[j] = ri->Seeing();
       sigmaSky[j] = ri->SigmaBack();
       j++;
     }
 
   double sigmaTot2 = 0;
-  for (unsigned i=0; i<Nimages; ++i)
+  for (size_t i=0; i<Nimages; ++i)
     {
       sigmaTot2 += 4*M_PI*photomRatio[i]*sigmaSeeing[i]*sigmaSeeing[i]*sigmaSky[i]*sigmaSky[i];
     }

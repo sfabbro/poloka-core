@@ -1,4 +1,4 @@
-
+#ifdef VIRTUAL_INSTRUMENTS
 class HstACS : public VirtualInstrument { /* TYPE_SELECTOR */
 
 public :
@@ -53,3 +53,4 @@ public :
   }  
 
 };
+#endif

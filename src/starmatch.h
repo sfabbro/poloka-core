@@ -7,8 +7,6 @@
 #include <algorithm> // for swap
 #include <string>
 
-#include "persistence.h"
-
 #include "point.h"
 #include "basestar.h"
 #include "gtransfo.h"
@@ -29,9 +27,7 @@
       the stars in the caller data structures. */
 
 class StarMatch {
-  CLASS_VERSION(StarMatch,1);
-  #define StarMatch__is__persistent
-
+  
   friend class StarMatchList;
 
 public: /* if one sets that private, then fitting routines will be a nightmare. we could set all the Transfo classes friend... */
@@ -61,14 +57,10 @@ public :
   void Swap() { swap(point1, point2) ; swap(s1,s2) ; }
 
 #ifndef SWIG
-  friend bool DecFlux(const StarMatch & S1, const StarMatch & S2)
-  {return(S1.s1->flux > S2.s1->flux); }
-  friend bool IncreasingDistances(const StarMatch &one, const StarMatch &two) 
-  { return(one.distance < two.distance);}
-  friend bool DecreasingDistances(const StarMatch &one, const StarMatch &two) 
-  { return(one.distance > two.distance);}
-  friend bool DecPhoRatio(const StarMatch &S1, const StarMatch &S2)
-  { return(S1.s1->flux/S1.s2->flux > S2.s1->flux/S2.s2->flux); }
+  friend bool DecFlux(const StarMatch & S1, const StarMatch & S2);
+  friend bool IncreasingDistances(const StarMatch &one, const StarMatch &two);
+  friend bool DecreasingDistances(const StarMatch &one, const StarMatch &two);
+  friend bool DecPhoRatio(const StarMatch &S1, const StarMatch &S2);
 #endif
   
   /* comparison that ensures that after a sort, duplicates are next one another */
@@ -88,20 +80,58 @@ public :
   bool operator == (const StarMatch &other) const { return (s1 == other.s1 && s2 == other.s2); };
   bool operator != (const StarMatch &other) const { return (s1 != other.s1 || s2 != other.s2); };
 
-  friend bool CompareS1(const StarMatch &one, const StarMatch &two)
-    { return ((one.s1 == two.s1) ? (one.distance < two.distance) : ( (const BaseStar*) one.s1 > (const BaseStar *) two.s1));}
-  friend bool SameS1(const StarMatch &one, const StarMatch &two)
-    { return (one.s1 ==  two.s1);}
-
-  friend bool CompareS2(const StarMatch &one, const StarMatch &two)
-    { return ((one.s2 == two.s2) ? (one.distance < two.distance) : ((const BaseStar *)one.s2 > (const BaseStar *) two.s2));}
-  friend bool SameS2(const StarMatch &one, const StarMatch &two)
-    { return (one.s2 ==  two.s2);}
-
+  friend bool CompareS1(const StarMatch &one, const StarMatch &two);
+  friend bool SameS1(const StarMatch &one, const StarMatch &two);
+  friend bool CompareS2(const StarMatch &one, const StarMatch &two);
+  friend bool SameS2(const StarMatch &one, const StarMatch &two);
+  
   //! enables \verbatim cout << mystarMatch << endl; \endverbatim
 
   //  ClassDef(StarMatch,1);
 };
+
+
+inline bool DecFlux(const StarMatch & S1, const StarMatch & S2)
+{
+  return(S1.s1->flux > S2.s1->flux); 
+}
+
+inline bool IncreasingDistances(const StarMatch &one, const StarMatch &two) 
+{ 
+  return(one.distance < two.distance);
+}
+
+inline bool DecreasingDistances(const StarMatch &one, const StarMatch &two) 
+{
+  return(one.distance > two.distance);
+}
+
+inline bool DecPhoRatio(const StarMatch &S1, const StarMatch &S2)
+{
+  return(S1.s1->flux/S1.s2->flux > S2.s1->flux/S2.s2->flux);
+}
+
+
+inline bool CompareS1(const StarMatch &one, const StarMatch &two)
+{ 
+  return ((one.s1 == two.s1) ? (one.distance < two.distance) : ( (const BaseStar*) one.s1 > (const BaseStar *) two.s1));
+}
+
+inline bool SameS1(const StarMatch &one, const StarMatch &two)
+{ 
+  return (one.s1 ==  two.s1);
+}
+
+inline bool CompareS2(const StarMatch &one, const StarMatch &two)
+{ 
+  return ((one.s2 == two.s2) ? (one.distance < two.distance) : ((const BaseStar *)one.s2 > (const BaseStar *) two.s2));
+}
+
+inline bool SameS2(const StarMatch &one, const StarMatch &two)
+{ 
+  return (one.s2 ==  two.s2);
+}
+
 
 /* =================================== StarMatchList ============================================================ */
 
@@ -128,8 +158,6 @@ ostream& operator << (ostream &stream, const StarMatchList &List);
 
 class StarMatchList : public list<StarMatch> {
 
-  CLASS_VERSION(StarMatchList,1);
-  #define StarMatchList__is__persistent
   private :
   int nused;
   int order;

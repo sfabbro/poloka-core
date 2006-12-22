@@ -71,7 +71,6 @@ ImageNames
 
 #ifdef TODO
 
-- the handling of saveEverythingElse in the copies
 - why no copy constructor?
 
 #endif
@@ -101,24 +100,15 @@ class Path;
 
 #include "countedref.h"
 
-#include <persistence.h>
-
 class DbImage : public RefCount
 {
  
 
-private :
-
-  CLASS_VERSION(DbImage,1);
-#define Dbimage__is__persistent
-
-
+private:
   string imageName;
   string directory;//!
   bool create(const string &ActualPath);
 
-protected :
-  bool saveEverythingElse; //! // wether we have to write the EverythingElse file in destructor
 
 public :
 
@@ -129,7 +119,7 @@ public :
   //! a constructor: its argument is a unique image identifier (eg r124280). 
   explicit DbImage(const char *ImageName);
   
-  DbImage():imageName(""),directory(""), saveEverythingElse(false){};
+  DbImage():imageName(""),directory("") {};
   //! for images obtained from the above constructor, checks that the image could be located.
   bool IsValid() const;
 
@@ -185,6 +175,8 @@ public :
   //! same for cosmic pixel map. 
   string FitsCosmicName() const;
 
+  //! image which tells to which object pixels were attributed
+  string FitsSegmentationName() const;
   
   //! same for satellite pixel map. 
   string FitsSatelliteName() const;
@@ -213,11 +205,13 @@ public :
   //! the aperture catalog.
   string AperCatalogName() const;
 
+  //! the star catalog.
+  string StarCatalogName() const;
+
+
   //! returns the name where the psf parameters and look-up table for residuals is stored
   string ImagePsfName(const DbImagePsfKind Kind=DaophotPsf) const; 
 
-
-  string EverythingElseFileName() const {return Dir()+"reddata.root";}
 
   //!To create the directories where the fits images, catalogues
   //! will be put: ex: ~/FakeDb/test: DbImage dbim("test"); dbim.Create("~/FakeDb/");
@@ -232,14 +226,13 @@ public :
   void dump(ostream &stream = cout) const;
 
 
-  ~DbImage();
+  ~DbImage() {};
 
   friend class DbImageList;
 
 
   // routines which have to do with IOs
   void init_from_name();
-  bool writeEverythingElse();
 
 };
 

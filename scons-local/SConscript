@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import os
+
+Import('g_env')
+
+
+EXTRA_DIST = [
+    'SConscript', 'scons-local-0.96.90.tar.gz',
+    'config' + os.sep + '__init__.py',
+    'config' + os.sep + 'Package.py'
+    ]
+
+g_env.AddToDist(EXTRA_DIST)
+

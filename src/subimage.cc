@@ -4,6 +4,7 @@
 #include "subimage.h"
 #include "frame.h"
 #include "gtransfo.h"
+#include "imageutils.h"
 
 
 SubImage::SubImage(const string &Name, const string &LargeImageName, 
@@ -14,7 +15,8 @@ SubImage::SubImage(const string &Name, const string &LargeImageName,
   largeImageName = LargeImageName;
   // get the actual size of the large image
   ReducedImage large(largeImageName);
-  largeFrame = Frame(FitsHeader(large.FitsName()), WholeSizeFrame);
+  FitsHeader head(large.FitsName());
+  largeFrame = Frame(head, WholeSizeFrame);
   // create the sub if needed
   Create("here");
 }
@@ -94,7 +96,7 @@ bool SubImage::cut_in_fitsimage(string (ReducedImage::*GetFitsFileName)() const,
     {
       Frame clippedFrame(subImage,ClippedSizeFrame);
       clippedFrame *= subFrame; // take intersection with
-      clippedFrame = clippedFrame.ApplyTransfo(GtransfoLinShift(double(dx), double (dy)));
+      clippedFrame = ApplyTransfo(clippedFrame,GtransfoLinShift(double(dx), double (dy)));
       clippedFrame.WriteInHeader(subImage);
     }
   // write the origin and subimage coordinates in large image:

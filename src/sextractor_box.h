@@ -16,18 +16,23 @@ string FitsFileName ;
 string FitsMaskName ; 
 string FitsWeightName  ;
 string FitsBackName  ;
+ string FitsSegmentationName;
 string FitsMiniBackName ;
  string TempDir;
  string UniqueName;
+
 double saturation  ;
 bool back_type_manual ; // if true, a constant value for the background is taken.
 double sigma_back ;
 double backmean ;
 public:
  ForSExtractor(){back_type_manual = false ;sigma_back=-1;backmean=0.;};
- std::string DecompressIfNeeded(const std::string &InFileName,
-				std::string &ToRemove) const;
+ void DecompressIfNeeded();
  void Print();
+
+ ~ForSExtractor();
+ private :
+  string ToRemove;
 };
 
 class AllForSExtractor: public ForSExtractor{
@@ -39,26 +44,20 @@ string SexNNWName ;
 string SexFilterName ;
 public:
 AllForSExtractor(ForSExtractor const & data0) 
-   : ForSExtractor(data0){string vide ; SexConfigFileName=vide ;
-   SexParamName = vide ; SexNNWName = vide ;SexFilterName  = vide ;};
+  : ForSExtractor(data0){}
  void FillFromEnvironnement();
  void Print();
 };
 
 
 
-/* DOCF  make a SEStarList on an image, all parameters
-can be set by hand. Background sigma and value are recovered
+
+/*! make a SEStarList on an image. 
+Background sigma and value are recovered
 in the  Fond and SigmaFond variables. 
 Whether FitsMaskName is given or not, or is empyt or not,
-a mask is used to flag the objects.*/
-int  
-_SEStarListMake(AllForSExtractor const & data,
-	       SEStarList &List,  double & Fond, 
-	       double &SigmaFond,
-	       Image * pmask_sat);
-
-/*  DOCF idem, default values are taken for specific SExtractor datacards (in TOADSCARDS) */
+a mask is used to flag the objects.
+default values are taken for specific SExtractor datacards (in TOADSCARDS) */
 int
 SEStarListMake(const ForSExtractor & shortdata,
 	       SEStarList &List, double & Fond, 

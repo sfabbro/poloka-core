@@ -10,7 +10,49 @@ static bool SM_DecFluxMax(const StarMatch &S1, const StarMatch &S2)
   return  DecFluxMax(p1,p2);
 }
 
-static double sqr(const double &x) {return x*x;}
+
+/************************ Photom ratio estimators *******************/
+
+/*  notes:
+
+Measuring a flux ratio is not that straightforward. The "obvious"
+least-squares approach is for example facing serious problems.
+Imagine you want to fit y=ax on a sample of x's and y's, i.e. estimate the
+ratio a. If you minimize sum_i(y_i-a * x_i)^2/sy_i^2, the estimate
+of a will be unbiased only if there are no uncertainties on x. In the opposite
+case, there is a bias : <a_min> = <a_true> * sum(x_i^2)/ sum(x_i^2+sx_i^2).
+There is no single way to get around this problem. Getting back to photometric
+ratios, there is usually no problem about optimality, because the 
+statistical accuracy is usually far too good, compared to systematics
+(e.g. non-uniformity of response due to PSF and/or flatfielding).
+  QuickPhotomRatio computes a weighted average of the ratios. This
+is less biased than straight LS, but still biased because <1/x> != 1/<x>
+for symetric pdf's. One improvement is to compute both ratios (r1 and r2);
+if the estimator is unbaised, then <r1*r2> = 1; one way to compensate
+for a bias of r1 and r2 is to return the geometric mean sqrt(r1/r2);
+This is not coded (yet).
+
+  One estimator with a very small bias, and almost optimal is
+to use the functional relationship framework. Namely, you use least-squares:
+
+chi2 = sum (y_i-a xp_i)^2/sy_i^2 + (x_i-xp_i)^2/sx_i^2
+
+where a and xp_i are parameters. When you solve the normal equations,
+you find that it is equivalent to minimize:
+
+chi2 = sum (y_i - a x_i)^2/(sy_i^2+(a x_i)^2)
+
+The minimization is tedious (non linearities are important), but
+doable. This is done in SlowPhotomRatio()
+
+
+compute
+
+*/
+
+ 
+
+static double sq(const double &x) {return x*x;}
 
 double QuickPhotomRatio(const ReducedImage &CurImage, const ReducedImage &RefImage, 
 			double &error, const Gtransfo* cur2ref)
@@ -56,7 +98,7 @@ double QuickPhotomRatio(const SEStarList &CurList, const SEStarList &RefList,
       if (ref->flux>0.0 && cur->flux>0.0 && cur->EFlux()>0.0 && ref->EFlux()>0.0)
 	{
 	  const double ratio = cur->flux / ref->flux;
-	  const double weight = 1./(sqr(ratio*(cur->EFlux()/cur->flux + ref->EFlux()/ref->flux)));
+	  const double weight = 1./(sq(ratio*(cur->EFlux()/cur->flux + ref->EFlux()/ref->flux)));
 	  sumwt += weight;
 	  sum += weight * ratio;
 	}
@@ -90,10 +132,81 @@ double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefLis
   StarMatchList *matchlist;
   if (!Transfo) matchlist = ListMatchCollect(CurList, RefList, 1.);
   else matchlist = ListMatchCollect(CurList, RefList, Transfo, 1.);
-  double pr= MedianPhotomRatio(matchlist);
+  double pr1 = MedianPhotomRatio(matchlist);
+  matchlist->Swap();
+  double pr2 = MedianPhotomRatio(matchlist);
   delete matchlist;
+  return sqrt(pr1/pr2);
+}
+
+
+static double PairListMedianPhotomRatio(const FluxPairList &L)
+{
+  double *ratio = new double[L.size()];
+  int count = 0;
+  for (FluxPairList::const_iterator i = L.begin(); i != L.end(); ++i)
+    {
+      ratio[count++] = i->f1/i->f2;
+    }
+  double pr = DArrayMedian(ratio,count);
+  delete [] ratio;
   return pr;
 }
+
+//! see notes above if you wonder what is done here.
+bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R, double &Var)
+{
+  // compute a such that f1=a*f2 on average.
+  int niter = 0;
+  double chi2;
+  double chi2Old = 1e30;
+  int oldCount = L.size();
+  double *chi2Vals = new double[oldCount];
+  double chi2Cut = 1e30;
+  R = PairListMedianPhotomRatio(L);
+  do
+    {
+      double num = 0;
+      double deno = 0;
+      chi2 = 0;
+      int count = 0;
+      for (FluxPairList::const_iterator i = L.begin(); i != L.end(); ++i)
+	{
+	  double y = i->f1;
+	  double x = i->f2;
+	  double sx2 = sq(i->sig2);
+	  double sy2 = sq(i->sig1);
+	  double d = (sy2+R*R*sx2);
+	  double xp = (R*y*sx2+x*sy2)/d;
+	  double thisChi2 = sq(y-R*x)/d;
+	  if (thisChi2 > chi2Cut) continue;
+	  chi2Vals[count++] = thisChi2;
+	  chi2 += thisChi2;
+	  num += xp*(y-R*xp)/sy2;
+	  deno += (sq(xp)-sx2*sq(y-2.*R*xp)/d)/sy2;
+
+	}
+      R += num/deno;
+      Var = 1/deno;
+      double chi2Mean, chi2Med, chi2Sig;
+      Dmean_median_sigma(chi2Vals, count, chi2Mean, chi2Med, chi2Sig);
+      chi2Cut = chi2Med+NSigChi2Cut*chi2Sig;
+      bool outliers = false;
+      for (int k=0; k < count; ++k) if (chi2Vals[k] > chi2Cut) {outliers = true;break;}
+      if (!outliers && oldCount == count && chi2Old - chi2 < 1e-3) break;
+      chi2Old = chi2;
+      oldCount = count;
+      if (outliers) niter ++;
+      }   while (niter < 10);
+  delete [] chi2Vals;
+  cout << " chi2 photom ratio, niter " << chi2/(L.size()-1) << ' ' << niter << endl;
+  return (niter<10);
+}
+
+
+
+
+
 
 string ImageSetName(const ReducedImage& AnImage)
 {
