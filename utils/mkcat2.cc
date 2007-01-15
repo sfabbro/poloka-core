@@ -69,5 +69,5 @@ int main(int nargs, char **args)
 	ok=false;
       }
     }
-  return (ok=true) ? EXIT_SUCCESS : EXIT_FAILURE;
+  return (ok==true) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
