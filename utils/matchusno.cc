@@ -118,6 +118,7 @@ int main(int argc, char **argv)
 	  }	
       }
       if(!UsnoProcess(fitsFileName, catalogName, &dbimage))
+	ok = false;
 	continue;
 
       }catch(PolokaException p) {
