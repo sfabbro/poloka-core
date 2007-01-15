@@ -500,6 +500,9 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   //FlagDiffractionSpikes(); 
   //} 
 
+  if (stlse.size()==0) // if it's empty, it's a failure
+    return false;
+
   return(status);
 }
 
