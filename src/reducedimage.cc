@@ -500,6 +500,26 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   //FlagDiffractionSpikes(); 
   //} 
 
+  // dump some statistics
+  cout << "@NUMBER_OF_OBJECTS " << stlse.size() << endl;
+  int n_saturated_objects = 0;
+  int n_ok = 0;
+  int n_flag0 = 0;
+  int n_flagbad0 = 0;
+  
+  for (SEStarIterator it= stlse.begin(); it!=stlse.end(); it++) {
+    if( (*it)->IsSaturated() ) n_saturated_objects++;
+    if( (*it)->IsOK() ) n_ok++;
+    if( (*it)->Flag()==0 ) n_flag0++;
+    if( (*it)->FlagBad()==0 ) n_flagbad0++;
+    
+    
+  }
+  cout << "@NUMBER_OF_SATURATED_OBJECTS " << n_saturated_objects << endl;
+  cout << "@NUMBER_OF_OK_OBJECTS " << n_ok << endl;
+  cout << "@NUMBER_OF_FLAG0_OBJECTS " << n_flag0 << endl;
+  cout << "@NUMBER_OF_FLAGBAD0_OBJECTS " << n_flagbad0 << endl;
+  
   if (stlse.size()==0) // if it's empty, it's a failure
     return false;
 
