@@ -20,6 +20,8 @@
 #include "listmatch.h"
 #include "fastfinder.h"
 #include "imageutils.h"
+#include "matchexception.h"
+
 
 
 #ifndef M_PI
@@ -300,8 +302,11 @@ static void actual_usno_read(const string &usnodir,
   if (minra == maxra || mindec == maxdec) return;
   if (minra > maxra) swap (minra,maxra);
   if (mindec > maxdec) swap(mindec,maxdec);
-  if (maxra>=360.) return;
-  if (mindec<-90. || maxdec>90.) return;
+  // the following checks are questionnable.... update them (P.A, 01/07)
+  //  if (maxra>=360.) return;
+  //  if (mindec<-90. || maxdec>90.) return;
+  if (mindec < -90.) mindec = -90;
+  if (maxdec > 90.) maxdec = 90;
 
   /* Figure out which catalog files we need to read, and read them */
 
@@ -453,6 +458,7 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
   if (UsnoCat.size() == 0)
     {
       std::cerr << " Could not collect anything from a ref catalog : giving up" << std::endl;
+      throw(MatchException("No objects grabbed in the reference catalog.")); 
       return NULL;
     }
 
@@ -479,7 +485,7 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
 					      UsnoCat, shift, 10.);
       delete shift;
       unsigned shiftMatches = match->size();
-      if (3*shiftMatches > UsnoCat.size() && shiftMatches > 25 ) 
+      if (shiftMatches> 100 || (3*shiftMatches > UsnoCat.size() && shiftMatches > 25) ) 
 	{
 	  // considered as good :
 	  cout << " found " << match->size() << " matches with a simple shift" 
@@ -518,6 +524,7 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
       cout << " the guess is really too far from a rotation " << endl
 	   << " giving up" << endl;
       delete match;
+      throw(MatchException(" Found Guess is really too far from a rotation "));
       return NULL;
     }
   TanPix2RaDec newPix2RaDec = Pix2RaDec*guessCorr;
@@ -800,14 +807,13 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   // cfitsio does not accept to reopen RW a file already opened RO:
   {
     FitsHeader header(fitsFileName);
+    const string cat_name((MatchPrefs.astromCatalogName != "" )? MatchPrefs.astromCatalogName : "USNO-R");
 
-    cout << endl << "Matching with USNO catalog..."<< endl;
-    cout << fitsFileName << endl;
+    cout << endl << "Matching " << fitsFileName << " with " << cat_name  << endl;
     cout << "INSTRUMENT = " << header.KeyVal("TOADINST") << endl;
     cout << "CCD no = " << header.KeyVal("TOADCHIP") << endl;
     cout << "FILTER = " << header.KeyVal("TOADFILT") << endl;
     cout << "OBJECT = " << header.KeyVal("TOADOBJE") << endl;
-    cout << "REMEMBER: matching with USNO + Zeropoint made in R-USNO !" << endl;
     cout << endl;
   }
    
@@ -832,14 +838,16 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
     }
 
 
+  // now count "good objects" for judging latter the match quality (from the fraction of matched objects)
   int ngoodImageObjects = 0;
   for (SEStarCIterator i = sestarlist.begin(); i !=sestarlist.end(); ++i )
     {
       const SEStar &s = **i;
       if (s.FlagBad() || s.Flag()) continue;
+      if (s.EFlux() > 0.2*s.flux) continue;
       ngoodImageObjects++;
     }
-  cout << "number of image objects with flag=0 and flagbad=0 " 
+  cout << "number of image objects with flag=0 && flagbad=0 && S/N>5 : " 
        << ngoodImageObjects << endl;
   
 
@@ -910,7 +918,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
   if (nMatches < minMatchCount)
     {
-      cout << " refined failed, giving up " << endl;
+      cout << " refined failed, giving up for " << fitsFileName << endl;
+      throw(MatchException("Matching transfo refined failed" ));
       return false;
     }
 
