@@ -55,12 +55,26 @@ static WCSTab wcscards[] = {
 
 
 static bool GuessLinWCS_megacam(const FitsHeader &Head, TanPix2RaDec &Guess) {
- // this should always be used...
-  if (HasLinWCS(Head)) return TanLinWCSFromHeader(Head,Guess);
+  if (HasLinWCS(Head)) // we have a WCS in the header
+    {
+      // if it is not a poloka WCS...
+      if (! Head.HasKey("WCS_VERS"))
+	{
+	  // ... check that it was not screewed up by Elixir
+	  double crval1 = Head.KeyVal("CRVAL1");
+	  double crval2 = Head.KeyVal("CRVAL2");
+	  double ra_deg = Head.KeyVal("RA_DEG");
+	  double dec_deg = Head.KeyVal("DEC_DEG");
+	  if (fabs(crval1-ra_deg) < 0.02 && fabs(crval2-dec_deg) < 0.02) 
+	    return TanLinWCSFromHeader(Head,Guess);
+	  else
+	    cout << " bizarre WCS in " << Head.FileName() << " cooking-up one instead" << endl; 
+	}
+    }
   
   // if there is no WCS in the header, we try to rebuild it
-  // --provided that there a (RA,DEC) in the header.
-  cout << "No LinWCS in the header. Cooking up a Pix2RaDec transfo:" << endl;
+  // --provided that there are (RA,DEC) in the header.
+  cout << "No (acceptable) LinWCS in the header. Cooking up a Pix2RaDec transfo:" << endl;
   int chip = Head.KeyVal("TOADCHIP");
   if(chip<0 or chip>=36) return false;
   GtransfoLin pix2ThetaPhi = GtransfoLinShift(-wcscards[chip].crpix1, -wcscards[chip].crpix2);
