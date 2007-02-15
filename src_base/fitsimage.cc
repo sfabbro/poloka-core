@@ -291,6 +291,7 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
 	  CHECK_STATUS(status,line,);
 	}
       fclose(f);
+      return; // if it is an ascii input file, we are done.
     }
 
   // genuine fits file.
@@ -524,8 +525,17 @@ FitsHeader::~FitsHeader()
 	This may fail, especially when there is no actual image 
 	on the file yet. We then get error 414, which 
 	seems to be harmless.
+	Other problem here : when we provide cfitsio with ascii header files,
+	we map them on memory files. Often, these "ascii header files" miss
+	structural keys (SIMPLE, BITPIX, ...). Cfitsio complains when we 
+	delete the memory file. We just don't care. 
+
      */
-     if (status != 414) 
+
+     if (status != 414 &&  
+	 (status != 252 // 1st key not SIMPLE or XTENSION
+	  || fileName.find("mem://") == 0) // this is a "memory file" which has not disk counterpart.
+	 )
        CHECK_STATUS(status, " ~FitsHeader "+fileName, )
    }
  if (telInst) VirtualInstrumentDestructor(telInst);
