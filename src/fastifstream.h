@@ -29,15 +29,17 @@ private :
 private :
   void get_next_line()
   {
-    fgets(line_buff, 8192, f);
-    unsigned len = strlen(line_buff);
-    if (len>8190)
+    if (fgets(line_buff, 8192, f))
       {
-	cout << " disaster : uncomplete line read int fastifstream.h " << endl;
-	abort();
+	unsigned len = strlen(line_buff);
+	if (len>8190)
+	  {
+	    std::cout << "ERROR : (disaster) uncomplete line read int fastifstream.h " << std::endl;
+	    abort();
+	  }
+	if (len>=1 && line_buff[len-1] == '\n') line_buff[len-1] = '\0'; 
+	read_pointer = line_buff;
       }
-    if (len>=1 && line_buff[len-1] == '\n') line_buff[len-1] = '\0'; 
-    read_pointer = line_buff;
   }
 
   void skip_spaces() // in ifstream, before extraction of (e.g.) a float
@@ -122,7 +124,7 @@ public :
   {
     skip_spaces();
     s.clear();
-    while (!isspace(*read_pointer)) 
+    while (*read_pointer != '\0' && !isspace(*read_pointer)) 
       {
 	s.push_back(*read_pointer);
 	read_pointer++;
