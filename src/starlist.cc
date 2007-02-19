@@ -10,7 +10,7 @@
 #include "starlist.h"
 #include "frame.h"
 #include "fastifstream.h"
-
+#include "starlistexception.h"
 
 template<class Star> StarList<Star>::StarList(const string &FileName) /* to be changed if switch to Star rather than pointers to Stars */ 
 {
@@ -35,7 +35,7 @@ template<class Star> int StarList<Star>::read(fastifstream & r)
 	}
       if ( (c == '#') ) // we jump over the line  (not always ...)
         {
-	  r.getline(buff,400);
+	  r.getline(buff,4096);
 	  /* hack something reading " format <StarType> <integer>" to drive the decoding (in Star::read) */
 	  char *p = strstr(buff,"format");
 	  if (p) /* this test is enough because the format is the last line of the header ... */
@@ -46,6 +46,11 @@ template<class Star> int StarList<Star>::read(fastifstream & r)
       else
 	{
 	  Star* s = dynamic_cast<Star*>(Star::read(r, format));
+	  if (!r) 
+	    {
+	      if (s) delete s;
+	      return 0;
+	    }
 	  // read the end of line, in case there are some items left
 	  r.getline(buff,4096);
 	  if (!s) 
@@ -73,7 +78,10 @@ StarList<Star>::ascii_read(const string &FileName)
       cout << "StarList cannot open :" << FileName << endl;
       return 0;
     }
-  return read(rd);
+  int count = read(rd);
+  if (!rd)
+    throw(StarListException("bad extraction in StarList reader, file="+FileName));
+  return count;
 }
 
 template<class Star> int StarList<Star>::write(const string &FileName) const

@@ -9,6 +9,7 @@
 
 
 #include "fastifstream.h"
+#include "starlistexception.h"
 
 DicStar::DicStar()
   : BaseStar(0.,0.,0.) {
@@ -230,6 +231,11 @@ DicStarList::DicStarList(const string &FileName) {
       else // no '#'
 	{
 	  DicStar* s = DicStar::read(firstKey,key,rd, format); 
+	  if (!rd)
+	    {
+	      if (s) delete s;
+	      throw(StarListException("bad extraction in StarList reader, file="+FileName));
+	    }
 	  if (!s) 
 	    {
 	      return ;
