@@ -7,6 +7,7 @@
 #ifndef USE_STL_IFSTREAM
 
 #include <cstdio>
+#include <string>
 
 /*! This is a Mickey-Mouse implementation of ifstream over core C I/O's.
 The reason is that it is faster that actual ifstream: by a factor of 2
@@ -23,6 +24,7 @@ private :
   char last_char_read;
   char line_buff[8192];
   char *read_pointer;
+  bool badbit;
 
 private :
   void get_next_line()
@@ -34,80 +36,78 @@ private :
 	cout << " disaster : uncomplete line read int fastifstream.h " << endl;
 	abort();
       }
-    if (len>1 && line_buff[len-1] == '\n') line_buff[len-1] = '\0'; 
+    if (len>=1 && line_buff[len-1] == '\n') line_buff[len-1] = '\0'; 
     read_pointer = line_buff;
   }
 
-  void skip_spaces() // in ifstream, after a read of (e.g.) a float
+  void skip_spaces() // in ifstream, before extraction of (e.g.) a float
   {
-    while (*read_pointer == ' ') read_pointer++;
+    while (isspace(*read_pointer)) read_pointer++;
+    if (*read_pointer == '\0' && !feof(f)) 
+      {
+	get_next_line();
+	skip_spaces();
+      }
   }
 
 public :
   fastifstream(const char *name) 
-  { f = fopen(name,"r"); if (f) get_next_line();  }
+    { f = fopen(name,"r"); badbit = false;
+      if (f) get_next_line();}
 
-  operator bool() const { return (f && !feof(f));}
+  operator bool() const { return (f && !feof(f) && !badbit);}
+  
+  bool bad() const { return badbit;}
 
   fastifstream& operator >> (double &d) 
   { 
+    skip_spaces();
     char *end=NULL;
     d = strtod(read_pointer,&end); 
-    if (end==read_pointer) {get_next_line(); return ( (*this) >> d);}
+    if (end==read_pointer)
+      { 
+	badbit=true;
+	return (*this);
+      }
     else {read_pointer = end;}
-    skip_spaces();
-    return *this;
-  }
-  fastifstream& operator >> (float &d) 
-  { 
-    char *end=NULL;
-    d = strtod(read_pointer,&end); 
-    if (end==read_pointer) {get_next_line(); return ( (*this) >> d);}
-    else {read_pointer = end;}
-    skip_spaces();
     return *this;
   }
 
+
   fastifstream& operator >> (int &i) 
   { 
+    skip_spaces();
     char *end=NULL;
     i = strtol(read_pointer,&end,10); 
-    if (end==read_pointer) {get_next_line(); return ( (*this) >> i);}
+    if (end==read_pointer)
+      { 
+	badbit=true;
+	return (*this);
+      }
     else {read_pointer = end;}
-    skip_spaces();
     return *this;
   }
 
   fastifstream& operator >> (unsigned &i) 
   { 
+    skip_spaces();
     char *end=NULL;
     i = strtoul(read_pointer,&end,10); 
-    if (end==read_pointer) {get_next_line(); return ( (*this) >> i);}
+    if (end==read_pointer)
+      { 
+	badbit=true;
+	return (*this);
+      }
     else {read_pointer = end;}
-    skip_spaces();
     return *this;
   }
 
 
   fastifstream& operator >>   (char &c) 
   { 
-    if (*read_pointer == '\0') get_next_line();
+    skip_spaces();
     c = *read_pointer; 
     read_pointer++;
-    return *this;
-  }
-#include <string.h>
- fastifstream& operator >> (std::string& s)
-  {
-    while (*read_pointer == ' ') read_pointer++;
-    s.clear();
-    do
-      {
-        s.push_back(*read_pointer);
-        read_pointer++;
-      }
-    while (*read_pointer != ' ' && *read_pointer != '\0');
-    if (*read_pointer == '\0') get_next_line();
     return *this;
   }
   
@@ -118,11 +118,26 @@ public :
     return *this;
   }
 
-  void close() { fclose(f); f = NULL;}
+  fastifstream& operator >>   (std::string &s)
+  {
+    skip_spaces();
+    s.clear();
+    while (!isspace(*read_pointer)) 
+      {
+	s.push_back(*read_pointer);
+	read_pointer++;
+      }
+    return *this;
+  }
+    
+    
+
+
+  void close() { fclose(f); f = NULL;} 
 
   void unget() {read_pointer--;}
 
-  ~fastifstream() { fclose(f);}
+  ~fastifstream() { fclose(f);}  // fstream objects close the file in destructors
 
 };
 
@@ -130,10 +145,10 @@ public :
 
 #include <fstream>
 
-class fastifstream : public ifstream
+class fastifstream : public std::ifstream
 {
  public :
-  fastifstream(const string &FileName) : ifstream(FileName.c_str()) {};
+  fastifstream(const std::string &FileName) : std::ifstream(FileName.c_str()) {};
 };
 #endif
 
