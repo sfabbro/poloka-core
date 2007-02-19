@@ -79,7 +79,7 @@ StarList<Star>::ascii_read(const string &FileName)
       return 0;
     }
   int count = read(rd);
-  if (!rd)
+  if (rd.bad()) // to be tested with ifstrem... I guess it does not work.
     throw(StarListException("bad extraction in StarList reader, file="+FileName));
   return count;
 }
