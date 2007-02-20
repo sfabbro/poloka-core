@@ -10,7 +10,7 @@
 static void usage(const char *prog)
 {
   cerr << prog << " [-o (overwrite)] <dbimages> " << endl
-       << " makes the perture photometry catalogue of dbimage(s) " << endl;
+       << " makes the perture photometry catalogue of dbimage(s) and the star catalog" << endl;
   exit (-1);
 }
   
@@ -59,11 +59,11 @@ int main(int nargs, char **args)
 	}
       if (overwrite)
 	{
-	  string fileName(ri.AperCatalogName());
-	  remove(fileName.c_str());
+	  remove(ri.AperCatalogName().c_str());
+	  remove(ri.StarCatalogName().c_str());
 	}
-      ok &= ri.MakeAperCat();
-
+      ok &= ( ri.MakeAperCat() && ri.MakeStarCat() );
+      
       }catch(PolokaException p) {
 	p.PrintMessage(cout);
 	ok=false;
