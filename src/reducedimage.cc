@@ -447,8 +447,10 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 	      im -= *largeBack;
 	      delete largeBack;
 	    }
+	  
 	  // set back ("Fond() ") of stars to zero.
-	  //      SetStarsBackground(stlse,0.);
+	  SetStarsBackground(stlse,0.);
+	  
 	  // update saturation level in image header
 	  SetOriginalSaturation(Saturation(),"Original saturation level before sky subtraction"); 
 	  SetSaturation(Saturation()-Fond,"Saturation level corrected from sky subtraction"); 
