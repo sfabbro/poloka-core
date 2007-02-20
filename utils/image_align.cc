@@ -3,6 +3,7 @@
 
 #include "transformedimage.h"
 #include "fitsimage.h"
+#include "polokaexception.h"
 
 static void usage(const char *progName)
 {
@@ -30,6 +31,7 @@ int main(int nargs, char **args)
   int todo = DoFits | DoCatalog | DoSatur | DoWeight;
   bool use_wcs = false;
   
+  
   // loop over arguments
   for (int i=1; i<nargs; ++i)
     {
@@ -54,12 +56,22 @@ int main(int nargs, char **args)
       // unrecognized option
       usage(args[0]);      
     }
-
-  if (geoName == "NOGEO") geoName = toAlign.front()->Name();
-  ReducedImage geoRef(geoName);
-  ReducedImageList aligned;
   
-  ImagesAlign(toAlign, geoRef, aligned, todo, use_wcs);
+  if (geoName == "NOGEO") geoName = toAlign.front()->Name();
+  try {
+    ReducedImage geoRef(geoName);
+    ReducedImageList aligned;
+  
+    unsigned int n = ImagesAlign(toAlign, geoRef, aligned, todo, use_wcs);
+    if(n!=toAlign.size()) {
+      throw(PolokaException("Not all images were aligned"));
+    }
+
+  }catch(PolokaException p)
+    {
+      p.PrintMessage(cout);
+      return EXIT_FAILURE;	      
+    } 
   
   return EXIT_SUCCESS;
 }
