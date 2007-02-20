@@ -132,11 +132,25 @@ int PsfMatch::FilterStarList(const double MaxDist)
 {
   //get list of objects suitable for the kernel fit 
   SEStarList bestStarList(best->ImageCatalogName());
+  
+  // check whether background was subtracted
+  if(best->BackSub()) {
+    // then set all fond() to zero
+    SetStarsBackground(bestStarList,0.);
+  }
+  
 
   cout << " Entering FilterStarList with "<< bestStarList.size() 
        << " stars " << endl;
   //star list selection
   SEStarList worstStarList(worst->ImageCatalogName());
+  
+  // check whether background was subtracted
+  if(worst->BackSub()) {
+    // then set all fond() to zero
+    SetStarsBackground(worstStarList,0.);
+  }
+
   double satfactor = 0.95;
   double saturLevBest = best->Saturation() * satfactor;
   double saturLevWorst = worst->Saturation() * satfactor;  
