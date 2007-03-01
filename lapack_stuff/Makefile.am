@@ -27,17 +27,66 @@ liblapackstuff_la_SOURCES = \
 		  dgetrf.f \
 		  dgetrs.f \
 		  dlaswp.f \
-	dsysv.f \
-	dsytrf.f \
-	dsytrs.f \
-	dswap.f \
-	dlasyf.f \
-	dcopy.f \
-	idamax.f \
-	dger.f \
-	dsytf2.f \
-	dsyr.f \
-	xerbla.f  
+	dsysv.f 	\
+	dsytrf.f 	\
+	dsytrs.f 	\
+	dswap.f 	\
+	dlasyf.f 	\
+	dcopy.f 	\
+	idamax.f 	\
+	dger.f 		\
+	dsytf2.f 	\
+	dsyr.f 		\
+	xerbla.f  	\
+	dsytri.f 	\
+	dsyevd.f 	\
+	dormtr.f 	\
+	dsytrd.f 	\
+	dlascl.f 	\
+	dlansy.f 	\
+	dsymv.f 	\
+	dsterf.f 	\
+	dstedc.f 	\
+	dlacpy.f 	\
+	dlamch.f 	\
+	dlapy2.f  	\
+	dormql.f  	\
+	dlatrd.f  	\
+	dlasrt.f  	\
+	dsteqr.f  	\
+	dlaed0.f  	\
+	dormqr.f  	\
+	dsyr2k.f  	\
+	dlaset.f  	\
+	dlassq.f  	\
+	dsytd2.f  	\
+	dlae2.f  	\
+	dlanst.f  	\
+	dlarfb.f   	\
+	dlasr.f   	\
+	dsyr2.f   	\
+	dlaed1.f   	\
+	dlaev2.f   	\
+	dlarft.f   	\
+	dorm2l.f   	\
+	dlarfg.f   	\
+	dorm2r.f   	\
+	dlartg.f   	\
+	dlaed7.f   	\
+	daxpy.f   	\
+	dlaed9.f   	\
+	dlamrg.f   	\
+	dlaed3.f   	\
+	dlarf.f   	\
+	dlaed8.f   	\
+	dlaed2.f   	\
+	dlaeda.f   	\
+	dnrm2.f   	\
+	drot.f 		\
+	dlaed4.f	\
+	dlaed5.f	\
+	dlaed6.f
+
 
 ######## auto symbolic link #########
 # if configure is set with option --enable-autoinstall

@@ -19,7 +19,7 @@ libtoadspsf_la_SOURCES = \
 	poly2.cc         \
 	poly1.cc        \
 	nonlinmodel.cc  
-include_HEADERS = poly1.h imagepsf.h psfstar.h poly2.h
+include_HEADERS = poly1.h imagepsf.h psfstar.h poly2.h sparsevect.h
 
 
 

@@ -104,6 +104,9 @@ class DicStarList : public  StarList<DicStar> {
 typedef DicStarList::const_iterator DicStarCIterator;
 typedef DicStarList::iterator DicStarIterator;
 
-
+BaseStarList* Dic2Base(DicStarList*);
+const BaseStarList* Dic2Base(const DicStarList*);
+BaseStarList& Dic2Base(DicStarList&);
+const BaseStarList& Dic2Base(const DicStarList&);
 
 #endif

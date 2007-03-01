@@ -231,7 +231,7 @@ DicStarList::DicStarList(const string &FileName) {
       else // no '#'
 	{
 	  DicStar* s = DicStar::read(firstKey,key,rd, format); 
-	  if (!rd)
+	  if (rd.fail())
 	    {
 	      if (s) delete s;
 	      throw(StarListException("bad extraction in StarList reader, file="+FileName));
@@ -262,3 +262,26 @@ DicStar *DicStarList::EmptyStar() const
 }
   
   
+
+BaseStarList* Dic2Base(DicStarList* This)
+{
+  return (BaseStarList*)This;
+}
+
+const BaseStarList* Dic2Base(const DicStarList* This)
+{
+  return (const BaseStarList*) This;
+}
+
+BaseStarList& Dic2Base(DicStarList& This)
+{
+  return (BaseStarList&)This;
+}
+
+const BaseStarList& Dic2Base(const DicStarList& This)
+{
+  return (const BaseStarList&) This;
+}
+
+
+

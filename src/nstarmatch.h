@@ -20,6 +20,8 @@ public:
   TStar(const BaseStar &ActualStar, const BaseStar &JustForPos) : BaseStar(JustForPos), original(&ActualStar) {}
   virtual void writen(ostream &s = cout)const ;
   virtual string WriteHeader_(ostream & stream = cout, const char*i = NULL) const ;
+  
+  BaseStar const*  get_original() const { return original; }
 };
     
 class TStarList : public StarList<TStar> {

@@ -64,6 +64,8 @@ int cholesky_solve(Mat &A, Vect &B, const char* UorL = "L");
 // is the same as that used with dposv
 int cholesky_invert(Mat &A, const char* UorL = "L"); // when cholesky_solve is called first
 
+
+
 /* Routine to "solve" a **posdef** system with constraints.
    The found solution minimizes:
    X**t A X  -  B**t X   under the constraints : C**t X = Y
@@ -100,14 +102,18 @@ int cholesky_solve_quasi_posdef(Mat &A, Mat &B,
 				const unsigned &NCut, const char* UorL);
 
 
-
+int general_solve(Mat& A, Vect& B, bool invert_A, const char* UorL);
 
 
 //! Symetric general system. return 0 when  OK. Undocumented invertion routine
 int symetric_solve(Mat& A, Vect& B, const char* UorL);
 
+
+int lapack_diagonalize_sym(Mat& A, Vect& EigenVals, const char* UorL);
+
 //! same when there are several RHS (i.e. we have several B's)
 int symetric_solve(Mat& A, Mat& B, const char* UorL);
+
 
 
 // Diagonalization
@@ -289,7 +295,7 @@ class Vect {
   Vect operator +(const Vect& Right) const;
   Vect operator -(const Vect& Right) const;
   Vect & operator =(const Vect& Right);
-
+  
   double operator *(const Vect& Right) const; // scalar product
   
   void operator +=(const Vect& Right);

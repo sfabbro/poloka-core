@@ -35,6 +35,12 @@ extern "C" {
 	      double* a, int* lda, int* ipiv, 
 	      double* b, int* ldb, 
 	      double* work, int* lwork, int* info);
+  void dsyevd_(char* JOBZ, char* UPLO, int* N,
+	       double* A, int* LDA, 
+	       double* W, 
+	       double* WORK, int* LWORK, int* IWORK, int* LIWORK,
+	       int* INFO);
+  void dsytri_(const char*, int* n, double* a , int* lda, int* ipiv, double* work, int* info);
 };
 
 //==========================================================================
@@ -190,6 +196,43 @@ int cholesky_invert(Mat &A, const char* UorL)
 }
 
 
+int lapack_diagonalize_sym(Mat& A, Vect& EigenVals, const char* UorL)
+{
+  assert(A.SizeX() == A.SizeY());
+  
+  int  info = 0;
+  char* jobz = "V";
+  int  n = A.SizeX();
+  char uorl[6]; strncpy(uorl,UorL,6);
+  double* a = A.NonConstData();
+  double* eval  = EigenVals.NonConstData();
+  int     lwork = 1 + 6*n + 2*n*n;
+  double* work = new double[lwork];
+  int     liwork = 3 + 5*n;
+  int*    iwork = new int[liwork];
+  
+  dsyevd_(jobz, uorl, &n,
+	  a, &n, 
+	  eval, 
+	  work, &lwork, iwork, &liwork, 
+	  &info);
+  
+  if(info != 0)
+    {
+      cout << "[lapack_diagonalize_sym] ERROR in dsysevd, info=" << info
+	   << endl;
+      delete[] work;
+      delete[] iwork;
+      return info;
+    }
+  
+  delete[] work;
+  delete[] iwork;
+  
+  return info;
+}
+
+
 int posdef_invert(Mat &A, const char* UorL)
 {
   Vect B(A.SizeX());
@@ -339,6 +382,7 @@ int cholesky_solve_quasi_posdef(Mat &A, Vect &B,
   memcpy(B.NonConstData(), VB.NonConstData(), s*sizeof(double));
   return info;
 }
+
 
 
 int cholesky_solve_quasi_posdef(Mat &A, Mat &B, 
@@ -496,11 +540,81 @@ int cholesky_solve_quasi_posdef(Mat &A, Mat &B,
       for (unsigned k=0; k<nadd; ++k)
 	B(k+NCut,j) = smallb(k,j);
     }
+  
+  // store the partially inverted matrices in A
+  // 
+  //     ( D^-1    D^-1 E )
+  // A = ( ...     (Et D^-1 E - F)^-1
+  // 
+  // will do that later.
+  
   return 0;
-
 }
 
 
+// call this *after* a cholesky_solve_quasi_posdef (!)
+int cholesky_invert_quasi_posdef(Mat& A, const unsigned& NCut, const char* UorL)
+{
+  // from the matrix A given by cholesky_solve_quasi_posdef, we can compute A^-1
+  // 
+  // 
+  // A^-1 = ( D^-1 - D^-1 E (Et D^-1 E - F)^-1 Et D^-1     D^-1 E ()^-1 ) 
+  //        (  ...                                         -(Et D^-1 E - F)^-1
+  
+  // or, if A_pre_invert =  (U  V)
+  //                        (Vt W)
+  // we have:
+  // 
+  //        A = (U     U-VWVt)
+  //            ( ...    -W  )
+  // 
+  // should not be too complicated 
+  // 
+  // 
+  return 0;
+}
+
+
+// calls dsytri after the use of dsysv
+int general_solve(Mat& A, Vect& B, bool invert_A, const char* UorL)
+{
+  int nrhs=1;
+  int n = B.Size();
+  int lwork=n;
+  int info;
+  
+  double* a = A.NonConstData();
+  double* b = B.NonConstData();
+  int*    ipiv = new int[n];
+  double* work = new double[n];
+  
+  dsysv_(UorL, &n, &nrhs, 
+	 a, &n, ipiv, b, &n, work, &lwork, &info);
+  if(info!=0) {
+    std::cout << " Pb solving sys: info="
+	      << info << std::endl;
+    delete[] ipiv;
+    delete[] work;
+    return info;
+  }
+  
+  if(! invert_A) {
+    delete[] ipiv;
+    delete[] work;
+    return info;
+  }
+  
+  dsytri_(UorL, &n, a , &n, ipiv, work, &info);
+  
+  if(info!=0) {
+    std::cout << " Pb inverting the matrix: info="
+	      << info << std::endl;
+  }
+  
+  delete[] ipiv;
+  delete[] work;
+  return info; 
+}
 
 int symetric_solve(Mat& A, Vect& B, const char* UorL)
 {
