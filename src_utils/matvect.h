@@ -78,6 +78,12 @@ int cholesky_invert(Mat &A, const char* UorL = "L"); // when cholesky_solve is c
    all, this is the wrong routine.  You then have e.g. to build your
    constraints into the matrix and call symetric_solve.
 */
+
+
+//! calls cholesky_solve with a dummy RHS and then cholesky_invert.
+int posdef_invert(Mat &A, const char* UorL);
+
+
 int cholesky_solve_with_constraints(Mat &A, Vect &B, 
 				    Mat &Constraints, Vect& Y,
 				    const char* UorL);

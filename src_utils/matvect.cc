@@ -190,6 +190,16 @@ int cholesky_invert(Mat &A, const char* UorL)
 }
 
 
+int posdef_invert(Mat &A, const char* UorL)
+{
+  Vect B(A.SizeX());
+  int info = cholesky_solve(A, B, UorL);
+  if (info == 0)
+    info = cholesky_invert(A, UorL);
+  return info;
+}
+
+
 #define DO10(A) A;A;A;A;A;A;A;A;A;A;
 
 static double fast_scal_prod(double *x, double *y, const int size)
