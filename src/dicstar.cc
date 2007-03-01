@@ -262,26 +262,3 @@ DicStar *DicStarList::EmptyStar() const
 }
   
   
-
-BaseStarList* Dic2Base(DicStarList* This)
-{
-  return (BaseStarList*)This;
-}
-
-const BaseStarList* Dic2Base(const DicStarList* This)
-{
-  return (const BaseStarList*) This;
-}
-
-BaseStarList& Dic2Base(DicStarList& This)
-{
-  return (BaseStarList&)This;
-}
-
-const BaseStarList& Dic2Base(const DicStarList& This)
-{
-  return (const BaseStarList&) This;
-}
-
-
-

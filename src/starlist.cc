@@ -75,11 +75,11 @@ StarList<Star>::ascii_read(const string &FileName)
   fastifstream rd(FileName.c_str());
   if (!rd)
     {
-      cout << "StarList cannot open :" << FileName << endl;
-      return 0;
+      cout << " Starlist : cannot open " << FileName << endl;
+      throw(StarListException("StarList :cannot open file="+FileName));
     }
   int count = read(rd);
-  if (rd.bad()) // to be tested with ifstrem... I guess it does not work.
+  if (rd.fail()) // to be tested with ifstrem... I guess it does not work.
     throw(StarListException("bad extraction in StarList reader, file="+FileName));
   return count;
 }
