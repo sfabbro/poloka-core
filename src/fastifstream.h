@@ -8,6 +8,8 @@
 
 #include <cstdio>
 #include <string>
+#include <cctype>
+
 
 /*! This is a Mickey-Mouse implementation of ifstream over core C I/O's.
 The reason is that it is faster that actual ifstream: by a factor of 2
@@ -22,44 +24,32 @@ class fastifstream {
 private :
   FILE *f;
   char last_char_read;
-  char line_buff[8192];
+  char *line_buff;
   char *read_pointer;
+  bool eofbit;
   bool badbit;
+  bool failbit;
 
 private :
-  void get_next_line()
-  {
-    if (fgets(line_buff, 8192, f))
-      {
-	unsigned len = strlen(line_buff);
-	if (len>8190)
-	  {
-	    std::cout << "ERROR : (disaster) uncomplete line read int fastifstream.h " << std::endl;
-	    abort();
-	  }
-	if (len>=1 && line_buff[len-1] == '\n') line_buff[len-1] = '\0'; 
-	read_pointer = line_buff;
-      }
-  }
+  void get_next_line();
 
-  void skip_spaces() // in ifstream, before extraction of (e.g.) a float
-  {
-    while (isspace(*read_pointer)) read_pointer++;
-    if (*read_pointer == '\0' && !feof(f)) 
-      {
-	get_next_line();
-	skip_spaces();
-      }
-  }
+  bool file_eof() const;
+
+  void skip_spaces(); // in ifstream, before extraction of (e.g.) a float
 
 public :
-  fastifstream(const char *name) 
-    { f = fopen(name,"r"); badbit = false;
-      if (f) get_next_line();}
+  fastifstream(const char *name, const char *mode = "r");
 
-  operator bool() const { return (f && !feof(f) && !badbit);}
+  operator bool() const { return (f && !eofbit && !badbit);}
   
+
+  bool eof() const {return eofbit;}
   bool bad() const { return badbit;}
+  bool fail() const {return failbit;}
+  //! in istream, good is not the complement of bad....
+  bool good() const {return f && !badbit && !failbit && !eofbit;}
+
+  int rdstate() const { return eofbit*4+2*failbit+badbit;}
 
   fastifstream& operator >> (double &d) 
   { 
@@ -68,7 +58,7 @@ public :
     d = strtod(read_pointer,&end); 
     if (end==read_pointer)
       { 
-	badbit=true;
+	failbit=true;
 	return (*this);
       }
     else {read_pointer = end;}
@@ -83,7 +73,7 @@ public :
     i = strtol(read_pointer,&end,10); 
     if (end==read_pointer)
       { 
-	badbit=true;
+	failbit=true;
 	return (*this);
       }
     else {read_pointer = end;}
@@ -97,7 +87,7 @@ public :
     i = strtoul(read_pointer,&end,10); 
     if (end==read_pointer)
       { 
-	badbit=true;
+	failbit=true;
 	return (*this);
       }
     else {read_pointer = end;}
@@ -135,11 +125,16 @@ public :
     
 
 
-  void close() { fclose(f); f = NULL;} 
+  void close();
 
   void unget() {read_pointer--;}
 
-  ~fastifstream() { fclose(f);}  // fstream objects close the file in destructors
+  ~fastifstream();
+
+ private:
+  // forbid copies
+  fastifstream(const fastifstream&);
+  fastifstream& operator = (const fastifstream &);
 
 };
 

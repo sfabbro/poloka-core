@@ -84,6 +84,7 @@ libtoads_la_SOURCES =  \
   imageutils.cc imageutils.h \
   gaussianfit.cc gaussianfit.h\
                  ccd.h \
+ fastifstream.cc fastifstream.h \
  lambert_dust.cc lambert_dust.h \
                lambert_tag.h
 
@@ -147,6 +148,7 @@ imageutils.h \
 gaussianfit.h \
 ccd.h \
 lambert_dust.h \
+fastifstream.h \
 lambert_tag.h
 
 
