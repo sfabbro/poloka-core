@@ -83,6 +83,5 @@ int GetUsnoZeroPoint(const StarMatchList *List, UsnoColor Color,double& zeropoin
 
 bool UsnoProcess(const string &fitsFileName, const string &catalogName, 
 		 DbImage *dbimage);
-bool UsnoProcess(DbImage &dbimage);
 
 #endif /* USNOUTILS__H */

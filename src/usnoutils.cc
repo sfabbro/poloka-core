@@ -429,6 +429,36 @@ static bool check_guess(const GtransfoLin &Guess)
 }
   
 
+static GtransfoLin *FindShift(const SEStarList &ImageList, const BaseStarList &UsnoCat)
+{
+  GtransfoLin *shift = NULL;
+  if (!getenv("NO_SHIFT"))
+    {
+  // try to guess a simple shift, in case the guessed WCS is good:
+      cout << " trying to guess a shift" << endl;
+      shift = ListMatchupShift(*SE2Base(&ImageList), UsnoCat, 
+					    GtransfoIdentity(), 200.,10.);
+      StarMatchList *match = ListMatchCollect(*SE2Base(&ImageList),
+					      UsnoCat, shift, 10.);
+      unsigned shiftMatches = match->size();
+      delete match;
+      if (3*shiftMatches > UsnoCat.size() && shiftMatches > 25)
+	{
+	  // considered as good :
+	  cout << " found " << shiftMatches << " matches with a simple shift" 
+	   << endl;
+	  return shift;
+	}
+      else
+	{
+	  cout << " only " << shiftMatches << " matches found "<< endl;
+	  return NULL;
+	}
+    }
+  return shift;
+}
+
+
 //! Guesses the transfo from sestarlist to catalog.  
 /*! TangentPoint denote the tangent point used to project the USNO
   catalog on a tangent plane, with coordinates expressed in degrees.
@@ -438,83 +468,14 @@ static bool check_guess(const GtransfoLin &Guess)
   found matches and the guessed transfo derived from them are in the
   returned StarMatchList, to be deleted by the caller.*/
 
-StarMatchList *FindMatchUsno(const string &FitsImageName, 
-			       SEStarList &ImageList, 
-			       Point &TangentPoint, 
-			       BaseStarList &UsnoCat)
+
+static GtransfoLin *FindCombiMatch(SEStarList &ImageList, BaseStarList &UsnoCat,const MatchConditions &conditions)
 {
+
+  cout << " combinatorial search with lists of " << conditions.NStarsL1 << ' ' <<  conditions.NStarsL2 << " stars " << endl;
   
-  FitsHeader header(FitsImageName);
-  if (!header.IsValid()) return NULL;
-
-  Frame usnoFrame = SkyRegion(header);
-  if (usnoFrame.Area()==0) // something went obviously wrong
-    {
-      cerr << " cannot find where in the sky the image " <<  FitsImageName << " corresponds" << endl;
-      return NULL;
-    }
-  usnoFrame = usnoFrame.Rescale(1.2); // add 20%  
-  UsnoRead(usnoFrame, RColor, UsnoCat);
-  if (UsnoCat.size() == 0)
-    {
-      std::cerr << " Could not collect anything from a ref catalog : giving up" << std::endl;
-      throw(MatchException("No objects grabbed in the reference catalog.")); 
-      return NULL;
-    }
-
-  ConvertMagToFlux( &UsnoCat);
-  cout << " trying to match " << FitsImageName << " with usno R catalog " << endl;
-
-  TanPix2RaDec Pix2RaDec;
-  if (!GuessLinWCS(header, Pix2RaDec)) return NULL;  
-  TanRaDec2Pix UsnoToPix = Pix2RaDec.invert();
-
-  // convert the ( ra, dec) to pixel scale
-  UsnoCat.ApplyTransfo(UsnoToPix);
-
-
-  bool okShift = false;
-  StarMatchList *match = NULL;
-  if (!getenv("NO_SHIFT"))
-    {
-  // try to guess a simple shift, in case the guessed WCS is good:
-      cout << " trying to guess a shift" << endl;
-      GtransfoLin *shift = ListMatchupShift(*SE2Base(&ImageList), UsnoCat, 
-					    GtransfoIdentity(), 200.,10.);
-      match = ListMatchCollect(*SE2Base(&ImageList),
-					      UsnoCat, shift, 10.);
-      delete shift;
-      unsigned shiftMatches = match->size();
-      if (shiftMatches> 100 || (3*shiftMatches > UsnoCat.size() && shiftMatches > 25) ) 
-	{
-	  // considered as good :
-	  cout << " found " << match->size() << " matches with a simple shift" 
-	   << endl;
-	  okShift =true;
-	}
-      else
-	{
-	  cout << " only " << match->size() << " matches found "<< endl;
-	  delete match; match = NULL;
-	}
-    }
-  if (!okShift) // try the hard way
-    {
-
-      MatchConditions conditions;
-      // areas : 
-      double usnoWindowSizeInPix =ApplyTransfo(usnoFrame,UsnoToPix).Area();
-      double imageSize = Frame(header).Area();
-      
-      conditions.NStarsL1 = 80;
-      conditions.NStarsL2 = 60;
-      conditions.NStarsL2 = int (conditions.NStarsL1 * (usnoWindowSizeInPix/imageSize));
-      
-      cout << " combinatorial search with lists of " << conditions.NStarsL1 << ' ' <<  conditions.NStarsL2 << " stars " << endl;
-      
-      match = MatchSearchRotShiftFlip(*SE2Base(&ImageList), UsnoCat, conditions);
-      if (!match) return NULL;
-    }
+  StarMatchList *match = MatchSearchRotShiftFlip(*SE2Base(&ImageList), UsnoCat, conditions);
+  if (!match) return NULL;
 
   GtransfoLin guessCorr = *dynamic_cast<const GtransfoLin *>(match->Transfo());
   cout << " correction to guessed WCS, found using " << match->size() 
@@ -527,62 +488,10 @@ StarMatchList *FindMatchUsno(const string &FitsImageName,
       throw(MatchException(" Found Guess is really too far from a rotation "));
       return NULL;
     }
-  TanPix2RaDec newPix2RaDec = Pix2RaDec*guessCorr;
-  cout << " updated lin WCS: " << endl << newPix2RaDec << endl;
+  return new GtransfoLin(guessCorr);
 
-  /* now we know where the image is on the sky. Check that 
-     the area we collected in the catalog covers the image...
-  */
-  
-  int nx,ny;
-  header.ImageSizes(nx, ny);
-  Frame newUsnoFrame(newPix2RaDec.apply(Point(0,0)), 
-		     newPix2RaDec.apply(Point(nx,ny)));
-  // intersection between rough window and more accurate one:
-  Frame overlap = newUsnoFrame*usnoFrame; 
-  // allow for 10 % loss
-  if (match->Nused() > 4 && overlap.Area() < newUsnoFrame.Area()*0.9) 
-    {
-      // recollect USNO
-      cout << " FindMatchUsno: bad initial guess of window on USNO, recollecting" << endl;
-      cout << " shifting by " 
-	   << newUsnoFrame.Center()-usnoFrame.Center() << endl;
-      newUsnoFrame = newUsnoFrame.Rescale(1.2); // add 20%
-      UsnoCat.clear(); 
-      UsnoRead(newUsnoFrame, RColor, UsnoCat);
-      ConvertMagToFlux( &UsnoCat);
-      UsnoToPix = newPix2RaDec.invert();
-
-      // convert the ( ra, dec) to pixel units
-      UsnoCat.ApplyTransfo(UsnoToPix); 
-      // recollect , but no need for a combinatorial match:
-      delete match;
-      GtransfoIdentity id;
-      match = ListMatchCollect(*SE2Base(&ImageList), UsnoCat, &id, 5);
-      match->RefineTransfo(3.);
-    }
-
-  // express outputs in the tangent plane , in degrees
-  // transfo from guessed pixels to degrees
-  GtransfoLin pixToDegrees(UsnoToPix.LinPart().invert());
-  UsnoCat.ApplyTransfo(pixToDegrees);
-  TangentPoint = Pix2RaDec.TangentPoint();
-  // rebuild the match, since the UsnoList has changed (scale). 
-  // Maybe refitting would be enough....
-  delete match;
-  GtransfoLin cdFound(newPix2RaDec.LinPart());
-  match = ListMatchCollect(*SE2Base(&ImageList), UsnoCat, 
-			   &cdFound, 2./3600.);
-  match->RefineTransfo(5);
-  return match;
 }
 
-#ifdef STORAGE
-static double object_size(const SEStar *object)
-{
-  return sqrt(object->Mxx()*object->Myy());
-}
-#endif
 
 static void match_clean(StarMatchList &List)
 {
@@ -720,7 +629,8 @@ static void FillAllStarsFile(const DbImage &dbImage, const Gtransfo &Pix2RaDec)
 /*************         USNO PROCESS STUFF                *************/
 /********************************************************************/
 
-// To match an image with the usno catalogue
+#ifdef STORAGE
+// unused routine
 bool UsnoProcess(DbImage &dbimage)
 {
   if (!dbimage.IsValid())
@@ -728,22 +638,12 @@ bool UsnoProcess(DbImage &dbimage)
       cerr << " Be careful ! " << dbimage.Name() << " must be an image name ! " << endl;
     }
   
-  string catalogName = dbimage.ImageCatalogName(SExtractor);
-  if (!FileExists(catalogName.c_str()))
-    {
-      cerr << "The SExtractor Catalogue associated to image " << dbimage.Name() << " doesn't exist !! " << endl;
-      return false;
-    }  
-  string fitsFileName = dbimage.FitsImageName(Calibrated);
-  if (!FileExists(fitsFileName))
-    {
-      cerr << "The  calibrated fits image " << dbimage.Name() << " doesn't exist !! " << endl;
-      return false;
-    }
 
+  string catalogName = dbimage.ImageCatalogName(SExtractor);
+  string fitsFileName = dbimage.FitsImageName(Calibrated);
   return UsnoProcess(fitsFileName, catalogName, &dbimage);
 }
-
+#endif
 
 
 MatchCards::MatchCards()
@@ -801,111 +701,35 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
 }
 
 
-bool UsnoProcess(const string &fitsFileName, const string &catalogName, 
-		 DbImage *dbimage)
-{  
-  // cfitsio does not accept to reopen RW a file already opened RO:
-  {
-    FitsHeader header(fitsFileName);
-    const string cat_name((MatchPrefs.astromCatalogName != "" )? MatchPrefs.astromCatalogName : "USNO-R");
-
-    cout << endl << "Matching " << fitsFileName << " with " << cat_name  << endl;
-    cout << "INSTRUMENT = " << header.KeyVal("TOADINST") << endl;
-    cout << "CCD no = " << header.KeyVal("TOADCHIP") << endl;
-    cout << "FILTER = " << header.KeyVal("TOADFILT") << endl;
-    cout << "OBJECT = " << header.KeyVal("TOADOBJE") << endl;
-    cout << endl;
-  }
-   
-  SEStarList sestarlist(catalogName);
-  int initialSize = sestarlist.size();
-  cout << " Read " << initialSize << " objects from SexCat " << std::endl; 
-
-  /* remove objects flagged as "bad" (Ccd defects and cosmics mainly
-  but also some bright stars that may be useful for matching). 
-  This is  a good idea when using a "dense catalog".   */
-  if (MatchPrefs.ignoreBad)
-    {
-      for (SEStarIterator i = sestarlist.begin(); i !=sestarlist.end(); )
-	{
-	  SEStar &s = **i;
-	  if (s.FlagBad()) i=sestarlist.erase(i);
-	  else ++i;
-	}
-
-       std::cout << " left with " << sestarlist.size() 
-		 << " after removing bad objects" << std::endl;
-    }
-
-
-  // now count "good objects" for judging latter the match quality (from the fraction of matched objects)
-  int ngoodImageObjects = 0;
-  for (SEStarCIterator i = sestarlist.begin(); i !=sestarlist.end(); ++i )
-    {
-      const SEStar &s = **i;
-      if (s.FlagBad() || s.Flag()) continue;
-      if (s.EFlux() > 0.2*s.flux) continue;
-      ngoodImageObjects++;
-    }
-  cout << "number of image objects with flag=0 && flagbad=0 && S/N>5 : " 
-       << ngoodImageObjects << endl;
+static bool UsnoCollect(const Frame &usnoFrame, const TanPix2RaDec &Wcs, BaseStarList &UsnoCat)
+{
   
-
-  // if requested, remove saturated stars
-  if (MatchPrefs.ignoreSatur)
+  UsnoRead(usnoFrame, RColor, UsnoCat);
+  if (UsnoCat.size() == 0)
     {
-      for (SEStarIterator i = sestarlist.begin(); i !=sestarlist.end(); )
-	{
-	  SEStar &s = **i;
-	  if (s.IsSaturated()) i = sestarlist.erase(i);
-	  else ++i;
-	}
-      std::cout << " left with " << sestarlist.size() 
-		<< " after satur removal" << std::endl;
-    }
-
-  if (sestarlist.size()==0) 
-    {
-      cerr << " ERROR : UsnoProcess: SExtractor catalog (" 
-	   << catalogName << ") empty" << std::endl; 
+      std::cerr << " Could not collect anything from a ref catalog : giving up" << std::endl;
+      throw(MatchException("No objects grabbed in the reference catalog.")); 
       return false;
     }
 
+  ConvertMagToFlux( &UsnoCat);
 
+  TanRaDec2Pix UsnoToPix = Wcs.invert();
 
-  BaseStarList usnoList;
-  Point tangentPoint;
-  StarMatchList *guessedMatch = 
-    FindMatchUsno(fitsFileName, sestarlist, tangentPoint, usnoList);
+  // convert the ( ra, dec) to pixel scale
+  UsnoCat.ApplyTransfo(UsnoToPix);
+  return true;
+}
 
-  if (usnoList.size()==0) 
-    {cerr << " UsnoProcess: USNO list empty: give up " << endl;return false;}
-
-  // here the usnoList and guessedMatch refer to coordinate 
-  // in degrees in the tangent plane.
-  if (!guessedMatch) return false;
-
-  if (guessedMatch->Nused() < 5)
-    {
-      cerr << " MATCH FAILED... " << endl;
-      cerr << "Guessed Transfo = " << endl;
-      cerr << *(guessedMatch->Transfo()) << endl;
-      cerr << "Chi2 " << guessedMatch->Chi2() << " Nused " << guessedMatch->Nused() << " Residue " 
-	   << guessedMatch->Residual() << endl << endl;
-
-      cerr << endl << " ****************************** " << endl;
-      return false;
-    }
-
-  const Gtransfo *guess = guessedMatch->Transfo();
-
+#ifdef STORAGE
+static StarMatchList *RefineMatch(const SEStarList &sestarlist, const BaseStarList &usnoList, const Gtransfo &guess)
+{
 
   // Recollect a better match with a controlled accuracy
   StarMatchList *accurateMatch = ListMatchCollect(*SE2Base(&sestarlist), 
 						  usnoList, 
-						  guess, 
+						  &guess, 
 						  MatchPrefs.linMatchCut/3600.);
-  delete guessedMatch;
 
   int nMatches = accurateMatch->size();
 
@@ -981,13 +805,262 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	    << std::endl;
 
   delete accurateMatch;
-  accurateMatch = newMatch;
+  return newMatch;
+}
+#endif
 
-  // dump a match file?
+
+
+/* Yes, this routine is awfully long. It does:
+
+   1) get both object lists, and needed info from image header
+   2) try 2 matching algorithms and check the result
+   3) from the found match, fit distorted relation, recollect matches, and refit
+   4) split the result into a linear term (the CDi_j in WCS's and distortion terms
+   5) output all that, lists, Fitsheader
+   6) figure out a zero point and write it into the header
+
+*/
+bool UsnoProcess(const string &fitsFileName, const string &catalogName, 
+		 DbImage *dbimage)
+{
+
+  // Part 1.
+    TanPix2RaDec guessWcs;
+    Frame skyRegion, pixFrame;
+    double pixSize = 0;
+
+    // Part 1.1 Collect needed stuff from header and provide some printouts
+
+    {  // cfitsio does not accept to reopen RW a file already opened RO: 
+      FitsHeader header(fitsFileName);
+      const string cat_name((MatchPrefs.astromCatalogName != "" )? MatchPrefs.astromCatalogName : "USNO-R");
+      
+      cout << endl << "Matching " << fitsFileName << " with " << cat_name  << endl;
+      cout << "INSTRUMENT = " << header.KeyVal("TOADINST") << endl;
+      cout << "CCD no = " << header.KeyVal("TOADCHIP") << endl;
+      cout << "FILTER = " << header.KeyVal("TOADFILT") << endl;
+      cout << "OBJECT = " << header.KeyVal("TOADOBJE") << endl;
+      cout << endl;
+      if (!GuessLinWCS(header, guessWcs))
+	{
+	  throw(MatchException(" UsnoProcess: no WCS in file="+fitsFileName));
+	  return false;
+	}
+      pixFrame= Frame(header);
+      skyRegion = ApplyTransfo(pixFrame, guessWcs, LargeFrame).Rescale(1.2); // add 20% , i.e, 10 % on all sides
+      pixSize = header.KeyVal("TOADPIXS");
+    }
+
+  // Part 1.2 load image catalog
+  SEStarList sestarlist(catalogName);
+  int initialSize = sestarlist.size();
+  cout << " Read " << initialSize << " objects from SexCat " << std::endl; 
+
+  /* remove objects flagged as "bad" (Ccd defects and cosmics mainly
+  but also some bright stars that may be useful for matching). 
+  This is  a good idea when using a "dense catalog".   */
+  if (MatchPrefs.ignoreBad)
+    {
+      for (SEStarIterator i = sestarlist.begin(); i !=sestarlist.end(); )
+	{
+	  SEStar &s = **i;
+	  if (s.FlagBad()) i=sestarlist.erase(i);
+	  else ++i;
+	}
+
+       std::cout << " left with " << sestarlist.size() 
+		 << " after removing bad objects" << std::endl;
+    }
+
+
+  // now count "good objects" for judging latter the match quality (from the fraction of matched objects)
+  int ngoodImageObjects = 0;
+  for (SEStarCIterator i = sestarlist.begin(); i !=sestarlist.end(); ++i )
+    {
+      const SEStar &s = **i;
+      if (s.FlagBad() || s.Flag()) continue;
+      if (s.EFlux() > 0.2*s.flux) continue;
+      ngoodImageObjects++;
+    }
+  cout << "number of image objects with flag=0 && flagbad=0 && S/N>5 : " 
+       << ngoodImageObjects << endl;
+  
+
+  // if requested, remove saturated stars
+  if (MatchPrefs.ignoreSatur)
+    {
+      for (SEStarIterator i = sestarlist.begin(); i !=sestarlist.end(); )
+	{
+	  SEStar &s = **i;
+	  if (s.IsSaturated()) i = sestarlist.erase(i);
+	  else ++i;
+	}
+      std::cout << " left with " << sestarlist.size() 
+		<< " after satur removal" << std::endl;
+    }
+
+  // basic check
+  if (sestarlist.size()==0) 
+    {
+      throw(MatchException(" UsnoProcess: empty image catalog file="+catalogName));
+      return false;
+    }
+
+  // Part 1.3 collect reference catalog sub part.
+  TanRaDec2Pix RaDecToPix = guessWcs.invert();
+	
+  BaseStarList usnoList;
+  UsnoCollect(skyRegion, guessWcs, usnoList);
+
+
+  // Part 2 : find an initial match.
+  StarMatchList *initialMatch = NULL;
+  BaseStarList usnoListCopy(usnoList);
+
+  // 2 methods for finding initial match
+  for (int method = 1; method <=2; ++method)
+    {
+      GtransfoLin *guessCorr = NULL;
+      if (method == 2) 
+	{ // usnoList may have been corrupted, re-initialize it:
+	  usnoListCopy.CopyTo(usnoList);
+	}
+
+      // Part 2.1 : guess
+      if (method == 1)   // try a shift
+	guessCorr = FindShift(sestarlist, usnoList);
+
+      if (!guessCorr && method == 1) method++;
+      if (method == 2)
+	{
+	  MatchConditions conditions;
+	  // areas 
+	  double usnoWindowSizeInPix = skyRegion.Area()*fabs(RaDecToPix.Jacobian(RaDecToPix.TangentPoint()));
+	  double imageSize = pixFrame.Area();
+	  
+	  conditions.NStarsL1 = 80;
+	  conditions.NStarsL2 = int (conditions.NStarsL1 * (usnoWindowSizeInPix/imageSize));
+	  guessCorr = FindCombiMatch(sestarlist, usnoList, conditions);
+	  if (!check_guess(*guessCorr))
+	    {
+	      cout << " the guess is really too far from a rotation " << endl
+		   << " giving up" << endl;
+	      throw(MatchException(" Found Guess is really too far from a rotation "));
+	      return false;
+	    }
+	}
+      if (!guessCorr)
+	throw(MatchException(" UsnoProcess : coud not guess an initial transformation "));
+
+      cout << " guessed correction (in pixel space) to WCS " << endl << *guessCorr << endl;
+
+      // Part 2.2 : check that the initialy collected ref catalog roughly covers the whole image
+      Frame newSkyRegion = ApplyTransfo(pixFrame,guessWcs*(*guessCorr),LargeFrame).Rescale(1.1);
+      Frame overlap = newSkyRegion*skyRegion;
+      if (overlap.Area() < newSkyRegion.Area()*0.9) // poor initial guess
+	{
+	  cout << " FindMatchUsno: bad initial guess of window on USNO, recollecting" << endl;
+	  cout << " shifting by " 
+	       << newSkyRegion.Center()-skyRegion.Center() << endl;
+	  // keep the convention that usnoList is expressed in coordinates defined by guessWcs
+	  UsnoCollect(newSkyRegion, guessWcs, usnoList); 
+	}
+
+      // Part 2.3 : Recollect a better match with a controlled accuracy ...
+      StarMatchList *match = ListMatchCollect(*SE2Base(&sestarlist), 
+					      usnoList, 
+					      guessCorr, 
+					      MatchPrefs.linMatchCut/pixSize);
+
+      // ... and check if it is acceptable
+      int nMatches = match->size();
+      cout << " collected " << nMatches << " matches with tolerance " 
+	   << MatchPrefs.linMatchCut << " arcsec " << endl;
+      int minMatchCount = int(min(0.2*usnoList.size(), ngoodImageObjects*0.5));
+      if (nMatches > minMatchCount)
+	{
+	  initialMatch = match;
+	  initialMatch->RefineTransfo(5.);
+	  break; // we have a guess which provides an adequate number of matches, we now build a WCS.
+	}
+      else delete match;
+
+    } // end loop on matching methods
+
+  if (!initialMatch)
+    {
+      cout << " refined failed, giving up for " << fitsFileName << endl;
+      throw(MatchException("Matching transfo refined failed" ));
+      return false;
+    }
+
+  // up to here, the coordinates of both lists were pixels
+  // we convert both the current guess wcs correction and the current 
+  // usnoList to degrees in the tangent plane. The choosen tangent point
+  // is the one of  guessWcs
+
+  // Part 2.4 : transform outputs to degrees in the tangent plane
+
+  GtransfoLin guessCorr = *dynamic_cast<const GtransfoLin *>(initialMatch->Transfo());
+  GtransfoLin pix2TP = guessWcs.LinPart() * guessCorr;
+  usnoList.ApplyTransfo(guessWcs.LinPart());
+  Point tangentPoint = guessWcs.TangentPoint();
+  // we have changed coordinate system, rather than hacking the StarMatchList, we just recollect:
+  delete initialMatch;
+  initialMatch = ListMatchCollect(*SE2Base(&sestarlist), 
+				  usnoList, 
+				  &pix2TP, 
+				  MatchPrefs.linMatchCut/3600.); // linMatchCut (& co)  are provided in arcsec in TP 
+
+  // Done, we can proceed towards fitting a distorted transformation, recollecting matches and refitting
+
+  // Part 3 :  account for  distortions
+
+  // Part 3.1 : fit with a higher degree
+  // which distortion degree?
+  int match_order = MatchPrefs.distortionDegree;
+  int nMatches = initialMatch->size();
+  // check that the problem is enough constrained
+  while (((match_order+1)*(match_order+2))/2 > nMatches)
+    {
+      match_order--;
+      cout << " reducing match_order to " << match_order << endl;
+    }
+  initialMatch->SetTransfoOrder(match_order);
+  match_clean(*initialMatch);
+  cout << " Number of matches after clean " << initialMatch->size() << endl;
+  initialMatch->RefineTransfo(3);
+  std::cout << ' ' << initialMatch->size() << " matches after refine," 
+	    << " (1d res= " 
+	    << initialMatch->Residual()*3600. << "\"," 
+	    << "order = " << match_order << ')'	<< std::endl;
+
+  // Part 3.2 : recollect matches using this better transformation
+  StarMatchList *accurateMatch = ListMatchCollect(*SE2Base(&sestarlist), 
+					     usnoList, 
+					     initialMatch->Transfo(), 
+					     MatchPrefs.secondMatchCut/3600.);
+  std::cout << " collected " << accurateMatch->size() 
+	    << " matches (cut = " << MatchPrefs.secondMatchCut 
+	    << "\", transfo order = "  << initialMatch->TransfoOrder() 
+	    << ")" <<  std::endl;
+  accurateMatch->SetTransfoOrder(match_order);
+  accurateMatch->RefineTransfo(3);
+
+  delete initialMatch; initialMatch = NULL;
+
+  std::cout << " number of matches after refine "  << accurateMatch->size() 
+	    << ", " << "1d residual " 
+	    << FitResidual(accurateMatch->Chi2(), *accurateMatch, 
+			   *accurateMatch->Transfo())*3600 
+	    << std::endl;
+
+  // OK, Bizarre to see that here.... never mind
   char *matchFileName;
   if ((matchFileName = getenv("DUMP_MATCH")))
     {
-      accurateMatch->write(matchFileName, accurateMatch->Transfo());
+      accurateMatch->write(matchFileName, &pix2TP);
       BaseStarList imageReducedList;
       for (StarMatchCIterator i=accurateMatch->begin(); i != accurateMatch->end(); ++i)
 	{
@@ -996,28 +1069,22 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       imageReducedList.write((string(matchFileName)+".reduced").c_str());
     }
 
-
+  // Part 4.
   /* We split the transfo into 2 parts : a linear one for use by 
      official tools (e.g. saoimage), and a cubic correction 
-     to the it to be used by our stuff (for astrometry).
-     Something that makes the code messy is that the catalog 
-     we use is approximately in pixel scale: (it was converted 
-     from alpha,delta to what we get using usnoToPix.
-     So to go from image to (alpha,delta) the transfo reads 
-     usnoToPix.invert() * FoundTransfo, if this makes sense.
-     The choosen implementation changed around may 03, to follow
-     the anticipated normalization of optical distortions 
-     handling. 
+     to the fit to be used by our stuff (for astrometry).
+     
 
   */
-
-  // get the best linear description of our match
+  // Part 4.1 : get the best linear description of our match, so that tools that ignore distortion terms
+  // in WCS (such as ds9) are not too wrong
   GtransfoLin linFit;
   double residual = 3600.*FitResidual(linFit.fit(*accurateMatch), 
 				      *accurateMatch, linFit);
   cout << " 1d residual before fitting corrections " << residual 
        << " arcsec " << endl;
   
+  // Part 4.2 : fit the distortions. In principle the linear part is essentialy unity.
 
   GtransfoCub cubCorr;
   GtransfoQuad quadCorr;
@@ -1044,7 +1111,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       cout << " fitted correction :  "  << endl << *correction << endl;
     }
 
-
+  // Part 5 : outputs
+  // wether we write the WCS into the actual fits or in some ASCII fits-like header (A la scamp) 
   string outFitsFileName = fitsFileName;
   if (MatchPrefs.wcsFileName != "")
     {
@@ -1077,11 +1145,12 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       outFitsFileName = tmpnam(NULL);
     }
 
-  // write the WCS in the fits header :
+  // Part 5.1 : write the WCS in the fits header :
   if (MatchPrefs.writeWCS)
     {
       TanPix2RaDec pix2RaDec(linFit, tangentPoint);
       if (correction) pix2RaDec.SetCorrections(correction);
+      cout << " writing WCS to " << outFitsFileName << endl; 
       TanWCS2Header(outFitsFileName, pix2RaDec);
       FitsHeader header(outFitsFileName, RW);
       header.AddOrModKey("RMATCHUS", residual, 
@@ -1102,7 +1171,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	}
       header.AddOrModKey("REFCAT",BaseName(astromRef), " Name of the ref. cat. astrom. and photom.");
       
-
+      // Part 5.2 write to disk some extra info: the actual matches
       if (MatchPrefs.dumpMatches)
 	{
       /* before writing lists to disk, we transform the usnoList back to ra
@@ -1131,7 +1200,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	}
     }
 
-  // photometric zero point   
+  // Part 6 : photometric zero point   
   double zeropoint, errzero;
   if (GetUsnoZeroPoint(accurateMatch, RColor, zeropoint, errzero))
     {
@@ -1186,6 +1255,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	  header.AddOrModKey("USNOSB25", ssn25, "Signal / Noise at mag = 25");
 	}
     }
+
   // if ascii output requested, convert now
     if (MatchPrefs.asciiWCS && MatchPrefs.writeWCS)
       {
@@ -1206,7 +1276,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
 #ifdef COMMENT
 
-/* found in read.use in the catalog directory */
+/* found in read.use in the USNO I catalog directory */
 
 12) The RA takes a full 32-bit integer as does the SPD.  The third 32-bit
 integer has been packed according to the following format.
