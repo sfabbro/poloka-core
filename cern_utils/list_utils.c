@@ -90,7 +90,7 @@ while (fgets(line,8192,File))
   char *left_over;
   int nread;
   if (strlen(line) <= 1) continue;
-  if (line[0] == '#') continue;
+  if (line[0] == '#' || line[0] == '@') continue;
   left_over = split_line(line,x,Dim,&nread);
   if (nread < Dim) miss++;
   if (atof(left_over)) more++;
