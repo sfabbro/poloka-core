@@ -5,7 +5,7 @@
 
 #include "stringlist.h"
 #include "swarpstack.h"
-#include "usnoutils.h"
+#include "sestar.h"
 #include "fitsimage.h"
 #include "fitsslice.h"
 #include "wcsutils.h"
