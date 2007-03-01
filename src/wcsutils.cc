@@ -948,12 +948,10 @@ Frame SkyRegion(const FitsHeader &Header)
 {
   int nx,ny;
   Header.ImageSizes(nx,ny);
-  TanPix2RaDec Pix2RaDec;
-  if (!GuessLinWCS(Header, Pix2RaDec)) return Frame();
-  cout << " Lin WCS Guess " << Pix2RaDec << endl;
-  Point p00 = Pix2RaDec.apply(Point(0,0));
-  Point p11 = Pix2RaDec.apply(Point(nx,ny));
-  return Frame(p00,p11);
+  TanPix2RaDec pix2RaDec;
+  if (!GuessLinWCS(Header, pix2RaDec)) return Frame();
+  //  cout << " Lin WCS Guess " << Pix2RaDec << endl;
+  return ApplyTransfo(Frame(Header), pix2RaDec, LargeFrame);
 }
 
 
