@@ -98,17 +98,9 @@ int main(int argc, char **argv)
 	}
 
       string catalogName = dbimage.ImageCatalogName(SExtractor);
-      if (!FileExists(catalogName.c_str()))
-	{
-	  cerr << "The SExtractor Catalogue associated to image " << name << " doesn't exist !! " << endl;
-	  continue;
-	}  
+
       string fitsFileName = dbimage.FitsImageName(Calibrated);
-      if (!FileExists(fitsFileName))
-	{
-	  cerr << "The  calibrated fits image " << name << " doesn't exist !! " << endl;
-	  continue;
-	}
+
       {
 	FitsHeader head(fitsFileName);
 	if (head.HasKey("DZEROUSN") && !overwrite && MatchPrefs.writeWCS && !MatchPrefs.asciiWCS)
