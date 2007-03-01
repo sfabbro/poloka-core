@@ -318,13 +318,19 @@ for (int i = 0; i<Conditions.MaxTrialCount; ++i)
     objets (2 on each list) fall in this 4 parameter space.
 
     One trick is that rather than using actual offsets, we histogram
-    object indices of the combination: This 
+    object indices of the combination: 
 */
 
 static StarMatchList *ListMatchupRotShift_New(BaseStarList &L1, BaseStarList &L2, 
 					      const Gtransfo &Tin, 
 					      const MatchConditions &Conditions) 
-{ 
+{
+  if (L1.size() <= 4 || L2.size() <= 4)
+    {
+      cout << " ListMatchupRotShift_New : (at least) one of the lists is too short " << endl;
+      return NULL;
+    }
+
   SegmentList sList1(L1, Conditions.NStarsL1, Tin); 
   SegmentList sList2(L2, Conditions.NStarsL2, GtransfoIdentity());
 
@@ -387,6 +393,7 @@ SolList Solutions;
    {
      double pars[4];
      int maxContent = histo.MaxBin(pars);
+     if (maxContent == 0) break;
      if (Conditions.PrintLevel >=1) 
        {
 	 cout << " valMax " << maxContent 
