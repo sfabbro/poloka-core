@@ -3,6 +3,7 @@
 #include <fstream>
 #include <matvect.h>
 #include <fitsio.h>
+#include <assert.h>
 
 using namespace std;
 
