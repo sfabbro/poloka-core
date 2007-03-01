@@ -34,7 +34,11 @@ c     look-up table (1 for constant, 3 for linear, 6 for quadratic).
       
 c     MAXSTR is the largest number of stars permitted in a data file.
       INTEGER MAXSTR
-      PARAMETER(MAXSTR=64000)
+      PARAMETER(MAXSTR=200)
+c this number cannot be too large because there are arrays which are 
+c sized as (3*MAXSTR,3*MAXSTR). Pierre Astier.
+
+
       
 c     MAXN is the maximum permitted number of PSF stars.
       INTEGER MAXN
