@@ -11,6 +11,8 @@
 #include <string>
 #include <cctype>
 #include <iostream>
+#include "polokaexception.h"
+
 
 void DirName(const char *FullFileName, char *DirName)  /* DirName is assumed to point to an area at least as long as FullFileName */
 {
@@ -83,14 +85,24 @@ std::string FileExtension(const std::string &FileName)
 
 int MKDir(const char *path, const bool Warn)
 {
-if (FileExists(path)) return 1;
-char command[512];
+  if (FileExists(path)) 
+    {
+      if (IsDirectory(path)) return 1;
+      else 
+	{
+	  cerr << " MKDir : regular file exists at this path : " << path << endl;
+	  throw(PolokaException(" MKDir : regular file exists, file="+string(path)));
+	}
+    }
+char command[1024];
 sprintf(command,"mkdir %s",path);
 int status  = system(command);
 // cout <<" debug :status for " << command << ' ' << status << endl;
-if (status && Warn)
+if (status)
   {
-    cerr << " MKDir : could not create " << path << endl;
+    if (Warn) cerr << " MKDir : could not create " << path << endl;
+    throw(PolokaException("(IO) MKDir could not create directory "+string(path)));
+
   }
  return (!status);
 }
