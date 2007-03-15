@@ -1144,6 +1144,9 @@ int FitsHeader::read_image(const int xmin, const int ymin,
 	{
 	  std:: cerr << " cannot read back compressed images with bitpix != {16,-32}, contact developpers " << std::endl;
 	  std::cerr << "image name " << FileName() << std::endl;
+	  char mess[256];
+	  sprintf(mess," (IO) cannot read back compressed images with bitpix=%d for file=%s",bitpix,FileName().c_str());
+	  throw(FitsException(mess));
 	  abort();
 	}
       float *pdata = data;
