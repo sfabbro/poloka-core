@@ -7,7 +7,7 @@
 #include "sestar.h"
 #include "fastfinder.h"
 #include "reducedutils.h"
-
+#include "polokaexception.h"
 
 #define DEBUG_PsfMatch
 
@@ -159,29 +159,54 @@ int PsfMatch::FilterStarList(const double MaxDist)
   double bMinWorst = worst->Seeing()* bfactor;
   double mindist = worst->Seeing()*3;
   double minsignaltonoiseratio = 10;
-  cout << "  cuts satur bmin " << saturLevBest << " " << bMinBest << endl;
+  cout << "cuts for best, satur bmin " << saturLevBest << " " << bMinBest << endl;
+  cout << "cuts for worst, satur bmin " << saturLevWorst << " " << bMinWorst << endl;
   FastFinder worstFinder(*SE2Base(&worstStarList));
 
- 
-  
+  int n_good_for_fit_best  = 0;
+  int n_matches = 0;
+  int n_good_for_fit_worst = 0;
+  int n_in_frame = 0;
+  int n_far_from_edges = 0;
+    
   for (SEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); )
     {
       SEStar *sb = *sibest;
-      const SEStar *sworst;  
-      if (GoodForFit(sb, saturLevBest, bMinBest, minsignaltonoiseratio)
-	  && (sworst = (SEStar *) worstFinder.FindClosest(*sb,MaxDist))
-	  && (sb->Distance(*sworst) < MaxDist) // useless?
-	  && GoodForFit(sworst, saturLevWorst, bMinWorst, minsignaltonoiseratio)
-	  && (intersection.InFrame(*sb))  
-	  && (intersection.MinDistToEdges(*sb) > mindist)) // remove objects close to the edge
-	{
-	  ++sibest;
+      const SEStar *sworst;
+      bool ok = false;
+      if (GoodForFit(sb, saturLevBest, bMinBest, minsignaltonoiseratio)) {
+	n_good_for_fit_best++;
+	sworst = (SEStar *) worstFinder.FindClosest(*sb,MaxDist);
+	if (sworst) {
+	  if(sb->Distance(*sworst) < MaxDist) { // useless?
+	    n_matches++;
+	    if(GoodForFit(sworst, saturLevWorst, bMinWorst, minsignaltonoiseratio)) {
+	      n_good_for_fit_worst++;
+	      if(intersection.InFrame(*sb)) {
+		n_in_frame++;
+		if(intersection.MinDistToEdges(*sb) > mindist) // remove objects close to the edge
+		  {
+		    ++sibest;
+		    ok = true;
+		    n_far_from_edges++;
+		  }
+	      }
+	    }
+	  }
 	}
-      else
-	{
-	  sibest = bestStarList.erase(sibest);
-	}
+      }
+      if(!ok)
+	sibest = bestStarList.erase(sibest);
+      
     }
+  // dump all counters
+  cout << "n_good_for_fit_best " << n_good_for_fit_best << endl;
+  cout << "n_matches " << n_matches << endl;
+  cout << "n_good_for_fit_worst " << n_good_for_fit_worst << endl; 
+  cout << "n_in_frame " << n_in_frame << endl;
+  cout << "n_far_from_edges " << n_far_from_edges << endl; 
+  
+
   // get size of stamps to check for null weights for all selected objects
   OptParams optparams;
   optparams.OptimizeSizes(best->Seeing(),worst->Seeing());
@@ -201,15 +226,21 @@ int PsfMatch::FilterStarList(const double MaxDist)
   }
   int hsize = optparams.HKernelSize+optparams.HStampSize;
   
+
+
+  int n_good_weight = 0;
   for (SEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); )
     {
       SEStar *sb = *sibest;
-      if( check_weights(weight,sb->x,sb->y,hsize)) 
+      if( check_weights(weight,sb->x,sb->y,hsize)) { 
 	++sibest;
-      else
+	n_good_weight ++;
+      } else
 	sibest = bestStarList.erase(sibest);
     } 
-  
+  cout << "n_good_weight " << n_good_weight << endl;
+  cout << "hsize " << hsize << endl;
+ 
   if (getenv("DUMP_FIT_LIST"))
     bestStarList.write("fitting_objects.list");
   bestStarList.sort(DecreasingFluxMax);
@@ -277,6 +308,9 @@ bool PsfMatch::FitKernel(const bool KeepImages)
     {
       if (nstars==0) nstars = FilterStarList();
       cout << " We have " << nstars << " objects to fit with" << endl;
+      if ( nstars == 0 ) {
+	throw(PolokaException("No stars for psfmatch"));
+      }
       if (nstars < 10) cerr << " WARNING: Less than 10 common objects for kernelfit "<< endl;
     }
   else
