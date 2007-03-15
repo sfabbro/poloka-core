@@ -44,7 +44,7 @@ int main(int argc,char **args)
   for (int i=istart; i< argc; ++i)
     {
       try{
-      FitsImage image(args[i],RW);  
+      FitsImage image(args[i],RW);
       image.EnableWrite(false); // hold it
       if (!image.IsValid())
 	{
@@ -53,6 +53,8 @@ int main(int argc,char **args)
 	}
       if (use_header) illu = TotalIlluRegion(image);
       if (image.Trim(illu)) image.EnableWrite(true);
+      // keep the original scaling : 
+      image.Write( /*force_bscale = */ true);
       }catch(PolokaException p){
 	p.PrintMessage(cout);
 	ok = false;
