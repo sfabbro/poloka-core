@@ -5,6 +5,7 @@
 #include "psfmatch.h"
 #include "fitsimage.h"
 #include "imagesubtraction.h"
+#include "polokaexception.h"
 
 // for io
 //#include "kernelfit_dict.h"
@@ -43,59 +44,65 @@ int main(int nargs, char **args)
       }
   }
 
+  try {
 
-  // write kernel in xml file
-  string outputfilename = newimage->Dir()+"/kernel_from_"+refimage->Name()+".dat";
-  cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl;
-  //  obj_output<xmlstream> oo(outputfilename);
-  ofstream oo(outputfilename.c_str());
-  double phoratio = 1;
-  double chi2 = 0.;
-  int nstars = 0;
-  int nparams = 0;
-  
-  if(makesub) {
-    cout << "image_sub : creating sub " << refimage->Name() << " " << newimage->Name() << endl;
-    ImageSubtraction sub("sub",refimage,newimage);
-    sub.MakeFits();
-    cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl; 
-    sub.GetKernelFit()->write(oo);
-    //    oo <<*(sub.GetKernelFit());
-
-    phoratio = sub.PhotomRatio();
-    chi2 = sub.Chi2();
-    nstars = sub.Nstars();
-    nparams = sub.Nparams();
+    // write kernel in xml file
+    string outputfilename = newimage->Dir()+"/kernel_from_"+refimage->Name()+".dat";
+    cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl;
+    //  obj_output<xmlstream> oo(outputfilename);
+    ofstream oo(outputfilename.c_str());
+    double phoratio = 1;
+    double chi2 = 0.;
+    int nstars = 0;
+    int nparams = 0;
     
-  }else{
-    cout << "image_sub : psfmatch "  << refimage->Name() << " " << newimage->Name() << endl;
-    PsfMatch psfmatch(refimage,newimage,NULL,true);
-    if( ! psfmatch.FitKernel(true) ) {
-      cout << "psfmatch failed" << endl;
+    
+    
+    if(makesub) {
+      cout << "image_sub : creating sub " << refimage->Name() << " " << newimage->Name() << endl;
+      ImageSubtraction sub("sub",refimage,newimage);
+      sub.MakeFits();
+      cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl; 
+      sub.GetKernelFit()->write(oo);
+      //    oo <<*(sub.GetKernelFit());
+
+      phoratio = sub.PhotomRatio();
+      chi2 = sub.Chi2();
+      nstars = sub.Nstars();
+      nparams = sub.Nparams();
       
-      // dump something for log
-      return EXIT_FAILURE;
+    }else{
+      cout << "image_sub : psfmatch "  << refimage->Name() << " " << newimage->Name() << endl;
+      PsfMatch psfmatch(refimage,newimage,NULL,true);
+      if( ! psfmatch.FitKernel(true) ) {
+	cout << "psfmatch failed" << endl;
+	
+	// dump something for log
+	return EXIT_FAILURE;
+      }
+      cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl; 
+      //    obj_output<xmlstream> oo(outputfilename);
+      psfmatch.GetKernelFit()->write(oo);
+      //    oo << *(psfmatch.GetKernelFit());
+      
+      phoratio = psfmatch.PhotomRatio();
+      chi2 = psfmatch.Chi2();
+      nstars = psfmatch.Nstars();
+      nparams = psfmatch.Nparams();
     }
-    cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl; 
-    //    obj_output<xmlstream> oo(outputfilename);
-    psfmatch.GetKernelFit()->write(oo);
-    //    oo << *(psfmatch.GetKernelFit());
-
-    phoratio = psfmatch.PhotomRatio();
-    chi2 = psfmatch.Chi2();
-    nstars = psfmatch.Nstars();
-    nparams = psfmatch.Nparams();
-  }
-  oo.close();
-  
-  FitsHeader head(newimage->FitsName(), RW);
-  head.AddOrModKey("PMRATIO", phoratio);
-  head.AddOrModKey("PMCHI2" , chi2);
-  head.AddOrModKey("PMNSTAR", nstars);
-  head.AddOrModKey("PMNPAR" , nparams);
-
-  cout << "the end" << endl;
-  
-  
+    oo.close();
+    
+    FitsHeader head(newimage->FitsName(), RW);
+    head.AddOrModKey("PMRATIO", phoratio);
+    head.AddOrModKey("PMCHI2" , chi2);
+    head.AddOrModKey("PMNSTAR", nstars);
+    head.AddOrModKey("PMNPAR" , nparams);
+    
+    cout << "the end" << endl;
+  }catch(PolokaException p)
+    {
+      p.PrintMessage(cout);
+      return EXIT_FAILURE;	      
+    } 
   return EXIT_SUCCESS;
 }
