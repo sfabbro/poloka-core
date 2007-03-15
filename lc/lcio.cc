@@ -55,8 +55,9 @@ static ReducedImage* read_image(const string& line)
   vector<string> words;
   DecomposeString(words, line);
   RemovePattern(words.front()," ");
-
+  cout << "new img " << words.front() << endl;
   ReducedImage *red = new ReducedImage(words.front());
+  //cout << "red = " << red << endl;
 
   if (!red->ActuallyReduced())
     {
@@ -84,13 +85,15 @@ static istream& read_lcfile(istream& stream,
     {
       if (line[0] == '#' || line.length() == 0) continue; 
       
-      if (line.find("OBJECTS") != line.npos)
+      if (line.find("OBJECTS") == 0)
 	{ rimin=false; objin=true; phoin=false;  continue; }
       
-      if (line.find("IMAGES") != line.npos)   
-	{ rimin=true;  objin=false; phoin=false; continue; }
+      if (line.find("IMAGES") == 0)   
+	{ 
+	  //cout << "Read key IMAGES" << endl;
+	  rimin=true;  objin=false; phoin=false; continue; }
 
-      if (line.find("PHOREF") != line.npos)   
+      if (line.find("PHOREF") == 0)   
 	{ rimin=false;  objin=false; phoin=true; continue; }
 
       if (objin) 
@@ -112,6 +115,8 @@ istream& lc_read(istream& Stream, RefStarList& Objects, ReducedImageList& Images
 
   ReducedImage *ref = 0;
   read_lcfile(Stream, Objects, Images, ref);
+  cout << " Number of images = " << Images.size() << endl;
+
 
   if (ref) for_each(Objects.begin(), Objects.end(),
   		    bind2nd(mem_fun(&Fiducial<PhotStar>::AssignImage), ref));
