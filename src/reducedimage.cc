@@ -317,6 +317,23 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   The background map is saved only if it is subtracted, and we use SExtractor back (rather than Poloka back)
   */
 
+  {
+
+    // DEBUG
+    // fix wrong saturation levels (occurs for short exposure times)
+    if (IsOfKind<Megacam>(FitsHeader(FitsName())) && Saturation()< 50000)
+      {
+	FitsHeader flat(FitsFlatName());
+	double fla = flat.KeyVal("FLATSCLA"); // A amplifier
+	double flb = flat.KeyVal("FLATSCLB"); // B amplifier
+	// actually the inverse of average_flat.
+	double flat_mean = min(fla,flb);
+	cout << " WARNING : changing saturation  from " << Saturation() << " to ";
+	SetSaturation(65536.*flat_mean);
+	cout << Saturation() << endl;
+      }
+  }
+
   bool sauver_fond = (use_poloka_back == 0);
 
   ForSExtractor data ;
@@ -446,11 +463,12 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 	      Image *largeBack = back.BackgroundImage();
 	      im -= *largeBack;
 	      delete largeBack;
+	      // DEBUG/TEST
+              // im.SetWriteAsFloat();
 	    }
 	  
 	  // set back ("Fond() ") of stars to zero.
 	  SetStarsBackground(stlse,0.);
-	  
 	  // update saturation level in image header
 	  SetOriginalSaturation(Saturation(),"Original saturation level before sky subtraction"); 
 	  SetSaturation(Saturation()-Fond,"Saturation level corrected from sky subtraction"); 
@@ -656,6 +674,12 @@ bool ReducedImage::MakeAperCat()
       double myy = sq(ySize);
       double mxy = corr*xSize*ySize;
       seeing = pow(mxx*myy-sq(mxy),0.25);
+    }
+  else
+    {
+      cout << " MakeAperCatcould not figure out a seeing " << endl;
+      throw(PolokaException("MakeAperCat could not figure out a seeing "));
+      return false;
     }
   cout << Name() << " star shapes " << xSize << ' ' << ySize << ' ' 
        << corr  << endl;

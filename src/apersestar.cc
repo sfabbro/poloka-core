@@ -564,6 +564,9 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
 		    StarScoresList &scores)
 {
   Histo2d histo(30,0,10.,30,0.,10.);
+  XSize = 0;
+  YSize = 0;
+  Corr = 0;
   for (AperSEStarCIterator i = List.begin(); i != List.end(); ++i)
     {
       const AperSEStar &s = **i;
@@ -581,6 +584,13 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
       double yy = sqrt(s.gmyy);
       histo.Fill(xx,yy, s.Fluxmax());
       scores.push_back(new StarScores (xx,yy,&s));
+    }
+
+  unsigned nobj = scores.size();
+  if (nobj<5)
+    {
+      cout << " FindStarShapes : only " << nobj << " objects passing the cuts " << endl;
+      return false;
     }
 
   double xMax, yMax;
