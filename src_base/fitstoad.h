@@ -26,6 +26,9 @@ string TelInstName(const FitsHeader &Head);
 //! test if Head is of kind "Inst" (where Inst is one of the virtual instruments)
 template<class Inst> bool IsOfKind(const FitsHeader &Head);
 
+//! test if Head is of kind "Inst" (where Inst is one of the virtual instruments)
+template<class Inst> bool IsOfKind(const string &FitsFileName);
+
 
 //! returns the overscan region associated with the given amplifier
 Frame OverscanRegion(const FitsHeader &Head, const int iAmp);

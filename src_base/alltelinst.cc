@@ -63,4 +63,8 @@ template bool IsOfKind<Cfht12K>(const FitsHeader &);
 template bool IsOfKind<Int4Wfc>(const FitsHeader &);
 template bool IsOfKind<IntWfcNewDaq>(const FitsHeader &);
 template bool IsOfKind<Megacam>(const FitsHeader &);
+template bool IsOfKind<Cfht12K>(const string &);
+template bool IsOfKind<Int4Wfc>(const string &);
+template bool IsOfKind<IntWfcNewDaq>(const string &);
+template bool IsOfKind<Megacam>(const string &);
 #endif

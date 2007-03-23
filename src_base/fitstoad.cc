@@ -361,6 +361,12 @@ template<class Inst> bool IsOfKind(const FitsHeader &Head)
   return (dynamic_cast<Inst *>(Head.TelInst()) != NULL);
 }
 
+template<class Inst> bool IsOfKind(const string &FitsFileName)
+{
+  FitsHeader Head(FitsFileName);
+  return (dynamic_cast<Inst *>(Head.TelInst()) != NULL);
+}
+
 
 Frame OverscanRegion(const FitsHeader &Head, const int iAmp)
 {
@@ -587,8 +593,9 @@ alltelinst.cc : $(telinst_sources) fitstoad.cc
 	echo "&Unknown::Acceptor};" >> $@.new
 	echo '/* instanciation of templates IsOfKind */' >> $@.new
 	grep TYPE_TESTER ${telinst_sources}  | sed 's/${classname}/template bool IsOfKind<\2>(const FitsHeader \&);/' >> $@.new
+	grep TYPE_TESTER ${telinst_sources}  | sed 's/${classname}/template bool IsOfKind<\2>(const string \&);/' >> $@.new
 	echo "#endif"  >> $@.new
-	diff $@.new $@ && mv -f $@.new $@
+	-diff $@.new $@ || mv -f $@.new $@
 
 alltelinst.h : $(telinst_sources) fitstoad.cc
 	\rm -f  $@.new
@@ -598,7 +605,7 @@ alltelinst.h : $(telinst_sources) fitstoad.cc
 	echo '#define ALLTELINST__H' >> $@.new
 	grep TYPE_TESTER ${telinst_sources} | sed 's/${classname}/class \2;/'   >> $@.new
 	echo '#endif' >> $@.new
-	diff $@.new $@ && mv -f $@.new $@
+	diff $@.new $@ || mv -f $@.new $@
 
 fitstoad.cc : $(telinst_sources)
 	  touch $@
