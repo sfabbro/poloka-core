@@ -57,19 +57,23 @@ static WCSTab wcscards[] = {
 static bool GuessLinWCS_megacam(const FitsHeader &Head, TanPix2RaDec &Guess) {
   if (HasLinWCS(Head)) // we have a WCS in the header
     {
-      // if it is not a poloka WCS...
-      if (! Head.HasKey("WCS_VERS"))
-	{
-	  // ... check that it was not screewed up by Elixir
-	  double crval1 = Head.KeyVal("CRVAL1");
-	  double crval2 = Head.KeyVal("CRVAL2");
-	  double ra_deg = Head.KeyVal("RA_DEG");
-	  double dec_deg = Head.KeyVal("DEC_DEG");
-	  if (fabs(crval1-ra_deg) < 0.02 && fabs(crval2-dec_deg) < 0.02) 
-	    return TanLinWCSFromHeader(Head,Guess);
-	  else
-	    cout << " bizarre WCS in " << Head.FileName() << " cooking-up one instead" << endl; 
-	}
+      // ... check that it was not screewed up by Elixir
+      double crval1 = Head.KeyVal("CRVAL1");
+      double crval2 = Head.KeyVal("CRVAL2");
+      double ra_deg = Head.KeyVal("RA_DEG");
+      double dec_deg = Head.KeyVal("DEC_DEG");
+      double cd1_2 = Head.KeyVal("CD1_2");
+      double cd1_1 = Head.KeyVal("CD1_1");
+      bool poloka_wcs =  Head.HasKey("WCSVERS");
+      // if it is not a poloka WCS... check Elixir solution,
+      // if it is a poloka_wcs, check that it is roughly correct 
+      if ((!poloka_wcs && (fabs(crval1-ra_deg) < 0.02 && fabs(crval2-dec_deg) < 0.02 
+			   && (fabs(cd1_2) < 5e-7)))
+	  ||
+	  (poloka_wcs && (fabs(fabs(cd1_1)-5.19E-05)) < 2e-6)) 
+	return TanLinWCSFromHeader(Head,Guess);
+      else 
+	cout << " bizarre WCS in " << Head.FileName() << " cooking-up one instead" << endl; 
     }
   
   // if there is no WCS in the header, we try to rebuild it
