@@ -158,10 +158,6 @@ cerr << "readusno: reading USNO file  " << filebase << endl;
     return;
     }
 
-if (!(ifp=fopen(catname.c_str(),"r"))) {
-cerr << "readusno error: Couldn't open " << catname << endl;
-return;
-}
 
 raidx0=(int)floor(minra/3.75);       /* Indexed every 3.75deg = 15min */
 pos=(idx[raidx0]-1)*12;
@@ -219,13 +215,14 @@ while (raword<minraword && !feof(ifp)) read_a_star(ifp, raword, decword, magword
         {
 	  //cout << raword << ' ' << decword << ' ' << mag << endl;
           BaseStar *s = new BaseStar(ra,dec,mag);
+	  if (s->x <minra || s->x > maxra) 
+	    cout << " problem with usno star  : " << s ;
           *s = T.apply(*s);
 	  ApmList.push_back(s);
         }        
     }
 }
   
-
  fclose(ifp);
 }
 
@@ -355,11 +352,6 @@ static void actual_usno_read(const string &usnodir,
 #ifdef DEBUG_READ
   fprintf(stderr,"Returning.\n");
 #endif
-  for (BaseStarIterator si = ApmList.begin(); si != ApmList.end(); ++si)
-    {
-     BaseStar &s = *(*si);
-     if (s.x <minra || s.x > maxra) cout << " problem with usno star  : " << s ;
-   }
   int count = ApmList.size();
   cout << " collected " << count  << " objects" << endl;  
 }
@@ -429,7 +421,7 @@ static bool check_guess(const GtransfoLin &Guess)
 }
   
 
-static GtransfoLin *FindShift(const SEStarList &ImageList, const BaseStarList &UsnoCat)
+static GtransfoLin *FindShift(const SEStarList &ImageList, const BaseStarList &UsnoCat, const unsigned &MinMatches)
 {
   GtransfoLin *shift = NULL;
   if (!getenv("NO_SHIFT"))
@@ -442,7 +434,7 @@ static GtransfoLin *FindShift(const SEStarList &ImageList, const BaseStarList &U
 					      UsnoCat, shift, 10.);
       unsigned shiftMatches = match->size();
       delete match;
-      if (3*shiftMatches > UsnoCat.size() && shiftMatches > 25)
+      if (shiftMatches >= MinMatches)
 	{
 	  // considered as good :
 	  cout << " found " << shiftMatches << " matches with a simple shift" 
@@ -875,7 +867,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
 
   // now count "good objects" for judging latter the match quality (from the fraction of matched objects)
-  int ngoodImageObjects = 0;
+  unsigned ngoodImageObjects = 0;
   for (SEStarCIterator i = sestarlist.begin(); i !=sestarlist.end(); ++i )
     {
       const SEStar &s = **i;
@@ -912,6 +904,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	
   BaseStarList usnoList;
   UsnoCollect(skyRegion, guessWcs, usnoList);
+  usnoList.write("usno.list");
 
 
   // Part 2 : find an initial match.
@@ -929,7 +922,12 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
       // Part 2.1 : guess
       if (method == 1)   // try a shift
-	guessCorr = FindShift(sestarlist, usnoList);
+	{
+	  unsigned minShiftMatches = min(min(ngoodImageObjects*2/3, 25u),
+				usnoList.size()/3);
+	  guessCorr = FindShift(sestarlist, usnoList, minShiftMatches);
+	}
+    
 
       if (!guessCorr && method == 1) method++;
       if (method == 2)
@@ -941,19 +939,24 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	  
 	  conditions.NStarsL1 = 80;
 	  conditions.NStarsL2 = int (conditions.NStarsL1 * (usnoWindowSizeInPix/imageSize));
+	  //	  conditions.PrintLevel = 1;
+	  conditions.MaxTrialCount = 16;
 	  guessCorr = FindCombiMatch(sestarlist, usnoList, conditions);
-	  if (!check_guess(*guessCorr))
-	    {
-	      cout << " the guess is really too far from a rotation " << endl
-		   << " giving up" << endl;
-	      throw(MatchException(" Found Guess is really too far from a rotation "));
-	      return false;
-	    }
+
 	}
+      if (guessCorr)
+	cout << " guessed correction (in pixel space) to WCS " << endl << *guessCorr << endl;
+
+      if (!check_guess(*guessCorr))
+	{
+	  cout << " the guess is really too far from a rotation " << endl;
+	  delete guessCorr;
+	  guessCorr = NULL;
+	  if (method == 1) continue;
+	}	  
+
       if (!guessCorr)
 	throw(MatchException(" UsnoProcess : coud not guess an initial transformation "));
-
-      cout << " guessed correction (in pixel space) to WCS " << endl << *guessCorr << endl;
 
       // Part 2.2 : check that the initialy collected ref catalog roughly covers the whole image
       Frame newSkyRegion = ApplyTransfo(pixFrame,guessWcs*(*guessCorr),LargeFrame).Rescale(1.1);
@@ -1031,6 +1034,22 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   match_clean(*initialMatch);
   cout << " Number of matches after clean " << initialMatch->size() << endl;
   initialMatch->RefineTransfo(3);
+  // recheck list size
+  
+  int new_match_order = match_order;
+  nMatches = initialMatch->size();
+  while (((new_match_order+1)*(new_match_order+2))/2 >= nMatches)
+    {
+      new_match_order--;
+      cout << " number of matches too short for the initially selected order " 
+	   << " order = " << new_match_order << endl;
+      
+      initialMatch->SetTransfoOrder(new_match_order);
+      initialMatch->RefineTransfo(3);
+      match_order = new_match_order;
+      if (match_order == 1) break;
+    }
+
   std::cout << ' ' << initialMatch->size() << " matches after refine," 
 	    << " (1d res= " 
 	    << initialMatch->Residual()*3600. << "\"," 
@@ -1047,8 +1066,23 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	    << ")" <<  std::endl;
   accurateMatch->SetTransfoOrder(match_order);
   accurateMatch->RefineTransfo(3);
-
   delete initialMatch; initialMatch = NULL;
+
+
+  new_match_order = match_order;
+  nMatches = accurateMatch->size();
+  while (((new_match_order+1)*(new_match_order+2))/2 >= nMatches)
+    {
+      new_match_order--;
+      cout << " number of matches too short for the initially selected order " 
+	   << " order = " << new_match_order << endl;
+      
+      accurateMatch->SetTransfoOrder(new_match_order);
+      accurateMatch->RefineTransfo(3);
+      match_order = new_match_order;
+      if (match_order == 1) break;
+    }
+
 
   std::cout << " number of matches after refine "  << accurateMatch->size() 
 	    << ", " << "1d residual " 
