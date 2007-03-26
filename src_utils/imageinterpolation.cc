@@ -78,6 +78,16 @@ Pixel Interpolate(const Image& inputimage, const double x, const double y, const
       else if (xp>=(nx-1)) {xp = nx - 2; if (nx<2) xp = 0; dx += 1.0;}
       if (yp<0){yp = 0; dy -= 1.0;}
       else if (yp>=(ny-1)) {yp = ny - 2; if (ny<2) yp = 0; dy += 1.0;}
+
+      if (nx == 1)
+	{
+	  if (ny == 1) return inputimage(xp,yp);
+	  else
+	    return inputimage(xp,yp)*(1-dy) + inputimage(xp,yp+1)*dy;
+	}
+      if (ny == 1) // then nx != 1 
+	return (inputimage(xp,yp)*(1-dx) + inputimage(xp+1,yp)*dx);
+
       if (!IsVarianceMap)
 	{
 	  return ((inputimage(xp,yp)*(1-dx) + inputimage(xp+1,yp)*dx)*(1-dy) +
