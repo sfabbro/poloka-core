@@ -389,17 +389,27 @@ SolList Solutions;
    angle and ratio for Segments that have the right first object
 */
 
- for (int i = 0; i<Conditions.MaxTrialCount; ++i)
+ int oldMaxContent = 0; 
+
+ for (int i = 0; i<4*Conditions.MaxTrialCount; ++i) // leave a limit to make avoid (almost)  infinite loops
    {
      double pars[4];
      int maxContent = histo.MaxBin(pars);
      if (maxContent == 0) break;
      if (Conditions.PrintLevel >=1) 
        {
-	 cout << " valMax " << maxContent 
+	 cout << " ValMax " << maxContent 
 	      <<" ratio " << pars[0] << " angle " << pars[1] << endl;
        }
      histo.ZeroBin(pars);
+     if (i>0)
+       { /* the match possibilities come out in a random order when they have the same content.
+	    so, we stop investigating guesses when the content goes down AND the requested search depth 
+            (MaxTrialCount) is reached */
+	 if (maxContent < oldMaxContent && i>=Conditions.MaxTrialCount) break;
+
+       }
+     oldMaxContent = maxContent;
      /* reloop on segment pairs to select the ones in this specific bin */
      int rank1L1 = int(pars[2]);
      int rank1L2 = int(pars[3]);
