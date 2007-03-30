@@ -7,6 +7,7 @@
 #include "listmatch.h"
 #include "gtransfo.h"
 #include "nstarmatch.h"
+#include "polokaexception.h"
 
 static void usage(const char *prog)
 {
@@ -89,7 +90,7 @@ int main(int nargs, char **args)
   // update this
   MatchConditions Conditions;
   
-
+  try {
   NStarMatchList nsm;
   for (unsigned k=0; k < names.size(); ++k)
     {
@@ -126,6 +127,11 @@ int main(int nargs, char **args)
 
   cout << " writing " << nsm.size() << " matches to " << outName << endl;
   nsm.write(outName);
+  }
+  catch(PolokaException p) {
+    p.PrintMessage(cout);
+    return EXIT_FAILURE;
+  }
 
 #ifdef STORAGE
 
