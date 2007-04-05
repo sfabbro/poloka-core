@@ -27,7 +27,7 @@ static double sqr(const double& x) {return x*x;};
 //////////////////////////////////////////////////////
 class zpstar {
 private :
-  double sum;
+  double sum_1;
   double sum_w;
   double sum_fw;
   double sum_s;
@@ -46,6 +46,7 @@ public :
   double zp;
   double sky;
   double flux;
+  double fluxrms;
   int satur;
   int contam;
   int var;
@@ -58,7 +59,7 @@ public :
   
   void reset() {
     id = -1;
-    sum = 0;
+    sum_1 = 0;
     sum_w = 0;
     sum_fw = 0;
     sum_f2w = 0;
@@ -102,13 +103,13 @@ public :
     double w = 1./sqr(istar->getval("error"));
     flux = istar->flux;
 		     
-    sum   += 1;
+    sum_1 += 1;
     sum_w += w;
     sum_fw += flux*w;
     sum_f2w += flux*flux*w;
     sum_s += istar->getval("sky");
     
-    if(flux>0) {
+    if(flux>0) { // why requiring (flux>0) ?? P.A.
       double w01 = 1./(sqr(istar->getval("error"))+sqr(0.01*istar->flux));
       sum_w01 += w01;
       sum_fw01 += flux*w01;
@@ -127,17 +128,19 @@ public :
   void process() {
     flux = sum_fw/sum_w;
     error = 1./sqrt(sum_w); // flux
+    fluxrms = sum_f2w/sum_w-flux*flux;
+    fluxrms = (fluxrms>0) ? sqrt(fluxrms) : -1;
     error = error/flux*2.5/log(10.); // mag
     mag   = -2.5*log10(flux)+zp;
     mag_min = -2.5*log10(flux_max)+zp;
     mag_max = -2.5*log10(flux_min)+zp;
-    sky = sum_s/sum;
+    sky = sum_s/sum_1;
     
-    zpchi2 = (sum_f2w + sum_w*sqr(flux) - 2.*sum_fw*flux)/(sum-1.);
+    zpchi2 = (sum_f2w + sum_w*sqr(flux) - 2.*sum_fw*flux)/(sum_1-1.);
     if(zpchi2>1)
       error *= sqrt(zpchi2);
     
-    zpchi2_01 = (sum_f2w01 + sum_w01*sqr(flux) - 2.*sum_fw01*flux)/(sum-1.);
+    zpchi2_01 = (sum_f2w01 + sum_w01*sqr(flux) - 2.*sum_fw01*flux)/(sum_1-1.);
     
     // scores
     nmag = neic/flux*2.5/log(10.);
@@ -164,6 +167,8 @@ public :
     s << mag << " ";
     s << error << " ";
     s << flux << " ";
+    s << fluxrms << " ";
+    s << sum_1 << " ";
     s << zpchi2 << " ";
     s << zpchi2_01 << " ";
     s << nmag << " ";
@@ -309,6 +314,9 @@ int main(int argc, char **argv)
     stream << "# mag : mag derived from math to catalog." << endl;
     stream << "# error : error on mag." << endl;
     stream << "# flux : flux in ref. image units" << endl;
+    stream << "# fluxrms : scatter around the above" << endl;
+    stream << "# mneas : number of measurements involved in the average" << endl;
+
     stream << "# zpchi2 : chi2pdf ass. stable star with 0.01 sys. effect" << endl;
     stream << "# zpchi2_01 : chi2pdf ass. stable star with 0.01 sys. effect" << endl;
     stream << "# nmag : level of contamination from neighbours (mag.)" << endl;
