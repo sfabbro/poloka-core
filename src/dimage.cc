@@ -29,7 +29,7 @@ void DImage::Allocate(const int Nx, const int Ny, int Init)
 {
   nx = Nx; ny = Ny;
   if (data) delete [] data;
-  if (nx*ny) 
+  if (nx*ny>0) 
     {
       data = new DPixel[nx*ny];
       if (Init) Zero();
@@ -327,32 +327,99 @@ void DImage::writeInImage(const string& FitsFileName, const Window &Rect) const
 
 //***********************  Stamp ***************************
 
-Stamp::Stamp(const double Xc, const double Yc, const Image& image, int HStampSize, BaseStar *Star ) 
-  : hsize(HStampSize), xc(int(Xc)), yc(int(Yc)), source(0,0), star(Star)
+static void extract_pixels(DImage &Target, const Image &image, const int HStampSize, 
+			   const int xc, const int yc)
+{
+  int xoff = xc - HStampSize; 
+  int yoff = yc - HStampSize;
+  int xstart = max(0,xc - HStampSize);
+  int ystart = max(0,yc - HStampSize);
+  int width = Target.Nx();
+  int height = Target.Ny();
+  int xend = min(xstart+width,image.Nx());
+  int yend = min(ystart+height, image.Ny());
+  if (width*height != (xstart-xend)*(ystart-yend)) 
+    cerr << " we miss pixels for (" << xc << "," << yc << ")" << endl;
+  for (int j=ystart; j <yend; ++j)
+    {
+      for (int i= xstart; i< xend; i++)
+	{
+	  Target(i-xoff,j-yoff) = image(i,j);
+	}
+    }
+}
+
+
+Stamp::Stamp(const double Xc, const double Yc, const Image& image, int HStampSize, const BaseStar *Star ) 
+  : hsize(HStampSize), xc(int(Xc)), yc(int(Yc)), source(0,0), nActivePix(0), star(Star)
 {
   // cout << " debug xc yc " << xc << ' ' << yc << endl;
   int width = 2*HStampSize+1;
   int height = 2*HStampSize+1;
   source.Allocate(width, height);
-  int xoff = xc - HStampSize; 
-  int yoff = yc - HStampSize;
-  rect.xstart = max(0,xc - HStampSize);
-  rect.ystart = max(0,yc - HStampSize);
-  rect.xend = min(rect.xstart+width,image.Nx());
-  rect.yend = min(rect.ystart+height, image.Ny());
-  if (width*height != (rect.xstart-rect.xend)*(rect.ystart-rect.yend)) 
-    cerr << " we miss pixels for (" << xc << "," << yc << ")" << endl;
-  for (int j=rect.ystart; j <rect.yend; ++j)
-    {
-      for (int i= rect.xstart; i< rect.xend; i++)
-	{
-	  source(i-xoff,j-yoff) = image(i,j);
-	}
-    }
+  extract_pixels(source, image, HStampSize, xc,yc);
   //  cout << " debug extraction " <<  image(xc,yc) << ' ' << source(HStampSize,HStampSize) << " xstart y " << xstart << ' ' << ystart << endl;
 }
 
-StampList::StampList(const Image &image, const BaseStarList &starList, const int hStampSize, const int MaxStamps)
+//! returns the number of non zero pixels
+int Stamp::AssignWeight(const Image &BestWeight, const Image &WorstWeight, const Kernel &GuessedKernel)
+{
+  DImage tmpweight(source.Nx(),source.Ny()); // also sets everything to zero
+  extract_pixels(tmpweight, BestWeight, hsize, xc, yc);
+  nActivePix = 0;
+  // compute the average weight 
+  double waverage = 0;
+  int count = 0;
+  const DPixel *pend = tmpweight.end();
+  for (DPixel* p = tmpweight.begin(); p < pend; ++p)
+    if (*p) { waverage += (*p); count++;}
+  if (!count) return 0; // we are done: the stamp is dead
+  double vaverage = count/waverage; // average variance
+  // transform to variance
+  for (DPixel* p = tmpweight.begin(); p < pend; ++p) 
+    if (*p) (*p) = 1./(*p); else (*p) = 1E15*vaverage;
+
+  // use a convolution to propagate location of zero-weight pixels
+  weight.Allocate(source.Nx()-2*GuessedKernel.HSizeX(), source.Ny()-2*GuessedKernel.HSizeY());
+  Kernel varKernel(GuessedKernel);
+  varKernel *= GuessedKernel; // reminder: Var(a*x) = a**2 Var(x)
+  Convolve(weight, tmpweight, varKernel); // weight and tmpweight are variances. 
+
+  DImage worst_weight(weight.Nx(),weight.Ny());
+  extract_pixels(worst_weight, WorstWeight, hsize-GuessedKernel.HSizeX(), xc, yc);
+  double cut = 1e8*vaverage;
+
+#ifdef STORAGE // untested
+  DPixel *pb = weight.begin(); // it is in fact a variance;
+  pend = weight.end();
+  DPixel *pw = worst_weight.begin();
+  for ( ; *pb < pend; ++pb, ++pw)
+    {
+      if (*pb > cut || *pw==0) *pb =0;
+      else 
+	{
+	  *pb = 1./(*pb + 1./(*pw)); // weight is in fact a variance.
+	  nActivePix++;
+	}
+    }
+#endif
+  for (int j=0; j<weight.Ny();  ++j)
+    for (int i=0; i<weight.Nx(); ++i)
+    {
+      double &val = weight(i,j);
+      if (val > cut || worst_weight(i,j) ==0) val = 0;
+      else
+	{
+	  val = 1./(val + 1/(worst_weight(i,j)));
+	  nActivePix++;
+	}    
+    }
+  return nActivePix;
+}
+
+
+StampList::StampList(const Image &image, const Image &BestImageWeight, const Image &WorstImageWeight, 
+		     const BaseStarList &starList, const int hStampSize, const Kernel& GuessedKernel, const int MaxStamps)
 {
   int count = 0;
   Frame imageFrame(Point(0,0),Point(image.Nx(), image.Ny()));
@@ -360,9 +427,13 @@ StampList::StampList(const Image &image, const BaseStarList &starList, const int
     {
       const BaseStar *s = *si;
       if (imageFrame.MinDistToEdges(*s) < hStampSize+2) continue;
-      Stamp stamp(s->x, s->y, image, hStampSize, (BaseStar *) s);
-      push_back(stamp); 
-      ++count;
+      Stamp stamp(s->x, s->y, image, hStampSize, s);
+      // compute a plausible weight image for this stamp
+     if (stamp.AssignWeight(BestImageWeight,WorstImageWeight, GuessedKernel) != 0)
+       {
+	 push_back(stamp); 
+	 ++count;
+       }
     }
 }
 
@@ -610,10 +681,13 @@ ostream& operator << (ostream& stream, const Kernel& k)
 
 
 #define OPTIMIZED
+#ifndef OPTIMIZED
+#warning "Le code de Convolve() n'est pas optimise pour permettre de verifier que tout va bien dans kernelfit et autres..."
+#endif
 
 void Convolve(DImage& Result, const DImage& Source, const Kernel &Kern)
 {
- /* assumes that Result is already allocated and properly sized */
+ /* assumes that Result is already allocated and properly sized, and different from Source! */
 #ifdef OPTIMIZED
   int nstepx = Kern.Nx();
 #endif

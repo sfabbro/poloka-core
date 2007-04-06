@@ -31,6 +31,21 @@ for (int i=0; i<nblock; ++i)
 return sum;
 }  
 
+
+static double three_scal_prod(double *x, double *y, double *z, const int size)
+{
+int nblock = size/10;
+int remainder = size - nblock*10;
+double sum = 0;
+for (int i=0; i<nblock; ++i) 
+  {
+    DO10( sum+= (*x)*(*y)*(*z); ++x; ++y; ++z)
+  }
+ for (int i=0; i<remainder; ++i) {sum+= (*x)*(*y)*(*z); ++x; ++y;++z;}
+return sum;
+}  
+
+
 int KernelFit::FitDifferentialBackground(const double NSig)
 {  
    
@@ -362,7 +377,7 @@ mSize = Kernels.size() * optParams.KernVar.Nterms() + optParams.BackVar.Nterms()
 
 
 
-static double image_scal_prod(const DImage &Vignette, const Image* I, const double IBack, int xs, int ys)
+static double image_scal_prod(const DImage &Vignette, const DImage &w, const Image* I, const double IBack, int xs, int ys)
 {
 double sum = 0;
 int xsize = Vignette.Nx();
@@ -370,9 +385,8 @@ int ysize = Vignette.Ny();
 for (int j=0; j< ysize; ++j)
   {
   for (int i=0; i< xsize; ++i)
-    {
-     
-    sum += (double((*I)(i+xs,j+ys)) - IBack)* Vignette(i,j);
+    {     
+      sum += (double((*I)(i+xs,j+ys)) - IBack)* Vignette(i,j)*w(i,j);
     } 
   }
 return sum;
@@ -441,6 +455,9 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
 
  int hConvolvedSize = convolvedSize/2;
  int convolvedPix = convolvedSize*convolvedSize;
+ //DEBUG
+ assert(AStamp.weight.Nx() == convolvedSize);
+
  double *spatialCoeff = new double [optParams.KernVar.Nterms()];
  // double *backCoeff = new double [optParams.BackVar.Nterms()];
 
@@ -471,7 +488,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
    for (unsigned int jb =0; jb<=ib; ++jb)   
      {
      StampM[BackIndex(ib)*mSize+BackIndex(jb)] += 
-       scal_prod(backStamps[ib].begin(), backStamps[jb].begin(), convolvedPix);
+       three_scal_prod(backStamps[ib].begin(), backStamps[jb].begin(), AStamp.weight.begin(), convolvedPix);
      }
    }
  
@@ -483,9 +500,10 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
 
    for (int jk=0; jk <=ik; ++jk)
      {
-     double integral = scal_prod(convolutions[ik].begin(), 
-				 convolutions[jk].begin(),
-				 convolvedPix);
+     double integral = three_scal_prod(convolutions[ik].begin(), 
+				       convolutions[jk].begin(),
+				       AStamp.weight.begin(),
+				       convolvedPix);
      for (unsigned int is =0; is < optParams.KernVar.Nterms(); ++is)
        {
        int im = KernIndex(ik,is);
@@ -507,7 +525,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
        /* fill only m part for j<=i 
 	 StampM(i,j) is in principle [i*mSize+j], swap them here...*/
        StampM[jm*mSize+im] += spatialCoeff[is]*
-	 scal_prod(convolutions[ik].begin(), backStamps[jb].begin(), 
+	 three_scal_prod(convolutions[ik].begin(), backStamps[jb].begin(), AStamp.weight.begin(),  
 		   convolvedPix);
        }
      }
@@ -525,7 +543,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
       worst = WorstImage;
      }
    
-   double bintegral = image_scal_prod(convolutions[ik], worst, WorstImageBack, AStamp.xc - hConvolvedSize, AStamp.yc - hConvolvedSize);
+   double bintegral = image_scal_prod(convolutions[ik], AStamp.weight, worst, WorstImageBack, AStamp.xc - hConvolvedSize, AStamp.yc - hConvolvedSize);
    for (unsigned int is =0; is < optParams.KernVar.Nterms(); ++is)
      {
      int im = KernIndex(ik,is);
@@ -537,7 +555,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
  for (unsigned int ib=0; ib < optParams.BackVar.Nterms(); ++ib)
    {
    StampB[BackIndex(ib)] += 
-     image_scal_prod(backStamps[ib], WorstImage, WorstImageBack, 
+     image_scal_prod(backStamps[ib], AStamp.weight, WorstImage, WorstImageBack, 
 		     AStamp.xc - hConvolvedSize, AStamp.yc - hConvolvedSize);
    }
  delete [] spatialCoeff;
@@ -879,6 +897,7 @@ Convolve(R_conv_K, stamp.source, kern);
 double chi2 = 0;
 int xs = xc - hConvolvedSize; 
 int ys = yc - hConvolvedSize;
+const DImage &weight = stamp.weight;
 for (int j=0; j< convolvedSize; ++j)
 for (int i=0; i< convolvedSize; ++i)
   {
@@ -888,14 +907,18 @@ for (int i=0; i< convolvedSize; ++i)
   // it looks like it is more due to a negative fluctuation.
   // furthermore, although we weight for chi2, we don't seem to weight 
   // for the matrix-vector filling.
-
+  double w = weight(i,j);
+  chi2 += res*res*w;
+  // the number of non zero weight pixels is already in Stamps
+#ifdef OLD_STYLE
   if((InvGain*w_value+VSky)<0) {
     cout << "KernelFit::StampChi2 FATAL neg. weight" << endl;
     stamp.chi2 = -1;
     return stamp.chi2;
-  }
 
+  }
   chi2 += res*res/(InvGain*w_value+VSky);
+#endif
   }
 stamp.chi2 = chi2;
  if(chi2<0) {
@@ -915,32 +938,41 @@ void KernelFit::FilterStamps()
  cout << setprecision(10);
  cout << " sigma(sky) of worst image " << sqrt(SkyVarianceWorstImage) << endl;
  cout << " BackValue(0,0)" << BackValue(0,0) << endl;
+ int npixtot;
+ double chi2_tot;
  do 
    {
      int i=0;
+     npixtot = 0;
+     chi2_tot = 0;
      for (StampIterator si = BestImageStamps->begin(); si != BestImageStamps->end(); ++si, ++i)
        {
 	 Stamp &stamp = *si;
-	 chi2s[i] =  StampChi2(stamp, SkyVarianceWorstImage, 1./WorstImageGain); /* also assigns stamp.chi2 */
+	 double chi2_stamp = StampChi2(stamp, SkyVarianceWorstImage, 1./WorstImageGain);
+	 chi2s[i] = chi2_stamp/stamp.nActivePix; /* also assigns stamp.chi2 */
+	 chi2_tot += chi2_stamp;
+	 npixtot += stamp.nActivePix;
 	 // cout << " xc yc chi2 " << stamp.xc << ' ' << stamp.yc << ' ' << chi2s[i] << endl;
 	 // if (stamp.star) stamp.star->dump();
        }  
      double mean,sigma,median;
      mean_median_sigma(chi2s,nstamps,mean,median,sigma);
-     cout << " mean median sigma " << mean << ' ' << median << ' ' << sigma << endl;
-     cout << " mean/dof " << mean/(optParams.ConvolvedSize()*optParams.ConvolvedSize()) << endl;
+     cout << " chi2/dof per stamp : mean median sigma " << mean << ' ' << median << ' ' << sigma << endl;
+     cout << " chi2, ndof, chi2/ndof " << chi2_tot << ' ' << npixtot-mSize << ' ' << chi2_tot/(npixtot - mSize) << endl;
      dropped = 0;
      
      // this trick is used to fit the kernel using a predefined catalog
-     // of objet to compute the kernel
+     // of objets to compute the kernel
      if (getenv("NOFILTERING")) break;
      for (StampIterator si = BestImageStamps->begin(); si != BestImageStamps->end(); )
        {
 	 Stamp &stamp = *si; 
 	 /* cut too large chi2's and negative ones (due to dead columns)*/
-	 if (stamp.chi2 > median + 4*sigma || stamp.chi2 < 0) 
+	 double chi2 = stamp.chi2/stamp.nActivePix;
+	 if (chi2 > median + 4*sigma || chi2 < 0) 
 	   {
-	     cout << " delete : xc yc chi2 " << stamp.xc << ' ' << stamp.yc << ' ' << stamp.chi2 << endl;
+	     cout << " delete : xc yc chi2 npix chi2/npix " << stamp.xc << ' ' << stamp.yc << ' ' 
+		  << stamp.chi2 << ' ' << stamp.nActivePix << ' ' << chi2 << endl;
 	     //if (stamp.star) stamp.star->dump();
 	     dropped++;
 	     SubtractStampFromMAndB(stamp);
@@ -968,8 +1000,8 @@ void KernelFit::FilterStamps()
    }
  double mean,median,sigma;
  mean_median_sigma(chi2s, nstamps, mean, median, sigma);
- chi2 = mean/(optParams.ConvolvedSize()*optParams.ConvolvedSize());
- cout << " final mean/dof " << chi2 << endl;
+ chi2 = chi2_tot/(npixtot - mSize);
+ cout << " final chi2 ndof chi2/dof " << chi2_tot << ' ' << npixtot - mSize << ' ' << chi2 << endl;
  cout << setprecision(oldprec);
   
 delete [] chi2s;
@@ -1125,8 +1157,16 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
 
  // sizes may have changed since last call so:
  if (BestImageStamps) delete BestImageStamps;
+
+ //cook up a plausible kernel to propagate weight map if bestimage
+ Kernel guess(optParams.HKernelSize);
+ PolGaussKern(guess, sqrt(WorstSeeing*WorstSeeing - BestSeeing*BestSeeing), 0, 0);
+ guess *= 1./guess.sum();
+
  BestImageStamps = new  
-   StampList(*BestImage, List, optParams.HStampSize, optParams.MaxStamps);
+   StampList(*BestImage, *BestImageWeight, *WorstImageWeight, List, optParams.HStampSize, guess, optParams.MaxStamps);
+
+
  DeallocateConvolvedStamps();
 
  nstamps = BestImageStamps->size();
@@ -1189,7 +1229,11 @@ void KernelFit::read(istream& stream)
 
 void KernelFit::write(ostream& stream) const
 {
-  stream << "[KernelFit] " << 0;
+  /* versions : 
+     0 = "old unweighted code"
+     1 = new weighted code (april 2007). same format as version 0
+  */
+  stream << "[KernelFit] " << 1;
   stream << setprecision(12);
   write_member(stream, "BestImageBack", BestImageBack);
   write_member(stream, "WorstImageBack", WorstImageBack);\

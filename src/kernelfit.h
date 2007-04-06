@@ -154,6 +154,10 @@ class KernelFit  :  public RefCount
   const Image *BestImage; //!
 //! pointer to 'worst' image (larger seeing).
   const Image *WorstImage; //!
+  //!
+  const Image *BestImageWeight;
+  const Image *WorstImageWeight;
+
 //! data frame
   Frame DataFrame; //!
 //! the value of the sky of the best image.
@@ -208,6 +212,8 @@ class KernelFit  :  public RefCount
   KernelFit() { 
     BestImage = NULL;
     WorstImage = NULL; 
+    BestImageWeight = NULL;
+    WorstImageWeight = NULL; 
     BestImageStamps = NULL; 
     ConvolvedBest = NULL; 
     WorstDiffBkgrdSubtracted = NULL;

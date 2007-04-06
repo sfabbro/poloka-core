@@ -12,6 +12,7 @@
 
 typedef double DPixel;
 class Image;
+class Kernel;
 
 //! yet another rectangle/frame/window/subimage class. used in Stamp and Vignet
 struct Window { 
@@ -67,6 +68,9 @@ public:
   
   //! acces to pointer on first pixel of array
   DPixel* begin() const {return data;}
+
+  DPixel* end() const {return data+nx*ny;}
+
   int Nx() const {return nx;}
   int Ny() const {return ny;}
   //! set all pixels to zero
@@ -142,17 +146,26 @@ class Stamp {
 private:
   int hsize;
 public :
+
   //! center in the source Image
   int xc,yc ;  
-  Window rect;
+
   //! pixels (in double precision until one changes DPixel definition )
-  DImage source;  
+  DImage source;
+
+  //! cookup for weights used when fitting the kernel
+  DImage weight;
+
+  int nActivePix;
+
   //! will be filled and used to discard outliers from the fit 
   double chi2; 
   int HSize () const {return hsize;}  
   //! we should not assume that there is a BaseStar corresponding to this stamp, but if any, put its pointer here
   BaseStarRef star; 
-  Stamp(const double Xc, const double Yc, const Image& image, int HStampSize, BaseStar *Star);
+  Stamp(const double Xc, const double Yc, const Image& image, int HStampSize, const BaseStar *Star);
+
+  int AssignWeight(const Image &BestWeight, const Image &WorstWeight, const Kernel &GuessedKernel);
 
   Stamp() :hsize(0) {};
 
@@ -164,11 +177,11 @@ public :
 class StampList : public list<Stamp>
 {
 public :
-  StampList(const Image &image, const BaseStarList &starList , 
-	    const int hStampSize, const int MaxStamps);
+  StampList(const Image &image, const Image &BestImageWeight, const Image &WorstImageWeight, 
+	    const BaseStarList &starList, const int hStampSize, const Kernel &GuessedKernel, const int MaxStamps);
 
   // need a virtual routine for ROOT
-  virtual ~StampList() {}
+  //  virtual ~StampList() {}
 };
 
 typedef list<Stamp>::iterator StampIterator;

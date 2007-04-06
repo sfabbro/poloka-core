@@ -86,8 +86,10 @@ PsfMatch::~PsfMatch()
     {
       // really a good idea ? (P.A)
       // yes because in most cases PsfMatch allocated them.
-      if (fit->WorstImage) delete (fit->WorstImage);
-      if (fit->BestImage) delete (fit->BestImage);
+      delete (fit->WorstImage);
+      delete (fit->BestImage);
+      delete (fit->BestImageWeight);
+      delete (fit->WorstImageWeight);
       //delete fit; + necessaire avec KernelFitRef
     }
 }
@@ -206,7 +208,7 @@ int PsfMatch::FilterStarList(const double MaxDist)
   cout << "n_in_frame " << n_in_frame << endl;
   cout << "n_far_from_edges " << n_far_from_edges << endl; 
   
-
+#ifdef STORAGE
   // get size of stamps to check for null weights for all selected objects
   OptParams optparams;
   optparams.OptimizeSizes(best->Seeing(),worst->Seeing());
@@ -240,6 +242,8 @@ int PsfMatch::FilterStarList(const double MaxDist)
     } 
   cout << "n_good_weight " << n_good_weight << endl;
   cout << "hsize " << hsize << endl;
+#endif
+  
  
   if (getenv("DUMP_FIT_LIST"))
     bestStarList.write("fitting_objects.list");
@@ -253,9 +257,7 @@ static double sqr(const double &x) { return x*x;}
 static KernelFitRef 
 init_and_do_the_fit(const BaseStarList& objectsUsedToFit, 
 		    const ReducedImage *best,
-		    const ReducedImage *worst,
-		    const Image* BestImage = NULL,
-		    const Image* WorstImage = NULL)
+		    const ReducedImage *worst)
 {
   KernelFitRef fit = new KernelFit;
 
@@ -265,8 +267,11 @@ init_and_do_the_fit(const BaseStarList& objectsUsedToFit,
   fit->WorstImageBack = worst->BackLevel();
 
   //access to data
-  fit->WorstImage = (WorstImage) ? WorstImage : new FitsImage(worst->FitsName());
-  fit->BestImage =  (BestImage)  ? BestImage : new FitsImage(best->FitsName());
+  fit->BestImage =  new FitsImage(best->FitsName());
+  fit->BestImageWeight = new FitsImage(best->FitsWeightName());
+  fit->WorstImage = new FitsImage(worst->FitsName());
+  fit->WorstImageWeight = new FitsImage(worst->FitsWeightName());
+				       
 
   // Variance for the Chi2
   Pixel mean,sigma;
@@ -291,9 +296,6 @@ init_and_do_the_fit(const BaseStarList& objectsUsedToFit,
   double goodseeing = best->Seeing();
   if (!(fit->DoTheFit(objectsUsedToFit, goodseeing, badseeing)))
     {
-      if (BestImage) delete fit->BestImage;
-      if (WorstImage) delete fit->WorstImage;
-      //delete fit; fit = NULL;
       fit = KernelFitRef() ;
     }
   return fit;
@@ -350,6 +352,8 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   // we can live with that
 
   //  if (!direct_fit || direct_fit->chi2 > 4.)
+#ifdef STORAGE 
+  /* init_and_do_the_fit has been changed and now does not taks 5 arguments any longer... */
   if (false)
     {
       cout << " bad_direct_fit : trying swapped one (best<->worst)" << endl;
@@ -374,6 +378,7 @@ bool PsfMatch::FitKernel(const bool KeepImages)
 	  reversed_fit = KernelFitRef()  ;
 	}
     }
+#endif
 
   //update parameters
   seeing = max(worst->Seeing(), best->Seeing());  
@@ -490,7 +495,7 @@ void PsfMatch::ConvolveBest(ReducedImage &ConvImage)
 		   Image(worst->XSize(),worst->YSize()));
   cImage.SetWriteAsFloat();
   cImage.AddOrModKey("KERNREF",best->Name().c_str(), " name of the seeing reference image");
-  cImage.AddOrModKey("KERNCHI2",fit->chi2, " chi2 of the kernel fit");
+  cImage.AddOrModKey("KERNCHI2",fit->chi2, " chi2/ndof of the kernel fit");
   cImage.AddOrModKey("PHORATIO",photomRatio, " photometric ratio with KERNREF");
 
   string worstpsfname = worst->ImagePsfName();
