@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <assert.h>
 
 #include "kernelfit.h"
 #include "basestar.h"
