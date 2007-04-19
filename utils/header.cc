@@ -16,6 +16,7 @@ static void usage()
 {
 cout << " header  [-k <keyname> ... ]  <fitsFile..>" << endl;
 cout << " or \n header -<what> [-k <keyname> ... ] <dbImage..> " << endl;
+cout << " [-n] supresses file names " << endl;
 exit(EXIT_FAILURE);
 }
 
@@ -55,6 +56,7 @@ vector<char*> requested_keys;
 vector<string> fits_files; 
 vector<string> names;
 vector<string> which_info;
+ bool no_file_names = false; 
 
 
 for (int i=1; i< argc; i++)
@@ -75,6 +77,7 @@ for (int i=1; i< argc; i++)
       switch (arg[1])
         {
         case 'k' : i++ ; requested_keys.push_back(argv[i]); break;
+        case 'n' : no_file_names = true; break;
         default : cerr << " do not understand " << arg << endl; usage();
         }
       }
@@ -97,7 +100,8 @@ for (int in = 0 ; in < int(names.size()); in++)
 
   if (ninfo == 0)
     {
-    fits_header_process(names[in], requested_keys, names[in]);
+      fits_header_process(names[in], requested_keys, 
+			  no_file_names ? " ":names[in]);
     continue;
     }
   DbImage a_dbimage(names[in]);
@@ -120,6 +124,7 @@ for (int in = 0 ; in < int(names.size()); in++)
 	  {
 	    string tag = dbimage.Name();
 	    if (ninfo != 1) tag = tag + "("+which_info[ii]+")";
+	    if (no_file_names) tag = "";
 	    fits_header_process(filename, requested_keys, tag);
 	  }
       }
