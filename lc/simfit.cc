@@ -7,6 +7,8 @@
 #include "simfitvignet.h"
 #include "simfit.h"
  
+#define DEBUG
+
 // #define ONLYPOSITIVEFLUXFORPOSITION
 //#define USE_SECOND_DERIVATIVE_OF_POSITION
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -279,7 +281,7 @@ void SimFit::Resize(const double& ScaleFactor)
   galstart = galend = yind;
   if (fit_gal)
     {
-      if(fluxend)
+      if(fluxend>=0)
 	galstart += 1;
       hfx = hrefx;
       hfy = hrefy;
@@ -1405,7 +1407,7 @@ void SimFit::FatalError(const char* comment)
       const SimFitVignet *vi = *it;
       cerr << " > SimFit::FatalError() : " << fixed << right
 	   << setw(10) << vi->Image()->Name() 
-	   << " mmjd " << setprecision(2) << setw(7) << vi->Image()->ModifiedModifiedJulianDate()
+	   << " mmjd " << setprecision(2) << setw(7) << vi->Image()->ModifiedJulianDate()
 	   << " [flux=" << setprecision(1) << setw(7) << vi->Star->flux << " fit=" << boolalpha << vi->CanFitFlux
 	   << "] [pos=(" << setprecision(1) << setw(6) << vi->Star->x 
 	   << ", " << setprecision(1) << setw(6) << vi->Star->y << ") fit=" << boolalpha << vi->CanFitPos
@@ -1929,7 +1931,7 @@ void SimFit::fillNightMat(LightCurve& Lc) {
   double timediff = 10./24.; // 10 hours
   int nimages = 0;
   for (;itLc != endLc; ++itLc) {
-    jd = (*itLc)->Image()->ModifiedModifiedJulianDate();
+    jd = (*itLc)->Image()->ModifiedJulianDate();
     if(Lc.Ref->IsVariable(jd)) {
       nimages++;
       isinnight=false;
@@ -1958,7 +1960,7 @@ void SimFit::fillNightMat(LightCurve& Lc) {
   itLc = Lc.begin();
   int im = 0;
   for (;itLc != endLc; ++itLc) {
-    jd = (*itLc)->Image()->ModifiedModifiedJulianDate();
+    jd = (*itLc)->Image()->ModifiedJulianDate();
     if(Lc.Ref->IsVariable(jd)) {
       for(unsigned int day=0;day<nightdates.size(); ++day) {
 	if(fabs(jd-nightdates[day])<timediff) {
@@ -1989,7 +1991,7 @@ void SimFit::fillNightMat() { // using simfitvignet
   
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
     if((*itVig)->FitFlux) {
-      jd = (*itVig)->Image()->ModifiedModifiedJulianDate();
+      jd = (*itVig)->Image()->ModifiedJulianDate();
       nimages++;
       isinnight=false;
       for(unsigned int day=0;day<nightdates.size(); ++day) {
@@ -2018,7 +2020,7 @@ void SimFit::fillNightMat() { // using simfitvignet
   int im = 0;
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
     if((*itVig)->FitFlux) {
-      jd = (*itVig)->Image()->ModifiedModifiedJulianDate();
+      jd = (*itVig)->Image()->ModifiedJulianDate();
       for(unsigned int day=0;day<nightdates.size(); ++day) {
 	if(fabs(jd-nightdates[day])<timediff) {
 	  NightMat(day,im)=1;
