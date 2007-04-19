@@ -14,12 +14,37 @@ int usage(char* pg) {
   cout << " or : " << pg << " <scalar> <im1> <result> " << endl;
   cout << "ex : " <<  pg  << " 12 toto.fits tutu.fits" << endl;
   cout << " result = scalar*im1" << endl;
+  cout << " -f  : to get a Float coded output image " << endl;
   return 0;
 } 
 
-int main(int argc, char** argv) {
+int main(int argc0, char** argv0) {
+
+  if (argc0 > 50)
+    {
+      cout << " wrong number of arguments... maybe you forgot to quote a * ??" << endl;
+      return EXIT_FAILURE;
+    }
+
+  char* argv[100];
+  argv[0] = argv0[0];
+  int argc = 1; 
+
+  bool floatOutput = false;
+  for (int i=1; i<argc0; ++i)
+    {
+      if (string(argv0[i]) == "-f")
+        {
+	  floatOutput = true; continue;
+	}
+      argv[argc] = argv0[i];
+      argc++;
+    }
+
   if(argc != 6 && argc !=4) {
-    return usage(argv[0]);
+    cout << " wrong argc " << argc << endl;
+    usage(argv[0]);
+    return EXIT_FAILURE;
   }
   if(argc == 4) {
     float scale = atof(argv[1]);
@@ -58,6 +83,7 @@ int main(int argc, char** argv) {
       break;
     }
     FitsImage im(argv[5],image1,image3);
+    if (floatOutput) im.SetWriteAsFloat();
   }
   
   
