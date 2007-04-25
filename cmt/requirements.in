@@ -4,7 +4,7 @@
 
 package @CMTPACKAGE@	
 
-use cfitsio v2r440
+use cfitsio v3r006
 use sex v222
 
 include_dirs "@prefix@/include" 
