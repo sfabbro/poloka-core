@@ -29,11 +29,14 @@ bin_PROGRAMS = \
  modelpsf zpfitter calibrationhacker basicaperture calibratefixedpos flatfield\
  makepsf compute_zp  splitsubs test_dust makvar getvalueatpoint\
  catalog_images_match \
- deadprop checkmask sumpixels
+ deadprop checkmask sumpixels \
+ wcs_for_vignets
 
 if ENABLE_MC
 bin_PROGRAMS += make_mc_cat makesub  make_dualsub  mc_addsn make_lcsim
 endif
+
+wcs_for_vignets_SOURCES = wcs_for_vignets.cc
 
 #testback_SOURCES = testback.cc
 #testphot_SOURCES = testphot.cc
