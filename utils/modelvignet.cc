@@ -1,125 +1,87 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <lightcurve.h>
-#include <simfitphot.h>
-#include <dimage.h>
+#include <fileutils.h>
+#include <fitsimage.h>
 
 using namespace std;
 
 static void usage(const char *pgname)
 {
-  cerr << pgname << " <filename> " << endl ;
+  cerr << pgname << " <galaxy_fits> <psf_fits> <size (even)> <flux> <result> " << endl ;
 }
 
 int main(int argc, char **argv)
 {
-  if (argc < 2)  {usage(argv[0]);  exit(1);}
-
- 
-
-  ifstream lightfile(argv[1]);
-  if (!lightfile) return EXIT_FAILURE;
+  if (argc != 6)  {usage(argv[0]);  exit(1);}
   
-  LightCurveList fids(lightfile);
-  LightCurve &lc = *(fids.begin());
-  int radius = 20;
+  string filename;
+  filename = argv[1]; if(! FileExists(filename)) { cerr << "FATAL " << filename << " does not exists" << endl; return EXIT_FAILURE;}
+  FitsImage galaxy(filename);
+  filename = argv[2]; if(! FileExists(filename)) { cerr << "FATAL " << filename << " does not exists" << endl; return EXIT_FAILURE;}
+  FitsImage psf(filename);
+  filename = argv[2]; if(! FileExists(filename)) { cerr << "FATAL " << filename << " does not exists" << endl; return EXIT_FAILURE;}
   
-  PhotStar* star = lc.Ref;
   
-  //SimFitRefVignet *vignet = new SimFitRefVignet(star,lc.Ref->Image(),window);
-  SimFitRefVignet *vignet = new SimFitRefVignet(lc.Ref->Image());
-  vignet->Resize(radius,radius);
-  vignet->Load(star);
-  
-
-  // read galaxy
-  Kernel galaxy;
-  string galname = "galaxy_sn.fits";
-  if(!FileExists(galname)) {
-    cout << " cannot open " << galname << endl;
-    return -12;
+  unsigned int nx = atoi(argv[4]);
+  if ((nx%2)==0 ) {
+    cout << "size must be even" << endl;
+    return EXIT_FAILURE;
   }
-  galaxy.readFits(galname);
-
-  // get size of reference data vignet 
-  Kernel refdata;
-  string name = vignet->Image()->Name();
-  string refdataname = "T_"+name+name.substr(0,9)+"_sn_data.fits";
-  if(!FileExists(refdataname)) {
-    cout << " cannot open " << refdataname << endl;
-    return -12;
-  }
-  refdata.readFits(refdataname);
-  
-  // load weights in case of vignet on border of frame
-  Kernel weight;
-  string weightdataname = "T_"+name+name.substr(0,9)+"_sn_weight.fits";
-  if(!FileExists(weightdataname)) {
-    cout << " cannot open " << weightdataname << endl;
-    return -12;
-  }
-  weight.readFits(weightdataname);
 
   
-  int hx = refdata.HSizeX();
-  int hy = refdata.HSizeY();
-  cout << "hx hy = " << hx << " " << hy << endl;
 
+  int hx = (nx-1)/2;  
+  double flux = atof(argv[5]);
+  string output = argv[6];
+  
+  Image result(2*nx+1,nx);
+  int hx_gal = (galaxy.Nx()-1)/2;
+  int margin_to_remove = 4;
 
-  // get sn position and max flux
-  float x,y,fluxmax;
-  {
-    string lcname = "lightcurve_sn.dat";
-    if(!FileExists(lcname)) {
-      cout << " cannot open " << lcname << endl;
-      return -12;
-    }
-    ifstream lcfile(lcname.c_str());
-    string line;
-    float flux;
-    fluxmax = -12;
-    while(getline(lcfile,line)) {
-      if(line[0]=='#')
-	continue;
-      if(sscanf(line.c_str(),"%f %f %f",&x,&y,&flux)!=3)
-	sscanf(line.c_str(),"x %f y %f flux %f",&x,&y,&flux); // older version
-      if(flux>fluxmax)
-	fluxmax=flux;
-    }
-    lcfile.close();
-  }
+  int hx_psf = (psf.Nx()-1)/2;
   
-  cout << "x y fluxmax = " << x << " " << y << " " << fluxmax << endl;
-  
-  // update PSF
-  vignet->Resize(hx,hy);
-  vignet->Psf.Tabulate(Point(x,y),*(vignet->imagepsf),(const Window&)*vignet);
-  
-  // create an image with and without sn
-  DImage image((2*hx+1)*2+1,(2*hy+1));
-  
-  int dy;
-  float vmax=0;
-  float v;
-  for(int j=-hy;j<=hy;++j) {
-    dy = j+hy;
-    for(int i=-hx;i<=hx;++i) {
-      image(i+hx,dy)=galaxy(i,j);
-      v = galaxy(i,j) +fluxmax*vignet->Psf(i,j);
-      image(i+hx+(2*hx+1)+1,dy)=v;
-      if(v>vmax)
-	vmax=v;
+  double val;
+  double maxval=0;
+
+  // galaxy
+  for(int j=0;j<nx;j++) {
+    int jgal = j-hx;
+    if(abs(jgal)>hx_gal-margin_to_remove) continue;
+    for(int i=0;i<nx;i++) {
+      int igal = i-hx;
+      if(abs(igal)>hx_gal-margin_to_remove) continue;
+      val = galaxy(igal+hx_gal,jgal+hx_gal);
+      if(val>0) {
+	result(i,j)=val; // left
+	result(i+nx+1,j)=val; // right
+	if(maxval<val) maxval=val;
+      }
     }
   }
-  for(int j=-hy;j<=hy;++j) {
-    image(2*hx+1,hy+j)=vmax;
+  // add sn
+  for(int j=0;j<nx;j++) {
+    int jpsf = j-hx;
+    if(abs(jpsf)>hx_psf) continue;
+    for(int i=0;i<nx;i++) {
+      int ipsf = i-hx;
+      if(abs(ipsf)>hx_psf) continue;
+      val = psf(ipsf+hx_psf,jpsf+hx_psf);
+      if(val>0) {
+	val*=flux;
+	result(i+nx+1,j)+=val; // right
+	if(maxval<result(i+nx+1,j)) maxval=result(i+nx+1,j);
+      }
+    }
+  }
+  // add a line
+  for(int j=0;j<nx;j++) {
+    result(nx,j)=maxval;
   }
   
-  string modelname = "model_sn.fits";
-  image.writeFits(modelname);
+  // write output
+  {FitsImage(output,result);}
   
-
   return EXIT_SUCCESS;
 }
 

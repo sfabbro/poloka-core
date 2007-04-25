@@ -11,6 +11,7 @@ void usage (const char* arg) {
   cerr << "usage: " << arg << " -i <fitsimage1> <color1> <scale1> ( -i <fitsimage2> <color2> <scale2> ....)  -o <gifimage>" << endl;
   cerr << "options :  -m <minvalue>" << endl;
   cerr << "           -M <maxvalue>" << endl;
+  cerr << "           -n : negate" << endl;
   exit(EXIT_FAILURE);
 }
 
@@ -122,6 +123,12 @@ Magick::ColorRGB colorfromname(const string &colorname) {
   char colorid = colorname[0];
   Magick::ColorRGB color;
     switch(colorid) {
+    case 'w':
+    case 'W':
+      color.blue(1);
+      color.green(1);
+      color.red(1);
+      break;
     case 'g':
     case 'G':
 
@@ -166,6 +173,7 @@ int main(int argc,char **argv) {
   vector<float> scales;
   float pixmin=10000;
   float pixmax=-10000;
+  bool negate = false;
   for (int i=1; i<argc; ++i) {
     char *arg = argv[i];
     if (arg[0] != '-') {
@@ -173,6 +181,9 @@ int main(int argc,char **argv) {
       usage(argv[0]);
     }
     switch (arg[1]) {
+    case 'n':
+      negate = true;
+      break;
     case 'i': 
       fitsfilenames.push_back(argv[++i]);
       colors.push_back(colorfromname(argv[++i]));
@@ -223,6 +234,11 @@ int main(int argc,char **argv) {
   Magick::Geometry newgeom(nx*scale,ny*scale);
   magic_image.scale(newgeom);
   */
+  if(negate)
+    magic_image.negate();
+  magic_image.gamma(3.); 
+  //magic_image.normalize();
+
   magic_image.write(outputfilename.c_str());
   
   return 0;

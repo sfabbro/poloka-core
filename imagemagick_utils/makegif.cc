@@ -80,8 +80,7 @@ int main(int argc,char **argv) {
     }
   }
   
-  if(argc>4)
-    gamma    = atof(argv[4]);
+  
   
   float pixmin,pixmax;
   
@@ -109,7 +108,7 @@ int main(int argc,char **argv) {
   
   Magick::Image  magick_image(Magick::Geometry(gif_nx,gif_ny) , "black" );
   magick_image.magick("gif"); 
-  magick_image.type(Magick::TrueColorType);
+  magick_image.type(Magick::GrayscaleType);
   magick_image.modifyImage(); 
   Magick::PixelPacket*  colorpixels 
     = magick_image.getPixels(0,0,gif_nx,gif_ny);
@@ -133,7 +132,7 @@ int main(int argc,char **argv) {
 	val = 0;
       else
 	val = (sum_wf/sum_w - pixmin)/(pixmax-pixmin); 
-      *colorpixels = Magick::ColorRGB(val,val,val);
+      *colorpixels = Magick::ColorGray(val);
     }
   }
   
@@ -145,7 +144,10 @@ int main(int argc,char **argv) {
     return 1;
   }
   
-  if(gamma>0.) magick_image.gamma(gamma);
+  if(gamma>0.) {
+    cout << "gamma correction " << gamma << endl;
+    magick_image.gamma(gamma);
+  }
   if(negate)   magick_image.negate();
   if(equalize) magick_image.equalize();
   
