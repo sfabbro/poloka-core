@@ -104,6 +104,7 @@ static bool GoodForFit(const SEStar *Star, const double &SaturLev, const double 
 	  ( Star->Flux_aper()/Star->Eflux_aper() > minsignaltonoiseratio)
 	  );
 }
+static double sqr(const double &x) { return x*x;}
 
 static bool check_weights(const Image& weight, const double& x, const double& y,  const int &hsize) {
   
@@ -112,11 +113,14 @@ static bool check_weights(const Image& weight, const double& x, const double& y,
   int ymin = int(y)-hsize; if(ymin<0) return false;
   int ymax = int(y)+1+hsize; if(ymax>weight.Ny()) return false;
   
+  int nok = 0;
   
   for(int j=ymin; j<ymax; j++)
     for(int i=xmin; i<xmax; i++)
-      if( weight(i,j)==0) return false;
-  return true;
+      if ( weight(i,j)!=0) 
+	nok ++;
+  
+  return (nok> int(0.5*sqr(2.*hsize+1))); // ok if more than half of the stamp has not null weight
 }
 
 string PsfMatch::NotFilteredStarListName()
@@ -208,7 +212,10 @@ int PsfMatch::FilterStarList(const double MaxDist)
   cout << "n_in_frame " << n_in_frame << endl;
   cout << "n_far_from_edges " << n_far_from_edges << endl; 
   
-#ifdef STORAGE
+
+  
+
+
   // get size of stamps to check for null weights for all selected objects
   OptParams optparams;
   optparams.OptimizeSizes(best->Seeing(),worst->Seeing());
@@ -239,10 +246,13 @@ int PsfMatch::FilterStarList(const double MaxDist)
 	n_good_weight ++;
       } else
 	sibest = bestStarList.erase(sibest);
-    } 
+    }
+
+
+
   cout << "n_good_weight " << n_good_weight << endl;
   cout << "hsize " << hsize << endl;
-#endif
+
   
  
   if (getenv("DUMP_FIT_LIST"))
@@ -252,7 +262,6 @@ int PsfMatch::FilterStarList(const double MaxDist)
   return objectsUsedToFit.size();
 }
 
-static double sqr(const double &x) { return x*x;}
 
 static KernelFitRef 
 init_and_do_the_fit(const BaseStarList& objectsUsedToFit, 
@@ -271,7 +280,20 @@ init_and_do_the_fit(const BaseStarList& objectsUsedToFit,
   fit->BestImageWeight = new FitsImage(best->FitsWeightName());
   fit->WorstImage = new FitsImage(worst->FitsName());
   fit->WorstImageWeight = new FitsImage(worst->FitsWeightName());
-				       
+  
+  // multiply weight by (1-satur)
+  // I think it is not done elsewhere
+  {
+    FitsImage satur(best->FitsSaturName());   
+    *(fit->BestImageWeight) *= (1-satur); 
+  }
+  {
+    FitsImage satur(worst->FitsSaturName());
+    *(fit->WorstImageWeight) *= (1-satur);
+  }
+  
+  // debug
+  //{FitsImage toto("toto.fits",FitsHeader(best->FitsWeightName()),*(fit->BestImageWeight));}
 
   // Variance for the Chi2
   Pixel mean,sigma;
