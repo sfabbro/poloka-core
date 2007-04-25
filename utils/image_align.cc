@@ -14,7 +14,8 @@ static void usage(const char *progName)
        << "    -no_catalog: no transformed catalog \n"
        << "    -no_weight: no transformed weight\n"
        << "    -no_satur: no transformed satur\n"
-       << "    -wcs     : use wcs for alignement (instead of image catalogs)\n" ;
+       << "    -wcs     : use wcs for alignement (instead of image catalogs)\n"
+       << "    -min_match_ratio # : allow this fraction of objects for the match of catalogs\n";
    
   exit(-1);
 } 
@@ -30,7 +31,7 @@ int main(int nargs, char **args)
   
   int todo = DoFits | DoCatalog | DoSatur | DoWeight;
   bool use_wcs = false;
-  
+  float min_match_ratio = 0;
   
   // loop over arguments
   for (int i=1; i<nargs; ++i)
@@ -52,6 +53,8 @@ int main(int nargs, char **args)
       if (strcmp(arg,"no_weight")==0) {todo&=(!DoWeight); continue;}
       if (strcmp(arg,"no_satur")==0) {todo&=(!DoSatur); continue;}
       if (strcmp(arg,"wcs")==0) {use_wcs=true; continue;}
+      if (strcmp(arg,"min_match_ratio")==0) { ++i; min_match_ratio= atof(args[i]); continue;}
+      
       
       // unrecognized option
       usage(args[0]);      
@@ -62,7 +65,7 @@ int main(int nargs, char **args)
     ReducedImage geoRef(geoName);
     ReducedImageList aligned;
   
-    unsigned int n = ImagesAlign(toAlign, geoRef, aligned, todo, use_wcs);
+    unsigned int n = ImagesAlign(toAlign, geoRef, aligned, todo, use_wcs, min_match_ratio);
     if(n!=toAlign.size()) {
       throw(PolokaException("Not all images were aligned"));
     }

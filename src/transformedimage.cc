@@ -47,12 +47,12 @@ ImageTransfo* ImageGtransfo::Clone() const
   return new ImageGtransfo(transfoFromRef, transfoToRef, outputImageSize, geomRefName);
   }
 
-ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign)
+ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign,float min_match_ratio)
 {
   //transfoFromRef = NULL;
   //transfoToRef = NULL;
   geomRefName = Ref.Name();
-  if (!ImageListMatch(Ref, ToAlign, transfoFromRef, transfoToRef))
+  if (!ImageListMatch(Ref, ToAlign, transfoFromRef, transfoToRef, min_match_ratio))
     {
       cerr << " Could not match lists from " << Ref.Name() << " and " <<  ToAlign.Name() << endl;
     }
@@ -581,7 +581,7 @@ TransformedImage::~TransformedImage()
 /******************* utilities ***********************/
 
 int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, 
-		ReducedImageList &Aligned, const int ToDo, bool use_wcs)
+		ReducedImageList &Aligned, const int ToDo, bool use_wcs, float min_match_ratio)
 {
 #ifdef DEBUG
   cout << " > ImagesAlign(...) " << endl;
@@ -616,7 +616,7 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 	delete direct;
 	delete invert;
       }else{
-	imTransfo = new ImageGtransfo(Reference,*current);
+	imTransfo = new ImageGtransfo(Reference,*current,min_match_ratio);
       }
       
       TransformedImage *alignedCurrent =

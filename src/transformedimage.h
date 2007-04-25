@@ -70,7 +70,7 @@ public:
   //!
   ImageGtransfo(const Gtransfo* TransfoFromRef, const Gtransfo* TransfoToRef, const Frame &OutputImageSize, const string &GeomRefName );
   //! the output image size is the one of the Ref. Finds the transfo(s).
-  ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign);
+  ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign,float min_match_ratio=0);
   //!
   ImageGtransfo();
   //!
@@ -186,7 +186,7 @@ string TransformedName(const string &ToTransform, const string &Ref);
 /*! ToDo may be constructed using the tags DoFits DoCatalog DoDead DoSatur, e.g. provide
    DoCatalog|DoDead to get catalog and dead frame on top of the default image itself. */
 
-int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, ReducedImageList &Aligned, const int ToDo,bool use_wcs=false);
+int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, ReducedImageList &Aligned, const int ToDo,bool use_wcs=false,float min_match_ratio=0);
 
 
 

@@ -25,7 +25,7 @@ is to be run, a flip is allowed for. */
 
 bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 		const FitsHeader &Head1, const FitsHeader &Head2,
-		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One, float min_match_ratio=0);
 
 
 //! From an initial first order guess, fit and refine it
@@ -35,12 +35,12 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 
 //! calls MatchGuess, refines the guess with RefineGuess
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 
-                    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One);
+                    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One, float min_match_ratio=0);
 
 //! same as above but with already loaded catalogs. Use ListAndFitsCheckForMatch to lad and filter the catalog.
 /*! this routine was introduced to avoid reloading one of the catalogs when matching many images to the same reference */ 
 bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
 		    const DbImage &DbImage2, const SEStarList& SL2,
 		    CountedRef<Gtransfo> &One2Two, 
-		    CountedRef<Gtransfo>  &Two2One);
+		    CountedRef<Gtransfo>  &Two2One, float min_match_ratio=0);
 #endif /* IMAGEMATCH__H */

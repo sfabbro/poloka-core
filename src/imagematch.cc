@@ -116,6 +116,8 @@ static bool testNewTransfo(const StarMatchList* matchList, const GtransfoLin* gu
   if (nmatch_new > nmatch) {
     nmatch = nmatch_new;
   }
+  //cout << "nmatch_new, nmin = " <<  nmatch_new << " " << nmin << endl;
+  //cout << "size ratio " << fabs(fabs(guess->Determinant())-pixSizeRatio2)/pixSizeRatio2 << endl;
   cout << " MatchGuess : guess was bad: \n";
   matchList->DumpTransfo();
   
@@ -134,7 +136,7 @@ static void CutList(const SEStarList &SList, BaseStarList &BList)
 
 bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 		const FitsHeader &Head1, const FitsHeader &Head2,
-		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One)
+		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One, float min_match_ratio)
 {
 
   cout << " MatchGuess : starting guess with "  
@@ -153,6 +155,13 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
   StarMatchList *matchList = ListMatchCollect(List1, List2, One2Two, init_toldist);
   size_t nmatch = matchList->size();
   size_t nmin = min(List1.size(), List2.size())/3;
+  if(min_match_ratio>0)
+    nmin = size_t(min(List1.size(), List2.size())*min_match_ratio);
+  if(nmin<10) {
+    cout << "MatchGuess, warning : request nmin=" << nmin << " (from min_match_ratio=" << min_match_ratio << ") but use nmin=10" << endl;
+    nmin = 10;
+  }
+  cout << "MatchGuess, minimum allowed number of matches = " << nmin << endl;
   
   bool debug_match = true;
   
@@ -328,7 +337,7 @@ static void FrameList(const SEStarList &SList, const FitsHeader &Head,
 
 
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 
-		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One)
+		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One, float min_match_ratio)
 {
   cout << "\n ImageListMatch : Matching " << DbImage1.Name() 
        << " and " << DbImage2.Name() << endl;
@@ -350,12 +359,12 @@ bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2,
       !ListAndFitsCheckForMatch(DbImage2, sl2))
     return false;
 
-  return ImageListMatch(DbImage1, sl1, DbImage2, sl2, One2Two, Two2One);
+  return ImageListMatch(DbImage1, sl1, DbImage2, sl2, One2Two, Two2One, min_match_ratio);
 }
 
 bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
 		    const DbImage &DbImage2, const SEStarList& SL2,
-		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One)
+		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One, float min_match_ratio)
 {
   string fitsName1 = DbImage1.FitsImageName(Calibrated);
   string fitsName2 = DbImage2.FitsImageName(Calibrated);
@@ -367,10 +376,10 @@ bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
   CutList(SL2, bl2);
 
   // 1 - Try a bunch of method to get an initial match
-  if (!MatchGuess(bl1, bl2, head1, head2, One2Two, Two2One)) 
+  if (!MatchGuess(bl1, bl2, head1, head2, One2Two, Two2One, min_match_ratio)) 
     {
       // in some cases the inverse transfo works better
-      if (!MatchGuess(bl2, bl1, head2, head1, Two2One, One2Two)) 
+      if (!MatchGuess(bl2, bl1, head2, head1, Two2One, One2Two, min_match_ratio)) 
 	{
 	  cerr << " ImageListMatch : FAILURE : Unable to get an initial match\n";
 	  return false;
