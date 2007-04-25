@@ -91,66 +91,6 @@ void LightCurve::write_lc2fit(ostream& Stream) const
     }
   Stream.flags(oldflags);
 }
-/*
-void LightCurve::write_short(ostream& Stream) const
-{
- 
-  double elixir_zp = computeElixirZeroPoint();
-
-  ios::fmtflags oldflags = Stream.flags();
-
-  if (front()->Image()) Stream << "# mmjd : (days since January 1st, 2003)\n";
-  Stream << "# flux : \n"  
-         << "# eflux : \n"
-	 << "# mag : using zeropoint\n"
-	 << "# emag_minus : useful for drawing\n"
-    	 << "# emag_plus : useful for drawing\n"
-	 << "# zeropoint : elixir zp\n";
-  if (front()->Image()) Stream << "# image : \n";
-  Stream << "# end \n";
-
-  
-  LightCurvePoint lcp;
-  for (LightCurve::const_iterator it = begin(); it != end(); ++it)
-    {      
-      const Fiducial<PhotStar> *fs = *it;
-      lcp.julianday = fs->Image()->ModifiedModifiedJulianDate();
-      lcp.flux = fs->flux;
-      lcp.eflux = sqrt(fs->varflux);
-      lcp.computemag(elixir_zp);
-      Stream << lcp;
-      if (fs->Image()) Stream << "  " << fs->Image()->Name();
-      else Stream << " none ";
-      Stream << endl;
-    }
-  Stream.flags(oldflags);
-}
-*/
- //void LightCurve::write_xml(const string &filename) const
- //{
- //#ifdef FNAME
- //  cout << " > LightCurve::write_xml" << endl;
- //#endif
- //
- //  double elixir_zp = computeElixirZeroPoint();
- //  
- //  // fill a list of LightCurvePoint
- //  std::vector< CountedRef<LightCurvePoint> > lcpoints;  
- //  for (LightCurve::const_iterator it = begin(); it != end(); ++it)
- //    {      
- //      const Fiducial<PhotStar> *fs = *it;
- //      CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
- //      lcp->julianday = fs->Image()->ModifiedModifiedJulianDate();
- //      lcp->flux = fs->flux;
- //      lcp->eflux = sqrt(fs->varflux);
- //      lcp-> computemag(elixir_zp);
- //      lcpoints.push_back(lcp);
- //    }
- //  // now write this list in a file
- //  obj_output<xmlstream> oo(filename);
- //  oo << lcpoints;
- //  oo.close();
- //}
 
 
 ostream& operator << (ostream& Stream, const CountedRef<Fiducial<PhotStar> > &Star)

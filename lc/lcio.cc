@@ -66,7 +66,6 @@ static ReducedImage* read_image(const string& line)
       delete red;
       return 0;
     }
-  //cout << "mmjd " << words.front() << " " << red->ModifiedModifiedJulianDate() << endl;
   return red;
 }
 
