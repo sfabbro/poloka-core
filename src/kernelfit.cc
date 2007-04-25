@@ -1161,8 +1161,12 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
 
  //cook up a plausible kernel to propagate weight map if bestimage
  Kernel guess(optParams.HKernelSize);
- PolGaussKern(guess, sqrt(WorstSeeing*WorstSeeing - BestSeeing*BestSeeing), 0, 0);
- guess *= 1./guess.sum();
+ if(WorstSeeing>BestSeeing) {
+   PolGaussKern(guess, sqrt(WorstSeeing*WorstSeeing - BestSeeing*BestSeeing), 0, 0);
+   guess *= 1./guess.sum();
+ }else{ // use delta
+   SetDelta(guess);
+ }
 
  BestImageStamps = new  
    StampList(*BestImage, *BestImageWeight, *WorstImageWeight, List, optParams.HStampSize, guess, optParams.MaxStamps);
