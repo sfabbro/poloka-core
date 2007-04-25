@@ -42,7 +42,9 @@ public :
   double psfchi2,zpchi2,zpchi2_01;
   double nmag,ndist;
   double mag_min,mag_max;
-  double g,ge,r,re,i,ie,z,ze;  
+  double g,ge,r,re,i,ie,z,ze;
+  double catalog_mag;
+  double catalog_mage;
   double zp;
   double sky;
   double flux;
@@ -57,6 +59,10 @@ public :
   double neic;
   double flux_min,flux_max;
   
+  int nmeas() const {
+    return int(sum_1);
+  }
+
   void reset() {
     id = -1;
     sum_1 = 0;
@@ -99,6 +105,8 @@ public :
     ie = istar->getval("ie");
     z = istar->getval("z");
     ze = istar->getval("ze");  
+    catalog_mag = istar->getval("mag");
+    catalog_mage= istar->getval("mage");
     
     double w = 1./sqr(istar->getval("error"));
     flux = istar->flux;
@@ -282,10 +290,14 @@ int main(int argc, char **argv)
   
   // gaussian
   zp = gaussianfit(values,count,zp,rms,3.,true);
+  cout << zp << " " << rms << endl;
   if(rms>0) { 
     zp = gaussianfit(values,count,zp,rms,2.,false);
+    cout << zp << " " << rms << endl;
     zp = gaussianfit(values,count,zp,rms,1.5,false);
+    cout << zp << " " << rms << endl;
     zp = gaussianfit(values,count,zp,rms,1.,false);
+    cout << zp << " " << rms << endl;
   }else{
     rms=-rms;
   }
@@ -300,61 +312,82 @@ int main(int argc, char **argv)
   if(nimages>0) {
     fprintf(file,"@NIMAGES %d\n",nimages);
   }
-  fclose(file);
+  
   delete [] values;
-
-  if(true) {
-    // build a processed star list
-
-
-    ofstream stream("zpstars.list");
-    stream << "# ra : as in calib. catalog" << endl;
-    stream << "# dec : as in calib. catalog" << endl;
-    stream << "# id : number in calib. catalog" << endl;
-    stream << "# mag : mag derived from math to catalog." << endl;
-    stream << "# error : error on mag." << endl;
-    stream << "# flux : flux in ref. image units" << endl;
-    stream << "# fluxrms : scatter around the above" << endl;
-    stream << "# mneas : number of measurements involved in the average" << endl;
-
-    stream << "# zpchi2 : chi2pdf ass. stable star with 0.01 sys. effect" << endl;
-    stream << "# zpchi2_01 : chi2pdf ass. stable star with 0.01 sys. effect" << endl;
-    stream << "# nmag : level of contamination from neighbours (mag.)" << endl;
-    stream << "# ndist : distance of nearest neighbour (=neid, pixels)" << endl;
-    stream << "# mag_min : min. meas. magnitude" << endl;
-    stream << "# mag_max : max. meas. magnitude" << endl;
-    stream << "# sky : av. fitted residual sky level" << endl;
-    stream << "# psfchi2 : chi2 pdf of PSF photometry" << endl;
-    stream << "# satur : 0=ok" << endl;
-    stream << "# contam : 0=ok, else contamination" << endl;
-    stream << "# var : 0=ok else variable star" << endl;
-    stream << "# nostar : 0=ok else probably a galaxy" << endl;   
-    stream << "# g : " << endl;
-    stream << "# ge : " << endl;
-    stream << "# r : " << endl;
-    stream << "# re : " << endl;
-    stream << "# i : " << endl;
-    stream << "# ie : " << endl;
-    stream << "# z : " << endl;
-    stream << "# ze : " << endl;
-    stream << "# end " << endl;
+  
+  
+  // build a processed star list
+  
+  
+  ofstream stream("zpstars.list");
+  stream << "# ra : as in calib. catalog" << endl;
+  stream << "# dec : as in calib. catalog" << endl;
+  stream << "# id : number in calib. catalog" << endl;
+  stream << "# mag : mag derived from match to catalog." << endl;
+  stream << "# error : error on mag." << endl;
+  stream << "# flux : flux in ref. image units" << endl;
+  stream << "# fluxrms : scatter around the above" << endl;
+  stream << "# mneas : number of measurements involved in the average" << endl;
+  stream << "# zpchi2 : chi2pdf ass. stable star without sys. effect" << endl;
+  stream << "# zpchi2_01 : chi2pdf ass. stable star with 0.01 sys. effect" << endl;
+  stream << "# nmag : level of contamination from neighbours (mag.)" << endl;
+  stream << "# ndist : distance of nearest neighbour (=neid, pixels)" << endl;
+  stream << "# mag_min : min. meas. magnitude" << endl;
+  stream << "# mag_max : max. meas. magnitude" << endl;
+  stream << "# sky : av. fitted residual sky level" << endl;
+  stream << "# psfchi2 : chi2 pdf of PSF photometry" << endl;
+  stream << "# satur : 0=ok" << endl;
+  stream << "# contam : 0=ok, else contamination" << endl;
+  stream << "# var : 0=ok else variable star" << endl;
+  stream << "# nostar : 0=ok else probably a galaxy" << endl;   
+  stream << "# g : " << endl;
+  stream << "# ge : " << endl;
+  stream << "# r : " << endl;
+  stream << "# re : " << endl;
+  stream << "# i : " << endl;
+  stream << "# ie : " << endl;
+  stream << "# z : " << endl;
+  stream << "# ze : " << endl;
+  stream << "# end " << endl;
+  
+  zpstar current_star;
+  current_star.zp = zp;
+  
+  double sum_chi2_of_images = 0; // compute total chi2 with zp and star magnitudes as free parameters
+  double sum_ndf_of_images  = 0; // 
+  double sum_chi2_of_images_01 = 0; // same, assuming 0.01 sys. effect on, say, flatfielding or psf
+  
+  double sum_chi2_of_stars = 0; // compute total chi2 once dispersion between measurements of a star propagated into error
+  double sum_ndf_of_stars  = 0; 
+  
+  for(DicStarCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
     
-    zpstar current_star;
-    current_star.zp = zp;
-    
-    for(DicStarCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
-      
-      // if new star, dump results here
-      if(current_star.id != (*entry)->getval("star")) {
-	current_star.process();
-	if(current_star.id>0)
-	  stream << current_star << endl;
-	current_star.reset();
+    // if new star, dump results here
+    if(current_star.id != (*entry)->getval("star")) {
+      current_star.process();
+      if(current_star.id>0) {
+	stream << current_star << endl;
+	sum_chi2_of_images += current_star.zpchi2*current_star.nmeas();
+	sum_chi2_of_images_01 += current_star.zpchi2_01*current_star.nmeas();
+	sum_ndf_of_images += current_star.nmeas() - 1; // -1 for the magnitude free parameter	
+	sum_chi2_of_stars += sqr(current_star.mag-current_star.catalog_mag)/(sqr(current_star.catalog_mage)+sqr(current_star.error));
+	sum_ndf_of_stars +=1;
       }
-      current_star.load(*entry);            
+      current_star.reset();
     }
-    stream.close();
+    current_star.load(*entry);            
   }
+  stream.close();
+  
+  sum_ndf_of_images -= 1 ; // for the free zp parameter
+  sum_ndf_of_stars -= 1 ; // for the free zp parameter
+  
+  fprintf(file,"@CHI2PDF_OF_IMAGES %6.6f\n",sum_chi2_of_images/sum_ndf_of_images);
+  fprintf(file,"@CHI2PDF_OF_IMAGES_01 %6.6f\n",sum_chi2_of_images_01/sum_ndf_of_images);
+  fprintf(file,"@NDF_OF_IMAGES %6.6f\n",sum_ndf_of_images);   
+  fprintf(file,"@CHI2PDF_OF_STARS %6.6f\n",sum_chi2_of_stars/sum_ndf_of_stars);
+  fprintf(file,"@NDF_OF_STARS %6.6f\n",sum_ndf_of_stars);  
+  fclose(file);
   return EXIT_SUCCESS;
 }
 
