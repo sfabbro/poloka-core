@@ -2,8 +2,8 @@
 // 
 // \file globalval.h
 // 
-// Last modified: $Date: 2006/12/22 13:35:41 $
-// By:            $Author: guy $
+// Last modified: $Date: 2007/04/26 15:33:55 $
+// By:            $Author: astier $
 // 
 
 #ifndef GLOBALVAL__H
@@ -21,6 +21,9 @@ using namespace std;
 //! to store in files things like "Key value(s)" things.
 class GlobalVal : private  map<string, vector<string> > {
 public :
+
+  GlobalVal() {};
+
   bool AddKey(const string &Key, const vector<string> &Values);
   
   bool AddKey(const string &Key, const string &Value);
@@ -48,6 +51,9 @@ public :
   vector<string> OutputLines() const;
 
   bool ProcessLine(const string &Line);
+
+  // this constructor is to be used when you only need to read '@' lines in a file
+  GlobalVal(const std::string &FileName);
 
 
 private:

@@ -605,7 +605,7 @@ bool ReducedImage::MakeAperCat()
 
   if (!(MakeFits() && MakeWeight() && MakeCatalog()))
     {
-      cerr << " cannot make aper catalogue for " << Name() << endl;
+      cerr << " cannot make pre-requisite for aper catalogue for " << Name() << endl;
       return false;
     }
 
@@ -685,12 +685,12 @@ bool ReducedImage::MakeAperCat()
        << corr  << endl;
   cout << Name () << ": old seeing " <<  Seeing() << " new " << seeing << endl;
   
-
-
+  SetGFSeeing(seeing," Seeing from a Gaussian fit to objects");
+  
   // various minor things to do before computing aperture photometry
   FitsHeader  I(FitsName());
 
-  //try to figure out a gain
+  //try to figure out a gain 
   double gain = I.KeyVal("TOADGAIN");
   if (I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
     {
@@ -1701,6 +1701,21 @@ SET_ROUTINE(OldGain, double, "OLDGAIN");
 /* KEYS added after SExtractor Catalog is done */ 
 REMOVE_ROUTINE(Seeing,"SESEEING") ;
 READ_AND_SET_ROUTINES(Seeing,double,"SESEEING") ;
+
+// seeing from gaussian fits to the objects+ star clump finding 
+// (MakeAperCat routine)
+REMOVE_ROUTINE(GFSeeing,"GFSEEING") ;
+SET_ROUTINE(GFSeeing,double,"GFSEEING") ;
+
+double ReducedImage::GFSeeing() const
+{
+  FitsHeader head(FitsName());
+  if (head.HasKey("GFSEEING")) return double(head.KeyVal("GFSEEING"));
+  GlobalVal glob(AperCatalogName());
+  if (glob.HasKey("SEEING")) return glob.getDoubleValue("SEEING");
+  throw PolokaException(" GFSeeing requested but absent both from fit image and apercat :"+Name());
+}
+
 
 REMOVE_ROUTINE(SESky, "SEXSKY");
 SET_ROUTINE(SESky, double, "SEXSKY");

@@ -1,8 +1,8 @@
 // 
 // \file globalval.cc
 // 
-// Last modified: $Date: 2006/12/22 13:35:41 $
-// By:            $Author: guy $
+// Last modified: $Date: 2007/04/26 15:33:55 $
+// By:            $Author: astier $
 // 
 #include <iostream>
 #include <sstream>
@@ -173,6 +173,28 @@ vector<string> GlobalVal::OutputLines() const
     }
   return out;
 }
+
+
+#include <fstream>
+GlobalVal::GlobalVal(const std::string &FileName)
+{
+  std::ifstream r(FileName.c_str());
+  char c ;
+  char buff[4096];
+  while( r >> c ) // to test eof
+    {
+      r.unget() ;
+      if ( (c == '@') ) 
+	{
+	  r.getline(buff,4096); 
+	  ProcessLine(buff);
+	  continue;
+	}
+      if ( (c=='#') || isdigit(c)) break;
+    }
+  r.close();
+}
+
 
 #include <stdlib.h>
 

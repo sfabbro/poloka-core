@@ -202,6 +202,13 @@ Usefull in case of artificially smoothed images
   void RemoveSeeing();
   bool SetSeeing(const double &Value, const string Comment = "");
 
+ //! bseeing from gaussian fits to the objects+ star clump finding
+  double GFSeeing() const;
+  void RemoveGFSeeing();
+  bool SetGFSeeing(const double &Value, const string Comment = "");
+
+
+
   //! basic PSF shape parameters
   bool GetPsfShapeParams(double &SigmaX, double &SigmaY, double &ThetaXY ) const;
   bool SetPsfShapeParams(const double &SigmaX, const double &SigmaY, 
