@@ -622,7 +622,7 @@ ImagePSF::ImagePSF(const ReducedImage &RI, bool RefitPSF)
       return;
     }
   refitPSF = true;
-  seeing = reducedImage->Seeing();
+  seeing = reducedImage->GFSeeing();
   gain = reducedImage->Gain();
   nx = reducedImage->XSize();
   ny = reducedImage->YSize();
