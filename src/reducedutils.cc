@@ -121,7 +121,8 @@ double MedianPhotomRatio(const StarMatchList *matchlist)
   double *ratios = new double[matchlist->size()];
   int count = 0;
   for (StarMatchCIterator i = matchlist->begin(); i != matchlist->end(); ++i)
-    ratios[count++] = i->s1->flux/i->s2->flux;
+    if(i->s2->flux>0.)
+      ratios[count++] = i->s1->flux/i->s2->flux;
   double med = DArrayMedian(ratios,count);
   delete [] ratios;
   return med;
