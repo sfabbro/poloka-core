@@ -845,27 +845,52 @@ sort(array, array+size);
 return size&1? array[size/2] : (array[size/2-1] + array[size/2])/2.0;
 }
 
+
 void Image::MedianFilter(const int HalfWidth)
 {
   int span = 2*HalfWidth+1;
   int npix = span*span;
   Pixel *array = new Pixel[npix];
   // cout << "before median filtering : min" << MinValue() << " max " << MaxValue() << endl;
+  /* There is a filterback routine in SExtractor that does essentially
+     the same thing as this one.  The differences are in the border
+     handling: SExtractor filters borders the same way as "central pixels": 
+
+     if the input image contains:
+     ......
+     2 3 4 ....
+     1 2 3 ....
+     0 1 2 ....
+
+     then sextractor outputs (for HalfWidth=1) :
+
+     ......
+     x   x    x
+     1.5 2    x
+     1   1.5  x   
+
+
+     since this routine is used to filter sky background maps, we don't want systematic biases 
+     on the borders when there are systematic sky gradients. So we just run a spatialy symetric filter.
+     This routine is hence different from filterback in SExtractor.
+  */
+
   Image filtered(nx,ny);
   for (int j=0; j<ny; ++j)
     {
+      int dj = min(min(j,ny-j-1),HalfWidth);
       for (int i=0; i<nx; ++i)
 	{
+	  int di = min(min(i,nx-i-1),HalfWidth);
 	  npix = 0;
-	  for (int jj = max(0,j-HalfWidth); jj <= j+HalfWidth; ++jj)
+	  for (int jj = j-dj; jj <= j+dj; ++jj)
 	    {
-	      if (jj == ny) break;
-	      for (int ii= max(0, i-HalfWidth); ii <= i+HalfWidth; ++ii)
+	      for (int ii= i-di; ii<= i+di; ++ii)
 		{
-		  if (ii==nx) break;
 		  array[npix++] = value(ii,jj);
 		}
 	    }
+	  //	  assert((npix == (2*di+1)*(2*dj+1)));
 	  filtered(i,j) = hmedian(array,npix);
 	}
     }
