@@ -19,10 +19,10 @@ if (strstr(Topdir,"//") == Topdir) return Topdir+2; else return Topdir;
 }
 
 
-int open_hbook_file(char *name)
+int open_hbook_file(char *name, const int Lrec)
 {
 int istat;
- int lrec = 1024; 
+ int lrec = Lrec;
 HROPEN(1, unslashed_topdir(TOPDIR),name, "N",lrec,istat);
 if (istat == 0) return 1;
 return 0;
@@ -55,7 +55,7 @@ static void my_hfn(int *Id,float *X)
 }
 
 
-int make_tuple(const char *AsciiName, char* HbkFileName, int Id)
+int make_tuple(const char *AsciiName, char* HbkFileName, int Id, int Lrec)
 {
 FILE *in;
 char **tags;
@@ -69,7 +69,7 @@ if (!in)
   }
 tags = decode_tags(in, &dim);
 if (!tags) return 0;
-if (!open_hbook_file(HbkFileName))
+ if (!open_hbook_file(HbkFileName, Lrec))
   {
     printf( " could not open %s\n",HbkFileName); fclose(in); return 0;
   }
@@ -80,23 +80,46 @@ tuple_end(Id);
 return 1;
 }
 
+static void usage(const char* prog)
+{
+  printf(" syntax : \n %s <ascii_list> <hbbokfile> [-l lrec] \n",prog);
+  exit(1);
+} 
+
+
 
 int main(int argc, char **argv)
 {
-char *hbkName=NULL;
- char string[256];
- if (argc == 2)
-   {
-     sprintf(string,"%s.hbk",CutExtension(argv[1]));
-     hbkName = string;
-   }
- if (argc == 3) hbkName = argv[2];
- if (!hbkName)
-  {
-  printf(" syntax : l2tup <ascii_list> <hbbokfile> \n");
-  exit(1);
-  } 
-HLIMIT(NWPAWC);
-make_tuple(argv[1], hbkName, 1);
-return 0;
+  char *fileNames[2] = {NULL,NULL};
+  int lrec = 1024;
+  int count = 0;
+  for (int i=1; i< argc; ++i)
+    {
+      char *arg= argv[i];
+      if (arg[0] == '-' && arg[1] != '\0')
+	{
+	  switch (arg[1])
+	    {
+	    case 'l' : ++i; lrec = atoi(argv[i]); break;
+	    case 'h' :
+	    default:  usage(argv[0]);
+	    }
+	}
+      else
+	{
+	  fileNames[count++] = arg;
+	}
+    }
+  if (count == 0 || count > 2) usage(argv[0]);
+  char *hbkName=NULL;
+  char string[256];
+  if (count == 1)
+    {
+      sprintf(string,"%s.hbk",CutExtension(fileNames[0]));
+      hbkName = string;
+    }
+  else hbkName = fileNames[1];
+  HLIMIT(NWPAWC);
+  if (!make_tuple(fileNames[0], hbkName, 1, lrec)) return 1;
+  return 0;
 }
