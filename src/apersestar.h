@@ -12,6 +12,30 @@ class Image;
 class fastifstream;
 
 //
+// definition of Aperture
+//
+
+//! gathers data from an aperture photometry measurement
+struct Aperture
+{
+    double radius; // in pixels
+    double flux; // in ADUS
+    double eflux;
+    int nbad;
+    int ncos; // number of bad pixels flagged as cosmics
+    double fcos; // total flux of these pixels
+    double fother; // flux of other objects in aperture
+    Aperture() { radius=0; flux=0; eflux=0; nbad=0; ncos=0; fcos=0; fother=0;}
+    void computeflux(double x, double y, 
+		     const Image& I, const Image& W, const Image *pC, const Image *pS, 
+		     const double Gain, const double Radius,int segmentation_number);
+    bool operator < ( const Aperture &Right) const
+    { return radius < Right.radius;}
+
+};
+
+
+//
 // definition of AperSEStar
 //
 
@@ -20,25 +44,6 @@ class AperSEStar : public SEStar
 {
 
  public:
-
-  //! gathers data from an aperture photometry measurement
-  struct Aperture
-  {
-    double radius; // in pixels
-    double flux; // in ADUS
-    double eflux;
-    int nbad;
-    int ncos; // number of bad pixels flagged as cosmics
-    double fcos; // total flux of these pixels
-    double fother; // flux of other objects in aperture
-
-    Aperture() { radius=0; flux=0; eflux=0; nbad=0; ncos=0; fcos=0; fother=0;}
-
-    bool operator < ( const Aperture &Right) const
-    { return radius < Right.radius;}
-
-  };
-
   vector<Aperture> apers;
   double neighborDist;
   double neighborFlux;
@@ -55,14 +60,27 @@ class AperSEStar : public SEStar
     maxFluxContamination=-1; 
     gflag=BAD_GAUSS_MOMENTS; gmxx = gmyy = gmxy = 0; }
 
- public:
+
+ public:  
+
+
+void computeflux(const Image& I, const Image& W, const Image *C, 
+		 const Image *S, 
+		 const double Gain, const double Radius, bool sort_radii);
+
+
   AperSEStar() {zero();}
   AperSEStar(const SEStar &sestar) : SEStar(sestar) {zero();}
   
   //! computes flux (& co) and stores it into an added Aperture instance.
-  void ComputeFlux(const Image& I, const Image &W, const Image& Cosmic, const Image &Seg,
-		   const double Gain, const double Radius);
-
+      // sort_radii = true: apertures are sorted in increasing radii order
+  // 2 images : image + weight image
+  // 4 images : image + weight image + cosmic image + segmentation image
+  void ComputeFlux(const Image& I, const Image &W, const double Gain, const double Radius, bool sort_radii=true);
+  // to match the old routine
+  void ComputeFlux(const Image& I, const Image &W, const Image& Cosmic, 
+		   const Image &Seg, const double Gain, const double Radius,
+		   bool sort_radii=true);
   void ComputePos(const Image&I, const Image &W);
   void ComputeShapeAndPos(const Image&I, const Image &W);
 
@@ -80,7 +98,7 @@ class AperSEStar : public SEStar
 };
 
 
-ostream& operator << (ostream &stream, const AperSEStar::Aperture &);
+ostream& operator << (ostream &stream, const Aperture &);
 
 
 #include  "starlist.h"

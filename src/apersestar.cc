@@ -18,8 +18,10 @@ static double sq(const double &x) { return x*x;}
 
 //! computes the aperture flux and associated scores and add one record to the apers vector.
 /*! if you want several aperures, call repeteadly the same routines, with increasing radiuses (far sake of efficiency) */
-void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C, const Image &S, 
-			     const double Gain, const double Radius)
+void Aperture::computeflux(double x, double y, const Image& I, 
+			   const Image& W, const Image *pC, const Image *pS, 
+			   const double Gain, const double Radius, 
+			   int segmentation_number)
 {
   int imin = int(floor(x - Radius ));
   int imax = int(ceil(x + Radius ));
@@ -32,20 +34,20 @@ void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C, con
   double overstep = 1./double(OVERSAMPLING);
   double subpix = sq(overstep);
 
-  double nbad = 0; // double because there will be fractions of pixels...
+  double nnbad = 0; // double because there will be fractions of pixels...
   double frac = 0; // fraction of the current pixel within the aperture.
   double var =0;
-  double flux = 0;
+  double fflux = 0;
   
-  double ncos=0;
-  double fcos=0;
+  double nncos=0;
+  double ffcos=0;
   
   int nx = I.Nx();
   int ny = I.Ny();
 
-  double fother = 0;
+  double ffother = 0;
 
-  int thisStarNumber = this->num; // the S (Segmentation) image contains the "num" value of pixels that Sextractor attributed to objects
+  int thisStarNumber = segmentation_number; // the S (Segmentation) image contains the "num" value of pixels that Sextractor attributed to objects
 
   for (int j = jmin; j <= jmax; ++j)
     for (int i = imin; i <= imax ; ++i)
@@ -72,7 +74,7 @@ void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C, con
 	  }
 	if (i<0 || i>= nx || j<0 || j>=ny)
 	  {
-	    nbad += frac;
+	    nnbad += frac;
 	    continue;
 	  }
 	double w = W(i,j);
@@ -80,40 +82,64 @@ void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C, con
 	if (w > 0)
 	  {
 	    var += frac/w;
-	    flux += frac * pixVal;
+	    fflux += frac * pixVal;
 	  }
 	else {
-	  nbad += frac; // was += frac ???
-	  if( C(i,j)>0 ) {
-	    ncos += frac;
-	    fcos += frac * pixVal;
+	  nnbad += frac; // was += frac ???
+	  if( (pC != NULL) && ((*pC)(i,j)>0) ) {
+	    nncos += frac;
+	    ffcos += frac * pixVal;
 	  }
 	}
-	int seg = int(S(i,j));
+	int seg =  0 ;
+	if (pS != NULL) seg = int( (*pS)(i,j) ) ;
 	if (seg !=0 && seg != thisStarNumber)
 	  {
-	    fother+= frac*pixVal;
+	    ffother+= frac*pixVal;
 	  }
       }
 
-  // store the results
+
+  // store the result
+  radius = Radius;
+  flux = fflux;
+  double totalFlux = var+fflux/Gain;
+  if (totalFlux >0)
+    eflux = sqrt(var+fflux/Gain);
+  else  eflux = 0;
+  nbad = int(ceil(nnbad));
+  ncos = int(ceil(nncos));
+  fcos = ffcos;
+  fother = ffother ;
+}
+
+
+
+void AperSEStar::ComputeFlux(const Image& I, const Image& W, const Image& C,  const Image& S, 
+			     const double Gain, const double Radius, bool sort_radii)
+{
+  computeflux(I, W, &C, &S, Gain, Radius, sort_radii);
+}
+
+void AperSEStar::ComputeFlux(const Image& I, const Image& W, const double Gain, const double Radius, bool sort_radii)
+{
+  computeflux(I, W, NULL, NULL, Gain, Radius, sort_radii);
+}
+
+
+
+
+void AperSEStar::computeflux(const Image& I, const Image& W, const Image *pC, 
+			     const Image *pS, 
+			     const double Gain, const double Radius, 
+			     bool sort_radii)
+{
   apers.push_back(Aperture());
   Aperture &aper = apers.back();
-  // copy
-  aper.radius = Radius;
-  aper.flux = flux;
-  double totalFlux = var+flux/Gain;
-  if (totalFlux >0)
-    aper.eflux = sqrt(var+flux/Gain);
-  else  aper.eflux = 0;
-  aper.nbad = int(ceil(nbad));
-  aper.ncos = int(ceil(ncos));
-  aper.fcos = fcos;
-  aper.fother = fother;
-
+  aper.computeflux(x,y,I,W,pC,pS,Gain,Radius,this->num);
   // impose increasing order
   unsigned naper = apers.size();
-  if (naper>1 || Radius < apers[naper-1].radius)
+  if (sort_radii && (naper>1 || Radius < apers[naper-1].radius))
     sort(apers.begin(),apers.end());
 }
 
@@ -145,8 +171,8 @@ going to an oversampling of 9 increases the CPU by 50%
 
 //! interpolates existing measurements (avoids going back to pixels)
 /*! assumes that apertures are in increasing order, which is
-  enforced by ComputeFlux*/
-AperSEStar::Aperture AperSEStar::InterpolateFlux(const double &Radius) const
+  enforced by ComputeFlux if called with default parameters sort_radii set to true*/
+Aperture AperSEStar::InterpolateFlux(const double &Radius) const
 {
   unsigned naper = apers.size();
   unsigned k=0;
@@ -346,8 +372,8 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
       if ( drift2>4 || det < 0 || sumxx < 0 || sumyy < 0 )  
 	{
 	  gflag |= BAD_GAUSS_MOMENTS;
-	  wxx = wyy = 12;
-	  wxy = 0;
+	  wxx = wyy = 12.;
+	  wxy = 0.;
 	  break; 
 	}
       double half_trace = 0.5*(sumxx + sumyy);
@@ -386,7 +412,7 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
   
 
 
-ostream& operator << (ostream &stream, const AperSEStar::Aperture &A)
+ostream& operator << (ostream &stream, const Aperture &A)
 {
   stream << " rad= " << A.radius << " f=" << A.flux 
 	 << " ef=" << A.eflux << " nbad=" << A.nbad;
@@ -428,6 +454,7 @@ std::string AperSEStar::WriteHeader_(ostream & pr,
     }
   return sestarFormat+ "AperSEStar 3"; 
 }
+
 
 
 void AperSEStar::writen(ostream& s) const
