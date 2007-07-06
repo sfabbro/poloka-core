@@ -92,6 +92,8 @@ public :
 			   bool fond_deja_soustrait, bool sauver_fond,
 			   bool use_sigma_header);
 
+  void  FillSExtractorData_2(ReducedImage & rim_det, ForSExtractor & data);
+
   /* Recover Back eventually from mini back image and 
      re add it if desired */
 bool
@@ -129,6 +131,14 @@ Usefull in case of artificially smoothed images
   bool MakeCatalog(bool redo_from_beg, bool overwrite, bool savemasksat,
 		   bool pas_sub_fond, 
 		   bool use_sigma_header);
+
+
+  // pour processer 2 images : detection + mesure, en simplifie
+  //weight_from_measurement_image : detection et measurement weight map = measurement weight map.
+  // catalog_name : Dir()+"/sedble.list" par exemple.
+  bool MakeCatalog_2images(ReducedImage & rim_det, bool overwrite, 
+			   bool weight_from_measurement_image, 
+			   string catalog_name, bool do_segmentation);
 
 
 //! Produce the Saturated stars pixels mask, subtract the image background, detect with the SExtractor computed sigma. search the cosmics, and update catalog and weight for cosmics. No free coffee.

@@ -150,6 +150,72 @@ void ReducedImage::FillSExtractorData(ForSExtractor & data,
 }
 
 
+// Pour le double mode simplifie : pas de carte de bad.
+// a appeler sur l'image de photometrie (ie la 2eme image)
+// fond en mode RELATIVE (dans prefs.h) == AUTO (dans datacard.sex) == carte de fond re-calculee// a appeler sur image de photometrie
+// j'ai enleve les bad non necessaires pour la comparaison a Terapix
+// fond en mode RELATIVE (dans prefs.h) == AUTO (dans datacard.sex) == carte de fond re-calculee
+void ReducedImage::FillSExtractorData_2(ReducedImage & rim_det, 
+					ForSExtractor & data)
+{
+  // what concerns on-the-flight decompression
+  const char *tmpdir = getenv("IMAGE_TMP_DIR");
+  if (tmpdir) 
+    {// risque mais si c'est ce qu'on veut
+      data.TempDir_0 = string(tmpdir); 
+      data.TempDir_1 = string(tmpdir); 
+    }
+  else {
+    data.TempDir_0 = rim_det.Dir();
+    data.TempDir_1 = Dir();
+  }
+  data.UniqueName_0 = rim_det.Name();
+  data.UniqueName_1 = Name();
+    
+  // saturation from measurement image
+  data.saturation = (int) (SATUR_COEFF*Saturation());
+  // pour comparaison avec datacard terapix
+  //data.saturation = 40000. ;
+  data.sigma_back  = -1 ;
+  data.FitsFileName_0 = rim_det.FitsImageName(Calibrated).c_str();
+  data.FitsFileName_1 = FitsImageName(Calibrated).c_str();
+  
+  data.backmean=0.0;
+  // a l'air d'etre comme ca dans datacard terapix: data.back_type_manual = false ; 
+  data.back_type_manual = false ; 
+
+  //on ne sauve pas le fond car on ne le soustrait pas
+  //data.FitsBackName = FitsBackName();
+  data.FitsMiniBackName = FitsMiniBackName();
+
+  if (HasWeight())
+    {
+      cout << "Weighting for photometry from " << FitsWeightName() << endl ;
+      data.FitsWeightName_1 = FitsWeightName();
+      // pas de flag image (mask image ) ici
+    }
+  else 
+    {     
+      data.FitsWeightName_1 = "";
+    }
+
+  if (rim_det.HasWeight())
+    {
+      cout << "Weighting for detection from " << rim_det.FitsWeightName() << endl ;
+      data.FitsWeightName_0 = rim_det.FitsWeightName(); 
+      // pas de flag image ici  
+    }
+  else 
+    {     
+      data.FitsWeightName_0 = "";
+    }
+
+
+  cerr << "Images Detection : " << data.FitsFileName_0 << " Mesure : " << data.FitsFileName_1 << endl ;
+}
+
+
+
 bool 
 ReducedImage::RecoverBack(bool add_to_image) {
   if ( FileExists(FitsBackName()) )
@@ -547,6 +613,58 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 }
 
 
+// version simplifiee pour 2 images : detection + mesure
+// pas de recuparation du masque de saturation
+
+bool
+ReducedImage::MakeCatalog_2images(ReducedImage & rim_det, bool overwrite, 
+				  bool weight_from_measurement_image, 
+				  string catalog_name, bool do_segmentation)
+{
+  int status = 0 ;
+   if ( !overwrite )
+    { 
+      if ( FileExists(ImageCatalogName(SExtractor)))
+	{
+	  cerr << "catalog already done for image, exiting " << FitsName()
+	       << endl ;
+	  return true;
+	}
+    }
+  // fabrication de la carte de poids
+   if (! HasWeight() )
+     {
+       MakeWeight();
+     }
+
+   if (! rim_det.HasWeight() )
+     {
+       rim_det.MakeWeight();
+     }
+
+  ForSExtractor data ;
+  
+
+  FillSExtractorData_2(rim_det,data);
+  if (do_segmentation) 
+    data.FitsSegmentationName = rim_det.Dir()+"/seg.fits";
+  data.Print();
+  double Fond_0 = 0., SigmaFond_0 = 0., Fond_1 = 0., SigmaFond_1 = 0. ;
+  SEStarList stlse ;
+  status = SEStarListMake_2(data, stlse, Fond_0, SigmaFond_0, Fond_1, 
+			    SigmaFond_1,  weight_from_measurement_image);
+
+   cerr << "Nombre d'objet detectes : " << stlse.size() << endl ;
+   //SetSESky(Fond_1, "SExtractor computed background");
+   //SetSESigma(SigmaFond_1, "SExtractor computed sigma on background"); 
+  stlse.write(catalog_name);
+
+
+  return(status);
+}
+
+
+
 bool ReducedImage::MakeCatalog() 
 {
   if (HasCatalog()) return true;
@@ -783,20 +901,21 @@ bool ReducedImage::MakeAperCat()
     Image *cosmic = NULL;
     if (FileExists(FitsCosmicName()))
       {
+	cerr << "Using cosmic image " << endl ;
 	slices.AddFile(FitsCosmicName());
 	cosmic = slices.back();
       }
     else
       {
-	cosmic = new Image(slices[0]->Nx(), slices[0]->Ny());
-	del_cosmic.reset(cosmic); // will delete cosmic when del_cosmic goes out of scope
+	cosmic = new Image(slices[0]->Nx(), slices[0]->Ny()); 
+	del_cosmic.reset(cosmic);  // will delete cosmic when del_cosmic goes out of scope
       }
     
 
     // we may also miss the "segmentation image"
     // same trick with exception safe call to delete using auto_ptr
     auto_ptr<Image> del_segmentation(NULL);
-    Image *segmentation = NULL;
+    Image *segmentation = NULL; 
     if (FileExists(FitsSegmentationName()))
       {
 	slices.AddFile(FitsSegmentationName());
@@ -804,8 +923,9 @@ bool ReducedImage::MakeAperCat()
       }
     else
       {
-	segmentation = new Image(slices[0]->Nx(), slices[0]->Ny());
-	del_segmentation.reset(segmentation); // will delete segmentation when del_segmentation goes out of scope
+	segmentation = new Image(slices[0]->Nx(), slices[0]->Ny()); 
+	del_segmentation.reset(segmentation);
+// will delete segmentation when del_segmentation goes out of scope
       }
 
     // for the y limits take something 
@@ -827,7 +947,7 @@ bool ReducedImage::MakeAperCat()
 	    if (s.y < yStarMax && s.y >= yStarMin)
 	      {
 		s.y -= offset;
-		for (unsigned k = 0; k < nrads; ++k) s.ComputeFlux(I,W,*cosmic,*segmentation,gain,rads[k]);
+	       for (unsigned k = 0; k < nrads; ++k) s.ComputeFlux(I,W,*cosmic,*segmentation,gain,rads[k]); 
 		s.y += offset;
 	      }
 	  }
@@ -866,7 +986,7 @@ bool ReducedImage::MakeAperCat()
   if (!apercat.empty())
     {
       vector<double> rads;
-      const vector<AperSEStar::Aperture> &a = apercat.front()->apers;
+      const vector<Aperture> &a = apercat.front()->apers;
       unsigned naper = a.size();
       for (unsigned k =0; k < naper; ++k) rads.push_back(a[k].radius);
             GlobalVal &glob = apercat.GlobVal();
