@@ -20,6 +20,14 @@ class Dictionnary : public map<string,int>
       const_iterator i = find(Key);
       return (i == end()) ? -1 : i->second;
     }
+    map<int,string> Key_List()const {
+	map<int,string> tags;
+	for (Dictionnary::const_iterator it = begin(); it != end(); ++it)
+	    tags[it->second] = it->first;
+	return tags;
+    }
+
+	
 };
 
 class DictFile;
@@ -28,11 +36,12 @@ class DictFile;
 class DictFileEntry
 {
   private :
-    vector<string> elements;
-  const DictFile &file;
+  vector<string> elements;
+  DictFile &file;
 
   public :
-    DictFileEntry(const char *Line, const DictFile &F);
+  DictFileEntry(DictFile& F);
+    DictFileEntry(const char *Line, DictFile &F);
 
 
   struct Val
@@ -47,6 +56,13 @@ class DictFileEntry
   Val Value(const string &Key, const bool DiesIfAbsent = true) const;
 
   bool HasKey(const string &Key) const;
+
+  bool EraseElement(int num){if (num <elements.size()) {elements.erase(elements.begin()+num); return true ;} else return false ;}
+
+  void AddKey(const string &Key, const string &Val);
+  void AddKey(const string &Key, const double &Val);
+  void ModKey(const string &Key, const string &Val);
+  void ModKey(const string &Key, const double &Val);
 
 };
 
@@ -83,21 +99,32 @@ class DictFile : public list <DictFileEntry>
   string fileName;
 
   public :
+  DictFile();
     DictFile(const string &FileName);
 
   const Dictionnary &Dict() const { return dict;}
   const string &FileName() const {return fileName;}
 
   bool HasKey(const string &Key) const { return dict.Locate(Key) != -1;}
+  void AddKey(const string &Key);
+  void RmKey(const string &Key);
   bool HasGlobalKey( const string &Key) const 
     { return (globalKeys.find(Key) != globalKeys.end()); };
 
   string GlobalValue(const string &Key, const bool FatalIfAbsent = true) const;
+  void RemoveGlobalKey( const string &Key);
+  void AddGlobalKey( const string &Key, const string &Val);  
+
+  void DumpKeys() const;
+
+  bool Write(const string &FileName) const;
 
 };
 
 
 typedef DictFile::const_iterator DictFileCIterator;
+typedef DictFile::iterator DictFileIterator;
+
 
 
 #ifdef EXAMPLE
