@@ -10,12 +10,18 @@
 #include "sextractor_box.h"
 #include "fitsimage.h"
 
+// used when recovering positions from sextractor
+#define DECALAGE_CAT_SE -1.0
+
 /* sextractor header files do not contain any provision for inclusion in C++ sources */
 
 extern "C" {
 #include <define.h> /* from sextractor, mandatory for nex one () */
 #include <globals.h> /* from sextractor. nice name isn't it ? */
-#include <types.h>
+#include <types.h> 
+
+// a ajouter pour la version v244
+//#include <prefs.h>
 	   }
 
 
@@ -47,8 +53,6 @@ void  Get_Pixel(Image *img, float x, float y)
   for (int i = -d ; i <=d ; i++)    
     for (int j = -d ; j <=d ; j++)  
       {
-	//int xx = rint(x + DECALAGE_SE_IJ +i) ;
-	//int yy = rint(y + DECALAGE_SE_IJ +j) ;
 	// appele dans le code avant que les coordonnees aient ete decalees
 	int xx = (int) (x + i + 0.5 ) ;
 	int yy = (int) (y + j+ 0.5 ) ;
@@ -69,8 +73,9 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   star->flux =   obj2->flux_best;
 
   star->N()  = obj->number ;
-  star->X_Peak() = obj->peakx ;
-  star->Y_Peak() = obj->peaky ;
+  star->X_Peak() = obj->peakx + DECALAGE_CAT_SE ;
+  star->Y_Peak() = obj->peaky + DECALAGE_CAT_SE ;
+  //star->X_Peak() = obj->dbkg ; // pour tester que c'est tjrs =0 !
   star->EFlux() = obj2->fluxerr_best  ;
   star->Fluxmax() = obj->peak  ;
   star->Fond() = obj->bkg  ;
@@ -96,8 +101,8 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   // used. we convert it to a binary flag 0 or 1.
   if (obj->imanflag[0] != 0)  star->FlagBad() = 1;
   star->Cstar() = obj2->sprob  ;
-  star->Xtrunc() = obj->mxtrunc  ;
-  star->Ytrunc() = obj->mytrunc  ;
+  star->Xtrunc() = obj->mxtrunc  + DECALAGE_CAT_SE;
+  star->Ytrunc() = obj->mytrunc  + DECALAGE_CAT_SE;
 }
 
 
@@ -210,7 +215,9 @@ sex_proc(const AllForSExtractor & data,
       toFree.push_back(prefs.wimage_name[0]);
       strcpy(prefs.wimage_name[0],data.FitsWeightName.c_str());
       prefs.nwimage_name = 1 ; 
-      prefs.weight_type[0]=WEIGHT_FROMWEIGHTMAP;
+      prefs.weight_type[0]=WEIGHT_FROMWEIGHTMAP; 
+      // if no weight map is to be taken into account
+      // prefs.weight_type[0]=WEIGHT_NONE ;
       prefs.nweight_type=1;
       prefs.weight_flag = 1;
       prefs.dweight_flag = 1;
@@ -243,11 +250,9 @@ sex_proc(const AllForSExtractor & data,
     }
 
   
-  prefs.satur_level = data.saturation ;
-  cout << "saturation provided to sextractor : " << prefs.satur_level  << std::endl;
   // detection level and photometric level in number of sigmas
-  // they wiil be converted by SExtractor in photons,
-  // using the sigma it will compute.
+  // they will be converted by SExtractor in photons,
+  // using the  SExtractor computed sigma 
   cout << "DETECTION   THRESH " << prefs.dthresh[0] << endl ;
   cout << "PHOTOMETRIC THRESH " << prefs.thresh[0] << endl ;
   // to set these levels directly in photons (or adus),
@@ -256,14 +261,22 @@ sex_proc(const AllForSExtractor & data,
      {
        prefs.dthresh[0] = prefs.dthresh[0] * data.sigma_back ;
        prefs.thresh[0] = prefs.thresh[0] * data.sigma_back ;
-       prefs.thresh_type[0] = (ThresholdType)(1) ;
+       prefs.thresh_type[0] = THRESH_ABSOLUTE ;
      }
   cout << "DETECTION   THRESH " << prefs.dthresh[0] << endl ;
   cout << "PHOTOMETRIC THRESH " << prefs.thresh[0] << endl ;
 
+  prefs.satur_level = data.saturation ;
   FitsHeader head(filename, RO);
   prefs.pixel_scale = head.KeyVal("TOADPIXS");
   prefs.gain = head.KeyVal("TOADGAIN");
+
+  cout << "saturation provided to sextractor : " << prefs.satur_level  << std::endl;
+  cerr << "Pixel Scale : " << prefs.pixel_scale << endl ;
+  cerr << "Gain : " << prefs.gain << endl ;
+  cerr << prefs.param_name << endl ;
+
+
 
   makeit();
 
@@ -323,8 +336,7 @@ _SEStarListMake(const AllForSExtractor & data,
 {
   Liste_de_SEStar= &List;
   pmask = pmask_sat ;
-  if (file_exists(data.FitsFileName.c_str()) &&   file_exists(data.SexConfigFileName.c_str()) &&  file_exists(data.SexParamName.c_str())
-       && file_exists(data.SexNNWName.c_str()) && file_exists(data.SexFilterName.c_str()))
+  if (file_exists(data.FitsFileName.c_str()) )
     {
      sex_proc(data, Get_SEStarList, Get_PixelSat,
 	      Fond, SigmaFond);
@@ -390,7 +402,7 @@ ForSExtractor::Print()
     cout << sigma_back  << endl  ;
 }
 
-void
+bool
 AllForSExtractor::FillFromEnvironnement()
 {
   string sextractor_dir = ".";
@@ -409,6 +421,13 @@ AllForSExtractor::FillFromEnvironnement()
   SexParamName = sextractor_dir+"/default.param" ;
   SexNNWName   = sextractor_dir+"/default.nnw";
   SexFilterName = sextractor_dir+"/default.conv" ;
+  if (!file_exists(SexConfigFileName.c_str()) ||  
+      !file_exists(SexParamName.c_str()) ||
+      !file_exists(SexNNWName.c_str()) ||
+      !file_exists(SexFilterName.c_str()) )
+    return(false);
+  else
+    return(true);
 }
 
 
@@ -420,14 +439,315 @@ SEStarListMake(const ForSExtractor & shortdata,
 	       Image * pmask_sat)
 {
   AllForSExtractor data(shortdata);
-  data.FillFromEnvironnement();
+  if (!data.FillFromEnvironnement())
+    return 0 ;
   data.DecompressIfNeeded();
   int status = _SEStarListMake(data, List, Fond, SigmaFond,
 			      pmask_sat);
   return(status);
 }
 
+/*************** SExtractor with 2 images ******************/
+static
+std::string DecompressIfNeeded(const std::string &InFileName,
+					      const  std::string &tmpdir,
+					      const  std::string & unique,
+					      std::string &ToRemove) 
+{
+  std::string outFileName =  AddSlash(tmpdir)+unique+"."
+    +CutExtension(BaseName(InFileName))+".fits";
+  return DecompressImageIfNeeded(InFileName, outFileName, ToRemove);
+}
 
+
+static 
+int 
+sex_proc_2(const AllForSExtractor & data,
+	 _SexStarFill StarFill, 
+	   double & Fond_0, double &SigmaFond_0, 
+	   double & Fond_1, double &SigmaFond_1, bool weight_from_measurement_image)
+{
+
+  std::vector<void *> toFree;
+
+  // nombre de check image
+  int nchecks=0;
+
+  std::string toRemove;
+  memset(&prefs,0,sizeof(prefs));
+  prefs.pipe_flag = 0;
+  prefs.nimage_name = 2; // 2 images pour detection & photometrie
+
+
+  strcpy(prefs.prefs_name, data.SexConfigFileName.c_str());
+
+  
+  char filename_0[512];
+  cerr << "# " << data.FitsFileName_0 << endl ;
+  std::string imageName_0 = DecompressIfNeeded(data.FitsFileName_0, data.TempDir_0, data.UniqueName_0, toRemove);
+  strcpy(filename_0,imageName_0.c_str());
+  prefs.image_name[0] = filename_0;
+  cerr << prefs.image_name[0]  << endl ;
+
+  char filename_1[512];
+  cerr << "# " << data.FitsFileName_1 << endl ;
+  std::string imageName_1 = DecompressIfNeeded(data.FitsFileName_1,  data.TempDir_1, data.UniqueName_1, toRemove); 
+  strcpy(filename_1,imageName_1.c_str());
+  prefs.image_name[1] = filename_1;
+  cerr << prefs.image_name[1]  << endl ;
+
+  cerr << "# Images en entree : " << prefs.image_name[0] << " " << prefs.image_name[1] << endl ;
+
+  readprefs(prefs.prefs_name, NULL, NULL, 0);
+  
+  strcpy(prefs.param_name, data.SexParamName.c_str());
+  strcpy(prefs.nnw_name,data.SexNNWName.c_str() );
+  // le filtre est lu dans la datacard (contrairement au traitement dans le cas 1 image, cf sex_proc.
+  //strcpy(prefs.filter_name,data.SexFilterName.c_str());
+
+  cerr << "pas de soustraction de fond en double mode" << endl ;
+  if (data.back_type_manual)
+    {
+      prefs.back_type[0]=BACK_ABSOLUTE;
+      prefs.back_type[1]=BACK_ABSOLUTE;
+      prefs.nback_type=2;
+      prefs.back_val[0] = data.backmean;
+      prefs.back_val[1] = data.backmean;
+      prefs.nback_val=2;
+    }
+  else
+    {
+      cerr << "Calcul et soustraction du fond par SE" << endl ;
+      prefs.back_type[0]=BACK_RELATIVE;
+      prefs.back_type[1]=BACK_RELATIVE;
+      prefs.nback_type=2;
+      prefs.back_val[0] = data.backmean;
+      prefs.back_val[1] = data.backmean;
+      prefs.nback_val=2;
+      size_t namesize;
+      // l acarte de fond sera celle de l'image de mesure
+      //(les check image ne concernent que l'image de mesure)
+      if ((namesize=strlen(data.FitsMiniBackName.c_str())) != 0 )
+	{  
+	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
+	  strcpy(prefs.check_name[nchecks], data.FitsMiniBackName.c_str() );
+	  prefs.check_type[nchecks] = CHECK_MINIBACKGROUND;
+	  nchecks++;
+	}
+      if ((namesize=strlen(data.FitsBackName.c_str())) != 0 )
+	{  
+	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
+	  strcpy(prefs.check_name[nchecks], data.FitsBackName.c_str() );
+	  prefs.check_type[nchecks] = CHECK_BACKGROUND;
+	  nchecks++;
+	}
+      if ((namesize = strlen(data.FitsSegmentationName.c_str())) != 0 )
+	{  
+	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
+	  strcpy(prefs.check_name[nchecks], data.FitsSegmentationName.c_str() );
+	  cout << "Segmentation image requested " << data.FitsSegmentationName << endl;
+	  prefs.check_type[nchecks] = CHECK_SEGMENTATION;
+	  nchecks++;
+	}
+    } 
+  /*Prefs en sortie quand une seule weight image donnee en dble mode:
+    prefs.nwimage_name : 1
+    prefs.nweight_type : 1
+    prefs.nweight_thresh : 0
+    prefs.wimage_name[0] : weight.fits
+    prefs.wimage_type[0] : 4
+    weight_flag  : 1
+    dweight_flag  : 1
+    weightgain_flag  : 1
+prefs.nweight_thresh  : 0
+prefs.weight_thresh[0]: 0
+prefs.weight_thresh[1]: 0
+*/
+
+  /*Prefs en sortie quand 2 weight maps donnees:
+prefs.nwimage_name : 2
+prefs.nweight_type : 2
+prefs.nweight_thresh : 0
+prefs.wimage_name[0] : weight.fits
+prefs.wimage_type[0] : 4
+prefs.wimage_name[1] : weight2.fits
+prefs.wimage_type[1] : 4
+weight_flag  : 1
+dweight_flag  : 1
+weightgain_flag  : 1
+prefs.nweight_thresh  : 0
+prefs.weight_thresh[0]: 0
+prefs.weight_thresh[1]: 0
+*/
+
+
+  prefs.ncheck_name = nchecks ;
+  prefs.ncheck_type = nchecks ;
+
+  // ie weight from measurement image used  for measurement
+  // and detection
+  if ( weight_from_measurement_image   && (strlen(data.FitsWeightName_1.c_str())))
+    {
+      cerr << "Only Weight Map from measurement image : " << prefs.image_name[1]
+	   << " will be used for both detection and  measurement" << endl ;
+      prefs.wimage_name[0] = (char *)calloc(MAXCHAR,1);      
+      toFree.push_back(prefs.wimage_name[0]);
+      std::string weightName_1 = 
+	DecompressIfNeeded(data.FitsWeightName_1, data.TempDir_1, data.UniqueName_1,toRemove);
+      strcpy(prefs.wimage_name[0],weightName_1.c_str());
+      prefs.nwimage_name = 1 ; 
+      prefs.weight_type[0]=WEIGHT_FROMWEIGHTMAP;
+      prefs.nweight_type=1;
+      prefs.weight_flag = 1;
+      prefs.dweight_flag = 1;// pas nec, subordonne a weight_type[0]!=NONE
+      prefs.weightgain_flag=0;  
+    }
+
+  // on utilise des weight pour la detetction et la mesure
+   if ( !weight_from_measurement_image  && (strlen(data.FitsWeightName_0.c_str())) && (strlen(data.FitsWeightName_1.c_str())))
+    {
+      prefs.wimage_name[0] = (char *)calloc(MAXCHAR,1);      
+      toFree.push_back(prefs.wimage_name[0]);    
+      std::string weightName_0 = 
+	DecompressIfNeeded(data.FitsWeightName_0, data.TempDir_0, data.UniqueName_0,toRemove);
+      strcpy(prefs.wimage_name[0],weightName_0.c_str());
+
+      prefs.wimage_name[1] = (char *)calloc(MAXCHAR,1);         
+      toFree.push_back(prefs.wimage_name[1]);      
+      std::string weightName_1 = 
+	DecompressIfNeeded(data.FitsWeightName_1, data.TempDir_1, data.UniqueName_1,toRemove);
+      strcpy(prefs.wimage_name[1],weightName_1.c_str());
+      prefs.nwimage_name = 2 ; 
+      prefs.weight_type[0]=WEIGHT_FROMWEIGHTMAP;
+      prefs.weight_type[1]=WEIGHT_FROMWEIGHTMAP;
+      prefs.nweight_type=2;
+      // mis dans prefs.c ?
+      prefs.weight_flag = 1;
+      prefs.dweight_flag = 1;
+      prefs.weightgain_flag=0;
+      // normalement la valeur mise dans prefs.c est la bonne pour le thresh,
+      // ie : prefs.nweight_thresh = 2; prefs.weight_thresh[1]=prefs.weight_thresh[0]=0. ;      
+    }
+  
+  cerr << "prefs.nwimage_name : " << prefs.nwimage_name << endl  ; 
+   cerr << "prefs.nweight_type : " <<  prefs.nweight_type << endl  ; 
+   cerr << "prefs.nweight_thresh : " <<  prefs.nweight_thresh << endl  ; 
+  cerr << "prefs.wimage_name[0] : " <<  prefs.wimage_name[0] << endl ;
+  cerr << "prefs.wimage_type[0] : " <<  prefs.weight_type[0] << endl ; 
+  if (prefs.nweight_type >1)
+    {
+      cerr << "prefs.wimage_name[1] : " <<  prefs.wimage_name[1] << endl ;
+      cerr << "prefs.wimage_type[1] : " <<  prefs.weight_type[1] << endl ;
+    }  
+  cerr << "weight_flag  : " <<  prefs.weight_flag<< endl ; /* do we weight ? */
+  cerr << "dweight_flag  : " <<  prefs.dweight_flag	<< endl ; /* detection weight? */
+  cerr << "weightgain_flag  : " <<  prefs.weightgain_flag<< endl ; /* weight gain? */
+  cerr << "prefs.filter_name : " << prefs.filter_name << endl ;
+
+
+  // Pas de flag image
+
+  prefs.nimaflag= 0 ; prefs.nfimage_name = 0;
+  
+  
+  prefs.user_ana = StarFill; 
+
+  // no saturation map writen
+
+
+  // detection level and photometric level in number of sigmas
+  // they wiil be converted by SExtractor in photons,
+  // using the sigma it will compute.
+  // attention de n'en mettre qu'un sinon il le convertit en mag !
+
+  cout << "DETECTION   THRESH " << prefs.dthresh[0] << endl ;
+  cout << "PHOTOMETRIC THRESH " << prefs.thresh[0] << endl ;
+  // to set these levels directly in photons (or adus),
+  // using a sigma specified by the user.
+   if ( data.sigma_back > 1.e-10 )
+     {
+       prefs.dthresh[0] = prefs.dthresh[0] * data.sigma_back ;
+       prefs.thresh[0] = prefs.thresh[0] * data.sigma_back ;
+       prefs.thresh_type[0] = THRESH_ABSOLUTE;
+     }
+  cout << "DETECTION   THRESH " << prefs.dthresh[0] << endl ;
+  cout << "PHOTOMETRIC THRESH " << prefs.thresh[0] << endl ;
+
+  FitsHeader head(filename_1, RO);
+  // le pixelscale n'est pas forcement la meme mais on s'en fiche
+  // par contre il faut le gain de l'image de photometrie
+
+  // pour test
+
+  prefs.pixel_scale = head.KeyVal("TOADPIXS");
+  prefs.gain = head.KeyVal("TOADGAIN");  
+  prefs.satur_level = data.saturation ;
+
+  cout << "saturation provided to sextractor : " << prefs.satur_level  << std::endl;
+  cerr << "Pixel Scale : " << prefs.pixel_scale << endl ;
+  cerr << "Gain : " << prefs.gain << endl ;
+  makeit();
+
+  cerr << "prefs.nwimage_name : " << prefs.nwimage_name << endl  ; 
+   cerr << "prefs.nweight_type : " <<  prefs.nweight_type << endl  ; 
+   cerr << "prefs.nweight_thresh : " <<  prefs.nweight_thresh << endl  ; 
+  cerr << "prefs.wimage_name[0] : " <<  prefs.wimage_name[0] << endl ;
+  cerr << "prefs.wimage_type[0] : " <<  prefs.weight_type[0] << endl ; 
+  if (prefs.nweight_type >1)
+    {
+      cerr << "prefs.wimage_name[1] : " <<  prefs.wimage_name[1] << endl ;
+      cerr << "prefs.wimage_type[1] : " <<  prefs.weight_type[1] << endl ;
+    } 
+  cerr << "weight_flag  : " <<  prefs.weight_flag<< endl ; /* do we weight ? */
+  cerr << "dweight_flag  : " <<  prefs.dweight_flag	<< endl ; /* detection weight? */
+  cerr << "weightgain_flag  : " <<  prefs.weightgain_flag<< endl ; /* weight gain? */
+ 
+  Fond_0 = thefield1.backmean;
+  SigmaFond_0= thefield1.backsig ;
+  Fond_1 = thefield2.backmean;
+  SigmaFond_1= thefield2.backsig ;
+  
+  // free the mallocs:
+  for (unsigned k=0; k<toFree.size(); ++k) free(toFree[k]);
+
+  // cleanup temp files
+  RemoveFiles(toRemove);
+
+  return 1;
+} 
+
+
+
+//makes a SEStarList on 2 images
+static int
+_SEStarListMake_2(const AllForSExtractor & data,
+	       SEStarList &List, double & Fond_0, 
+	       double &SigmaFond_0, double & Fond_1, 
+	       double &SigmaFond_1, bool weight_from_measurement_image)
+{
+  Liste_de_SEStar= &List;
+  if (file_exists(data.FitsFileName_0.c_str()) && file_exists(data.FitsFileName_1.c_str()) )
+    {
+     sex_proc_2(data, Get_SEStarList, 
+	      Fond_0, SigmaFond_0,Fond_1, SigmaFond_1, weight_from_measurement_image);
+     MakeNumbers(List);
+     return 1;
+    }
+  return 0;
+}
+int
+SEStarListMake_2(const ForSExtractor & shortdata,
+		 SEStarList &List, double & Fond_0, 
+		 double &SigmaFond_0,double & Fond_1, 
+		 double &SigmaFond_1,bool use_weight_from_image2)
+{
+  AllForSExtractor data(shortdata);
+  if (!data.FillFromEnvironnement())
+    return 0;
+  int status = _SEStarListMake_2(data, List, Fond_0, SigmaFond_0, 
+				 Fond_1, SigmaFond_1,use_weight_from_image2);
+  return(status);
+}
 
 /********************************************/
 // Pour pouvoir recuperer le background a partir de la mini carte

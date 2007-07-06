@@ -25,6 +25,24 @@ double saturation  ;
 bool back_type_manual ; // if true, a constant value for the background is taken.
 double sigma_back ;
 double backmean ;
+
+//--------------------- In Case of 2 images
+
+string FitsFileName_0 ;
+string FitsWeightName_0  ;
+string FitsFileName_1 ;
+string FitsWeightName_1  ;
+string UniqueName_0 ;
+string UniqueName_1 ;
+string TempDir_0;
+string TempDir_1;
+
+//---------------------
+
+
+
+
+
 public:
  ForSExtractor(){back_type_manual = false ;sigma_back=-1;backmean=0.;};
  void DecompressIfNeeded();
@@ -45,7 +63,7 @@ string SexFilterName ;
 public:
 AllForSExtractor(ForSExtractor const & data0) 
   : ForSExtractor(data0){}
- void FillFromEnvironnement();
+ bool FillFromEnvironnement();
  void Print();
 };
 
@@ -63,6 +81,11 @@ SEStarListMake(const ForSExtractor & shortdata,
 	       SEStarList &List, double & Fond, 
 	       double &SigmaFond,
 	       Image * pmask_sat);
+int
+SEStarListMake_2(const ForSExtractor & shortdata,
+	       SEStarList &List, double & Fond_0, 
+	       double &SigmaFond_0, double & Fond_1, 
+	       double &SigmaFond_1,bool weight_from_measurement_image);
 
 // To get the background map from the mini background map
 
