@@ -12,7 +12,7 @@ using namespace std;
 
 
 // print pegase file header with calibtype  VEGA
-void PegaseHeader(ofstream & prp,string peg_bands, string peg_filters, int nband);
+void PegaseHeader_(ofstream & prp,string peg_bands, string peg_filters, int nband);
 // in case filters are (u) g r i z, and file names are effective_filter_u/g/r/i/z.dat
 void PegaseHeader(ofstream & prp, bool with_u, bool with_BV);
 // print the beginning of the line
@@ -30,8 +30,6 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_outfile, bool & with_u ,
 
 // to run zpeg, templates and parameter file are in dir.
 void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr, bool is_z_fixed, bool with_u, bool with_BV);
-
-void ReadPegaseOutFile(string file_name, DictFile & peg_file, int & nbands);
 
 void Analysis_DZ_over_1plusZ(DictFile & peg_file_out, double & dz_mean, double &  dz_sig, double zmin=0, double zmax=1.5,bool quiet=false);
 void Analysis_DZ(DictFile & peg_file_out, double & dz_mean, double &  dz_sig, double zmin=0, double zmax=1.5, bool quiet=false);

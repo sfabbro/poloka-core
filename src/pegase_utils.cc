@@ -65,15 +65,18 @@ void PegaseHeader(ofstream & prp, bool with_u, bool with_BV)
       pegase_filters = "effective_filter_B.dat,effective_filter_V.dat," + pegase_filters ;
       nband += 2 ;
     }
-  PegaseHeader(prp, pegase_bands, pegase_filters, nband);
+  if (with_u)
+    prp << "##WITH_u" << endl ;
+  if (with_BV)
+    prp << "##WITH_BV" << endl ;
+  PegaseHeader_(prp, pegase_bands, pegase_filters, nband);
 }
 
 
 
-void PegaseHeader(ofstream & prp,string peg_bands, string peg_filters, int nband)
+void PegaseHeader_(ofstream & prp,string peg_bands, string peg_filters, int nband)
 {
   prp << "##name z d ra dec " << peg_bands << endl ;
-  prp << "##NBANDS " << nband << endl ;
   prp << "# FORMAT (a12,1x,f12.4,1x,f12.2,1x,f12.5,1x,f12.5,1x,"<< nband<<"(1x,f12.3,1x,f12.3))" << endl ;
   prp << "# FILTERS " << peg_filters << endl ;
   prp << "# CALIBTYPES " ;
@@ -213,8 +216,8 @@ void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool 
 void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr, 
 	     bool is_z_fixed, bool with_u, bool with_BV)
 {
-  string template_file = dir + "/templates";
-  string monpar_file = dir + "/monpar";
+  string template_file = "templates";
+  string monpar_file = "monpar";
   if (is_age_cstr)
     {
       template_file += "_age_cstr" ;
@@ -232,19 +235,35 @@ void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr,
   template_file += ".tmp" ;
   monpar_file += ".par" ;
 
-  if ( !FileExists( template_file ) )
-    cerr << "missing " <<  template_file << " for running zpeg " << endl ;
-  if ( !FileExists(monpar_file ) )
-    cerr << "missing " <<  monpar_file << " for running zpeg " << endl ;
+  if ( !FileExists( dir+"/"+template_file ) )
+    cerr << "missing " <<  dir+"/"+template_file << " for running zpeg " << endl ;
+  if ( !FileExists(dir+"/"+monpar_file ) )
+    cerr << "missing " <<  dir+"/"+monpar_file << " for running zpeg " << endl ;
 
 
-  string command = "cp " + dir + "/effective_filter*.dat . ; rm -f " + file_out + " ; zpeg " + file_in + " -t " + template_file + " -p " +  monpar_file + " -o " + file_out + " >&! zpeg.log" ;
-
-  cerr << "Running : " << command ;
+  string command = "cp " + dir + "/effective_filter*.dat  . " ;
+  cerr << "Running : " << command << endl;
   system(command.c_str());
 
-  string command_to_plot_1 = "cp " + template_file + " " + monpar_file + " . ";
-  system(command_to_plot_1.c_str()); 
+  command = "rm -f " + file_out ;
+  cerr << "Running : " << command << endl;
+  system(command.c_str());
+
+  command = "ln -fs " + dir + "/" + template_file + " " + template_file ;
+  cerr << "Running : " << command<< endl ;
+  system(command.c_str());
+
+  command = "ln -fs " + dir + "/" + monpar_file + " " + monpar_file ;
+  cerr << "Running : " << command << endl ;
+  system(command.c_str());
+
+  
+  command = "zpeg " + file_in + " -t " + template_file + " -p " +  monpar_file + " -o " + file_out + " >&! zpeg.log" ;
+  cerr << "Running : " << command << endl;
+  system(command.c_str());
+
+  //string command_to_plot_1 = "cp " + template_file + " " + monpar_file + " . ";
+  //system(command_to_plot_1.c_str()); 
   string idl_file = "essai.pro" ;
   {ofstream pr(idl_file.c_str());
   pr << "plot_zpegfits_silence,'"+file_out+"',/zpeg_scen,/reread" << endl ;
@@ -254,6 +273,14 @@ void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr,
   string command_to_plot_2 = "setenv IDL_STARTUP " + idl_file + " ; idl " ;
   cerr << command_to_plot_2 << endl ;
   //system(command_to_plot_2.c_str()); 
+
+  command = "rm -f  " + monpar_file + " " + monpar_file ;
+  cerr << "Running : " << command << endl ;
+  system(command.c_str());
+ command = "rm -f  effective_filter*.dat" ;
+  cerr << "Running : " << command << endl ;
+  system(command.c_str());
+
 }
 
 
@@ -282,6 +309,11 @@ static void AddPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u,
   peg_file_out.AddKey("stm"+suffixe);// total mass formed stars
   peg_file_out.AddKey("stm_min"+suffixe);
   peg_file_out.AddKey("stm_max"+suffixe);
+  if (with_BV)
+    {
+      peg_file_out.AddKey("mabsb"+suffixe); // mag abs B
+      peg_file_out.AddKey("mabsv"+suffixe); // mag abs V
+    }
   if (with_u)
     {
       peg_file_out.AddKey("mabsu"+suffixe); // mag abs
@@ -327,23 +359,28 @@ static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BV)
   char buff[4096];
   with_u = false ;
   bool with_B = false,  with_V = false ;
-  while( (rd >> c)  && ( c!= '#'))
+  while( (rd >> c)  && ( c== '#'))
     {
       rd.unget() ; 
       rd.getline(buff,4096);
-      if (StringMatchPattern(buff,"effective_filter_u.dat"))
+      string sbuff = buff ;
+      //cerr << buff << endl ;
+      if (sbuff.find("effective_filter_u.dat") < sbuff.length())
 	{
 	  with_u = true ;
+	  cerr << sbuff << endl ;
 	  cerr << "u in " << file_name << endl ;
 	}
-      if (StringMatchPattern(buff,"effective_filter_B.dat"))
+      if (sbuff.find("effective_filter_B.dat") < sbuff.length())
 	{
-	with_B = true ;
+	  with_B = true ;
+	  cerr << sbuff << endl ;
 	  cerr << "B in " << file_name << endl ;
 	}
-      if (StringMatchPattern(buff,"effective_filter_V.dat"))
+      if (sbuff.find("effective_filter_V.dat") < sbuff.length())
 	{
-	with_V = true ;
+	  with_V = true ;
+	  cerr << sbuff << endl ;
 	  cerr << "V in " << file_name << endl ;
 	}
 	
