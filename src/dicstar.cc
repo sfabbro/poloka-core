@@ -222,9 +222,9 @@ DicStarList::DicStarList(const string &FileName) {
 	      }
 	    if(sscanf(buff,"# %s",onekey) == 1 && strcmp(onekey,"end")==0) 
 	      {
-	      for(unsigned int i = 0 ; i< key.size() ; i++)
-		cout << key[i] << " ";
-		cout << endl;
+		//for(unsigned int i = 0 ; i< key.size() ; i++)
+		//cout << key[i] << " ";
+		//cout << endl;
 	      }
 	    }
 	}
@@ -261,4 +261,31 @@ DicStar *DicStarList::EmptyStar() const
   return empty;
 }
   
+bool DicStarList::HasKey(const string &Key) const
+{
+  return(front()->HasKey(Key));
+}
   
+
+BaseStarList* Dic2Base(DicStarList* This)
+{
+  return (BaseStarList*)This;
+}
+
+const BaseStarList* Dic2Base(const DicStarList* This)
+{
+  return (const BaseStarList*) This;
+}
+
+BaseStarList& Dic2Base(DicStarList& This)
+{
+  return (BaseStarList&)This;
+}
+
+const BaseStarList& Dic2Base(const DicStarList& This)
+{
+  return (const BaseStarList&) This;
+}
+
+
+

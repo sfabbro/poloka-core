@@ -95,7 +95,7 @@ class DicStarList : public  StarList<DicStar> {
   DicStarList() {};
   ~DicStarList() {};
   DicStarList(const string &FileName);
-
+  bool HasKey(const string &Key) const ;
  private:
   std::vector<string> key;
   std::vector<string> firstKey;
