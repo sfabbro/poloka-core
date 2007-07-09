@@ -86,10 +86,10 @@ libtoads_la_SOURCES =  \
                  ccd.h \
  fastifstream.cc fastifstream.h \
  lambert_dust.cc lambert_dust.h \
-               lambert_tag.h
-
-
-
+               lambert_tag.h \
+  ellipticaper.cc  ellipticaper.h\
+  multimagstar.h multimagstar.cc\
+  pegase_utils.h pegase_utils.cc
 #  imagesum_dict.cc \
 #  imagesubtraction_dict.cc \
 #  subimage_dict.cc \
@@ -143,6 +143,9 @@ night.h     \
 nightelement.h  \
 histopeakfinder.h \
 apersestar.h \
+ellipticaper.h \
+pegase_utils.h \
+multimagstar.h \
 hprofile1d.h \
 imageutils.h \
 gaussianfit.h \
