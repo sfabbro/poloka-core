@@ -305,7 +305,7 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
  */
  
 
-  if (status == 0 && !is_ascii)
+  if (status == 0)
     {
       int hdutype;
       fits_get_hdu_type(fptr, &hdutype, &status);
@@ -335,7 +335,6 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
  existingFile = false;
  if (Mode == RO) // no need to try to create the file
    CHECK_STATUS_AND_THROW_EXCEPTION(status,*this,"FitsHeader in mode RO");
- //CHECK_STATUS(status,"FitsHeader in mode RO", return);
  
  // from here on, we are in RW mode and could not open an existing file
 
