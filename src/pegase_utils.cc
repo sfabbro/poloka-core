@@ -240,7 +240,6 @@ void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr,
   if ( !FileExists(dir+"/"+monpar_file ) )
     cerr << "missing " <<  dir+"/"+monpar_file << " for running zpeg " << endl ;
 
-
   string command = "cp " + dir + "/effective_filter*.dat  . " ;
   cerr << "Running : " << command << endl;
   system(command.c_str());
@@ -258,12 +257,10 @@ void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr,
   system(command.c_str());
 
   
-  command = "zpeg " + file_in + " -t " + template_file + " -p " +  monpar_file + " -o " + file_out + " >&! zpeg.log" ;
+  command = "zpeg " + file_in + " -t " + template_file + " -p " +  monpar_file + " -o " + file_out + " > zpeg.log 2>&1" ;
   cerr << "Running : " << command << endl;
   system(command.c_str());
 
-  //string command_to_plot_1 = "cp " + template_file + " " + monpar_file + " . ";
-  //system(command_to_plot_1.c_str()); 
   string idl_file = "essai.pro" ;
   {ofstream pr(idl_file.c_str());
   pr << "plot_zpegfits_silence,'"+file_out+"',/zpeg_scen,/reread" << endl ;
