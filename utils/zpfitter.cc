@@ -16,6 +16,8 @@ static void usage(const char *pgname)
   cerr << "options:  -m <keyofreferencemagnitude> (default is \"mag\")"<< endl;
   cerr << "          -f <keyofflux>               (default is \"flux\")" << endl ;
   cerr << "          -o <output ASCII file>       (default is zpfitter.dat)" << endl ;
+  cerr << "          -d mjd_min mjd_max       (date range)" << endl ;
+  
   
   exit(1);
 }
@@ -37,7 +39,10 @@ private :
   double sum_f2w01;
   
 public :
-  double ra,dec;
+  double init_ra,init_dec;
+  double init_x,init_y;  
+  double fitted_ra,fitted_dec;
+  double fitted_x,fitted_y;
   double mag,error;
   double psfchi2,zpchi2,zpchi2_01;
   double nmag,ndist;
@@ -75,8 +80,14 @@ public :
     sum_s = 0;
     mag = -1;
     error = -1;
-    ra = 0;
-    dec = 0;
+    init_ra = 0;
+    init_dec = 0;
+    fitted_ra = 0;
+    fitted_dec = 0;
+    init_x = 0;
+    init_y = 0;
+    fitted_x = 0;
+    fitted_y = 0;
     satur = 0;
     contam = 0;
     var = 0;
@@ -90,8 +101,12 @@ public :
 
     id = int(istar->getval("star"));
 
-    ra = istar->getval("ra");
-    dec = istar->getval("dec");
+    init_ra = istar->getval("ra");
+    init_dec = istar->getval("dec");
+    init_x = istar->getval("ix");
+    init_y = istar->getval("iy");
+    fitted_x = istar->getval("x");
+    fitted_y = istar->getval("y");
     
     psfchi2 = istar->getval("chi2pdf");
     neic = istar->getval("neic"); 
@@ -169,8 +184,14 @@ public :
   
   void write(ostream &s) const {
     
-    s << ra << " ";
-    s << dec << " ";
+    s << init_ra << " ";
+    s << init_dec << " ";
+    s << fitted_ra  << " ";
+    s << fitted_dec << " ";
+    s << init_x << " ";
+    s << init_y << " ";
+    s << fitted_x << " ";
+    s << fitted_y << " ";
     s << id << " ";
     s << mag << " ";
     s << error << " ";
@@ -214,6 +235,8 @@ int main(int argc, char **argv)
   string magkey = "mag";
   string fluxkey = "flux";
   string outputfilename = "zpfitter.dat";
+  double mjd_min = 0;
+  double mjd_max = 1.e12;
   
   if (argc < 3)  {usage(argv[0]);}
   for (int i=1; i<argc; ++i)
@@ -230,6 +253,7 @@ int main(int argc, char **argv)
 	case 'c' : catalogname = argv[++i]; break;
 	case 'f' : fluxkey = argv[++i]; break;
 	case 'o' : outputfilename = argv[++i]; break;
+	case 'd' : mjd_min = atof(argv[++i]); mjd_max = atof(argv[++i]);  break;
 	default : 
 	  cerr << "unknown option " << arg << endl;
 	  usage(argv[0]);
@@ -258,10 +282,16 @@ int main(int argc, char **argv)
   double flux,mag;
   
   float contamination_cut = 0.005;
-
+  double mjd;
   int count = 0;
   for(DicStarCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
     
+    if(mjd_min>0) {
+      mjd = (*entry)->getval("mjd");
+      if (mjd<mjd_min) continue;
+      if (mjd>mjd_max) continue;
+    }
+
     if ( (*entry)->getval("satur") >0.5 ) // cause has saturated pixels
       continue;
     
@@ -320,8 +350,14 @@ int main(int argc, char **argv)
   
   
   ofstream stream("zpstars.list");
-  stream << "# ra : as in calib. catalog" << endl;
-  stream << "# dec : as in calib. catalog" << endl;
+  stream << "# ira : as in calib. catalog" << endl;
+  stream << "# idec : as in calib. catalog" << endl;
+  stream << "# fra : fitted ra" << endl;
+  stream << "# fdec : fitted dec" << endl;
+  stream << "# ix : input x" << endl;
+  stream << "# iy : input y" << endl;
+  stream << "# fx : fitted x" << endl;
+  stream << "# fy : fitted y" << endl;
   stream << "# id : number in calib. catalog" << endl;
   stream << "# mag : mag derived from match to catalog." << endl;
   stream << "# error : error on mag." << endl;
