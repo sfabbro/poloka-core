@@ -104,6 +104,8 @@ void DicStar::Read(fastifstream& r, const char *Format) {
 
 DicStar* DicStar::read(const std::vector<string> &firstKeys, const std::vector<string>& newkeys, fastifstream& r, const char *Format) {
   
+  if (firstKeys.size() <3)
+    throw(StarListException(" need at least 3 keys to read a DicStar "));
   DicStar *pstar = new DicStar(firstKeys,newkeys);
   pstar->Read(r,Format);
   return(pstar);
