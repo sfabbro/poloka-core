@@ -492,10 +492,10 @@ static void match_clean(StarMatchList &List)
   for (StarMatchIterator si=List.begin(); si!= List.end();)
     {
       SEStar *object = (SEStar *) (BaseStar *) si->s1;
-      if (object->IsSaturated()) si = List.erase(si);
+      if (object->IsSaturated() || object->FlagBad()) si = List.erase(si);
       else si++;
     }
-  cout << " count after satur removal " << List.size() << endl;
+  cout << " count after satur & bad removal " << List.size() << endl;
 }
 
 
