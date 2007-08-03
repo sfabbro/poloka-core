@@ -52,6 +52,7 @@ double WeightedMedian(WeightedVals &Vals, double &Sig, const double NSig)
       double highsum = 0;
       double sum2 = 0;
       double sum = 0;
+      double sumw = 0;
 
       int lastk = ihigh;
       for (int k=ilow; k<= lastk; ++k)
@@ -66,7 +67,8 @@ double WeightedMedian(WeightedVals &Vals, double &Sig, const double NSig)
 	      highsum += Vals[ihigh].w;
 	      ihigh--;
 	    }
-	  sum += Vals[k].w*Vals[k].val;
+	  sumw += Vals[k].w;
+	  sum  += Vals[k].w*Vals[k].val;
 	  sum2 += Vals[k].w*sq(Vals[k].val);
 	}
       // here ilow == ihigh+1
@@ -77,8 +79,8 @@ double WeightedMedian(WeightedVals &Vals, double &Sig, const double NSig)
       med = (0.5*(vlow+vhigh) + 
 	     0.5*(highsum-lowsum)*(vhigh - vlow)
 	     /((highsum<lowsum)? Vals[ilow].w : Vals[ihigh].w));
-      sum /= (highsum+lowsum);
-      Sig = sum2/(highsum+lowsum)-sq(sum);
+      sum /= sumw;
+      Sig = sum2/sumw-sq(sum);
       if (Sig >= 0) Sig = sqrt(Sig);
       else {Sig = -1;return 1e30;}
       if (iter>0 && fabs(oldsig-Sig)<0.001*Sig) break;
@@ -154,7 +156,7 @@ int main(int nargs, char **args)
 	    }
 	  double sig;
 	  double med = WeightedMedian(aperCorrs, sig, 3);
-	  cout << catName << ' ' << med << ' ' << sig << endl;
+	  cout << catName << ' ' << med << ' ' << sig << ' ' << aperCorrs.size() << endl;
 	  ok = true;
 	}
       catch (PolokaException p)
