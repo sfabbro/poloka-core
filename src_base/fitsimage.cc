@@ -1551,6 +1551,23 @@ int FitsImage::Write(bool force_bscale)
 	}
     }
 
+  if (bitpix == 8)
+    { 
+      if (mini<0 && maxi > 255)
+	{ 
+	  // untested code
+	  cout << " We have to compress data to accomodate bitpix = 8 (you should consider bitpix=16)" << endl;
+	  double span = 256;
+	  bscale = (maxi-mini)/span;
+	  bzero =  mini;
+	}
+      else if (mini<0 || maxi > 255)
+	{// we assume we only have integer values : only use bzero
+	  if (mini<0) bzero = mini;
+	  if (maxi>255) bzero = maxi-255;
+	}
+    }
+	  
   if (bscale == 0) bscale = 1;
   cout << "Min: " << mini << "  Max: " << maxi << endl ;
   cout << " with BITPIX=" << bitpix << " BSCALE=" << bscale << " BZERO=" << bzero << endl;
