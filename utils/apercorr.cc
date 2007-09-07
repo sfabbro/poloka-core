@@ -46,7 +46,6 @@ double WeightedMedian(WeightedVals &Vals, double &Sig, const double NSig)
 	  cut = med+NSig*Sig;
 	  while (Vals[ihigh].val > cut)  ihigh--;
 	  oldsig = Sig;
-	  //DEBUG	  
 	}
       double lowsum = 0;
       double highsum = 0;
@@ -81,6 +80,8 @@ double WeightedMedian(WeightedVals &Vals, double &Sig, const double NSig)
 	     /((highsum<lowsum)? Vals[ilow].w : Vals[ihigh].w));
       sum /= sumw;
       Sig = sum2/sumw-sq(sum);
+      //DEBUG
+      //      cout << " med Sig " << med << ' ' << Sig << ' ' << lastk - ilow << endl;
       if (Sig >= 0) Sig = sqrt(Sig);
       else {Sig = -1;return 1e30;}
       if (iter>0 && fabs(oldsig-Sig)<0.001*Sig) break;
@@ -153,10 +154,24 @@ int main(int nargs, char **args)
 	      double val = diff/aper1.flux;
 	      double val_var =  (diff_var+sq(val*aper1.eflux))/sq(aper1.flux);
 	      aperCorrs.push_back(WeightedVal(val,1/val_var));
+	      //DEBUG
+	      // cout << val << ' ' << 1/val_var << endl;
 	    }
 	  double sig;
-	  double med = WeightedMedian(aperCorrs, sig, 3);
-	  cout << catName << ' ' << med << ' ' << sig << ' ' << aperCorrs.size() << endl;
+	  double med = WeightedMedian(aperCorrs, sig, 4);
+	  GlobalVal glob(cat.GlobVal());
+	  string starShape("-1 -1 -1");
+	  if (glob.HasKey("STARSHAPE"))
+	    {
+	      vector<string> vals(glob.getStringValues("STARSHAPE"));
+	      starShape.clear();
+	      for (vector<string>::const_iterator i = vals.begin(); 
+		   i != vals.end(); ++i) starShape += (*i)+" "; 
+	    }
+	  cout << catName 
+	       << ' ' << med << ' ' << sig << ' '  
+	       << starShape 
+	       << endl;
 	  ok = true;
 	}
       catch (PolokaException p)
