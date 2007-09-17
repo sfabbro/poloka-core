@@ -69,6 +69,12 @@ const BaseStar *NStarMatch::GetMatch(const unsigned Index) const
   return stars[Index];
 }
 
+BaseStar *NStarMatch::GetMatch(const unsigned Index)
+{
+  if (Index >= stars.size()) return NULL;
+  return stars[Index];
+}
+
 
 
 
@@ -101,7 +107,10 @@ int NStarMatchList::MatchAnotherList(const BaseStarList &ToMatch,
 					ToMatch,
 					MaxDist);
   cout << " matches " << sml->size() << endl;
-
+  GtransfoIdentity id;
+  sml->RemoveAmbiguities(id);
+  cout << " matches " << sml->size() << endl;
+  
   vector<const BaseStar *> matchedObjects;
 
   for (StarMatchIterator  i = sml->begin(); i != sml->end(); ++i)

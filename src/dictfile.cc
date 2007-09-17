@@ -127,14 +127,15 @@ DictFile::DictFile(const string &FileName) : fileName(FileName)
 	{
 	  vector<string> words;
 	  DecomposeString(words, start+1);
-	  if (words.size() != 2)
-	    {
-	      std::cerr << " DictFile : lines starting with '@' should have 2 words" 
-			<< std::endl << " erroneous line (in  " << fileName 
-			<< ") :" << std::endl
-			<< start << std::endl;
-	      FatalError(" Giving up ");
-	    }
+	  // IGNORE ... 
+	  //	  if (words.size() != 2)
+	  //	    {
+	  //	      std::cerr << " DictFile : lines starting with '@' should have 2 words" 
+	  //			<< std::endl << " erroneous line (in  " << fileName 
+	  //			<< ") :" << std::endl
+	  //			<< start << std::endl;
+	  //	      FatalError(" Giving up ");
+	  //	    }
 	  if (HasGlobalKey(words[0]))
 	    FatalError(" DictFile : Key " +words[0]+
 		       " appears more than once in "+fileName);

@@ -22,12 +22,16 @@ public:
   virtual string WriteHeader_(ostream & stream = cout, const char*i = NULL) const ;
   
   BaseStar const*  get_original() const { return original; }
+  BaseStar*  get_original() { return original; }
 };
     
 class TStarList : public StarList<TStar> {
   public :
     TStarList(const BaseStarList& slist, const Gtransfo& tranfo);
 };
+
+typedef StarList<TStar>::iterator TStarIterator;
+typedef StarList<TStar>::const_iterator TStarCIterator;
 
 #include <vector>
 
@@ -39,7 +43,10 @@ class NStarMatch : public BaseStar {
 
 public:
   NStarMatch() : nm(0) {};
-
+  
+  //! true size of the match vector
+  unsigned int  size() const { return stars.size(); }
+  
   //! add one entry into the match at a given index. Position gets updated
   void AddMatch(const BaseStar &Match, const unsigned Index);
 
@@ -47,12 +54,13 @@ public:
   void DropMatch(const unsigned Index);
 
 
-  //! get actual number of matches
+  //! get actual number of matches ( <= size)
   int NumberOfMatches() const { return nm;}
 
 
   //! returns the match entered before (if any)
   const BaseStar *GetMatch(const unsigned Index) const;
+  BaseStar       *GetMatch(const unsigned Index);
 
 
   friend class NStarMatchList;
