@@ -143,7 +143,7 @@ class Mat {
   double operator () (const unsigned int i, const unsigned int j) const
   {
 #ifdef MATVECT_CHECK_BOUNDS
-  if (i>=nx || j>=ny || i<0 || j<0) { 
+  if (i>=nx || j>=ny) { 
     std::cout << "Mat::operator () overflow i,j nx,ny " 
 	 << i << "," << j << " "
 	 << nx << "," << ny << " "
@@ -157,7 +157,7 @@ class Mat {
   double& operator () (const unsigned int i, const unsigned int j)
   {
 #ifdef MATVECT_CHECK_BOUNDS
-  if (i>=nx || j>=ny || i<0 || j<0) { 
+  if (i>=nx || j>=ny) { 
     std::cout << "Mat::operator () overflow i,j nx,ny " 
 	 << i << "," << j << " "
 	 << nx << "," << ny << " "
@@ -254,7 +254,7 @@ class Vect {
   double operator () (const unsigned int i) const
   {
 #ifdef MATVECT_CHECK_BOUNDS
-  if (i>=n || i<0) {
+  if (i>=n) {
     std::cout << "Vec::operator () overflow i,n " 
 	      << i << "," << n << std::endl;
     abort();
@@ -267,7 +267,7 @@ class Vect {
   double& operator () (const unsigned int i)
   {
 #ifdef MATVECT_CHECK_BOUNDS
-  if (i>=n || i<0) {
+  if (i>=n) {
     std::cout << "Vec::operator () overflow i,n " 
 	      << i << "," << n << std::endl;
     abort();

@@ -57,7 +57,7 @@ class DictFileEntry
 
   bool HasKey(const string &Key) const;
 
-  bool EraseElement(int num){if (num <elements.size()) {elements.erase(elements.begin()+num); return true ;} else return false ;}
+  bool EraseElement(int num){if (num <(int)elements.size()) {elements.erase(elements.begin()+num); return true ;} else return false ;}
 
   void AddKey(const string &Key, const string &Val);
   void AddKey(const string &Key, const double &Val);
