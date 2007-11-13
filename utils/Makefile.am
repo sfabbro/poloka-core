@@ -47,7 +47,7 @@ wcs_for_vignets_SOURCES = wcs_for_vignets.cc
 # split_fits2
 
 ### CPPFLAGS for all programs
-AM_CPPFLAGS = -I$(top_srcdir)/src_base  -I$(top_srcdir)/src_utils  -I$(top_srcdir)/src  -I$(top_builddir)/src_base  -I$(top_builddir)/src_utils  -I$(top_builddir)/src -I$(top_builddir)/dao -I$(top_builddir)/psf @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir)/src_base  -I$(top_srcdir)/src_utils  -I$(top_srcdir)/src  -I$(top_srcdir)/src_base  -I$(top_srcdir)/src_utils  -I$(top_srcdir)/src -I$(top_srcdir)/dao -I$(top_srcdir)/psf @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
 AM_LDFLAGS = -L$(top_builddir)/mc -L$(top_builddir)/lc -L$(top_builddir)/dao -L$(top_builddir)/src -L$(top_builddir)/flat -L$(top_builddir)/src_utils -L$(top_builddir)/src_base  -L$(top_builddir)/psf -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff  -R @libdir@ -L@libdir@  -ltoads -ltoadsutils -ltoadsbase  -lcernstuff -llapackstuff @CMT_LDFLAGS@  @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
 makepsf_SOURCES = makepsf.cc

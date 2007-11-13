@@ -170,8 +170,6 @@ CPPFLAGS="-g -Wall"
 CFLAGS="-g -Wall"
 FFLAGS="-g"
 
-# default prefix for installation is in the current dir
-AC_PREFIX_DEFAULT([`\pwd`/installarea])
 
 # optional features
 
@@ -198,5 +196,10 @@ AC_CONFIG_FILES([Makefile
 		 cern_utils/Makefile
 		 imagemagick_utils/Makefile
 ])
+
+
+my_top_dir=`dirname $0`
+my_abs_top_dir=`cd $my_top_dir && pwd`
+prefix=$my_abs_top_dir/installarea
 
 AC_OUTPUT
