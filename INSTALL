@@ -1,3 +1,39 @@
+Install for poloka
+
+  1) autogen.sh
+  1.5) there 2 options essentialy mandatory to configure:
+       --enable-cmt (to locate sextractor and cfitsio)
+             if you do not want to use it, you should provide cfitsio 
+              and/or sex through --with-... option(s) 
+             (configure --help to get these)
+       --enable-autoinstall (which will install stuff into $topdir/installarea
+               using symlinks)
+ 2) if you want to compile for several architectures from a single source tree:
+      I guess it only works with afs..
+      2.1 get you sys name with 
+      > fs sys
+      if installarea exists
+      > mv installarea installarea.my_sys_name
+      else
+      > mkdir installarea.my_sys_name 
+      endif
+      > ln -s installarea.@sys installarea
+      check that "ls installarea" works
+      > mkdir my_arch 
+      > cd my_arch 
+      > ../configure --enable-cmt --enable-autoinstall
+ 3) if you want only one architecture 
+      > ./configure --enable-cmt --enable-autoinstall
+ 4) make
+     if it fails, try a few more "make -k" because subdirs are not
+      listed in the right order in the main Makefile.am
+ 5) with the autoinstall option, there is no "make install" needed
+
+
+
+What follows is the general configure (& al) documentation:
+
+
 Basic Installation
 ==================
 
