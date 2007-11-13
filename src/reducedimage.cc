@@ -387,7 +387,9 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 
     // DEBUG
     // fix wrong saturation levels (occurs for short exposure times)
-    if (IsOfKind<Megacam>(FitsHeader(FitsName())) && Saturation()< 50000)
+    FitsHeader head(FitsName());
+
+    if (IsOfKind<Megacam>(head) && Saturation()< 50000)
       {
 	FitsHeader flat(FitsFlatName());
 	double fla = flat.KeyVal("FLATSCLA"); // A amplifier
