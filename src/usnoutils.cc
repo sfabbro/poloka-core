@@ -923,8 +923,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       // Part 2.1 : guess
       if (method == 1)   // try a shift
 	{
-	  unsigned minShiftMatches = min(min(ngoodImageObjects*2/3, 25u),
-				usnoList.size()/3);
+	  unsigned minShiftMatches = min(min(ngoodImageObjects*2/3, unsigned(25)),
+					 unsigned(usnoList.size()/3));
 	  guessCorr = FindShift(sestarlist, usnoList, minShiftMatches);
 	}
     
