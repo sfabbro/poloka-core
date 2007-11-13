@@ -3,6 +3,7 @@
 #include "pegase_utils.h"
 #include "fileutils.h"
 #include "vutils.h"
+#include <cmath>
 
 #define DELL_LIM 1.5
 
