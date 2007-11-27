@@ -46,10 +46,10 @@ include_HEADERS = lightcurvepoint.h
 if AUTOINSTALL
 
 @prefix@/lib/% : .libs/%
-	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
+	ln -fs @abs_builddir@/.libs/$* $@
 
-@prefix@/include/% : @abs_builddir@/%
-	ln -fs @abs_builddir@/$* @prefix@/include/$*
+@prefix@/include/% : @abs_srcdir@/%
+	ln -fs @abs_srcdir@/$* $@
 
 all : $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadslc.*)) $(patsubst %,@prefix@/include/%,${include_HEADERS})
 

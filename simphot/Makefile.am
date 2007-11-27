@@ -56,12 +56,12 @@ testpsf_LDFLAGS = -ltoadssimphot -ltoadspsf
 if AUTOINSTALL
 
 @prefix@/bin/% : %
-	ln -fs @abs_builddir@/.libs/$* @prefix@/bin/$*
+	ln -fs @abs_builddir@/.libs/$* $@
 
 all   : $(patsubst %,@prefix@/bin/%,${bin_PROGRAMS})
 
 @prefix@/lib/% : .libs/%
-	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
+	ln -fs @abs_builddir@/.libs/$* $@
 
 all :  $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadssimphot.*))
 

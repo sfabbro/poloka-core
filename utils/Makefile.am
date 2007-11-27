@@ -30,7 +30,8 @@ bin_PROGRAMS = \
  makepsf compute_zp  splitsubs test_dust makvar getvalueatpoint\
  catalog_images_match \
  deadprop checkmask sumpixels \
- wcs_for_vignets
+ wcs_for_vignets \
+apercorr simple_zpfitter gridcorrection
 
 if ENABLE_MC
 bin_PROGRAMS += make_mc_cat makesub  make_dualsub  mc_addsn make_lcsim
@@ -50,6 +51,7 @@ wcs_for_vignets_SOURCES = wcs_for_vignets.cc
 AM_CPPFLAGS = -I$(top_srcdir)/src_base  -I$(top_srcdir)/src_utils  -I$(top_srcdir)/src  -I$(top_srcdir)/src_base  -I$(top_srcdir)/src_utils  -I$(top_srcdir)/src -I$(top_srcdir)/dao -I$(top_srcdir)/psf @SEX_CPPFLAGS@ @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
 AM_LDFLAGS = -L$(top_builddir)/mc -L$(top_builddir)/lc -L$(top_builddir)/dao -L$(top_builddir)/src -L$(top_builddir)/flat -L$(top_builddir)/src_utils -L$(top_builddir)/src_base  -L$(top_builddir)/psf -L$(top_builddir)/cern_stuff  -L$(top_builddir)/lapack_stuff  -R @libdir@ -L@libdir@  -ltoads -ltoadsutils -ltoadsbase  -lcernstuff -llapackstuff @CMT_LDFLAGS@  @SEX_LDFLAGS@  @CFITSIO_LDFLAGS@ -lg2c
 
+apercorr_SOURCES = apercorr.cc
 makepsf_SOURCES = makepsf.cc
 makepsf_LDFLAGS = -ltoadspsf 
 
@@ -207,11 +209,15 @@ mask2dead_SOURCES = mask2dead.cc
 seeing_SOURCES = seeing.cc
 mergelists_SOURCES = mergelists.cc
 zpfitter_SOURCES = zpfitter.cc
+simple_zpfitter_SOURCES = simple_zpfitter.cc
+gridcorrection_SOURCES = gridcorrection.cc
+
 #calibsummary_SOURCES = calibsummary.cc
 calibrationhacker_SOURCES = calibrationhacker.cc
 basicaperture_SOURCES = basicaperture.cc
 sumpixels_SOURCES = sumpixels.cc
 testsub_SOURCES = testsub.cc
+update_largeref_satur_SOURCES = update_largeref_satur.cc
 
 ######## auto symbolic link #########
 # if configure is set with option --enable-autoinstall

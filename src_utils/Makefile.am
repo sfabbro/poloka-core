@@ -40,13 +40,13 @@ include_HEADERS = \
 if AUTOINSTALL
 
 @prefix@/bin/% : .libs/%
-	ln -fs @abs_builddir@/.libs/$* @prefix@/bin/$*
+	ln -fs @abs_builddir@/.libs/$* $@
 
 @prefix@/lib/% : .libs/%
-	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
+	ln -fs @abs_builddir@/.libs/$* $@
 
-@prefix@/include/% : @abs_builddir@/%
-	ln -fs @abs_builddir@/$* @prefix@/include/$*
+@prefix@/include/% : @abs_srcdir@/%
+	ln -fs @abs_srcdir@/$* $@
 
 all : $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadsutils.*))  $(patsubst %,@prefix@/include/%,${include_HEADERS})
 
