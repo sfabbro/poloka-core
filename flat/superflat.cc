@@ -30,7 +30,6 @@ separate properly routines
 
 Faire le menage : degager vieille routines, splitter superflat.cc (?).
 
-Quid quand on n'a qu'un champ : rajoute-t-on une coupure "spatiale" ?
 #endif
 
 
@@ -124,11 +123,12 @@ static double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias)
 
       else
 	  {
-	    Current -= MedianOverscan;
+	    for (int j=y0; j<y1; j++) for (int i=x0; i<x1; i++)
+	      Current(i,j) -= MedianOverscan;
+
 	  }
     }
   Current.Trim(Illu);
-  Current.Heavyside();
   return finalvalue/Namp;
 }
 
@@ -187,10 +187,9 @@ Image *MakeSuperFlat(const FitsSet &FitsFileSet, const Image *Bias, const Image 
   for(int k=0; k<nImages; k++)
     {
       string FitsName = FitsFileSet[k];
-      string reducName = "flat_" + BaseName(FitsName);
+      string reducName = tempnam("/tmp",BaseName(FitsName).c_str());
       reducNames.push_back(reducName);
-
-      if (!FileExists(reducName))
+      if (!FileExists(reducName)) // stupid test 
 	{
 	  FitsImage *loop = new FitsImage(FitsName);
 	  //	  FitsImage loop(FitsFileSet[k]);
@@ -314,6 +313,32 @@ cout <<"MaxValue of Image is = "<< maxValue <<endl;
 return maxValue;
 }
 
+
+static void CleanBadPix(FitsImage &Current, const Image &Flat, 
+			double ReplacementVal)
+{
+  int namp = Current.KeyVal("TOADNAMP");
+  for (int iamp = 1; iamp <= namp; ++iamp)
+    {
+      Frame frame = AmpRegion(Current,iamp);
+      Pixel flatAverage, flatSig;
+      Flat.SkyLevel(frame, &flatAverage, &flatSig);
+
+      int starti = int(frame.xMin);
+      int endi = int (frame.xMax);
+      int startj = int(frame.yMin);
+      int endj = int(frame.yMax);
+      Pixel lowCut = 0.8*flatAverage;
+      Pixel highCut = 1.2*flatAverage;
+      for (int j=startj; j<endj; j++) for (int i=starti; i<endi; i++)
+	{
+	  Pixel flatValue=Flat(i,j);
+	  if (flatValue<lowCut || flatValue>highCut) Current(i,j) = ReplacementVal;
+	}
+    } // end loop on amps
+}
+
+
 //*******************************
 //! makes a raw average starting from an image list. The final image still has overscan (usefull for MasterBias making).
 Image *MakeRawAverage(const FitsSet &FitsFileSet)
@@ -357,7 +382,7 @@ Image *MakeRawMedian(const FitsSet &FitsFileSet)
   for (int i=0; i<nImages; ++i) slices.AddFile(FitsFileSet[i]);
   Pixel *pixelValues = new Pixel[nImages];
   
-  cout << "Building a median master frame..." << endl;;
+  cout << "Building a median master frame from " << nImages <<" images" << endl;;
   do
     {
       for (int j=0; j<slices.SliceSize(); j++) for (int i=0; i<nx_image; i++) 
@@ -655,18 +680,18 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
   // double gain = GainMultiply(outFits);
 
   // computes max and saturation level
-  double maxValue = ImageMaxCut(out,Flat);
-  double minValue = 0;
+  Pixel sky,skysig;
+  out.SkyLevel(&sky,&skysig);
+  CleanBadPix(outFits,Flat,sky);
+  double minValue = sky-7*skysig;
   //double satur = (65535-overscan)*gain;
   double satur = Saturation(outFits);
   
-  cout << "Saturation level at " << satur << " e-" << endl;
+  cout << " enforce min and max at values : " << minValue << " and " << 1.05*satur << endl;
   out.EnforceMinMax(minValue,satur*1.05);  
   
   // fill in the header
-  outFits.AddOrModKey("MAXPIX",maxValue," true max value of the image after flat fielding");
   outFits.AddOrModKey("SATURLEV",satur," saturation value of the image after flat fielding");
-  outFits.AddOrModKey("OVERSCAN",overscan,"Median overscan value. Should be subtracted.");
   
   float sigmaflat=0.0,meanflat=0.0;
   Flat.MeanSigmaValue(&meanflat,&sigmaflat);
