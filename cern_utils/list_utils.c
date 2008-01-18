@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAXVAR 400
+#define MAXVAR 512
 
 static char *StringNew(char *Source) /* prototype */
 {
@@ -52,21 +52,34 @@ for (i =0; i<dim; ++i) printf(" %d %s\n",i,tags[i]);
 return tags;
 }
 
-char *split_line(char *Line, float *X, const int Dim, int *nread)
+char *split_line(char *Line, float *X, const int Dim, int *nread, int *nbad)
 {
   const char *p1;
+  char dummy[64];
   char* p2;
   int i;
   *nread = 0;
+  *nbad =0;
   if (strlen(Line) <= 1) return Line;
   memset(X,0,Dim*sizeof(X[0]));
   p1 = Line;
   for (i=0; i< Dim; ++i)
     {
     float value = strtod(p1,&p2);
-    if (p2 == p1) break;
-    X[i] = value;
-    p1 = p2;
+    if (p2 == p1) /* try to read a bunch of chars to go on */
+      {
+	int nread;
+	sscanf(p1,"%s%n",dummy,&nread);
+	if (nread == 0) break;
+	(*nbad)++;
+	p1 += nread;
+	X[i] = 1e30;
+      }
+    else
+      {
+	X[i] = value;
+	p1 = p2;
+      }
     (*nread)++;
     }
   return p2;
@@ -80,6 +93,7 @@ float x[MAXVAR];
 char line[8192];
  int count = 0;
 int miss = 0; int more = 0;
+ int bad = 0;
 
  if (Dim>MAXVAR)
    {
@@ -89,17 +103,27 @@ while (fgets(line,8192,File))
   {
   char *left_over;
   int nread;
+  int nbad;
   if (strlen(line) <= 1) continue;
   if (line[0] == '#' || line[0] == '@') continue;
-  left_over = split_line(line,x,Dim,&nread);
+  left_over = split_line(line,x,Dim,&nread, &nbad);
   if (nread < Dim) miss++;
   if (atof(left_over)) more++;
+  if (nbad) bad++;
   if (Processor) Processor(ProcData,x);
   count ++;
   }
-if (miss || more)
+if (miss )
   {
-  printf(" when reading colums, we missed items on %d rows and had more on %d rows \n",miss, more);
+  printf(" when reading colums, we missed items on %d rows \n",miss);
+  }
+if (more)
+  {
+  printf(" when reading colums, we had too many items on %d rows \n",more);
+  }
+if (bad)
+  {
+    printf(" when reading colums, we had bad conversions on %d rows\n",bad);
   }
  return count;
 }
