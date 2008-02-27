@@ -43,9 +43,9 @@ libtoads_la_SOURCES =  \
   basestar.cc                 basestar.h       \
   nstarmatch.cc               nstarmatch.h     \
   sestar.cc                   sestar.h         \
-  starlist.cc                 starlist.h       \
+  starlist.cc                 starlist.h  starlistexception.h     \
   starmatch.cc                starmatch.h      \
-  listmatch.cc                listmatch.h      \
+  listmatch.cc                listmatch.h matchexception.h     \
   fastfinder.cc               fastfinder.h     \
   usnoutils.cc                usnoutils.h      \
   gtransfo.cc                 gtransfo.h       \
@@ -58,7 +58,7 @@ libtoads_la_SOURCES =  \
   dimage.cc                   dimage.h           \
   detection.cc                detection.h        \
   allreducedimage.cc          allreducedimage.h  \
-  dbimage.cc                  dbimage.h          \
+  dbimage.cc                  dbimage.h  dbconfigexception.h \
   dbfileParse.y                          \
   dbfileLex.l                            \
   imagelist.h        \
@@ -124,7 +124,7 @@ dimage.h           \
 detection.h        \
 dodetection.h      \
 allreducedimage.h  \
-dbimage.h          \
+dbimage.h  dbconfigexception.h        \
 imagelist.h        \
 imagematch.h       \
 imagesubtraction.h \
@@ -134,7 +134,7 @@ reducedimage.h     \
 subimage.h         \
 transformedimage.h \
 cluster.h  \
-convolution.h \
+convolution.h exceptions.h\
 convtemplate.h \
 kernelfit.h \
 psfmatch.h  \
