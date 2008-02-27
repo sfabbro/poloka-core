@@ -35,7 +35,7 @@ libtoadsbase_la_SOURCES = \
   astroutils.cc               astroutils.h \
   wcscon.c                    wcscon.h \
   gzstream.cc                 gzstream.h \
-  signalhandlers.cc \
+  signalhandlers.cc fitsexception.h \
   trapfpe.c 
 include_HEADERS = \
 image.h \
