@@ -195,6 +195,8 @@ AC_CONFIG_FILES([Makefile
                  utils/Makefile
 		 cern_utils/Makefile
 		 imagemagick_utils/Makefile
+                 doc/Makefile
+                 doc/Doxyfile
 ])
 
 
