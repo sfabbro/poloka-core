@@ -13,7 +13,7 @@
 #include "swarpstack.h"
 #include "imageutils.h"
 
-/*! \page newsubfile Syntax of the "subfile"
+/*! \page subfile Syntax of the "subfile"
 a subfile is a very simple text file that describes what should be 
 subtracted from what. We define 3 set of images, labelled "ref", "new1" and "new2",
 where "new1 and "new2" refer to the same epoch. We can either run a
@@ -548,6 +548,8 @@ ReducedImage* Sub::DoOneStack(const StringList &Components,
   else return NULL;
 }
 
+static bool FlagDiffractionSpikes(const ReducedImageRef &Ri);
+
 
 int Sub::DoIt()
 {
@@ -581,7 +583,7 @@ int Sub::DoIt()
 	{
 	  cerr << "Processing " << stack.Name() << endl ;
 	  stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
-	  stack.newStack->FlagDiffractionSpikes();
+	  FlagDiffractionSpikes(stack.newStack);
 	}
       else
 	{
@@ -591,7 +593,7 @@ int Sub::DoIt()
 	    cerr <<"Error, bad stackType" << endl ;
 	  // pas de SExtractor sur MCnewi
 	  (stack.newStack)->Execute(DoFits | DoSatur | DoWeight); 
-	  stack.newStack->FlagDiffractionSpikes(); //util?
+	  FlagDiffractionSpikes(stack.newStack); //useful?
 	}
       
       if ( stack.original_newStack != NULL )
@@ -748,3 +750,263 @@ NewStack::~NewStack()
 }
 
 
+/*   Some code related to Diffraction spikes handling 
+ It could probably be made clearer and more efficient, but it
+moreorless does the job */
+
+
+class PixCoord 
+{
+public:
+  int x;
+  int y;  
+  
+  PixCoord() { x=y=0;}
+  PixCoord(int nx,int ny) {x = nx; y = ny;}
+
+};
+
+
+
+
+class mycluster : public std::list<PixCoord> 
+{
+public:
+  mycluster(int x,int y,Image &image) { addpoint(x,y,image);}
+  
+  
+  void setinimage(Image &image, Pixel value) const 
+  {
+    	std::list<PixCoord>::const_iterator point = begin();
+    	std::list<PixCoord>::const_iterator endpoint = end();
+    	for(;point!=endpoint;++point) {image(point->x,point->y)=value;}
+  }
+  
+  
+  void enlarge(Image &image) 
+  {
+    	std::list<PixCoord>::iterator point = begin();
+    	std::list<PixCoord>::iterator endpoint = end();
+    	for(;point!=endpoint;++point) {addpoint(point->x,point->y,image,false);}   
+  }
+  
+private:
+  
+  void addpoint(int x,int y,Image &image,bool addthispoint = true) 
+  {
+    	if(size()>10000)
+	{
+    	  cerr << "cluster overflow" << endl;
+    	  return;
+    	}
+    	if(image(x,y)==0)return;
+    	image(x,y) = 0;
+    	if(addthispoint) push_back(PixCoord(x,y));
+    	if(y>0) 
+	{
+      		addpoint(x,y-1,image);
+      		if(x>0) addpoint(x-1,y-1,image);
+      		if(x<image.Nx()-1)  addpoint(x+1,y-1,image);
+    	}
+    	if(x>0) addpoint(x-1,y,image);
+    	if(x<image.Nx()-1)  addpoint(x+1,y,image);
+    	if(y<image.Ny()-1) 
+	{
+      		addpoint(x,y+1,image);
+      		if(x>0) addpoint(x-1,y+1,image);
+      		if(x<image.Nx()-1)  addpoint(x+1,y+1,image);
+    	}
+  }
+
+
+};
+
+static void findclusters(const Image &image, std::list<mycluster> &clusters) {
+  Image newimage = image;
+  for (int ix=0;ix< newimage.Nx();ix++)
+    for (int iy=0;iy< newimage.Ny();iy++)
+      if(newimage(ix,iy)>0) {
+	//cout << "New cluster" << endl;
+	mycluster cluster(ix,iy,newimage);
+	clusters.push_back(cluster);
+      }
+}
+
+
+static void saveclustersinimage( const std::list<mycluster> &clusters , Image &image) {
+  for (int ix=0;ix< image.Nx();ix++)
+     for (int iy=0;iy< image.Ny();iy++)
+       image(ix,iy)=0;
+  std::list<mycluster>::const_iterator cluster = clusters.begin();
+   std::list<mycluster>::const_iterator endcluster = clusters.end();
+   for(;cluster!=endcluster;++cluster) {
+     cluster->setinimage(image,1);
+   }
+}
+
+// just a rebinning
+static void rebin_image(Image & image, int rebinx, int rebiny) {
+  if(rebinx<=0 || rebiny<=0) {
+    cerr << "ERROR rebin_image " << rebinx << " " << rebiny << endl;
+  }
+  // memory consumming 
+  int newnx = image.Nx()/rebinx;
+  if(image.Nx()%rebinx)
+    newnx++;
+  int newny = image.Ny()/rebiny;
+  if(image.Ny()%rebiny)
+    newny++;
+  
+  Image newimage(newnx,newny);
+  Image newweight(newnx,newny);
+  Pixel *p = image.begin();
+  Pixel *pend = image.end();
+  int nx = image.Nx();
+  int inx,iny;
+  int ix,iy;
+
+  ix=iy=inx=iny=0;
+  for (; p!=pend;++p) {
+    newimage(inx,iny) += (*p);
+    newweight(inx,iny) += 1.;
+    ix++;
+    if(ix>=nx) {
+      ix=0;
+      iy++;
+      iny = iy/rebiny;
+    }
+    inx = ix/rebinx;
+    //if(inx>= newnx || iny>= newny) {
+    // cout << "error " << ix << " " << iy << " = " << inx << " " << iny << endl;
+    //}
+  }
+  newimage/=newweight;
+  image=newimage;
+} 
+
+
+// just an unbinning (need something clever here, for the future)
+static void unbin_image(Image & image, int nx, int ny, int rebinx, int rebiny) {
+  if(nx<=image.Nx() || ny<=image.Ny()) {
+    cerr << "ERROR rebin_image " << nx << " " << ny << endl;
+  }
+  
+  // memory consumming 
+  Image newimage(nx,ny);
+  
+  Pixel *p = newimage.begin();
+  Pixel *pend = newimage.end();
+  int inx,iny;
+  int ix,iy;
+  
+  ix=iy=inx=iny=0;
+  for (; p!=pend;++p) {
+    (*p) = image(inx,iny);
+    ix++;
+    if(ix>=nx) {
+      ix=0;
+      iy++;
+      iny = iy/rebiny;
+    }
+    inx = ix/rebinx;
+  }
+  image=newimage;
+} 
+
+
+
+
+
+//! enlarge satured clusters in order to get rid of diffraction spikes (aigrettes en francais)
+//! method:
+//! * rebin satur image (see imagebinning.h)
+//! * make clusters 
+//! * rebin image (calibrated.fits)
+//! * set it to 1 if > N*sigma else 0
+//! * enlarge clusters using this new image
+//! * save cluster in an image, unbin it back to orginal size and save it as satur.fits.gz 
+static bool FlagDiffractionSpikes(const ReducedImageRef &Ri) {
+  
+  cout << "Entering ReducedImage::FlagDiffractionSpikes" << endl;
+
+  int rebin = 4;
+  bool debug = false;
+  
+  if(!Ri->HasSatur())
+    return false;
+  
+  std::list<mycluster> saturatedclusters;
+  
+  // read satur and make cluster list
+  int nx,ny;
+  Image satur; // I want RW access but this is not possible with cfitsio when fitsfile is compressed
+  
+  {
+    FitsImage satur_ro(Ri->FitsSaturName(),RO);
+    nx = satur_ro.Nx();
+    ny = satur_ro.Ny();
+    satur = satur_ro;
+  }
+  
+  if(rebin>1) {      
+    rebin_image(satur,rebin,rebin);
+  }
+   
+  // find clusters in saturated image
+  findclusters(satur,saturatedclusters);
+  //saturatedclusters.sort(&DecreasingClusterSize);
+  if(debug) {
+    cout << "list of saturated clusters = " << saturatedclusters.size() << endl;
+    std::list<mycluster>::iterator cluster = saturatedclusters.begin();
+    std::list<mycluster>::iterator endcluster = saturatedclusters.end();
+    for(;cluster!=endcluster;++cluster) {
+      cout << "size " << cluster->size() << endl;
+    }
+  }
+ 
+  {
+    // copy initial image
+    FitsImage initial_image(Ri->FitsName());
+    
+    Image &newimage =  initial_image;
+    
+    // now rebin image by a factor rebin
+    if(rebin>1) {      
+      rebin_image(newimage,rebin,rebin);
+    }
+    // skylev
+    Pixel mean,sigma;
+    newimage.SkyLevel(&mean, &sigma);
+    // pix = 1 if signal greater than 1.5 sigma
+    newimage.Simplify(1.5*sigma,1,0);
+    
+    // now enlarge satured clusters using this image
+    std::list<mycluster>::iterator cluster = saturatedclusters.begin();
+    std::list<mycluster>::iterator endcluster = saturatedclusters.end();
+    if(debug)
+      cout << "list of enlarged clusters" << endl;
+    for(;cluster!=endcluster;++cluster) {
+      cluster->enlarge(newimage);
+      if(debug)
+	cout << "size " << cluster->size() << endl;
+    } 
+  }
+  
+  // save pixels in clusters in a binary image 
+  saveclustersinimage(saturatedclusters,satur);
+  
+  // un bin image to input size
+  if(rebin>1) {   
+    unbin_image(satur,nx,ny,rebin,rebin);
+  }
+  
+  // save satur in fits
+  {
+    FitsHeader shead(Ri->FitsSaturName());
+    FitsImage saturfits(Ri->FitsSaturName(),shead,satur); // this is an astuce to write gzip compressed fits image
+    saturfits.AddCommentLine("This satur file was modified by FlagDiffractionSpikes");
+  }
+  cout << "Ending FlagDiffractionSpikes" << endl;
+  
+  return true;
+}

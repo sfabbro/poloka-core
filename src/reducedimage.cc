@@ -8,8 +8,6 @@
 #include "sestar.h"
 #include "cluster.h"
 #include "gtransfo.h"
-#include "cluster2.h"
-#include "imagebinning.h"
 #include "wcsutils.h"
 #include "imageutils.h" // ConvolveSegMask
 #include "fitsexception.h"
@@ -584,10 +582,6 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   stlse.write(CatalogName());
 
   
-  //if((!savemasksat) && HasSatur()) {
-  //FlagDiffractionSpikes(); 
-  //} 
-
   // dump some statistics
   cout << "@NUMBER_OF_OBJECTS " << stlse.size() << endl;
   int n_saturated_objects = 0;
@@ -1536,7 +1530,6 @@ bool  ReducedImage::Execute(const int ToDo)
   if (ToDo & DoCosmic) status &= MakeCosmic();
   if (ToDo & DoSatellite) status &= MakeSatellite();
   if (ToDo & DoWeight) status &= MakeWeight();
-  if (ToDo & DoSpikes) status &= FlagDiffractionSpikes();
   return status;
 }
 
@@ -2372,99 +2365,6 @@ ReducedImage::~ReducedImage()
 {
 }
 
-//! enlarge satured clusters in order to get rid of diffraction spikes (aigrettes en francais)
-//! method:
-//! * rebin satur image (see imagebinning.h)
-//! * make clusters (see cluster2.h)
-//! * rebin image (calibrated.fits)
-//! * set it to 1 if > N*sigma else 0
-//! * enlarge clusters using this new image
-//! * save cluster in an image, unbin it back to orginal size and save it as satur.fits.gz 
-bool ReducedImage::FlagDiffractionSpikes() {
-  
-  cout << "Entering ReducedImage::FlagDiffractionSpikes" << endl;
-
-  int rebin = 4;
-  bool debug = false;
-  
-  if(!HasSatur())
-    return false;
-  
-  std::list<mycluster> saturatedclusters;
-  
-  // read satur and make cluster list
-  int nx,ny;
-  Image satur; // I want RW access but this is not possible with cfitsio when fitsfile is compressed
-  
-  {
-    FitsImage satur_ro(FitsSaturName(),RO);
-    nx = satur_ro.Nx();
-    ny = satur_ro.Ny();
-    satur = satur_ro;
-  }
-  
-  if(rebin>1) {      
-    rebin_image(satur,rebin,rebin);
-  }
-   
-  // find clusters in saturated image
-  findclusters(satur,saturatedclusters);
-  //saturatedclusters.sort(&DecreasingClusterSize);
-  if(debug) {
-    cout << "list of saturated clusters = " << saturatedclusters.size() << endl;
-    std::list<mycluster>::iterator cluster = saturatedclusters.begin();
-    std::list<mycluster>::iterator endcluster = saturatedclusters.end();
-    for(;cluster!=endcluster;++cluster) {
-      cout << "size " << cluster->size() << endl;
-    }
-  }
- 
-  {
-    // copy initial image
-    FitsImage initial_image(FitsName());
-    
-    Image &newimage =  initial_image;
-    
-    // now rebin image by a factor rebin
-    if(rebin>1) {      
-      rebin_image(newimage,rebin,rebin);
-    }
-    // skylev
-    Pixel mean,sigma;
-    newimage.SkyLevel(&mean, &sigma);
-    // pix = 1 if signal greater than 1.5 sigma
-    newimage.Simplify(1.5*sigma,1,0);
-    
-    // now enlarge satured clusters using this image
-    std::list<mycluster>::iterator cluster = saturatedclusters.begin();
-    std::list<mycluster>::iterator endcluster = saturatedclusters.end();
-    if(debug)
-      cout << "list of enlarged clusters" << endl;
-    for(;cluster!=endcluster;++cluster) {
-      cluster->enlarge(newimage);
-      if(debug)
-	cout << "size " << cluster->size() << endl;
-    } 
-  }
-  
-  // save pixels in clusters in a binary image 
-  saveclustersinimage(saturatedclusters,satur);
-  
-  // un bin image to input size
-  if(rebin>1) {   
-    unbin_image(satur,nx,ny,rebin,rebin);
-  }
-  
-  // save satur in fits
-  {
-    FitsHeader shead(FitsSaturName());
-    FitsImage saturfits(FitsSaturName(),shead,satur); // this is an astuce to write gzip compressed fits image
-    saturfits.AddCommentLine("This satur file was modified by ReducedImage::FlagDiffractionSpikes");
-  }
-  cout << "Ending ReducedImage::FlagDiffractionSpikes" << endl;
-  
-  return true;
-}
 
 
 
