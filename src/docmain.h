@@ -1,23 +1,25 @@
 /* This file is NOT to be included by any part of the code.
    It is parsed by doxygen to produce the documentation. */
 
-/*! \mainpage The TOADS Software
+/*! \mainpage The Poloka (aka TOADS) Software
         TOols for Analysis and Detection of Supernovae
 
 
    \authors Pierre Astier pierre.astier@in2p3.fr<BR>
             Sebastien Fabbro sfabbro@in2p3.fr<BR>
-            Delphine Hardin hardin@snova1.in2p3.fr<BR>
+            Delphine Hardin hardin@in2p3.fr<BR>
             Julien Raux  julien.raux@in2p3.fr<BR>
-            Kyan Schahmaneche kyan@lpnhep.in2p3.fr<BR>
-	       All these people belong to the <A HREF="http://supernovae.in2p3.fr/group.html>FROGS</A> <BR>
+            Kyan Schahmaneche kyan@lpnhe.in2p3.fr<BR>
+            Julien Guy guy@lpnhe.in2p3.fr<BR>
+            Nicolas Regnault Schahmaneche kyan@lpnhep.in2p3.fr<BR>
+	       All these people belong to the <A HREF="http://supernovae.in2p3.fr/group.html">FROGS </a> <BR>
 
 
 
    \date \today
 
 
-   \attention This document is the user manual and reference manual of TOADS. 
+   \attention This document is the user manual and reference manual of Poloka. 
    It will then never be up to date. It is generated using "doxygen".<BR>
    It is far from being complete.
 
@@ -49,12 +51,12 @@ TOADS aims at providing a framework for astronomy image analysis, with an
 emphasis on image subtraction and differential photometry of varying objects.
 At variance with most of the codes developped in the astronomy community,
 it is NOT intended to provide ready-to-use tools. There is in fact
-very little chance that your problem is already solved in TOADS,
+very little chance that your problem is already solved in Poloka,
 unless you are doing the same thing as we are. Our purpose
 is more to provide a convenient toolbox, in which you
 will have to collect components and write your own code.
-If C++ evocates nothing to you, TOADS is likely
-to be the bad choice.
+If C++ evocates nothing to you, Poloka is likely
+to be the wrong choice.
 
    Our second bias is that there is nothing interactive (yet?) in TOADS,
 because it was developped originally to carry out supernova
@@ -212,8 +214,8 @@ have to run make_catalog to get it computed and written to disk.
 
 
 \section subtracting Running a subtraction.
-You first have to create a "subfile" (see \ref subfile), 
-and then you just run newmake_sub.
+You have to create a "subfile" (see \ref subfile), 
+and run makesub.
   You may log the output, which contains very useful informations when things
 go wrong.
 
