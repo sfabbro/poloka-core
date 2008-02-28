@@ -72,7 +72,7 @@ libtoads_la_SOURCES =  \
   cluster.cc                  cluster.h  \
   convolution.cc              convolution.h \
                               convtemplate.h \
-  kernelfit.cc                kernelfit.h \
+  kernelfit.cc                kernelfit.h iohelpers.h \
   psfmatch.cc                 psfmatch.h  \
   swarpstack.cc		      swarpstack.h \
   dicstar.cc                  dicstar.h \
