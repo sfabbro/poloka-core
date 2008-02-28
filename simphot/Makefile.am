@@ -20,17 +20,17 @@ optimize_it = -O3
 lib_LTLIBRARIES = libtoadssimphot.la
 
 libtoadssimphot_la_SOURCES = \
-	lightcurvefile.cc   \
-	objecttofit.cc \
-	simphotfit.cc \
-	vignette.cc \
-	model.cc \
-	array4d.cc \
-	pixelblock.cc \
-	resampler.cc \
-	intframe.cc \
-	imagepsfserver.cc \
-	calibratedstar.cc 
+	lightcurvefile.cc lightcurvefile.h  lightcurvesyntaxerror.h \
+	objecttofit.cc objecttofit.h \
+	simphotfit.cc simphotfit.h \
+	vignette.cc vignette.h \
+	model.cc model.h \
+	array4d.cc array2d.h array4d.h \
+	pixelblock.cc pixelblock.h \
+	resampler.cc resampler.h \
+	intframe.cc intpoint.h intframe.h \
+	imagepsfserver.cc imagepsfserver.h \
+	calibratedstar.cc calibratedstar.h
 include_HEADERS = lightcurvefile.h
 
 

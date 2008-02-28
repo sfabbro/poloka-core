@@ -13,7 +13,7 @@ optimize_it = -O3
 lib_LTLIBRARIES = libtoadspsf.la
 
 libtoadspsf_la_SOURCES = \
-	analyticpsf.cc   \
+	analyticpsf.cc   analyticpsf.h nonlinmodel.h \
 	psfstar.cc       \
 	imagepsf.cc      \
 	poly2.cc         \

@@ -23,16 +23,17 @@ lightcurve.cc_cppflags = $(optimize_it)
 
 libtoadslc_la_SOURCES =  \
 	lightcurvepoint.cc \
-	gausspsf.cc	 \
-	photstar.cc      \
-	vignet.cc	 \
-	vignetphot.cc	 \
-	refstar.cc       \
-	lcio.cc	         \
-	lightcurve.cc	 \
-	simfitvignet.cc  \
-	simfit.cc        \
-	simfitphot.cc 	 
+	gausspsf.cc gausspsf.h	 \
+	photstar.cc   photstar.h    \
+	vignet.cc vignet.h \
+	vignetphot.cc vignetphot.h \
+	refstar.cc  refstar.h       \
+	lcio.cc lcio.h \
+	lightcurve.cc	lightcurve.h \
+	simfitvignet.cc    simfitvignet.h \
+	simfit.cc  simfit.h \
+	simfitphot.cc simfitphot.h \
+	fiducial.h
 #	lightcurvepoint_dict.cc 
 
 include_HEADERS = lightcurvepoint.h
