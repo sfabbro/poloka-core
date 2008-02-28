@@ -3,7 +3,7 @@
 #define SUB__H
 
 #include "reducedimage.h"
-#include "candidatestar.h"
+
 #include <list>
 #include <vector>
 
