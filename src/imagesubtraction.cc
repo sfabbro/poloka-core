@@ -303,9 +303,7 @@ string ImageSubtraction::CandCutScanName() const
 }
 
 
-#include "candstar.h"
 #include "toadscards.h"
-//#include "convolution.h"
 
 
 
