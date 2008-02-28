@@ -1,4 +1,6 @@
-#include "standardstar.h"
+//#include "standardstar.h"
+#include "fitsimage.h"
+#include "sestar.h"
 #include "reducedimage.h"
 #include "dictfile.h"
 #include "wcsutils.h"
