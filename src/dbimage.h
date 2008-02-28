@@ -12,7 +12,7 @@ generally, the \ref database_page.
 
 /*! \page database_page DataBase
 
-\subsection intro_database What does our so-called data base?
+\section intro_database What does our so-called data base?
 The purpose of having some database code is to decouple most of the processing
 code from the actual way data is stored. The data can then be accessed through
 routines which transform abstract names into genuine file names. Implementing this
@@ -23,7 +23,7 @@ does not require any modification in case the actual data base used changes.
 not subtractions. What the data base software handles is file names,
 not contents. 
 
-\subsection dbconfig The data base configuration file.
+\section dbconfig The data base configuration file.
 
 The actual location where data is to be searched for is
 given through a configuration file. This configuration file is searched
@@ -31,7 +31,7 @@ given through a configuration file. This configuration file is searched
  -# as .dbconfig in the current directory
  -# as $HOME/.dbconfig
 
-\subsection dbconfig_example Example of Db configuration file
+\section dbconfig_example Example of Db configuration file
 A Db config file consists in mnemonic tags followed by actual file pathes.
 Those file pathes can use * [] but not {}.
 Here is an example of a Db config file:
