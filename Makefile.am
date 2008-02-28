@@ -11,12 +11,14 @@
 ##                repack.spec.in          repack.spec
 ## 
 
-EXTRA_DIST =   datacards/default.conv datacards/default.nnw datacards/default.param  \
-	       datacards/default.sex   datacards/seeing.datacard  datacards/sub.datacard 
+EXTRA_DIST =   autogen.sh datacards/default.conv datacards/default.nnw \
+	datacards/default.param  datacards/default.sex   \
+	datacards/seeing.datacard  datacards/sub.datacard \
+	cmt/cmt-config.csh
 
 
 
-SUBDIRS = cern_stuff lapack_stuff telinst src_base src_utils flat src dao psf simphot lc utils datacards cern_utils imagemagick_utils
+SUBDIRS = cern_stuff lapack_stuff telinst src_base src_utils flat src dao psf simphot lc utils datacards cern_utils imagemagick_utils doc
 if ENABLE_MC
 SUBDIRS += mc
 endif
