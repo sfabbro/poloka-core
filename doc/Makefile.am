@@ -3,14 +3,17 @@ EXTRA_DIST = README.db refman.ps Doxyfile.in
 docdir = $(datadir)/doc
 doc_DATA = html latex man
 DOX = @DOXYGEN@
-HEADER_LIST = @top_srcdir@/src/*.h
+HEADER_LIST = @top_srcdir@/*/*.cc @top_srcdir@/*/*.h
+
 
 all: stamp-doc
 
 html: stamp-doc
 
+clean :	clean-local
+
 stamp-doc: Doxyfile $(HEADER_LIST)
-	$(DOX) $<
+	$(DOX) Doxyfile
 	@echo > timestamp > $@
 
 install-docDATA:

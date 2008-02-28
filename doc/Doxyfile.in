@@ -72,7 +72,7 @@ HIDE_UNDOC_MEMBERS     = NO
 # If set to NO (the default) these class will be included in the various 
 # overviews. This option has no effect if EXTRACT_ALL is enabled.
 
-HIDE_UNDOC_CLASSES     = NO
+HIDE_UNDOC_CLASSES     = YES
 
 # If the BRIEF_MEMBER_DESC tag is set to YES (the default) Doxygen will 
 # include brief member descriptions after the members that are listed in 
@@ -304,7 +304,10 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = ../src
+INPUT                  =  ../src_base \
+                          ../src_utils \
+                          ../flat \
+                          ../src ../psf ../simphot ../lc
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
