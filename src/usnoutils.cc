@@ -228,7 +228,15 @@ while (raword<minraword && !feof(ifp)) read_a_star(ifp, raword, decword, magword
 
 
 // read an ascii file containing alpha,delta mag, 1 item per line.
-//static void  read_ascii_astrom_file(const string &FileName, 
+/* \page usno_file_format Astrometric file format
+    You can provide your own match catalog to matchusno, either on the 
+    command line, or via the USNOFILE environment variable. The code
+    expects and ascii file and interprets the 3 first items of
+    every line as alpha, delta (equatorial) and mag (where the mag 
+    is mainly used to 
+    isolate the brightest objects). Sexagesimal coordinates are accepted.
+*/
+  
 static void read_ascii_astrom_file(const string &FileName, 
 				  double MinRa,  double MaxRa,
 				  double MinDec, double MaxDec, 
