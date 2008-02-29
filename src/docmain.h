@@ -35,6 +35,7 @@ The structure of the document is:
  <li> \ref database
  <li> \ref reducedimage
  <li> \ref fitstoad
+ <li> \ref env_var
  <li> \ref gettingstarted
    <ul>
    <li> \ref installing_images 
@@ -109,13 +110,6 @@ from starlists (see below), you can invoque the guessing routines
 in listmatch.h. There are also higher level wrapping routines 
 in imagematch.h
 
-   The matchusno command matches a DbImage to the USNO catalog
-and writes the resulting WCS in the image header. The model
-we use is close to WCS standards, but not exactly identical. This
-is why we also have
-the "astrom" command line utility to translate image coordinates to sky and 
-vice-versa using this WCS. We are studying the feasibility of
-using the actual latest fits standards.
 
  \section starlists Stars and lists of stars
 A few star formats are already defined in the code. The BaseStar only contains 
@@ -206,16 +200,65 @@ unknown to TOADS. You may test it through:
 header -k TOADALL your_image.fits
 \endcode
 To see how well (or badly) it works for your specific case. If it does 
-not work properly, you have to go through \ref newtelinst.
+not work properly, you have to go through \ref newtelinst. Drop us
+a mail if you get lost.
+
+
+\section env_var Environment variables.
+  Various parts of the code rely (or may depend) on envirnment variables.
+  Here is a tentative list of those:
+  <ul>
+  <li> DBCONFIG : where the "dbconfig" (see \ref dbconfig) file stands. Default
+         location is \verb "~/.dbconfig". Providing such a file is mandatory
+       to use any code that relies on more than a single fits file. see \ref dbconfig_example for and example.
+       <li>  TOADSCARDS : the directory where the datacards are 
+        (somewhere/poloka/datacards). This directory contains 
+       the SExtractor usual configuration files.  The Poloka tunable 
+       quantities are in sub.datacards (with hopefully meaningful comments...).
+       <li> USNODIR, USNOFILE. Poloka provides a functionality to match 
+  an image to a reference catalog (matchusno). This reference catalog 
+   is the USNO by default ands its location  is then provided through USNODIR.
+   You may as well provide your own catalog on the command line or through
+   USNOFILE.  
+  </ul>
 
 \subsection cataloging Making a catalog.
-Most of the useful code of TOADS requires image catalogs. You just
+Most of the useful code of Poloka requires image catalogs. You just
 have to run make_catalog to get it computed and written to disk.
+  This constructs a SExtractor catalog, and many other goodies
+  such as a weight map (from sky variance and flat if available),
+  a saturated pixel map, a tentative detection of cosmics and
+  satellite trails (incorporated to the weight map).
+
+
+\subsection matchusno Computing a WCS
+Poloka contains code to match an image to a reference catalog.
+  It actually matches the catalog of an image to a reference catalog,
+  and deduces a WCS, and writes it into the image fits header.
+The starting point of the match relies on the user providing
+  a guess, through a WCS. This starting WCS can be either 
+  provided in the image header (most of the observing systems now
+  compute and write a decent WCS from telescope settings), or computed
+  using keywords of the header. This is done on a telescope-instrument basis
+  in the "telinst" directory (see \ref newtelinst) by providing routines
+  that will compute a rough WCS for every image (without actually 
+  writing it anywhere). The guess WCS is mainly used to collect the
+  right area in the reference catalogue. Then a shift is tried,
+  and when it fails, rotations (with and without flip) are attempted. 
+  To see how well or bad the code is doing, "matchusno -n " does everything
+  but writing the found WCS. Our WCS follow the standards, and encode
+  the optical distortions in a way Swarp understands (which has perhaps
+  become a standard by now). The reference catalog can be provided
+  as the USNO one (2.0), or as an external catalog (see \ref env_var).
+  An external catalog can be provided on the matchusno command line
+  (see \ref  usno_file_format if you need)
 
 
 \section subtracting Running a subtraction.
 You have to create a "subfile" (see \ref subfile), 
-and run makesub.
+and run makesub. Input images should not be aligned in advance,
+but they should overlap. If you really need to mosaic images,
+you should definitly contact us. 
   You may log the output, which contains very useful informations when things
 go wrong.
 
@@ -223,12 +266,21 @@ go wrong.
 \section lightcurve Producing a lightcurve
 To build a lightcurve for a supernova we need to know where is the 
 supernova and on which night it has been observed. You then need 
-to produce a "lightfile" (see \ref lightfile)
+to produce a "lightfile" (see \ref lightfile) which mainly
+  describes which images to use, and which contain light of the variable 
+  objet. These images must be geometrically aligned (i.e. be on the same
+  pixel grid).
 Find a directory with a lot of space. Then type
 
      make_lightcurve <myfile>
 
 and go for coffee. See \ref lcresults for lightcurve results.
+This is basicaly the code used (on the French side) to produce the 
+SNLS light curves.
+A new scheme for computing light curves from  unregistered images has 
+been developed, and   passed the first tests. At variance with the 
+one decribed above, it was never tested on a large scale.
+
 
 
 */
