@@ -5,14 +5,15 @@
         TOols for Analysis and Detection of Supernovae
 
 
-   \authors Pierre Astier pierre.astier@in2p3.fr<BR>
-            Sebastien Fabbro sfabbro@in2p3.fr<BR>
-            Delphine Hardin hardin@in2p3.fr<BR>
-            Julien Raux  julien.raux@in2p3.fr<BR>
-            Kyan Schahmaneche kyan@lpnhe.in2p3.fr<BR>
-            Julien Guy guy@lpnhe.in2p3.fr<BR>
-            Nicolas Regnault Schahmaneche kyan@lpnhep.in2p3.fr<BR>
-	       All these people belong to the <A HREF="http://supernovae.in2p3.fr/group.html">FROGS </a> <BR>
+   \authors Pierre Astier <BR>
+            Sebastien Fabbro <BR>
+            Julien Guy <BR>
+            Delphine Hardin <BR>
+            Julien Raux  <BR>
+            Nicolas Regnault <BR>
+            Kyan Schahmaneche <BR>
+
+	       All these people belong(ed) to the <A HREF="http://supernovae.in2p3.fr/group.html">FROGS </a> <BR>
 
 
 
