@@ -6,6 +6,8 @@
 
 #include "sestar.h"
 #include "apersestar.h"
+#include "ellipticaper.h"
+
 
 using namespace std;
 
@@ -43,7 +45,11 @@ public:
     double ef_circ ;
     double m_auto ;
     double em_auto ;
-    ShortMagBox(){f_circ = 0. ; ef_circ = 0. ;f_auto = 0. ; ef_auto = 0. ; m_auto = 0. ; em_auto = 0. ;}
+    double seeing ;
+    double f_aper;
+    double ef_aper ;
+    double f_aper_other ;
+    ShortMagBox(){f_circ = 0. ; ef_circ = 0. ;f_auto = 0. ; ef_auto = 0. ; m_auto = 0. ; em_auto = 0. ;  seeing=0. ;f_aper =0.;  ef_aper=0. ;  f_aper_other=0. ;}
 };
 
 
@@ -51,11 +57,30 @@ class MultiMagSEStar : public SEStar {
 
 
  public:
+    // pour conserver info d'association a un autre catalogue (par ex : cfhtls)
+    CountedRef<BaseStar> star ;
+    double star_dist ;
+
+
   vector<ShortMagBox> magboxes;
   double alpha ;
   double delta ;
   double x_orig ;
   double y_orig ;
+
+  // ouverture de photometrie sur l'image i
+  Elliptic_Aperture ell_aper ;
+  Elliptic_Aperture g_ell_aper ;
+
+  // parametre de forme sur l'image de detction.
+  double gx ;
+  double gy ;
+  double gmxx ;
+  double gmyy ;
+  double gmxy ;
+  double gmxx_loc ;
+  double gmyy_loc ;
+  double gmxy_loc ;
 
   // variable utilisee pour les sort des liste de galaxies voisines d'une SN
   //pas dans les routines write et read pour l'instant
@@ -104,16 +129,21 @@ class MultiMagSEStarList : public StarList<MultiMagSEStar>
 
  void CopySEStarList(const SEStarList &L);
  void ComputeAlphaDelta(const FitsHeader & head);
-
- bool UpDate(SEStarList &L, string *bands, int nband);
+bool UpDate_Assoc(SEStarList &L, string band) ;
+ bool UpDate(SEStarList &L, string band);
  void ComputeMag(int kbox, string band, double ZP, double eZP);
  MultiMagSEStar*  FindEllipticClosest(double xx, double yy, double dilatation, double RadMin, double Radius) const ;
 
-
+ int GetBandNumber(string band) ;
+ void SetBandNumber(string band, int n);
+ int GetNBand() ;
+ void SetNBand(int n);
 
   //! the standard one plus some checks
  void check() const ;
  int write(const std::string &FileName) const;
+
+ int  MatchToOtherList(BaseStarList *l);
  
 };
 

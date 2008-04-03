@@ -12,6 +12,8 @@
 
 #include "fastifstream.h"
 
+#include "listmatch.h"
+
 
 void
 MultiMagSEStar::SetToZero()
@@ -21,9 +23,20 @@ MultiMagSEStar::SetToZero()
   delta = 0. ;
   x_orig = 0. ;
   y_orig = 0. ;
+  gx=0. ;
+  gy=0. ;
+  gmxx = 0. ;
+  gmyy = 0. ;
+  gmxy = 0. ;
+  gmxx_loc = 0. ;
+  gmyy_loc = 0. ;
+  gmxy_loc = 0. ;
   ell_dist = 0. ;
   norm_dist = 0. ;
   dist = 0. ;
+
+  star_dist = -1 ;
+  //star = NULL ;
 }
 
 
@@ -34,7 +47,8 @@ MultiMagSEStar::MultiMagSEStar(const SEStar &sestar) : SEStar(sestar)
   SetToZero();
   x_orig = x ;
   y_orig = y;
-  // magbox et l'ellipse qu'elle contient sont crees et initialisees a la demande
+  ell_aper.SetParameters(sestar,1.,8.,8.);
+  // les magbox sont crees et initialisees a la demande
 }
 
 
@@ -51,6 +65,19 @@ std::string MultiMagSEStar::WriteHeader_(ostream & pr,
   pr << "#dec" << i  << " : " << endl;
   pr << "#x_orig" << i  << " : " << endl;
   pr << "#y_orig" << i  << " : " << endl;
+  pr << "#gx" << i  << " : " << endl;
+  pr << "#gy" << i  << " : " << endl;
+  pr << "#gmxx" << i  << " : " << endl;
+  pr << "#gmyy" << i  << " : " << endl;
+  pr << "#gmxy" << i  << " : " << endl;
+  pr << "#gmxxl" << i  << " : " << endl;
+  pr << "#gmyyl" << i  << " : " << endl;
+  pr << "#gmxyl" << i  << " : " << endl;
+
+  ell_aper.WriteHeader_(pr,"es");
+  g_ell_aper.WriteHeader_(pr,"eg");
+
+
   pr << "#nm"<<i<< " : number of magboxes " << endl;
 
 
@@ -69,7 +96,7 @@ std::string MultiMagSEStar::WriteHeader_(ostream & pr,
       pr << "#m" << kk << i  << " : " << endl;
       pr << "#em" << kk << i  << " : " << endl;
     }
-  return sestarFormat+ "MultiMagSEStar 3"; 
+  return sestarFormat+ "MultiMagSEStar 5"; 
 }
 
 
@@ -81,7 +108,15 @@ MultiMagSEStar::dumpn(ostream& s) const
   s << "alpha : " << alpha << " " 
     << "delta : " << delta << " " 
     << "x_orig : " << x_orig << " " 
-    << "y_orig : " << y_orig << " " ;
+    << "y_orig : " << y_orig << " " 
+    << "gx : " << gx << " "    
+    << "gy : " << gy << " "    
+    << "gmxx : " << gmxx << " "   
+    << "gmyy : " << gmyy << " "   
+    << "gmxy : " << gmxy << " "  
+    << "gmxx_loc : " << gmxx_loc << " "  
+    << "gmyy_loc : " << gmyy_loc << " "   
+    << "gmxy_loc : " << gmxy_loc << " "   ;
 
    s << "size magboxes : " << magboxes.size() << ' ';
   for (unsigned k=0; k < magboxes.size(); ++k)
@@ -109,7 +144,19 @@ void MultiMagSEStar::writen(ostream& s) const
   s << alpha << " " ;
   s << delta << " " ;
   s << x_orig << " " ;
-  s << y_orig << " " ;  
+  s << y_orig << " " ; 
+  s << gx << " " ;   
+  s << gy << " " ;   
+  s << gmxx << " " ;   
+  s << gmyy << " " ;   
+  s << gmxy << " " ;  
+  s << gmxx_loc << " " ;   
+  s << gmyy_loc << " " ;   
+  s << gmxy_loc << " " ;  
+
+  ell_aper.writen(s);
+  g_ell_aper.writen(s);
+
     
  s << magboxes.size() << ' ';
   for (unsigned k=0; k < magboxes.size(); ++k)
@@ -143,6 +190,22 @@ void MultiMagSEStar::read_it(fastifstream& r, const char* Format)
   r >> x_orig  ;
   r >> y_orig  ;
   
+  if (format >= 4)
+    {
+      r >> gx ;
+      r >> gy ;
+      r >> gmxx ;
+      r >> gmyy ;
+      r >> gmxy ;
+      r >> gmxx_loc ;
+      r >> gmyy_loc ;
+      r >> gmxy_loc ;
+    } 
+  if (format >= 5)
+    {
+      ell_aper.read(r);
+      g_ell_aper.read(r);
+    }
   if (format <= 1)
     {
       double undouble ;
@@ -177,7 +240,9 @@ MultiMagSEStar* MultiMagSEStar::read(fastifstream& r, const char* Format)
   pstar->read_it(r, Format);
   return(pstar);
 }
-  
+
+
+
 void  MultiMagSEStar::ComputeMag(int kbox, string band, double ZP, double eZP)
 {
   ShortMagBox &mb = magboxes[kbox];
@@ -188,12 +253,12 @@ void  MultiMagSEStar::ComputeMag(int kbox, string band, double ZP, double eZP)
   if (mb.f_auto > 0 )
     {			 			  
       mb.m_auto = -2.5*log10(mb.f_auto)+ZP ;
-      mb.em_auto = fabs(mb.ef_auto/mb.f_auto);
+      mb.em_auto = fabs(2.5/log(10.)*mb.ef_auto/mb.f_auto);
     }
   else
     {
       mb.m_auto = 99 ;
-      mb.em_auto = -1 ;
+      mb.em_auto = 99 ;
     }
 }
 
@@ -281,23 +346,23 @@ MultiMagSEStarList::MultiMagSEStarList(const string &FileName)
 	  if ( (( cal.band == "") && ! new_version ) || ( ( cal.band != "") && new_version ) )
 	    cerr << "Error in reading filename : " << FileName << "  cal bands partially empty" << endl ;
 	}
-      if ( ! new_version ) // on mets les globals
+      if ( ! new_version ) // on mets les etiquettes de chaque magbox en globals
 	{
 	  for (int ii = 0 ; ii < nbox ; ii++)
 	    {
 	      CalibBox &cal =  front()->magboxes[ii].calib ;
 	      char  kkey[20];
-	      sprintf(kkey,"MAG_%-d",ii);
+	      sprintf(kkey,"MAG_%d",ii);
 	      GlobVal().AddKey(kkey,cal.band) ;
 	    }
 	}
-      else // on mets les etiquettes
+      else // on mets les etiquettes des globals ds les magbox
 	{
 	  // verification autant de magboxes que d'etiquettes
 	  for(int ii = 0 ; ii < nbox ; ii++)
 	    {
 	      char  kkey[20];
-	      sprintf(kkey,"MAG_%-d",ii);
+	      sprintf(kkey,"MAG_%d",ii);
 	      if ( ! GlobVal().HasKey(kkey) )
 		cerr << "Error in reading filename : " << FileName 
 		     << "  no " << kkey << endl;
@@ -305,11 +370,11 @@ MultiMagSEStarList::MultiMagSEStarList(const string &FileName)
 	  // on remets les etiquettes
 	  for (MultiMagSEStarIterator mit = this->begin();mit != this->end();mit++)
 	    {
-	      for (int ii = 0 ; ii < (*mit)->magboxes.size(); ii++ )
+	      for (unsigned int ii = 0 ; ii < (*mit)->magboxes.size(); ii++ )
 		{
 		  CalibBox &cal =  (*mit)->magboxes[ii].calib ;
 		  char  kkey[20];
-		  sprintf(kkey,"MAG_%-d",ii);
+		  sprintf(kkey,"MAG_%d",ii);
 		  cal.band = GlobVal().getStringValue(kkey) ;
 		}
 	    }
@@ -399,26 +464,98 @@ MultiMagSEStarList::ComputeMag(int kbox, string band, double ZP, double eZP)
   return ;
 }
 
-
-      
 bool
-MultiMagSEStarList::UpDate(SEStarList &L, string *bands, int nband)
+MultiMagSEStarList::UpDate_Assoc(SEStarList &L, string band)
 { 
-  int ng = GlobVal().NKey();
-  for (int ii = 0 ; ii < nband ; ii++)
+  int nband_tot = GetNBand();
+  char kkey[50] ;
+  sprintf(kkey,"MAG_%d",nband_tot);
+  GlobVal().AddKey(kkey,band);
+    
+  SetNBand(nband_tot + 1);
+  // on rajoute une boite a chacun
+  for (MultiMagSEStarIterator mit = this->begin(); mit != this->end(); ++mit)
     {
-      char  kkey[20];
-      sprintf(kkey,"MAG_%-d",ii);
-      GlobVal().AddKey(kkey,bands[ii]);
+      MultiMagSEStar *magstar = *mit ;
+      magstar->magboxes.push_back(ShortMagBox());
+      ShortMagBox &mb = magstar->magboxes.back();
+      CalibBox &cal = mb.calib;
+      cal.band = band ;// pour info de provenance, peut changer apres avec la calib effectivement utilisee
+	  // NB dans le cas ou le seeing est calcule par ailleurs et 
+	  // stocke dans Fwhm()
+      cal.seeing =  -1 ; 
+      mb.f_auto = -1; // toujours cette vieille "convention" avec sextractorbox
+      mb.ef_auto = -1; 
+      mb.f_circ = -1 ;// doit etre calcule par ailleurs
+      mb.ef_circ = -1;  
+      mb.seeing = -1 ;
+      mb.f_aper = -1;
+      mb.ef_aper =  -1 ;
+      mb.f_aper_other =  -1 ;
     }
+  CountedRef<Gtransfo> identity = new GtransfoLin(); 
+  BaseStarList *L1 = (BaseStarList*) this ; 
+  BaseStarList *L2 = (BaseStarList*)  &L;
+  double d_max =  0.01; // il faudra faire un cut dessus par la suite !
+  StarMatchList *lmatch = ListMatchCollect(*L1, *L2, identity, d_max);
+  double frac = lmatch->size()/(1.*size()) ;
+  cerr << "Matching : " << lmatch->size() << " in " << size() << " " << frac << "%" << endl ;
+  if ( frac < 0.90 )
+    {
+      cerr << "Not enough match " << endl ;
+      return false ;
+    }
+  int nn = 0;
+  for(StarMatchIterator it = lmatch->begin() ; it != lmatch->end(); it++)
+    {
+      MultiMagSEStar *mstar  = (*it).s1 ;
+      SEStar *sestar = (*it).s2 ;
+      ShortMagBox &mb = mstar->magboxes.back();
+      CalibBox &cal = mb.calib;
+      if ( nn < 5 )
+	{
+	  cerr << "Updating with assoc in band: " << cal.band << endl ;
+	  nn++;
+	}
+      if (cal.band != band )
+	{
+	  cerr << "Mismatch in  band " << band << " " << cal.band << endl ;
+	  return false ;
+	}
+      // NB dans le cas ou le seeing est calcule par ailleurs et 
+      // stocke dans Fwhm()
+      cal.seeing = sestar->Fwhm() ;
+      mb.f_auto = sestar->Flux_auto(); // toujours cette vieille "convention" avec sextractorbox   
+      mb.ef_auto = sestar->Eflux_auto(); 
+
+      mb.f_circ = sestar->Flux_circ_aper();// doit etre calcule par ailleurs
+      mb.ef_circ = sestar->Eflux_circ_aper(); 
+
+      mb.seeing = sestar->local_seeing ;
+      mb.f_aper = sestar->aper_flux ;
+      mb.ef_aper =  sestar->err_aper_flux ;
+      mb.f_aper_other =  sestar->aper_flux_other ;
+    }
+  return true ;
+}
 
 
+bool
+MultiMagSEStarList::UpDate(SEStarList &L, string band)
+{
   if (size() != L.size())
     {
-      cerr << "Taille des listes differentes " << endl ;
-      Check(*this, L);
-      return(false);
-    }
+      cerr << "Taille des listes differentes dans Update " << " " << size() << " " << L.size() << endl ;
+      return(UpDate_Assoc(L,band));
+    } 
+  int nband_tot = GetNBand();
+  char kkey[50] ;
+  sprintf(kkey,"MAG_%d",nband_tot);
+  GlobVal().AddKey(kkey,band);
+    
+  SetNBand(nband_tot + 1);
+
+ 
   int nn = 0 ;
   MultiMagSEStarIterator mit = this->begin();
   for (SEStarCIterator i = L.begin(); i != L.end() && mit != this->end(); ++i, ++mit)
@@ -428,9 +565,7 @@ MultiMagSEStarList::UpDate(SEStarList &L, string *bands, int nband)
       double d2 = (magstar->x -star->x)*(magstar->x -star->x)+(magstar->y -star->y)*(magstar->y -star->y);
       if (d2 > 1.e-5)
 	{	 
-	  cerr << "etoiles differentes dans les listes " ;
-	  for (int ii = 0 ; ii < nband ; ii++)
-	    {cerr << bands[ii] << " "  <<  endl ;}
+	  cerr << "etoiles differentes dans les listes " << band << endl ;
 	  return(false);
 	} 
 
@@ -439,20 +574,22 @@ MultiMagSEStarList::UpDate(SEStarList &L, string *bands, int nband)
 	  cerr << "Nbre de MagBoxes: " << magstar->magboxes.size() << endl ;
 	}
 
-      for (int ii = 0 ; ii < nband ; ii++)
-	{
-	  magstar->magboxes.push_back(ShortMagBox());
-	  ShortMagBox &mb = magstar->magboxes.back();
-	  CalibBox &cal = mb.calib;
-	  cal.band = bands[ii] ;// pour info de provenance, peut changer apres avec la calib effectivement utilisee
+      magstar->magboxes.push_back(ShortMagBox());
+      ShortMagBox &mb = magstar->magboxes.back();
+      CalibBox &cal = mb.calib;
+      cal.band = band ;// pour info de provenance, peut changer apres avec la calib effectivement utilisee
 	  // NB dans le cas ou le seeing est calcule par ailleurs et 
 	  // stocke dans Fwhm()
-	  cal.seeing =  star->Fwhm(); 
-	  mb.f_auto = star->Flux_aper(); // toujours cette vieille "convention" avec sextractorbox
-	  mb.ef_auto = star->Eflux_aper(); 
-	  mb.f_circ = star->Flux_fixaper();// doit etre calcule par ailleurs
-	  mb.ef_circ = star->Eflux_fixaper();
-	}
+      cal.seeing =  star->Fwhm(); 
+      mb.f_auto = star->Flux_auto(); // toujours cette vieille "convention" avec sextractorbox
+      mb.ef_auto = star->Eflux_auto(); 
+      mb.f_circ = star->Flux_circ_aper();// doit etre calcule par ailleurs
+      mb.ef_circ = star->Eflux_circ_aper();
+
+      mb.seeing = star->local_seeing ;
+      mb.f_aper = star->aper_flux ;
+      mb.ef_aper =  star->err_aper_flux ;
+      mb.f_aper_other =  star->aper_flux_other ;
 
       if ( nn < 5 )
 	{
@@ -462,6 +599,7 @@ MultiMagSEStarList::UpDate(SEStarList &L, string *bands, int nband)
     }
   return(true);
 }
+
 
 
 MultiMagSEStar*  MultiMagSEStarList::FindEllipticClosest(double xx, double yy, double dilatation, double RadMin, double Radius) const
@@ -521,6 +659,53 @@ MultiMagSEStarList::ComputeAlphaDelta(const FitsHeader & head)
       wcs->apply(star->x,star->y,star->alpha ,star->delta); 
     }
 }
+
+int MultiMagSEStarList::GetBandNumber(string band)
+{
+  if (GlobVal().HasKey(band) )
+    return((int)(GlobVal().getDoubleValue(band)));
+  else
+    return(-1);
+}
+
+void MultiMagSEStarList::SetBandNumber(string band, int n)
+{
+  GlobVal().AddKey(band,n);
+  return;
+}
+
+int MultiMagSEStarList::GetNBand()
+{
+  if (GlobVal().HasKey("NBAND") )
+    return((int)(GlobVal().getDoubleValue("NBAND")));
+  else
+    return(0);
+}
+void MultiMagSEStarList::SetNBand(int n)
+{
+  if ( ! GlobVal().HasKey("NBAND") )
+    GlobVal().AddKey("NBAND",n);
+  else
+    GlobVal().setDoubleValue("NBAND",n);
+  return ;
+}
+
+int MultiMagSEStarList::MatchToOtherList(BaseStarList *l)
+{
+  CountedRef<Gtransfo> identity = new GtransfoLin(); 
+  BaseStarList *L1 = (BaseStarList*) this ;
+  double d_max =  1000.; // il faudra faire un cut dessus par la suite !
+  StarMatchList *lmatch = ListMatchCollect(*L1, *l, identity, d_max);
+  for(StarMatchIterator it = lmatch->begin() ; it != lmatch->end(); it++)
+    {
+      MultiMagSEStar *mstar  = (*it).s1 ;
+      mstar->star = (*it).s2 ;
+      mstar->star_dist = sqrt( (mstar->x-((*it).s2)->x)*(mstar->x-((*it).s2)->x)+(mstar->y-((*it).s2)->y)*(mstar->y-((*it).s2)->y) ) ;
+    }
+  return(lmatch->size());
+}
+
+
 
 
 /************ converters *************/
