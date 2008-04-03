@@ -42,42 +42,6 @@ void Elliptic_Aperture::read(fastifstream& rd )
 
 
 
-void Elliptic_Aperture::SetParameters_Aper(const AperSEStar & star,
-				      const double kron_scale_factor, 
-				      const double kron_radius_min, 
-					   const double RadMin, const double Radius)
-{ 
-  if (star.gflag == BAD_GAUSS_MOMENTS)
-    is_good = -1 ;
-  
-  xc = star.X();
-  yc = star.Y() ;
-  a = star.ga ;
-  b = star.gb ;
-  angle = star.gangle ;
-
-  // cela donne  :
-  double temp2 =  star.gmxx* star.gmyy- star.gmxy* star.gmxy; // normalement protege dans SExtractor (scan.c) contre valeur trop petite
-  cxx =  star.gmxx /temp2;
-  cyy =  star.gmxx/temp2;
-  cxy = -2.* star.gmxy/temp2;
-  kron_factor =  star.gkrad * kron_scale_factor ; // correspond autoparam[0] !
-  if ( kron_factor < kron_radius_min )
-    kron_factor = kron_radius_min ; // correspond autoparam[1] !
-  fixradius = -1 ;
-  is_circle=-1;
-  double radmin = 0 ;
-  if (RadMin > radmin)
-    radmin = RadMin;
-  if (kron_factor * sqrt(a*b) <=  radmin)
-    {
-      cxx = 1. ;
-      cyy = 1. ;
-      cxy = 0. ;
-      fixradius = Radius ;
-      is_circle=1;
-    }
-}
 
 void Elliptic_Aperture::SetParameters(const SEStar & star, 
 				      const double dilatation, 
