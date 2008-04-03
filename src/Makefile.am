@@ -102,7 +102,6 @@ dicstar.h \
 wcsutils.h       \
 toadscards.h     \
 datacards.h      \
-dynccd.h         \
 datdetec.h       \
 countedref.h     \
 basestar.h       \
@@ -122,7 +121,6 @@ sextractor_box.h \
 reducedutils.h   \
 dimage.h           \
 detection.h        \
-dodetection.h      \
 allreducedimage.h  \
 dbimage.h  dbconfigexception.h        \
 imagelist.h        \
@@ -139,7 +137,6 @@ convtemplate.h \
 kernelfit.h \
 psfmatch.h  \
 swarpstack.h    \
-night.h     \
 nightelement.h  \
 histopeakfinder.h \
 apersestar.h \
