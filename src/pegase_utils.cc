@@ -6,6 +6,8 @@
 #include <cmath>
 
 #define DELL_LIM 1.5
+#define ZPEG_COMMANDE "/afs/in2p3.fr/throng/snovae/softsnls/pegase/zpeg_5.1/src/zpeg "
+//#define ZPEG_COMMANDE "/afs/in2p3.fr/throng/snovae/softsnls/pegase/zpeg/project/bin/zpeg "
 
 static bool Isu_InFile(string file_name)
 {
@@ -47,7 +49,7 @@ static bool IsBV_InFile(string file_name)
 
 
 // (BV) + (u) + griz
-void PegaseHeader(ofstream & prp, bool with_u, bool with_BV)
+void PegaseHeader(ofstream & prp, bool with_u, bool with_BV, bool use_AB)
 {
 
   string pegase_bands = "g eg r er i ei z ez" ;
@@ -70,22 +72,34 @@ void PegaseHeader(ofstream & prp, bool with_u, bool with_BV)
     prp << "##WITH_u" << endl ;
   if (with_BV)
     prp << "##WITH_BV" << endl ;
-  PegaseHeader_(prp, pegase_bands, pegase_filters, nband);
+  PegaseHeader_(prp, pegase_bands, pegase_filters, nband, use_AB);
 }
 
 
 
-void PegaseHeader_(ofstream & prp,string peg_bands, string peg_filters, int nband)
+void PegaseHeader_(ofstream & prp,string peg_bands, string peg_filters, int nband, bool use_AB)
 {
   prp << "##name z d ra dec " << peg_bands << endl ;
   prp << "# FORMAT (a12,1x,f12.4,1x,f12.2,1x,f12.5,1x,f12.5,1x,"<< nband<<"(1x,f12.3,1x,f12.3))" << endl ;
   prp << "# FILTERS " << peg_filters << endl ;
   prp << "# CALIBTYPES " ;
-  for(int k=0;k<nband;k++)
+  if (! use_AB )
     {
-      prp << "VEGA";
-      if (k<nband-1) prp <<",";
+      for(int k=0;k<nband;k++)
+	{
+	  prp << "VEGA";
+	  if (k<nband-1) prp <<",";
+	}
     }
+  else
+    {
+      for(int k=0;k<nband;k++)
+	{
+	  prp << "AB";
+	  if (k<nband-1) prp <<",";
+	}
+    }
+    
   prp << endl ;
   prp << setfill(' ');
   prp  << setiosflags(ios::fixed) ;
@@ -108,23 +122,7 @@ void PrintPegase(ofstream & prp, string sn_name, double in_x, double in_y, doubl
 }
 
 
-bool LookInFile(DictFile & in_file, string sn_name, DictFileIterator &vu)
-{
-  //cerr << "Looking for " << sn_name << endl ;
-  for(DictFileIterator sn =  in_file.begin(); sn != in_file.end(); sn++)
-    {
-      DictFileEntry entry = *sn ;
-      string name = entry.Value("name");
-      if (name == sn_name)
-	{
-	  //cerr << sn_name << " found " << endl ;
-	  vu = sn;
-	  return(true);
-	}
-    }
-  //cerr << sn_name << " NOT found " << endl ;
-  return(false);
-}
+
 
 
 void ReadPegaseInFile(string file_name, DictFile & peg_file, bool & with_u, bool & with_BV)
@@ -175,17 +173,55 @@ void ReadPegaseInFile(string file_name, DictFile & peg_file, bool & with_u, bool
 }
 
 
-void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool with_BV)
+void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool with_BV, bool is_host_list, bool use_AB)
 {
   ofstream pr(file_name.c_str());
-  PegaseHeader(pr,with_u, with_BV); 
+  PegaseHeader(pr,with_u, with_BV, use_AB); 
   for(DictFileIterator sn =  peg_file.begin(); sn != peg_file.end(); sn++)
     {
-      string name = sn->Value("name");
-      double z = sn->Value("z");
-      double delln = sn->Value("delln");
-      double ra = sn->Value("ra");
-      double dec = sn->Value("dec");
+      string name ;
+      double z, delln, ra, dec ;
+      if (is_host_list)
+	{
+	  if (sn->HasKey("hostname"))
+	    {
+	       string s = sn->Value("hostname");
+	       name = s ;
+	    }
+	  else
+	    {
+	      if (sn->HasKey("name"))
+		{
+		  string s = sn->Value("name");
+		  name = s ;
+		}
+	      else
+		cerr << "no name in dictfile : pegase_utils " << endl ;
+	    }
+	  z = sn->Value("z");
+	  delln = sn->Value("d_elln");
+	  ra = sn->Value("rah");
+	  dec = sn->Value("dech");
+	}
+      else
+	{
+	  string s  = sn->Value("name");
+	  name = s ;
+	  z = sn->Value("z");
+	  delln = sn->Value("delln");
+	  if ( !(sn->HasKey("ra")) && !(sn->HasKey("RA")) )
+	    cerr << "list has no ra or RA key " << endl ;
+	  if ( !(sn->HasKey("dec")) && !(sn->HasKey("Dec")) )
+	    cerr << "list has no dec or Dec key " << endl ;
+	  if (sn->HasKey("ra"))
+	      ra = sn->Value("ra");
+	  if (sn->HasKey("RA"))
+	      ra = sn->Value("RA");
+	  if (sn->HasKey("dec"))
+	      dec = sn->Value("dec");
+	  if (sn->HasKey("Dec"))
+	      dec = sn->Value("Dec");
+	}
       PrintPegase(pr, name, z, delln, ra,dec);
       double mag, emag ;
       // B et V
@@ -211,14 +247,32 @@ void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool 
     }
   pr.close();
 }
-  
 
-  
+
 void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr, 
 	     bool is_z_fixed, bool with_u, bool with_BV)
-{
+{ 
+  string file_in1 = file_in ;
+  string file_out1 = file_out ;
+
+  string workdir = "." ;
+  char *tdir = getenv("ZPEG_WORK_DIR");
+  if (tdir) 
+    {
+      workdir = tdir ;
+      file_in1 = workdir + "/temp_pegase.in" ;
+      file_out1 = workdir + "/temp_pegase.out" ; 
+      string command1 = "cp " + file_in + " " + file_in1;
+      cerr << "Running : " << command1 << endl;
+      system(command1.c_str());
+    }
+
+
   string template_file = "templates";
-  string monpar_file = "monpar";
+  string monpar_file = "monpar"; 
+  string idl_file =  workdir+"/essai" ;
+
+ 
   if (is_age_cstr)
     {
       template_file += "_age_cstr" ;
@@ -227,128 +281,278 @@ void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr,
   if (is_z_fixed)
     {
       template_file += "_zfix" ;
-      monpar_file += "_zfix" ;
+      monpar_file += "_zfix" ; 
+      idl_file += "_zfix" ;
     }
   if (with_u)
     template_file += "_u" ;
   if (with_BV)
     template_file += "_BV" ;
-  template_file += ".tmp" ;
-  monpar_file += ".par" ;
 
+  template_file += ".tmp" ;
+  monpar_file += ".par" ; 
+  idl_file += ".pro" ;
+  bool is_template_file_here = true ;
   if ( !FileExists( dir+"/"+template_file ) )
-    cerr << "missing " <<  dir+"/"+template_file << " for running zpeg " << endl ;
+    {
+      cerr << "missing " <<  dir+"/"+template_file << " for running zpeg " << endl ;
+      cerr << workdir+"/"+template_file << " will be created"  << endl ;
+      is_template_file_here = false ;
+    }
   if ( !FileExists(dir+"/"+monpar_file ) )
     cerr << "missing " <<  dir+"/"+monpar_file << " for running zpeg " << endl ;
 
-  string command = "cp " + dir + "/effective_filter*.dat  . " ;
+
+  string command = "cp " + dir + "/effective_filter*.dat  " + workdir;
   cerr << "Running : " << command << endl;
   system(command.c_str());
 
-  command = "rm -f " + file_out ;
+  command = "cd " + workdir + " ; rm -f " + file_out1 ;
   cerr << "Running : " << command << endl;
   system(command.c_str());
 
-  command = "ln -fs " + dir + "/" + template_file + " " + template_file ;
-  cerr << "Running : " << command<< endl ;
-  system(command.c_str());
+  if (is_template_file_here)
+    {
+      command = "cd " + workdir + " ; ln -fs " + dir + "/" + template_file + " " + template_file ;
+      cerr << "Running : " << command<< endl ;
+      system(command.c_str());
+    }
+  else
+    {
+      // comme le template n'est pas ds le repertoire des file de pegase
+      // on le creera sur place - il faut s'assurer qu'il n'y en a pas 
+      // deja un qui pourtrait ne pas correspondre
+      command = "cd " + workdir + " ; rm -f " + template_file ;
+      cerr << "Running : " << command<< endl ;
+      system(command.c_str());
+    }
 
-  command = "ln -fs " + dir + "/" + monpar_file + " " + monpar_file ;
+  command = "cd " + workdir + " ;ln -fs " + dir + "/" + monpar_file + " " + monpar_file ;
   cerr << "Running : " << command << endl ;
   system(command.c_str());
 
   
-  command = "zpeg " + file_in + " -t " + template_file + " -p " +  monpar_file + " -o " + file_out + " > zpeg.log 2>&1" ;
+  command = "cd " + workdir + " ; " + ZPEG_COMMANDE + file_in1 + " -t " + template_file + " -p " +  monpar_file + " -o " + file_out1 + " > zpeg.log 2>&1" ;
   cerr << "Running : " << command << endl;
   system(command.c_str());
 
-  string idl_file = "essai.pro" ;
+  command = "cd " + workdir + " ; cat zpeg.log " ;
+  cerr << "Running : " << command << endl;
+  system(command.c_str());
+
   {ofstream pr(idl_file.c_str());
-  pr << "plot_zpegfits_silence,'"+file_out+"',/zpeg_scen,/reread" << endl ;
+  pr << "plot_zpegfits_silence,'"+file_out1+"',/zpeg_scen,/reread" << endl ;
   pr << "retall" << endl << "exit" << endl ;
   pr.close();
   }
   string command_to_plot_2 = "setenv IDL_STARTUP " + idl_file + " ; idl " ;
-  cerr << command_to_plot_2 << endl ;
+  cerr << "to obtain the plots with idl : " << command_to_plot_2 << endl ;
   //system(command_to_plot_2.c_str()); 
 
-  command = "rm -f  " + monpar_file + " " + monpar_file ;
+  command = "cd " + workdir + " ; rm -f  " + monpar_file + " " + monpar_file ;
   cerr << "Running : " << command << endl ;
   system(command.c_str());
- command = "rm -f  effective_filter*.dat" ;
+ command = "cd " + workdir + " ; rm -f  effective_filter*.dat" ;
   cerr << "Running : " << command << endl ;
   system(command.c_str());
+
+  if (tdir) 
+    {     
+      string command1 = "cp " + file_out1 + " " + file_out;
+      cerr << "Running : " << command1 << endl;
+      system(command1.c_str());
+    }
+
+
 
 }
 
 
-static void AddPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool with_BV)
+string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
 {
+  N = 42 ;
+  if (with_BV) 
+    N += 8 ;
+  if (with_u) 
+    N += 4 ;
 
-  peg_file_out.AddKey("zp"+suffixe);
-  peg_file_out.AddKey("zp_min"+suffixe);
-  peg_file_out.AddKey("zp_max"+suffixe);
-  peg_file_out.AddKey("sm"+suffixe);//stellar mass
-  peg_file_out.AddKey("sm_min"+suffixe);
-  peg_file_out.AddKey("sm_max"+suffixe);
-  peg_file_out.AddKey("tmp"+suffixe);
-  peg_file_out.AddKey("age"+suffixe);
-  peg_file_out.AddKey("a_dist"+suffixe); //alpha parameter  
-  peg_file_out.AddKey("ebv"+suffixe); 
-  peg_file_out.AddKey("ssfr"+suffixe);
-  peg_file_out.AddKey("ssfr_min"+suffixe);
-  peg_file_out.AddKey("ssfr_max"+suffixe);
-  peg_file_out.AddKey("sfr"+suffixe);
-  peg_file_out.AddKey("sfr_min"+suffixe);
-  peg_file_out.AddKey("sfr_max"+suffixe);
-  peg_file_out.AddKey("scm"+suffixe);//stellar contain mass M star + M WD
-  peg_file_out.AddKey("scm_min"+suffixe);
-  peg_file_out.AddKey("scm_max"+suffixe);
-  peg_file_out.AddKey("stm"+suffixe);// total mass formed stars
-  peg_file_out.AddKey("stm_min"+suffixe);
-  peg_file_out.AddKey("stm_max"+suffixe);
+  string * tab_keys = new string[500] ;
+
+  int n = 0 ;
+
+  /*if (first_sol)
+    {
+      
+      tab_keys[n] = "xi2" ; n++ ;
+      tab_keys[n] = "nsol" ; n++ ;
+      N +=2 ;
+      }*/
+
+  tab_keys[n] = "zp" ; n++ ;
+ tab_keys[n] = "zp_min" ; n++ ;
+ tab_keys[n] = "zp_max" ; n++ ;
+ tab_keys[n] = "sm" ; n++ ;//stellar mass
+ tab_keys[n] = "sm_min" ; n++ ;
+ tab_keys[n] = "sm_max" ; n++ ;
+ tab_keys[n] = "tmp" ; n++ ;
+ tab_keys[n] = "age" ; n++ ;
+ tab_keys[n] = "a_d" ; n++ ; //alpha parameter  
+ tab_keys[n] = "ebv" ; n++ ;
+ 
+ tab_keys[n] = "xi2" ; n++ ; 
+
+ tab_keys[n] = "ssfr" ; n++ ; // sfr - stellar mass = sfr - sm
+ tab_keys[n] = "ssfr_min" ; n++ ;
+ tab_keys[n] = "ssfr_max" ; n++ ;
+ tab_keys[n] = "sfr" ; n++ ;
+ tab_keys[n] = "sfr_min" ; n++ ;
+ tab_keys[n] = "sfr_max" ; n++ ;
+ tab_keys[n] = "scm" ; n++ ;//stellar contain mass M star + M WD
+ tab_keys[n] = "scm_min" ; n++ ;
+ tab_keys[n] = "scm_max" ; n++ ;
+ tab_keys[n] = "stm" ; n++ ;// total mass formed stars
+ tab_keys[n] = "stm_min" ; n++ ;
+ tab_keys[n] = "stm_max" ; n++ ;
+ tab_keys[n] = "sta" ; n++ ;// ages of  formed stars
+ tab_keys[n] = "sta_min" ; n++ ;
+ tab_keys[n] = "sta_max" ; n++ ;
   if (with_BV)
     {
-      peg_file_out.AddKey("mabsb"+suffixe); // mag abs B
-      peg_file_out.AddKey("mabsv"+suffixe); // mag abs V
+     tab_keys[n] = "mab" ; n++ ; // mag abs B
+     tab_keys[n] = "mav" ; n++ ; // mag abs V
     }
   if (with_u)
     {
-      peg_file_out.AddKey("mabsu"+suffixe); // mag abs
+     tab_keys[n] = "mau" ; n++ ; // mag abs
     }
-  peg_file_out.AddKey("mabsg"+suffixe);
-  peg_file_out.AddKey("mabsr"+suffixe);
-  peg_file_out.AddKey("mabsi"+suffixe);
-  peg_file_out.AddKey("mabsz"+suffixe);
+ tab_keys[n] = "mag" ; n++ ;
+ tab_keys[n] = "mar" ; n++ ;
+ tab_keys[n] = "mai" ; n++ ;
+ tab_keys[n] = "maz" ; n++ ;
+ // mag abs min
   if (with_BV)
     {
-      peg_file_out.AddKey("tmp_mb"+suffixe); // template mag
-      peg_file_out.AddKey("tmp_mb_min"+suffixe);
-      peg_file_out.AddKey("tmp_mb_max"+suffixe);
-      peg_file_out.AddKey("tmp_mv"+suffixe); // template mag
-      peg_file_out.AddKey("tmp_mv_min"+suffixe);
-      peg_file_out.AddKey("tmp_mv_max"+suffixe);
+     tab_keys[n] = "mab_min" ; n++ ;
+     tab_keys[n] = "mav_min" ; n++ ;
     }
   if (with_u)
     {
-      peg_file_out.AddKey("tmp_mu"+suffixe); // template mag
-      peg_file_out.AddKey("tmp_mu_min"+suffixe);
-      peg_file_out.AddKey("tmp_mu_max"+suffixe);
+     tab_keys[n] = "mau_min" ; n++ ;
     }
-  peg_file_out.AddKey("tmp_mg"+suffixe);
-  peg_file_out.AddKey("tmp_mg_min"+suffixe);
-  peg_file_out.AddKey("tmp_mg_max"+suffixe);
-  peg_file_out.AddKey("tmp_mr"+suffixe);
-  peg_file_out.AddKey("tmp_mr_min"+suffixe);
-  peg_file_out.AddKey("tmp_mr_max"+suffixe);
-  peg_file_out.AddKey("tmp_mi"+suffixe);
-  peg_file_out.AddKey("tmp_mi_min"+suffixe);
-  peg_file_out.AddKey("tmp_mi_max"+suffixe);
-  peg_file_out.AddKey("tmp_mz"+suffixe);
-  peg_file_out.AddKey("tmp_mz_min"+suffixe);
-  peg_file_out.AddKey("tmp_mz_max"+suffixe);
+ tab_keys[n] = "mag_min" ; n++ ;
+ tab_keys[n] = "mar_min" ; n++ ;
+ tab_keys[n] = "mai_min" ; n++ ;
+ tab_keys[n] = "maz_min" ; n++ ;
+ // mag abs max
+  if (with_BV)
+    {
+     tab_keys[n] = "mab_max" ; n++ ; 
+     tab_keys[n] = "mav_max" ; n++ ; 
+    }
+  if (with_u)
+    {
+     tab_keys[n] = "mau_max" ; n++ ;
+    }
+ tab_keys[n] = "mag_max" ; n++ ;
+ tab_keys[n] = "mar_max" ; n++ ;
+ tab_keys[n] = "mai_max" ; n++ ;
+ tab_keys[n] = "maz_max" ; n++ ;
+
+
+
+  if (with_BV)
+    {
+     tab_keys[n] = "t_mb" ; n++ ; // template mag
+     //tab_keys[n] = "t_mb_min" ; n++ ;
+     //tab_keys[n] = "t_mb_max" ; n++ ;
+     tab_keys[n] = "t_mv" ; n++ ; // template mag
+     //tab_keys[n] = "t_mv_min" ; n++ ;
+     //tab_keys[n] = "t_mv_max" ; n++ ;
+    }
+  if (with_u)
+    {
+     tab_keys[n] = "t_mu" ; n++ ; // template mag
+     //tab_keys[n] = "t_mu_min" ; n++ ;
+     //tab_keys[n] = "t_mu_max" ; n++ ;
+    }
+ tab_keys[n] = "t_mg" ; n++ ;
+ //tab_keys[n] = "t_mg_min" ; n++ ;
+ //tab_keys[n] = "t_mg_max" ; n++ ;
+ tab_keys[n] = "t_mr" ; n++ ;
+ //tab_keys[n] = "t_mr_min" ; n++ ;
+ //tab_keys[n] = "t_mr_max" ; n++ ;
+ tab_keys[n] = "t_mi" ; n++ ;
+ //tab_keys[n] = "t_mi_min" ; n++ ;
+ //tab_keys[n] = "t_mi_max" ; n++ ;
+ tab_keys[n] = "t_mz" ; n++ ;
+ //tab_keys[n] = "t_mz_min" ; n++ ;
+ //tab_keys[n] = "t_mz_max" ; n++ ;
+ cerr << "Pegase keys : " << n << " " << N << endl ;
+ //for (int ii = 0 ; ii < n ; ii++)
+ //  cerr << tab_keys[ii] << endl ;
+ if (n != N )
+   cerr << "Problem in pegase keys : " << n << " " << N << endl ;
+ 
+ return (tab_keys);
+}
+
+void AddPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool with_BV)
+{
+  
+  int Nkeys = 0 ;
+  cerr << "Creating pegase keys " << endl ;
+  string *tab_keys  = PegaseKeys(Nkeys, with_u, with_BV);
+  cerr << Nkeys << " keys created " << endl ;
+  for(int ii = 0 ; ii < Nkeys ; ii++)
+    {
+      string key = tab_keys[ii]+suffixe ;
+      //cerr << key << endl ;
+      peg_file_out.AddKey(key);
+    }
+  delete [] tab_keys ;
   return ;
 }
+
+
+
+
+
+void CheckPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool with_BV)
+{
+  
+  int Nkeys = 0 ;
+  cerr << "Check pegase keys " << endl ;
+  string *tab_keys  = PegaseKeys(Nkeys, with_u, with_BV);
+  cerr << Nkeys << " keys created " << endl ;
+  for(int ii = 0 ; ii < Nkeys ; ii++)
+    {
+      string key = tab_keys[ii]+suffixe ;
+
+      for(DictFileIterator it =  peg_file_out.begin() ; it != peg_file_out.end() ; it++)
+	{
+	 
+	  string res = it->Value(key); 
+	  //cerr << res << endl ;
+	  if ( res == "*******")
+	    {
+	      cerr << "### " << key << " " << res << endl ;
+	      double u = -99 ;
+	      it->ModKey(key,u);
+	    }
+	  if (StringMatchPattern(res.c_str(),"*+*")   && !StringMatchPattern(res.c_str(),"*E+*") && !StringMatchPattern(res.c_str(),"+*") )
+	    {
+	      cerr << "### " << key << " " << res << endl ;
+	      double u = -99 ;
+	      it->ModKey(key,u);
+	    }
+	}
+    }
+  delete [] tab_keys ;
+  return ;
+}
+
+
+
 
 static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BV)
 {
@@ -388,18 +592,20 @@ static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BV)
   with_BV = with_B ;
   return ;
 }
-void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u, bool & with_BV)
+void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u, bool & with_BV, bool oui_append)
 {
   is_ubv_in_outfile(file_name, with_u,with_BV);
   ifstream rd(file_name.c_str());
   char c ;
   char buff[4096];
+  if ( ! oui_append )
+    {
   peg_file_out.AddKey("name");
   peg_file_out.AddKey("z");  //x
   peg_file_out.AddKey("delln"); //y
   peg_file_out.AddKey("ra");
   peg_file_out.AddKey("dec");
-  peg_file_out.AddKey("bestxi2");
+  peg_file_out.AddKey("bxi2"); // best xi2
   peg_file_out.AddKey("nband");
   peg_file_out.AddKey("nsol");
   peg_file_out.AddKey("zmax_vu");
@@ -432,7 +638,7 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
   AddPegaseKeys(peg_file_out,"2", with_u, with_BV);
   AddPegaseKeys(peg_file_out, "3", with_u, with_BV);
   AddPegaseKeys(peg_file_out, "4", with_u, with_BV);
-
+    }
   
   while( rd >> c ) // to test eof
     {
@@ -446,153 +652,117 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
 	  peg_file_out.push_back(DictFileEntry(buffer.c_str(),peg_file_out));
 	}
     }
-
+  CheckPegaseKeys(peg_file_out, "", with_u, with_BV);
+  CheckPegaseKeys(peg_file_out, "1", with_u, with_BV);
+  CheckPegaseKeys(peg_file_out, "2", with_u, with_BV);
+  CheckPegaseKeys(peg_file_out, "3", with_u, with_BV);
+  CheckPegaseKeys(peg_file_out, "4", with_u, with_BV);
 }
 
 
-void Analysis_DZ(DictFile & peg_file_out, double & dz_mean, double &  dz_sig, double zmin, double zmax, bool quiet)
-{
-  double dz_max = 0.1 ;
-  int Noff = 0 ;
-  int n = 0 ;
-  double *DZtab = new double[peg_file_out.size()] ;
-  for(DictFileIterator sn =  peg_file_out.begin(); sn != peg_file_out.end(); sn++)
-    {
-      string name = sn->Value("name");
-      double z = sn->Value("z");
-      double delln = sn->Value("delln");
-      if ((z > zmin) && (z < zmax) && (delln < DELL_LIM ))
-	{
-	  double zp  = sn->Value("zp");
-	  double dz  = zp - z ;
-	  if (fabs(dz) > dz_max)
-	    {
-	      if (!quiet) cerr << "OFFDZ : " << name << " " << z << " " << zp << " " << dz << endl ;
-	      Noff++;
-	    }
-	  DZtab[n] = dz ;
-	  n++;
-	}
-    }
-  cerr <<  "OFFDZ : " << peg_file_out.size() <<  " " << Noff << endl ;
-  double sigdz= 0 , mdz =0;
-  double k = 3 ;
-  int niter = 3 ;
-  mdz = clipmean(DZtab, n , sigdz,k, niter);
-  cerr << "dz moyenne, rms, nval : " << mdz << " " << sigdz << " " << n << endl ;
-  delete[] DZtab ;
-  dz_mean = mdz ;
-  dz_sig = sigdz ;
-  return ;
-}
-void Analysis_DZ_over_1plusZ(DictFile & peg_file_out, double & dz_mean, double &  dz_sig, double zmin, double zmax, bool quiet)
-{
-  double dzz_max = 0.2 ;
-  int Noff = 0 ;
-  int n = 0 ;
-  double *DZtab = new double[peg_file_out.size()] ;
-  string pegmag5[5] = {"mu","mg","mr","mi","mz"} ;
-  int nok=0;
-  for(DictFileIterator sn =  peg_file_out.begin(); sn != peg_file_out.end(); sn++)
-    {
-      string name = sn->Value("name");
-      double z = sn->Value("z");
-      double delln = sn->Value("delln");
-      bool is_ok  = true ;
-      if ( z < zmin )
-	is_ok  = false ;
-      if ( z > zmax )
-	is_ok  = false ;
-      if (delln > DELL_LIM )
-	is_ok  = false ;
-      for(int ib = 0 ; ib <5; ib++)
-	{
-	  if (sn->HasKey(pegmag5[ib]))
-	    {
-	      double em =  sn->Value("e"+pegmag5[ib]);
-	      if (em > 0.1)
-		is_ok  = false ;		  
-	    }
-	    }
-      double mg =  sn->Value("mg");
-      if (mg > 25.5 )
-	is_ok  = false ;
 
-      if (is_ok)
-	{
-	  nok++;
-	  double zp  = sn->Value("zp");
-	  double dz  = (zp - z)/(1+z) ;
-	  if (fabs(dz) > dzz_max)
-	    {
-	      if (!quiet) cerr << "OFFDZ/(1+Z) : " << name << " " << z << " " << zp << " " << dz << endl ;
-	      Noff++;
-	    }
-	  
-	  DZtab[n] = dz ;
-	  n++;
-	    
-	}
-    }
+//============== decodages des types ===============
 
-  cerr <<  "DZ/(1+Z) : " << peg_file_out.size() <<  " nok : " << nok << "  noff : " << Noff << endl ;
-  double sigdz= 0 , mdz =0;
-  double k = 3 ;
-  int niter = 3 ;
-  mdz = clipmean(DZtab, n , sigdz,k, niter);
-  cerr << "dz/(1+z) moyenne, rms, nval : " << mdz << " " << sigdz << " " << n << endl ;
-  delete[] DZtab ;
-  dz_mean = mdz ;
-  dz_sig = sigdz ;
-  return ;
+
+//E-S0 =0
+bool IsPegaseEll(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  return(IsPegaseEll(tmpf));
 }
 
-void Analysis_DM(DictFile & peg_file_out, double *dm_mean, double *dm_sig, int nband, double zmin, double zmax, bool corr)
-{
-  string pegmag4[4] = {"mg","mr","mi","mz"} ;
-  string pegmag5[5] = {"mu","mg","mr","mi","mz"} ;
-  string *pegmag = pegmag4 ;
-  if (nband==5) pegmag = pegmag5 ;
-
-  for (int ib = 0 ; ib < nband; ib++)
-    {
-      
-      int n = 0 ;
-      double *DMtab = new double[peg_file_out.size()] ;
-      for(DictFileIterator sn =  peg_file_out.begin(); sn != peg_file_out.end(); sn++)
-	{
-	  
-	  double m_mes = sn->Value(pegmag[ib]);
-	  double m_t = sn->Value("tmp_"+pegmag[ib]);
-	  double z = sn->Value("z");
-	  //cerr << m_mes << " " << m_t << endl ;
-	  if ((z > zmin) && (z < zmax) && (m_t > 0 ) && (m_t < 90))
-	    {
-	      DMtab[n] = m_t - m_mes ;
-	      n++;
-	    }
-	}
-    
-      double sigdm= 0 , mdm =0;
-      double k = 3 ;
-      int niter = 3 ;
-      mdm = clipmean(DMtab, n , sigdm,k, niter);
-      cerr << "dm " << pegmag[ib] << " moyenne, rms, nval : " << mdm << " " << sigdm << " " << n << endl ;
-      delete[] DMtab ;
-      dm_mean[ib] = mdm ;
-      dm_sig[ib] = sigdm ;
-    }
-
-  if (corr)
-    {
-      for(DictFileIterator sn =  peg_file_out.begin(); sn != peg_file_out.end(); sn++)
-	{
-	  for (int ib = 0 ; ib < nband; ib++)
-	    {	      
-	      double m_mes = sn->Value(pegmag[ib]);
-	      sn->ModKey(pegmag[ib], m_mes+dm_mean[ib]) ;
-	    }
-	}
-    }
-  return ;
+bool IsPegaseEll(double tmpf)
+{  
+  
+  if ( (tmpf == 1 ) || (tmpf == 2 ))
+    return true ;
+  else
+    return false ;
 }
+
+bool IsPegaseSa(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( fabs(tmpf-3)<1.e-2 ) //==3
+    return true ;
+  else
+    return false ;
+}
+bool IsPegaseSb(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( fabs(tmpf-4)<1.e-2 ) //==4
+    return true ;
+  else
+    return false ;
+}
+bool IsPegaseSbc(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( fabs(tmpf-5)<1.e-2 ) //==5
+    return true ;
+  else
+    return false ;
+}
+
+bool IsPegaseSc(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( fabs(tmpf-6)<1.e-2 ) //==6
+    return true ;
+  else
+    return false ;
+}
+
+
+bool IsPegaseSd(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if (  fabs(tmpf-7)<1.e-2 ) //==7
+    return true ;
+  else
+    return false ;
+}
+
+bool IsPegaseSpir(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( (tmpf >= 3 ) && (tmpf <= 7 ))
+    return true ;
+  else
+    return false ;
+}
+
+
+//Early Spir : Sa Sb Sbc = 1
+bool IsPegaseEarlySpir(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( (tmpf >= 3 ) && (tmpf <= 5 ))
+    return true ;
+  else
+    return false ;
+}
+
+//Late Spir : Sc Sd = 2
+bool IsPegaseLateSpir(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( (tmpf >= 6 ) && (tmpf <= 7 ))
+    return true ;
+  else
+    return false ;
+}
+
+//Irr SB = 3
+bool IsPegaseIrr(DictFileIterator line)
+{  
+  double tmpf = line->Value("tmpf") ;
+  if ( (tmpf >= 8 ) && (tmpf <= 9 ))
+    return true ;
+  else
+    return false ;
+}
+
+
+
