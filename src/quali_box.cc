@@ -87,43 +87,7 @@ Test_Qual(int N, const Image ** tabimg, double *X, double * Y,  double * Fond,
 }
 
 
-#ifdef OLD_BUGGED_ROUTINE
-void
-Test_Qual_3(StarMatchList & liste, Image & imgr,  Image & imgc,  
-	  Image & imgsub,  double Fond[3], double SigFond[3], 
-	    int dtaille, ostream & pr)
-{
-  int N = 3 ;
-  QualiWriteHeader(N,pr);
 
-  // 1ref + 1cur + 1sub
-  const Image *tabpimg[3] ;
-  tabpimg[0] = &imgr ;
-  tabpimg[1] = &imgc ;
-  tabpimg[2] = &imgsub ;
-
-  for (StarMatchIterator it= liste.begin(); it!= liste.end(); it++)
-    {
-      StarMatch starm = *it ;
-
-
-      SEStar * pstar1 = (SEStar *) starm.s1;
-      SEStar * pstar2 = (SEStar *) starm.s2;
-      double X[3];
-      X[0] = pstar1->x  ;
-      X[1] = pstar2->x  ;
-      X[2] = pstar2->x  ;
-      double Y[3];
-      Y[0] = pstar1->y  ;
-      Y[1] = pstar2->y   ;
-      Y[2] = pstar2->y   ;
-
-      Test_Qual(N, tabpimg, X, Y, Fond,SigFond, dtaille, pr, );
-
-    }
-
-}
-#endif
 static 
 int GoodForQualTest(StarMatchList & liste, double saturation, 
 			  double prctage, int N_max)
