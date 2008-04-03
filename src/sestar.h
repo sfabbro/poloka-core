@@ -16,19 +16,6 @@ class fastifstream;
 
 //********************   DEFINITION SEStar   *********************
 
-// pixel de coordonnees (i=0, j=0) a pour coordonnees
-// pour nous (x=0., y=0.) et pour SExtractor (xse = 1, yse=1)
-// see analyse.c
-
-
-// si on ajoute -1 au cat SExtractor, alors SE==IJ
-#define DECALAGE_CAT_SE -1.0
-
-#define DECALAGE_SE_IJ 0.
-#define DECALAGE_IJ_SE 0.
-
-#define DECALAGE_SE_XY (DECALAGE_SE_IJ + DECALAGE_IJ_XY ) // 0. 
-#define DECALAGE_XY_SE (DECALAGE_XY_IJ + DECALAGE_IJ_SE ) // 0. 
 
 
 /*! \file */
@@ -86,20 +73,20 @@ public:
   double Fond()const {return fond;}
 
   //! SExtractor FLUX_AUTO: Flux within a Kron-like elliptical aperture 
-  double Flux_aper() const {return flux_aper;}
+  double Flux_auto() const {return flux_auto;}
 
-  //! SExtractor FLUXERR_AUTO :  RMS error for Flux_aper
- double Eflux_aper() const {return e_flux_aper;} 
+  //! SExtractor FLUXERR_AUTO :  RMS error for Flux_auto
+ double Eflux_auto() const {return e_flux_auto;} 
  
   /* SExtractor FLUX_APER: Flux within a Fixed aperture.
      Not Filled by SExtractor. Can be filled later using a
   routine from photometrie package */
   
-  double Flux_fixaper() const {return flux_fixaper;}
+  double Flux_circ_aper() const {return flux_circ_aper;}
 
   /* DOCF SExtractor FLUXERR_APER :  RMS error for Fluxfix_aper
      Not Filled by SExtractor */
- double Eflux_fixaper() const {return e_flux_fixaper;} 
+ double Eflux_circ_aper() const {return e_flux_circ_aper;} 
  
   //! SExtractor FLUX_ISO: isophotal flux  
   double Flux_iso() const {return flux_iso;}
@@ -175,10 +162,10 @@ public:
   double& EFlux()  {return e_flux;}
   double& Fluxmax()  {return fluxmax;}
   double& Fond()  {return fond;}
-  double& Flux_aper()  {return flux_aper;}
-  double& Eflux_aper()  {return e_flux_aper;} 
-  double& Flux_fixaper()  {return flux_fixaper;}
-  double& Eflux_fixaper()  {return e_flux_fixaper;} 
+  double& Flux_auto()  {return flux_auto;}
+  double& Eflux_auto()  {return e_flux_auto;} 
+  double& Flux_circ_aper()  {return flux_circ_aper;}
+  double& Eflux_circ_aper()  {return e_flux_circ_aper;} 
  
   double& Flux_iso()  {return flux_iso;}
   double& Eflux_iso()  {return e_flux_iso;} 
@@ -255,6 +242,13 @@ private:
   // uniquement appelee par le constructeur, donc private  
 void Set_to_Zero();
 
+  // pour strocker pour test
+public :
+  double local_seeing ;
+  double aper_flux ;
+  double err_aper_flux ;
+  double aper_flux_other ;
+
 protected:
   int num ;
   double xpeak;
@@ -262,10 +256,10 @@ protected:
   double fluxmax ; 
   double e_flux  ; 
   double fond ;
-  double flux_aper  ;
-  double e_flux_aper  ;
-  double flux_fixaper  ;
-  double e_flux_fixaper  ;
+  double flux_auto  ;
+  double e_flux_auto  ;
+  double flux_circ_aper  ;
+  double e_flux_circ_aper  ;
    double flux_iso ; 
   double e_flux_iso ;
   double flux_isocor ; 
@@ -295,8 +289,7 @@ protected:
 //! sort in decreasing peak value above background 
 bool 
 DecFluxMax(const SEStar *S1, const SEStar *S2);
-
-
+bool IncNumber(const SEStar *S1, const SEStar *S2);
 
 
 /********************   FIN DEFINITION SEStar   **********************/

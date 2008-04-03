@@ -129,16 +129,21 @@ SEStar::Set_to_Zero()
   // y_image = y  de BaseStar
   // flux_best = flux de BaseStar  
 
+  local_seeing = 0 ;
+   aper_flux  = 0 ;
+   err_aper_flux = 0  ;
+   aper_flux_other = 0  ;
+
   xpeak = 0 ;  
   ypeak = 0 ;
   fluxmax = 0 ; 
   e_flux  = 0 ;  
   fond = 0. ;
 
-  flux_aper  = 0 ;
-  e_flux_aper  = 0 ;
-  flux_fixaper  = 0 ;
-  e_flux_fixaper  = 0 ;
+  flux_auto  = 0 ;
+  e_flux_auto  = 0 ;
+  flux_circ_aper  = 0 ;
+  e_flux_circ_aper  = 0 ;
   flux_iso = 0 ; 
   e_flux_iso = 0 ;
   flux_isocor = 0 ; 
@@ -180,8 +185,8 @@ SEStar::dumpn(ostream& s) const
   s << " Fluxmax : " << Fluxmax() ;
   s << " EFlux : " << EFlux() ;
   s << " Fond : " << Fond() ;
-  s << " Flux_aper : " << Flux_aper() ;
-  s << " Eflux_aper : " << Eflux_aper() ;
+  s << " Flux_auto : " << Flux_auto() ;
+  s << " Eflux_auto : " << Eflux_auto() ;
   s << " Flux_iso : " << Flux_iso() ;
   s << " Eflux_iso : " << Eflux_iso() ;
   s << " Flux_isocor : " << Flux_isocor() ;
@@ -200,8 +205,8 @@ SEStar::dumpn(ostream& s) const
   s << " Cstar : " << Cstar() ;
   s << " xpeak : " << xpeak ;
   s << " ypeak : " << ypeak ;
-  s << " Flux_fixaper : " << Flux_fixaper() ;
-  s << " Eflux_fixaper : " << Eflux_fixaper() ;
+  s << " Flux_fixaper : " << Flux_circ_aper() ;
+  s << " Eflux_fixaper : " << Eflux_circ_aper() ;
   s << " Number : " << N(); 
   s << " Iterations: " << Iter();
   s << " Chi: " << Chi();
@@ -225,8 +230,8 @@ SEStar::writen(ostream& s)  const
   s << Fluxmax()  << " " ;
   s << EFlux()   << " " ; 
   s << Fond()  << " " ;
-  s << Flux_aper ()  << " " ;
-  s << Eflux_aper()   << " " ;
+  s << Flux_auto ()  << " " ;
+  s << Eflux_auto()   << " " ;
   s << Flux_iso()  << " " ; 
   s << Eflux_iso()  << " " ;
   s << Flux_isocor()  << " " ; 
@@ -247,8 +252,8 @@ SEStar::writen(ostream& s)  const
   s << Ytrunc()  << " " ; 
   s << X_Peak() << " " ;
   s << Y_Peak() << " " ; 
-  s << Flux_fixaper ()  << " " ;
-  s << Eflux_fixaper()   << " " ; 
+  s << Flux_circ_aper ()  << " " ;
+  s << Eflux_circ_aper()   << " " ; 
   s << N()   << " " ; 
   s << Iter() << " ";
   s << Chi() << " ";
@@ -263,8 +268,8 @@ SEStar::read_it(fastifstream& r, const char * Format)
   r >> Fluxmax()  ;
   r >> EFlux()   ; 
   r >> Fond()  ;
-  r >> Flux_aper ()  ;
-  r >> Eflux_aper()   ;
+  r >> Flux_auto ()  ;
+  r >> Eflux_auto()   ;
   r >> Flux_iso()  ; 
   r >> Eflux_iso()  ;
   r >> Flux_isocor()  ; 
@@ -291,8 +296,8 @@ SEStar::read_it(fastifstream& r, const char * Format)
     }
   if (format >=2)
     {
-      r >> Flux_fixaper ()  ;
-      r >> Eflux_fixaper()   ;
+      r >> Flux_circ_aper ()  ;
+      r >> Eflux_circ_aper()   ;
     }
   /* I don't know why this is there, but in the absence of format, it just 
      messes up the whole thing :
@@ -328,11 +333,10 @@ std::string SEStar::WriteHeader_(ostream & pr, const char *i) const
 {
   if (i== NULL) i= "";
   string baseStarFormat =  BaseStar::WriteHeader_(pr, i);
-  pr    << "# fluxmax"<< i <<" : Peak pixel value above background " << endl 
-	<< "# with SExtractor flux = flux_best = fisoc if the object is not  crowded, = faper otherwise. Very close to total flux (5%)" << endl 
+  pr    << "# fluxmax"<< i <<" : Peak pixel value above background " << endl
 	<< "# eflux"<< i <<" : RMS error for  flux " << endl 
 	<< "# fond"<< i <<" :  background " << endl 
-        << "# faper"<< i <<" : Flux within a Kron-like elliptical aperture. The radius is 2.5 * Kron-Radius (see krad param.)" << endl 
+        << "# faper"<< i <<" : Flux within a Kron-like elliptical aperture. The radius is Kron-Radius (see krad param.)" << endl 
 	<< "# efaper"<< i <<" : RMS error for  faper " << endl 
 	<< "# fiso"<< i <<" : isophotal flux " << endl
 	<< "# efiso"<< i <<" : RMS error for  isophotal flux " << endl 
@@ -436,6 +440,12 @@ bool DecFluxMax(const SEStar *S1, const SEStar *S2)
 {
 return (S1->Fluxmax() > S2->Fluxmax());
 }
+
+bool IncNumber(const SEStar *S1, const SEStar *S2)
+{
+  return (S1->N() < S2->N());
+}
+
 
 
 
