@@ -4,7 +4,80 @@
 
 #include "ellipticaper.h"
 #include "sestar.h"
+#include "apersestar.h"
 #include "image.h"
+
+
+
+
+
+
+void Elliptic_Aperture::WriteHeader_(ostream & pr, const char* i) const 
+{
+	if (i== NULL) i= "";
+	pr << "# xc" << i << " : " << endl 
+	   << "# yc" << i << " : " << endl 
+	   << "# a" << i << " : " << endl 
+	   << "# b"<<i<< " :  " << endl 
+	   << "# t" << i << " : " << endl 
+	   << "# cxx" << i << " : " << endl 
+	   << "# cyy" << i << " : " << endl 
+	   << "# cxy" << i << " : " << endl 
+	   << "# krf" << i << " : " << endl 
+	   << "# fixr" << i << " : " << endl 
+	   << "# bck" << i << " : " << endl 
+	    << "# flux" << i << " : " << endl 
+	   << "# eflux" << i << " : " << endl 
+	   << "# nbad" << i << " : " << endl
+	   << "# isc" << i << " : " << endl
+	   << "# isg" << i << " : " << endl;}
+
+ 
+void Elliptic_Aperture::writen(ostream & pr) const {pr << " " << xc << " " << yc << " " << a << " " << b << " " << angle <<  " " << cxx << " " << cyy << " " << cxy << " " << kron_factor << " " << fixradius << " " << background << " " << flux << " " << eflux << " " << nbad << " " << is_circle << " "  << is_good << " " ;}
+
+
+void Elliptic_Aperture::read(fastifstream& rd ) 
+{rd >>xc >>yc >>a >>b >>angle >> cxx >>cyy >>cxy >>kron_factor >>fixradius >>background >>flux >>eflux >>nbad >> is_circle  >> is_good ;}
+
+
+
+
+void Elliptic_Aperture::SetParameters_Aper(const AperSEStar & star,
+				      const double kron_scale_factor, 
+				      const double kron_radius_min, 
+					   const double RadMin, const double Radius)
+{ 
+  if (star.gflag == BAD_GAUSS_MOMENTS)
+    is_good = -1 ;
+  
+  xc = star.X();
+  yc = star.Y() ;
+  a = star.ga ;
+  b = star.gb ;
+  angle = star.gangle ;
+
+  // cela donne  :
+  double temp2 =  star.gmxx* star.gmyy- star.gmxy* star.gmxy; // normalement protege dans SExtractor (scan.c) contre valeur trop petite
+  cxx =  star.gmxx /temp2;
+  cyy =  star.gmxx/temp2;
+  cxy = -2.* star.gmxy/temp2;
+  kron_factor =  star.gkrad * kron_scale_factor ; // correspond autoparam[0] !
+  if ( kron_factor < kron_radius_min )
+    kron_factor = kron_radius_min ; // correspond autoparam[1] !
+  fixradius = -1 ;
+  is_circle=-1;
+  double radmin = 0 ;
+  if (RadMin > radmin)
+    radmin = RadMin;
+  if (kron_factor * sqrt(a*b) <=  radmin)
+    {
+      cxx = 1. ;
+      cyy = 1. ;
+      cxy = 0. ;
+      fixradius = Radius ;
+      is_circle=1;
+    }
+}
 
 void Elliptic_Aperture::SetParameters(const SEStar & star, 
 				      const double dilatation, 
@@ -13,6 +86,14 @@ void Elliptic_Aperture::SetParameters(const SEStar & star,
 {
   xc = star.X();
   yc = star.Y() ;
+  a = star.A() ;
+  b = star.B() ;
+  angle = star.Gyr_Angle() ;
+  if ( star.Gyr_Angle() > 0 )
+    angle = star.Gyr_Angle();
+  else
+    angle =star.Gyr_Angle() + 180. ;
+
   // parametres de l'ellipse d'ouverture: repris de scan.c 
   // resume : les moments mxx, myy, mxy sont calcules d'apres donnees.
   // on definit x' et y' dans le ref rotate de theta. quel theta maximise < x'^2> --> donne theta, A, et B
@@ -37,17 +118,18 @@ void Elliptic_Aperture::SetParameters(const SEStar & star,
 
   kron_factor =  star.Kronradius()* dilatation; 
   fixradius = -1 ;
-  is_circle=false;
+  is_circle=-1;
   double radmin = 0 ;
   if (RadMin > radmin)
     radmin = RadMin;
+  radmin *= dilatation;
   if (kron_factor * sqrt( star.A()* star.B()) <=  radmin)
     {
       cxx = 1. ;
       cyy = 1. ;
       cxy = 0. ;
-      fixradius = Radius ;
-      is_circle=true;
+      fixradius = Radius*dilatation ;
+      is_circle=1;
     }
 }
 // repris de  photom.c (SExtractor)
@@ -63,7 +145,7 @@ void Elliptic_Aperture::SetParameters(const SEStar & star,
 
 // kron_factor = 2.5 * kron_radius, si < 3.5, alors = 3.5
 
-// le kron_factor est bien ce qu'on recupere de SExtractor
+// le kron_factor est bien ce qu'on recupere de SExtractor mais qu'on appelle malencontreusement Kronradius() dans SEStar.
 
 // Apres le calcul du kron_factor, il y a eu dans SE la verification suivante de faite :
 // if (kron_factor * sqrt(A*B) <=  PHOT_AUTOAPER_[1] * 0.5 ) alors kron_factor =0.0 
@@ -81,7 +163,7 @@ void Elliptic_Aperture::SetParameters(const SEStar & star,
 
 void Elliptic_Aperture::computeflux(const Image& I, const Image& W, 
 				    const Image *pC, const Image *pS, 
-				    const double Gain, int segmentation_number)
+				    const double Gain, int segmentation_number, double scale_fact)
 {
   
   double dxlim =0., dylim =0., klim2 = 0. ;
@@ -93,27 +175,27 @@ void Elliptic_Aperture::computeflux(const Image& I, const Image& W,
 
   int thisStarNumber = segmentation_number; // the S (Segmentation) image contains the "num" value of pixels that Sextractor attributed to objects
 
-  if (! is_circle)
+  if (! IsCircle())
     //if (kron_factor * sqrt(A()*B()) >  RadMin)
     //if (kron_factor > 0. )
     {
       // ellipse inscrite dans un rectangle (-dxlim, +dxlim, -dylim, +dylim)
       dxlim = cxx - cxy * cxy /(4. * cyy) ;
       if (dxlim > 0)
-	  dxlim = kron_factor / sqrt(dxlim);
+	  dxlim = kron_factor*scale_fact / sqrt(dxlim);
       else
 	dxlim = 0. ;
       dylim = cyy - cxy * cxy /(4. * cxx) ;
       if (dylim > 0)
-	  dylim = kron_factor / sqrt(dylim);
+	  dylim = kron_factor*scale_fact / sqrt(dylim);
       else
 	dylim = 0. ;
-      klim2 = kron_factor*kron_factor ;
+      klim2 = kron_factor*kron_factor*scale_fact*scale_fact ;
     }
   else // il etait prevu d'integrer sur un cercle de rayon  PHOT_AUTOAPER_1 * 0.5, ici fixradius en pixels
     {
       // on doit avoir cxx = cyy = 1., cxy = 0.0 ; 
-      dxlim = dylim = fixradius;
+      dxlim = dylim = fixradius*scale_fact;
       klim2 = dxlim * dylim ;
     }
   int xmin = (int) (xc - dxlim) ;
