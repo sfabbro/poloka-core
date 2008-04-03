@@ -21,7 +21,7 @@ extern "C" {
 #include <types.h> 
 
 // a ajouter pour la version v244
-//#include <prefs.h>
+#include <prefs.h>
 	   }
 
 
@@ -79,10 +79,14 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   star->EFlux() = obj2->fluxerr_best  ;
   star->Fluxmax() = obj->peak  ;
   star->Fond() = obj->bkg  ;
-  star->Flux_aper() = obj2->flux_auto ;
-  star->Eflux_aper() = obj2->fluxerr_auto  ;
-  //star->Flux_fixaper() = obj2->flux_aper[0] ;
-  //star->Eflux_fixaper() = obj2->fluxerr_aper[0]  ;
+  star->Flux_auto() = obj2->flux_auto ;
+  star->Eflux_auto() = obj2->fluxerr_auto  ;
+
+  // doit etre defini dans le fichier de param !
+  star->Flux_circ_aper() = obj2->flux_aper[0] ;
+  star->Eflux_circ_aper() = obj2->fluxerr_aper[0]  ;
+
+
   star->Flux_iso() = obj2->flux_iso  ;
   star->Eflux_iso() = obj2->fluxerr_iso  ;
   star->Flux_isocor() = obj2->flux_isocor ;
@@ -136,7 +140,7 @@ typedef void (*_SexStarFill)(objstruct* obj, obj2struct *obj2);
   
 typedef void (*_SexImgFill)(float x, float y);
 
-
+ 
 
 
 
@@ -268,7 +272,8 @@ sex_proc(const AllForSExtractor & data,
 
   prefs.satur_level = data.saturation ;
   FitsHeader head(filename, RO);
-  prefs.pixel_scale = head.KeyVal("TOADPIXS");
+  //prefs.pixel_scale = head.KeyVal("TOADPIXS");
+  prefs.pixel_scale = 0.1850 ;
   prefs.gain = head.KeyVal("TOADGAIN");
 
   cout << "saturation provided to sextractor : " << prefs.satur_level  << std::endl;
@@ -467,7 +472,6 @@ sex_proc_2(const AllForSExtractor & data,
 	   double & Fond_0, double &SigmaFond_0, 
 	   double & Fond_1, double &SigmaFond_1, bool weight_from_measurement_image)
 {
-
   std::vector<void *> toFree;
 
   // nombre de check image
@@ -505,7 +509,7 @@ sex_proc_2(const AllForSExtractor & data,
   // le filtre est lu dans la datacard (contrairement au traitement dans le cas 1 image, cf sex_proc.
   //strcpy(prefs.filter_name,data.SexFilterName.c_str());
 
-  cerr << "pas de soustraction de fond en double mode" << endl ;
+  size_t namesize;
   if (data.back_type_manual)
     {
       prefs.back_type[0]=BACK_ABSOLUTE;
@@ -524,7 +528,6 @@ sex_proc_2(const AllForSExtractor & data,
       prefs.back_val[0] = data.backmean;
       prefs.back_val[1] = data.backmean;
       prefs.nback_val=2;
-      size_t namesize;
       // l acarte de fond sera celle de l'image de mesure
       //(les check image ne concernent que l'image de mesure)
       if ((namesize=strlen(data.FitsMiniBackName.c_str())) != 0 )
@@ -541,15 +544,16 @@ sex_proc_2(const AllForSExtractor & data,
 	  prefs.check_type[nchecks] = CHECK_BACKGROUND;
 	  nchecks++;
 	}
-      if ((namesize = strlen(data.FitsSegmentationName.c_str())) != 0 )
+    }
+     if ((namesize = strlen(data.FitsSegmentationName.c_str())) != 0 )
 	{  
 	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
 	  strcpy(prefs.check_name[nchecks], data.FitsSegmentationName.c_str() );
-	  cout << "Segmentation image requested " << data.FitsSegmentationName << endl;
+	  cerr << "## Segmentation image requested " << data.FitsSegmentationName << endl;
 	  prefs.check_type[nchecks] = CHECK_SEGMENTATION;
 	  nchecks++;
 	}
-    } 
+     
   /*Prefs en sortie quand une seule weight image donnee en dble mode:
     prefs.nwimage_name : 1
     prefs.nweight_type : 1
@@ -679,9 +683,15 @@ prefs.weight_thresh[1]: 0
 
   // pour test
 
-  prefs.pixel_scale = head.KeyVal("TOADPIXS");
+  // prefs.pixel_scale = head.KeyVal("TOADPIXS");
+  prefs.pixel_scale = 0.185 ;
   prefs.gain = head.KeyVal("TOADGAIN");  
   prefs.satur_level = data.saturation ;
+  
+ 
+
+  //if (getenv("SEXTRACTOR_VERBOSE"))
+  //prefs.verbose_type = WARN ;
 
   cout << "saturation provided to sextractor : " << prefs.satur_level  << std::endl;
   cerr << "Pixel Scale : " << prefs.pixel_scale << endl ;
