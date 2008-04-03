@@ -110,13 +110,13 @@ Test_Qual_3(StarMatchList & liste, Image & imgr,  Image & imgc,
       SEStar * pstar1 = (SEStar *) starm.s1;
       SEStar * pstar2 = (SEStar *) starm.s2;
       double X[3];
-      X[0] = pstar1->x + DECALAGE_SE_IJ ;
-      X[1] = pstar2->x + DECALAGE_SE_IJ ;
-      X[2] = pstar2->x + DECALAGE_SE_IJ ;
+      X[0] = pstar1->x  ;
+      X[1] = pstar2->x  ;
+      X[2] = pstar2->x  ;
       double Y[3];
-      Y[0] = pstar1->y + DECALAGE_SE_IJ ;
-      Y[1] = pstar2->y + DECALAGE_SE_IJ  ;
-      Y[2] = pstar2->y + DECALAGE_SE_IJ  ;
+      Y[0] = pstar1->y  ;
+      Y[1] = pstar2->y   ;
+      Y[2] = pstar2->y   ;
 
       Test_Qual(N, tabpimg, X, Y, Fond,SigFond, dtaille, pr, );
 
@@ -222,8 +222,8 @@ Test_Qual_Instantane(StarMatchList & liste, Image & imgref,
       BaseStar * pstar1 = starm.s1;
 
  
-      double X = pstar1->x + DECALAGE_SE_IJ ; // coordonnees SExtractor --> image
-      double Y = pstar1->y + DECALAGE_SE_IJ ;
+      double X = pstar1->x  ; // coordonnees SExtractor --> image
+      double Y = pstar1->y  ;
       for (int i = -dtaille ; i <= dtaille ; i++)
 	{
 	  for (int j = -dtaille; j <= dtaille ; j++)
@@ -320,8 +320,8 @@ Test_Qual_N_same(int N, StarMatchList & liste, const Image **pimage,
  
       for(int i = 0; i < N; i++)
 	{
-	  X[i] = pstar1->x + DECALAGE_SE_IJ ;
-	  Y[i] = pstar1->y + DECALAGE_SE_IJ ;
+	  X[i] = pstar1->x  ;
+	  Y[i] = pstar1->y  ;
 	}
       Test_Qual(N, pimage, X, Y, Fond, SigFond, dtaille, pr);
     }
