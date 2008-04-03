@@ -120,8 +120,8 @@ for(DictFileCIterator entry=ref_stars.begin();entry!=ref_stars.end();++entry) {
     double eflux[3];
      flux[0] = closest->flux;
      eflux[0] = closest->EFlux();
-     flux[1] = closest->Flux_aper();
-     eflux[1] = closest->Eflux_aper();
+     flux[1] = closest->Flux_auto();
+     eflux[1] = closest->Eflux_auto();
      flux[2] = closest->Flux_isocor();
      eflux[2] = closest->Eflux_isocor();
     
@@ -168,8 +168,8 @@ for(DictFileCIterator entry=ref_stars.begin();entry!=ref_stars.end();++entry) {
     double eflux[3];
      flux[0] = closest->flux;
      eflux[0] = closest->EFlux();
-     flux[1] = closest->Flux_aper();
-     eflux[1] = closest->Eflux_aper();
+     flux[1] = closest->Flux_auto();
+     eflux[1] = closest->Eflux_auto();
      flux[2] = closest->Flux_isocor();
      eflux[2] = closest->Eflux_isocor();
     

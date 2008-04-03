@@ -101,7 +101,7 @@ static bool GoodForFit(const SEStar *Star, const double &SaturLev, const double 
 	  ( Star->Flag() < 3 )   && //(keep blended objects) 
 	  ( Star->Fluxmax()+Star->Fond() < SaturLev ) &&
 	  ( Star->B() > Bmin ) &&
-	  ( Star->Flux_aper()/Star->Eflux_aper() > minsignaltonoiseratio)
+	  ( Star->Flux_auto()/Star->Eflux_auto() > minsignaltonoiseratio)
 	  );
 }
 static double sqr(const double &x) { return x*x;}

@@ -543,7 +543,7 @@ static void FillMatchFile(const FitsHeader &Header, const SEStarList &ImageList,
 
       fprintf(matchstream,"%8.2f %8.2f %12.6f %12.6f %12.1f %12.6f %12.6f %6.2f %12.1f %8.3f\n",
 	      //             x     y     ra     dec   flux   ra      dec   mag  apflux
-	      s1->x , s1->y , ra_dec_im.x, ra_dec_im.y, s1->flux, s2->x , s2->y, s2->flux, s1->Flux_aper(), distsec);
+	      s1->x , s1->y , ra_dec_im.x, ra_dec_im.y, s1->flux, s2->x , s2->y, s2->flux, s1->Flux_auto(), distsec);
     }
 
   //also write distances to unmatched USNO stars
@@ -577,7 +577,7 @@ static void FillMatchFile(const FitsHeader &Header, const SEStarList &ImageList,
 	  double distsec = sqrt(sq((ra_dec_im.x-s2->x)*cosdec)+sq(ra_dec_im.y-s2->y))*3600.;
 	  fprintf(matchstream,"%8.2f %8.2f %12.6f %12.6f %12.1f %12.6f %12.6f %6.2f %12.1f %8.3f\n",
 	      //             x     y     ra     dec   flux   ra      dec   mag  apflux
-	      s1->x , s1->y , ra_dec_im.x, ra_dec_im.y, s1->flux, s2->x , s2->y, s2->flux, s1->Flux_aper(), distsec);
+	      s1->x , s1->y , ra_dec_im.x, ra_dec_im.y, s1->flux, s2->x , s2->y, s2->flux, s1->Flux_auto(), distsec);
 	}
     }
   fclose(matchstream);
