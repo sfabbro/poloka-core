@@ -1,8 +1,8 @@
 // 
 // \file globalval.cc
 // 
-// Last modified: $Date: 2007/04/26 15:33:55 $
-// By:            $Author: astier $
+// Last modified: $Date: 2008/04/03 11:06:32 $
+// By:            $Author: hardin $
 // 
 #include <iostream>
 #include <sstream>
@@ -137,6 +137,25 @@ double GlobalVal::getDoubleValue(const string &Key) const
     }
   else return atof(i->second[0].c_str());
 }
+
+void GlobalVal::setDoubleValue(const string &Key, double val) 
+{
+  iterator i = find(Key);
+  if (i == end())
+    {
+      cerr << " could not read key " << Key << endl;
+      return ;
+    }
+  else
+    {
+      char c[100] ;
+      sprintf(c,"%f",val);
+      string sc = c ;
+      i->second[0] = c ;
+    }
+  return ;
+}
+
 
 
 

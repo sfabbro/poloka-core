@@ -2,8 +2,8 @@
 // 
 // \file globalval.h
 // 
-// Last modified: $Date: 2007/04/26 15:33:55 $
-// By:            $Author: astier $
+// Last modified: $Date: 2008/04/03 11:06:32 $
+// By:            $Author: hardin $
 // 
 
 #ifndef GLOBALVAL__H
@@ -45,7 +45,7 @@ public :
   vector<string> getStringValues(const string& Key) const;
   
   double         getDoubleValue(const string& Key) const;
-  
+  void           setDoubleValue(const string &Key, double val) ;
   vector<double> getDoubleValues(const string& Key) const;
 
   vector<string> OutputLines() const;
