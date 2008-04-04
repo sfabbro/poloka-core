@@ -28,28 +28,28 @@ static bool Isu_InFile(string file_name)
   return(false);
 }
 
-static bool IsBV_InFile(string file_name)
+static bool IsBVUR_InFile(string file_name)
 {
   ifstream rd(file_name.c_str());
   char buff[4096];
   string clef ;
-  while ( (rd >> clef ) && (clef != "##WITH_BV") )
+  while ( (rd >> clef ) && (clef != "##WITH_BVUR") )
     {
       // lire la fine de la ligne
       rd.getline(buff,4096);
     }
-  if (clef == "##WITH_BV")
+  if (clef == "##WITH_BVUR")
     {
       
-      cerr << "filters B&V in file " << file_name << endl ;
+      cerr << "filters B&V&U&R in file " << file_name << endl ;
       return(true);
     }
   return(false);
 }
 
 
-// (BV) + (u) + griz
-void PegaseHeader(ofstream & prp, bool with_u, bool with_BV, bool use_AB)
+// (BVUR) + (u) + griz
+void PegaseHeader(ofstream & prp, bool with_u, bool with_BVUR, bool use_AB)
 {
 
   string pegase_bands = "g eg r er i ei z ez" ;
@@ -62,16 +62,16 @@ void PegaseHeader(ofstream & prp, bool with_u, bool with_BV, bool use_AB)
       pegase_filters = "effective_filter_u.dat,"+pegase_filters;
       nband++;
     }
-  if (with_BV)
+  if (with_BVUR)
     {
-      pegase_bands = "b eb v ev " +  pegase_bands ;
-      pegase_filters = "effective_filter_B.dat,effective_filter_V.dat," + pegase_filters ;
-      nband += 2 ;
+      pegase_bands = "b eb v ev uj uje rc rce " +  pegase_bands ;
+      pegase_filters = "effective_filter_B.dat,effective_filter_V.dat,effective_filter_U.dat,effective_filter_R.dat," + pegase_filters ;
+      nband += 4 ;
     }
   if (with_u)
     prp << "##WITH_u" << endl ;
-  if (with_BV)
-    prp << "##WITH_BV" << endl ;
+  if (with_BVUR)
+    prp << "##WITH_BVUR" << endl ;
   PegaseHeader_(prp, pegase_bands, pegase_filters, nband, use_AB);
 }
 
@@ -125,10 +125,10 @@ void PrintPegase(ofstream & prp, string sn_name, double in_x, double in_y, doubl
 
 
 
-void ReadPegaseInFile(string file_name, DictFile & peg_file, bool & with_u, bool & with_BV)
+void ReadPegaseInFile(string file_name, DictFile & peg_file, bool & with_u, bool & with_BVUR)
 {
   with_u = Isu_InFile(file_name);
-  with_BV = IsBV_InFile(file_name);
+  with_BVUR = IsBVUR_InFile(file_name);
   ifstream rd(file_name.c_str());
   char c ;
   char buff[4096];
@@ -137,12 +137,16 @@ void ReadPegaseInFile(string file_name, DictFile & peg_file, bool & with_u, bool
   peg_file.AddKey("delln"); //y
   peg_file.AddKey("ra");
   peg_file.AddKey("dec");
-  if (with_BV)
+  if (with_BVUR)
     {
       peg_file.AddKey("mb");
       peg_file.AddKey("emb");  
       peg_file.AddKey("mv");
       peg_file.AddKey("emv");
+      peg_file.AddKey("muj");
+      peg_file.AddKey("emuj");  
+      peg_file.AddKey("mrc");
+      peg_file.AddKey("emrc");
     }
   if (with_u)
     {
@@ -173,10 +177,10 @@ void ReadPegaseInFile(string file_name, DictFile & peg_file, bool & with_u, bool
 }
 
 
-void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool with_BV, bool is_host_list, bool use_AB)
+void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool with_BVUR, bool is_host_list, bool use_AB)
 {
   ofstream pr(file_name.c_str());
-  PegaseHeader(pr,with_u, with_BV, use_AB); 
+  PegaseHeader(pr,with_u, with_BVUR, use_AB); 
   for(DictFileIterator sn =  peg_file.begin(); sn != peg_file.end(); sn++)
     {
       string name ;
@@ -225,8 +229,10 @@ void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool 
       PrintPegase(pr, name, z, delln, ra,dec);
       double mag, emag ;
       // B et V
-      if (with_BV)
+      if (with_BVUR)
 	{
+	  PrintPegaseMag(pr, 99. , 99.);
+	  PrintPegaseMag(pr, 99. , 99.);
 	  PrintPegaseMag(pr, 99. , 99.);
 	  PrintPegaseMag(pr, 99. , 99.);
 	}
@@ -250,7 +256,7 @@ void WritePegaseInFile(string file_name, DictFile & peg_file, bool with_u, bool 
 
 
 void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr, 
-	     bool is_z_fixed, bool with_u, bool with_BV)
+	     bool is_z_fixed, bool with_u, bool with_BVUR)
 { 
   string file_in1 = file_in ;
   string file_out1 = file_out ;
@@ -286,8 +292,8 @@ void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr,
     }
   if (with_u)
     template_file += "_u" ;
-  if (with_BV)
-    template_file += "_BV" ;
+  if (with_BVUR)
+    template_file += "_BVUR" ;
 
   template_file += ".tmp" ;
   monpar_file += ".par" ; 
@@ -368,11 +374,11 @@ void RunZpeg(string file_in, string file_out, string dir, bool is_age_cstr,
 }
 
 
-string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
+string *PegaseKeys(int & N, bool with_u, bool with_BVUR, bool first_sol)
 {
   N = 42 ;
-  if (with_BV) 
-    N += 8 ;
+  if (with_BVUR) 
+    N += 16 ;
   if (with_u) 
     N += 4 ;
 
@@ -416,10 +422,12 @@ string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
  tab_keys[n] = "sta" ; n++ ;// ages of  formed stars
  tab_keys[n] = "sta_min" ; n++ ;
  tab_keys[n] = "sta_max" ; n++ ;
-  if (with_BV)
+  if (with_BVUR)
     {
      tab_keys[n] = "mab" ; n++ ; // mag abs B
      tab_keys[n] = "mav" ; n++ ; // mag abs V
+     tab_keys[n] = "mauj" ; n++ ; // mag abs U
+     tab_keys[n] = "marc" ; n++ ; // mag abs R
     }
   if (with_u)
     {
@@ -430,10 +438,12 @@ string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
  tab_keys[n] = "mai" ; n++ ;
  tab_keys[n] = "maz" ; n++ ;
  // mag abs min
-  if (with_BV)
+  if (with_BVUR)
     {
      tab_keys[n] = "mab_min" ; n++ ;
      tab_keys[n] = "mav_min" ; n++ ;
+     tab_keys[n] = "mauj_min" ; n++ ;
+     tab_keys[n] = "marc_min" ; n++ ;
     }
   if (with_u)
     {
@@ -444,10 +454,12 @@ string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
  tab_keys[n] = "mai_min" ; n++ ;
  tab_keys[n] = "maz_min" ; n++ ;
  // mag abs max
-  if (with_BV)
+  if (with_BVUR)
     {
      tab_keys[n] = "mab_max" ; n++ ; 
      tab_keys[n] = "mav_max" ; n++ ; 
+     tab_keys[n] = "mauj_max" ; n++ ; 
+     tab_keys[n] = "marc_max" ; n++ ; 
     }
   if (with_u)
     {
@@ -460,7 +472,7 @@ string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
 
 
 
-  if (with_BV)
+  if (with_BVUR)
     {
      tab_keys[n] = "t_mb" ; n++ ; // template mag
      //tab_keys[n] = "t_mb_min" ; n++ ;
@@ -468,6 +480,8 @@ string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
      tab_keys[n] = "t_mv" ; n++ ; // template mag
      //tab_keys[n] = "t_mv_min" ; n++ ;
      //tab_keys[n] = "t_mv_max" ; n++ ;
+     tab_keys[n] = "t_muj" ; n++ ; // template mag
+     tab_keys[n] = "t_mrc" ; n++ ; // template mag
     }
   if (with_u)
     {
@@ -496,12 +510,12 @@ string *PegaseKeys(int & N, bool with_u, bool with_BV, bool first_sol)
  return (tab_keys);
 }
 
-void AddPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool with_BV)
+void AddPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool with_BVUR)
 {
   
   int Nkeys = 0 ;
   cerr << "Creating pegase keys " << endl ;
-  string *tab_keys  = PegaseKeys(Nkeys, with_u, with_BV);
+  string *tab_keys  = PegaseKeys(Nkeys, with_u, with_BVUR);
   cerr << Nkeys << " keys created " << endl ;
   for(int ii = 0 ; ii < Nkeys ; ii++)
     {
@@ -517,12 +531,12 @@ void AddPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool w
 
 
 
-void CheckPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool with_BV)
+void CheckPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool with_BVUR)
 {
   
   int Nkeys = 0 ;
   cerr << "Check pegase keys " << endl ;
-  string *tab_keys  = PegaseKeys(Nkeys, with_u, with_BV);
+  string *tab_keys  = PegaseKeys(Nkeys, with_u, with_BVUR);
   cerr << Nkeys << " keys created " << endl ;
   for(int ii = 0 ; ii < Nkeys ; ii++)
     {
@@ -554,13 +568,13 @@ void CheckPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool
 
 
 
-static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BV)
+static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BVUR)
 {
   ifstream rd(file_name.c_str());
   char c ;
   char buff[4096];
   with_u = false ;
-  bool with_B = false,  with_V = false ;
+  bool with_B = false,  with_V = false, with_U = false, with_R = false ;
   while( (rd >> c)  && ( c== '#'))
     {
       rd.unget() ; 
@@ -585,16 +599,29 @@ static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BV)
 	  cerr << sbuff << endl ;
 	  cerr << "V in " << file_name << endl ;
 	}
+      if (sbuff.find("effective_filter_U.dat") < sbuff.length())
+	{
+	  with_U = true ;
+	  cerr << sbuff << endl ;
+	  cerr << "U in " << file_name << endl ;
+	}
+      if (sbuff.find("effective_filter_R.dat") < sbuff.length())
+	{
+	  with_R = true ;
+	  cerr << sbuff << endl ;
+	  cerr << "R in " << file_name << endl ;
+	}
 	
     }
-  if ( with_B != with_V)
-    cerr << "Trouble, B&V are't both absent or present" << endl ;
-  with_BV = with_B ;
+  if ( ! (  (with_B==false && with_V==false && with_U==false && with_R==false)
+	    || (with_B==true && with_V==true && with_U==true && with_R==true) ) )
+    cerr << "Trouble, B&V&U&R aren't all absent or present" << endl ;
+  with_BVUR = with_B ;
   return ;
 }
-void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u, bool & with_BV, bool oui_append)
+void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u, bool & with_BVUR, bool oui_append)
 {
-  is_ubv_in_outfile(file_name, with_u,with_BV);
+  is_ubv_in_outfile(file_name, with_u,with_BVUR);
   ifstream rd(file_name.c_str());
   char c ;
   char buff[4096];
@@ -610,12 +637,16 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
   peg_file_out.AddKey("nsol");
   peg_file_out.AddKey("zmax_vu");
   peg_file_out.AddKey("vmax");
-  if (with_BV)
+  if (with_BVUR)
      {
        peg_file_out.AddKey("mb");
        peg_file_out.AddKey("emb");
        peg_file_out.AddKey("mv");
        peg_file_out.AddKey("emv");
+       peg_file_out.AddKey("muj");
+       peg_file_out.AddKey("emuj");
+       peg_file_out.AddKey("mrc");
+       peg_file_out.AddKey("emrc");
      }
   // magnitudes en input
   if (with_u)
@@ -632,12 +663,12 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
   peg_file_out.AddKey("mz");
   peg_file_out.AddKey("emz");
   //resultats best fit
-  AddPegaseKeys(peg_file_out, "", with_u, with_BV);
+  AddPegaseKeys(peg_file_out, "", with_u, with_BVUR);
   //resultats 4 autres best solutions
-  AddPegaseKeys(peg_file_out, "1", with_u, with_BV);
-  AddPegaseKeys(peg_file_out,"2", with_u, with_BV);
-  AddPegaseKeys(peg_file_out, "3", with_u, with_BV);
-  AddPegaseKeys(peg_file_out, "4", with_u, with_BV);
+  AddPegaseKeys(peg_file_out, "1", with_u, with_BVUR);
+  AddPegaseKeys(peg_file_out,"2", with_u, with_BVUR);
+  AddPegaseKeys(peg_file_out, "3", with_u, with_BVUR);
+  AddPegaseKeys(peg_file_out, "4", with_u, with_BVUR);
     }
   
   while( rd >> c ) // to test eof
@@ -652,11 +683,11 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
 	  peg_file_out.push_back(DictFileEntry(buffer.c_str(),peg_file_out));
 	}
     }
-  CheckPegaseKeys(peg_file_out, "", with_u, with_BV);
-  CheckPegaseKeys(peg_file_out, "1", with_u, with_BV);
-  CheckPegaseKeys(peg_file_out, "2", with_u, with_BV);
-  CheckPegaseKeys(peg_file_out, "3", with_u, with_BV);
-  CheckPegaseKeys(peg_file_out, "4", with_u, with_BV);
+  CheckPegaseKeys(peg_file_out, "", with_u, with_BVUR);
+  CheckPegaseKeys(peg_file_out, "1", with_u, with_BVUR);
+  CheckPegaseKeys(peg_file_out, "2", with_u, with_BVUR);
+  CheckPegaseKeys(peg_file_out, "3", with_u, with_BVUR);
+  CheckPegaseKeys(peg_file_out, "4", with_u, with_BVUR);
 }
 
 
