@@ -6,7 +6,7 @@
 #include <cmath>
 
 #define DELL_LIM 1.5
-#define ZPEG_COMMANDE "/afs/in2p3.fr/throng/snovae/softsnls/pegase/zpeg_5.1/src/zpeg "
+#define ZPEG_COMMANDE "/sps/snls12/users/taia/pegase/zpeg_5.1/src/zpeg "
 //#define ZPEG_COMMANDE "/afs/in2p3.fr/throng/snovae/softsnls/pegase/zpeg/project/bin/zpeg "
 
 static bool Isu_InFile(string file_name)
@@ -25,6 +25,7 @@ static bool Isu_InFile(string file_name)
       cerr << "filter u in file " << file_name << endl ;
       return(true);
     }
+  rd.close();
   return(false);
 }
 
@@ -44,6 +45,7 @@ static bool IsBVUR_InFile(string file_name)
       cerr << "filters B&V&U&R in file " << file_name << endl ;
       return(true);
     }
+  rd.close();
   return(false);
 }
 
@@ -174,6 +176,7 @@ void ReadPegaseInFile(string file_name, DictFile & peg_file, bool & with_u, bool
 	}
     }
 
+  rd.close();
 }
 
 
@@ -549,13 +552,13 @@ void CheckPegaseKeys(DictFile & peg_file_out,  string suffixe, bool with_u, bool
 	  //cerr << res << endl ;
 	  if ( res == "*******")
 	    {
-	      cerr << "### " << key << " " << res << endl ;
+	      //cerr << "### " << key << " " << res << endl ;
 	      double u = -99 ;
 	      it->ModKey(key,u);
 	    }
 	  if (StringMatchPattern(res.c_str(),"*+*")   && !StringMatchPattern(res.c_str(),"*E+*") && !StringMatchPattern(res.c_str(),"+*") )
 	    {
-	      cerr << "### " << key << " " << res << endl ;
+	      //cerr << "### " << key << " " << res << endl ;
 	      double u = -99 ;
 	      it->ModKey(key,u);
 	    }
@@ -584,32 +587,32 @@ static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BVUR)
       if (sbuff.find("effective_filter_u.dat") < sbuff.length())
 	{
 	  with_u = true ;
-	  cerr << sbuff << endl ;
-	  cerr << "u in " << file_name << endl ;
+	  //cerr << sbuff << endl ;
+	  //cerr << "u in " << file_name << endl ;
 	}
       if (sbuff.find("effective_filter_B.dat") < sbuff.length())
 	{
 	  with_B = true ;
-	  cerr << sbuff << endl ;
-	  cerr << "B in " << file_name << endl ;
+	  //cerr << sbuff << endl ;
+	  //cerr << "B in " << file_name << endl ;
 	}
       if (sbuff.find("effective_filter_V.dat") < sbuff.length())
 	{
 	  with_V = true ;
-	  cerr << sbuff << endl ;
-	  cerr << "V in " << file_name << endl ;
+	  //cerr << sbuff << endl ;
+	  //cerr << "V in " << file_name << endl ;
 	}
       if (sbuff.find("effective_filter_U.dat") < sbuff.length())
 	{
 	  with_U = true ;
-	  cerr << sbuff << endl ;
-	  cerr << "U in " << file_name << endl ;
+	  //cerr << sbuff << endl ;
+	  //cerr << "U in " << file_name << endl ;
 	}
       if (sbuff.find("effective_filter_R.dat") < sbuff.length())
 	{
 	  with_R = true ;
-	  cerr << sbuff << endl ;
-	  cerr << "R in " << file_name << endl ;
+	  //cerr << sbuff << endl ;
+	  //cerr << "R in " << file_name << endl ;
 	}
 	
     }
@@ -617,6 +620,7 @@ static void is_ubv_in_outfile(string file_name, bool & with_u, bool & with_BVUR)
 	    || (with_B==true && with_V==true && with_U==true && with_R==true) ) )
     cerr << "Trouble, B&V&U&R aren't all absent or present" << endl ;
   with_BVUR = with_B ;
+  rd.close();
   return ;
 }
 void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u, bool & with_BVUR, bool oui_append)
@@ -627,6 +631,7 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
   char buff[4096];
   if ( ! oui_append )
     {
+      cerr << "Creating DictFile Keys " << endl ;
   peg_file_out.AddKey("name");
   peg_file_out.AddKey("z");  //x
   peg_file_out.AddKey("delln"); //y
@@ -670,6 +675,8 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
   AddPegaseKeys(peg_file_out, "3", with_u, with_BVUR);
   AddPegaseKeys(peg_file_out, "4", with_u, with_BVUR);
     }
+  else
+    cerr << "Append Mode " << endl ;
   
   while( rd >> c ) // to test eof
     {
@@ -688,6 +695,8 @@ void ReadPegaseOutFile(string file_name, DictFile & peg_file_out, bool & with_u,
   CheckPegaseKeys(peg_file_out, "2", with_u, with_BVUR);
   CheckPegaseKeys(peg_file_out, "3", with_u, with_BVUR);
   CheckPegaseKeys(peg_file_out, "4", with_u, with_BVUR);
+  rd.close();
+
 }
 
 
