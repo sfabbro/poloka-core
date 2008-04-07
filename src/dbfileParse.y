@@ -86,6 +86,7 @@ image_path : STRING ':' STRING { DbConfigAddImagePath($3,$1); $$ = $1;}
 
 image_names : image_name_block
          | image_names image_name_block
+         |
 ;
 
 image_name_block : STRING '{' names '}' 
