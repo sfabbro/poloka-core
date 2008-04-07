@@ -8,9 +8,10 @@
 #include <string>
 
 #include "point.h"
-#include "basestar.h"
-#include "gtransfo.h"
 #include "countedref.h"
+#include "basestar.h" // class definition used in inlined functions 
+#include "gtransfo.h" // inlined function calls Gtransfo::apply()
+
 
 /*! \file
    \brief pairs of points
