@@ -39,6 +39,9 @@ class ShortMagBox
 {
 public:
     CalibBox calib ;
+    int flag ;
+    int flagbad ;
+    double fluxmax ;
     double f_auto ;
     double ef_auto ;
     double f_circ ;
@@ -49,7 +52,7 @@ public:
     double f_aper;
     double ef_aper ;
     double f_aper_other ;
-    ShortMagBox(){f_circ = 0. ; ef_circ = 0. ;f_auto = 0. ; ef_auto = 0. ; m_auto = 0. ; em_auto = 0. ;  seeing=0. ;f_aper =0.;  ef_aper=0. ;  f_aper_other=0. ;}
+    ShortMagBox(){flag = 0 ; flagbad = 0 ; fluxmax = 0. ;f_circ = 0. ; ef_circ = 0. ;f_auto = 0. ; ef_auto = 0. ; m_auto = 0. ; em_auto = 0. ;  seeing=0. ;f_aper =0.;  ef_aper=0. ;  f_aper_other=0. ;}
 };
 
 
@@ -93,7 +96,8 @@ class MultiMagSEStar : public SEStar {
   MultiMagSEStar(const SEStar &sestar);
  
  
- void ComputeMag(int kbox, string band, double ZP, double eZP);
+  void ComputeMag(int kbox, string band, double ZP, double eZP, double & old_ZP); 
+  void ComputeMag(int kbox, string band, double ZP, double eZP){double zz ; return ComputeMag(kbox, band, ZP, eZP, zz);}
  double SqEllipticDistance(double xx, double yy, double dilatation, double RadMin,double Radius) const;
  double NormalizedDistance(double xx, double yy, double dilatation, double RadMin,double Radius) const;
 

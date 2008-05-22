@@ -65,6 +65,7 @@ std::string MultiMagSEStar::WriteHeader_(ostream & pr,
   pr << "#dec" << i  << " : " << endl;
   pr << "#x_orig" << i  << " : " << endl;
   pr << "#y_orig" << i  << " : " << endl;
+
   pr << "#gx" << i  << " : " << endl;
   pr << "#gy" << i  << " : " << endl;
   pr << "#gmxx" << i  << " : " << endl;
@@ -74,8 +75,13 @@ std::string MultiMagSEStar::WriteHeader_(ostream & pr,
   pr << "#gmyyl" << i  << " : " << endl;
   pr << "#gmxyl" << i  << " : " << endl;
 
-  ell_aper.WriteHeader_(pr,"es");
-  g_ell_aper.WriteHeader_(pr,"eg");
+  char cc1[500];
+  sprintf(cc1,"es%s",i);
+  char cc2[500];
+  sprintf(cc2,"eg%s",i);
+  ell_aper.WriteHeader_(pr,cc1);
+  g_ell_aper.WriteHeader_(pr,cc2);
+
 
 
   pr << "#nm"<<i<< " : number of magboxes " << endl;
@@ -95,8 +101,13 @@ std::string MultiMagSEStar::WriteHeader_(ostream & pr,
       pr << "#ef" << kk << i  << " : " << endl;
       pr << "#m" << kk << i  << " : " << endl;
       pr << "#em" << kk << i  << " : " << endl;
+      pr << "#fmx" << kk << i  << " : fluxmax " << endl;
+      pr << "#flag" << kk << i  << " : flag " << endl;
+      pr << "#flagb" << kk << i  << " : flagbad " << endl;
+
     }
-  return sestarFormat+ "MultiMagSEStar 5"; 
+
+  return sestarFormat+ "MultiMagSEStar 6"; 
 }
 
 
@@ -129,7 +140,10 @@ MultiMagSEStar::dumpn(ostream& s) const
        <<  " flux auto : " << magboxes[k].f_auto 
 	<< " err. flux auto : " <<  magboxes[k].ef_auto 
 	<< " mag auto : " <<  magboxes[k].m_auto 
-	<< " err. mag auto : " <<  magboxes[k].em_auto << " " ;
+	<< " err. mag auto : " <<  magboxes[k].em_auto << " " ; 
+      s << " fluxmax : " << magboxes[k].fluxmax << " " ;
+      s << " flag : " << magboxes[k].flag << " " ;
+      s << " flagbad : " << magboxes[k].flagbad << " " ;
     }
 }
 
@@ -172,7 +186,11 @@ void MultiMagSEStar::writen(ostream& s) const
        s << magboxes[k].f_auto << " " ;
        s << magboxes[k].ef_auto << " " ;
        s << magboxes[k].m_auto << " " ;
-       s << magboxes[k].em_auto << " " ;
+       s << magboxes[k].em_auto << " " ; 
+       s << magboxes[k].fluxmax << " " ;
+       s << magboxes[k].flag << " " ;
+       s << magboxes[k].flagbad << " " ;
+
     }
  s.flags(old_flags);
  s << setprecision(oldprec);
@@ -230,7 +248,13 @@ void MultiMagSEStar::read_it(fastifstream& r, const char* Format)
       r >> mb.f_auto ;
       r >> mb.ef_auto ;
       r >> mb.m_auto ;
-      r >> mb.em_auto ;
+      r >> mb.em_auto ; 
+      if (format >= 6)
+	{
+	  r >> mb.fluxmax ;
+	  r >> mb.flag ;
+	  r >> mb.flagbad ;
+	}
    }
 }
 
@@ -243,10 +267,15 @@ MultiMagSEStar* MultiMagSEStar::read(fastifstream& r, const char* Format)
 
 
 
-void  MultiMagSEStar::ComputeMag(int kbox, string band, double ZP, double eZP)
+void  MultiMagSEStar::ComputeMag(int kbox, string band, double ZP, double eZP, double & old_ZP)
+
 {
   ShortMagBox &mb = magboxes[kbox];
-  CalibBox &cal = mb.calib;
+  CalibBox &cal = mb.calib;  
+  old_ZP = cal.ZP ;
+  //double zz =  cal.ZP - ZP ;
+  //cerr << "band : " << zz  << endl ;
+
   cal.band = band ;
   cal.ZP = ZP;
   cal.sigZP = eZP;
@@ -484,6 +513,9 @@ MultiMagSEStarList::UpDate_Assoc(SEStarList &L, string band)
 	  // NB dans le cas ou le seeing est calcule par ailleurs et 
 	  // stocke dans Fwhm()
       cal.seeing =  -1 ; 
+      mb.flag = -1 ;
+      mb.flagbad = -1 ;
+      mb.fluxmax = -1 ;
       mb.f_auto = -1; // toujours cette vieille "convention" avec sextractorbox
       mb.ef_auto = -1; 
       mb.f_circ = -1 ;// doit etre calcule par ailleurs
@@ -525,6 +557,9 @@ MultiMagSEStarList::UpDate_Assoc(SEStarList &L, string band)
       // NB dans le cas ou le seeing est calcule par ailleurs et 
       // stocke dans Fwhm()
       cal.seeing = sestar->Fwhm() ;
+      mb.flag = sestar->Flag() ; 
+      mb.flagbad = sestar->FlagBad() ; 
+      mb.fluxmax = sestar->Fluxmax() ; 
       mb.f_auto = sestar->Flux_auto(); // toujours cette vieille "convention" avec sextractorbox   
       mb.ef_auto = sestar->Eflux_auto(); 
 
@@ -581,6 +616,9 @@ MultiMagSEStarList::UpDate(SEStarList &L, string band)
 	  // NB dans le cas ou le seeing est calcule par ailleurs et 
 	  // stocke dans Fwhm()
       cal.seeing =  star->Fwhm(); 
+      mb.flag = star->Flag() ; 
+      mb.flagbad = star->FlagBad() ; 
+      mb.fluxmax = star->Fluxmax() ; 
       mb.f_auto = star->Flux_auto(); // toujours cette vieille "convention" avec sextractorbox
       mb.ef_auto = star->Eflux_auto(); 
       mb.f_circ = star->Flux_circ_aper();// doit etre calcule par ailleurs
