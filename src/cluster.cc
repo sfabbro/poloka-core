@@ -3,7 +3,9 @@
 #include "fitsimage.h"
 
 #ifndef MAXCLUSTERSIZE
-#define MAXCLUSTERSIZE  80000
+/* was chosen  at 80000, I changed it to this large value to 
+   accomodate saturated bright stars */
+#define MAXCLUSTERSIZE  200000
 #endif
 
 #ifndef MY_PI
@@ -12,13 +14,6 @@
 
 double sqr(const double & x){return x*x;};
 
-Cluster::Cluster(const Cluster & C) 
-{
-  color = C.color ;
-  size = C.size ;
-  xsum = C.xsum ; ysum = C.ysum ;
-  x2sum = C.x2sum ; xysum = C.xysum ; y2sum = C.y2sum ;
-}
 
 Cluster::Cluster(long c) 
 {
@@ -97,16 +92,16 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
   debuglevel = 1;//debuglev;
   cout << "#### " << inrim.FitsName() << endl;
   FitsImage infits(inrim.FitsName());
-  FitsImage *weight =  new FitsImage(inrim.FitsWeightName());
-  FitsImage *satur =  new FitsImage(inrim.FitsSaturName());
+  {
+  FitsImage weight(inrim.FitsWeightName());
+  FitsImage satur(inrim.FitsSaturName());
   for(long y=0 ; y<infits.Ny() ; y++) 
     for(long x=0 ; x<infits.Nx() ; x++) 
-      if ((*weight)(x,y)== 0  || (*satur)(x,y) ==1) 
+      if (weight(x,y)== 0  || satur(x,y) ==1) 
 	{
 	  infits(x,y) = 0.0 ;
 	}
-  delete weight;
-  delete satur;
+  }
   double nsigma = 1 ;
   double threshold =0;
   
@@ -116,6 +111,7 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
 
   long xsize = infits.Nx() ;
   long ysize = infits.Ny() ;
+  //
   colors = new Image(xsize, ysize) ;
 
 
@@ -168,9 +164,9 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
 	if ((*colors)(x0,y0) != 0) 
 	  continue ;
 	
-	Cluster * current = new Cluster(nextcolor) ;
+	Cluster current(nextcolor) ;
 	
-	npixels = current->browse_and_color(infits, x0, y0, 
+	npixels = current.browse_and_color(infits, x0, y0, 
 					    threshold, (*colors)) ;
 	
 	if (npixels < 0) { // Error
@@ -187,7 +183,8 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
 	      nsigma += 0.1 ;
 	      threshold = fondciel + nsigma * sigfond ;
 	      bigcluster = 1 ;
-	      delete current ;
+	      // since we restart from the beginning (fix by P.A on july-08)
+	      clear();
 	    } 
 	  else 
 	    {
@@ -204,10 +201,9 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
 	  {
 	    if (npixels) 
 	    {
-	      push_back(*current) ;
+	      push_back(current) ;
 	      nextcolor++ ;
 	    }
-	    delete current ;
 	  }
 	
       }

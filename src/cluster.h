@@ -18,12 +18,9 @@ protected:
   double xsum, ysum ;
   double x2sum, xysum, y2sum ;
 
-  float value ;
 
   const double Color() const {return color;};
   
-  //! copy constructor
-  Cluster(const Cluster & C);
 
   //! constructor
   Cluster(long c);
