@@ -20,8 +20,7 @@ extern "C" {
 #include <globals.h> /* from sextractor. nice name isn't it ? */
 #include <types.h> 
 
-// a ajouter pour la version v244
-#include <prefs.h>
+  //#include <prefs.h> // a ajouter pour la version v244
 	   }
 
 
@@ -83,8 +82,11 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   star->Eflux_auto() = obj2->fluxerr_auto  ;
 
   // doit etre defini dans le fichier de param !
-  star->Flux_circ_aper() = obj2->flux_aper[0] ;
-  star->Eflux_circ_aper() = obj2->fluxerr_aper[0]  ;
+  if (obj2->flux_aper)
+    {
+      star->Flux_circ_aper() = obj2->flux_aper[0] ;
+      star->Eflux_circ_aper() = obj2->fluxerr_aper[0]  ;
+    }
 
 
   star->Flux_iso() = obj2->flux_iso  ;
