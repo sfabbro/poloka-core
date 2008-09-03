@@ -298,14 +298,16 @@ init_and_do_the_fit(const BaseStarList& objectsUsedToFit,
   // Variance for the Chi2
   Pixel mean,sigma;
 
-  FitsHeader hworst(worst->FitsName());
-  FitsHeader hbest(best->FitsName());
-  Frame dataRegionW(hworst);
-  Frame dataRegionB(hbest);
-  fit->DataFrame = dataRegionW*dataRegionB;
-  fit->WorstImage->SkyLevel(dataRegionW,&mean,&sigma);
-  fit->SkyVarianceWorstImage = sigma*sigma;
-  fit->WorstImageGain = worst->Gain();
+  {
+    FitsHeader hworst(worst->FitsName());
+    FitsHeader hbest(best->FitsName());
+    Frame dataRegionW(hworst);
+    Frame dataRegionB(hbest);
+    fit->DataFrame = dataRegionW*dataRegionB;
+    fit->WorstImage->SkyLevel(dataRegionW,&mean,&sigma);
+    fit->SkyVarianceWorstImage = sigma*sigma;
+    fit->WorstImageGain = worst->Gain();
+  }
   if (fit->WorstImageGain == 0)
     {
       cerr << " Error: PsfMatch: cannot find a valid gain in image " 
@@ -567,8 +569,10 @@ bool PsfMatch::Subtraction(ReducedImage &RImage, bool KeepConvolvedBest)
     }
   else
     {
-      fit->WorstImage = new FitsImage(worst->FitsName());
-      fit->BestImage =  new FitsImage(best->FitsName());
+      if (!fit->WorstImage) 
+	fit->WorstImage = new FitsImage(worst->FitsName());
+      if (!fit->BestImage) 
+	fit->BestImage =  new FitsImage(best->FitsName());
     }
 
   //Produce the image and header. Choose the Ref Header to get it's WCS.
