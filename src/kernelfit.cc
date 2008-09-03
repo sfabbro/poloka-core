@@ -714,8 +714,8 @@ UniformPhotomRatio = true;
      
      if (cards.HasKey("KFIT_MAX_STAMPS")) 
        MaxStamps = cards.IParam("KFIT_MAX_STAMPS");
-     if (cards.HasKey("KFIT_UNIFORM_PHOTOMRATIO")) 
-       UniformPhotomRatio = cards.IParam("KFIT_UNIFORM_PHOTOMRATIO") == 1;
+     if (cards.HasKey("KFIT_UNIFORM_PHOTOM_RATIO")) 
+       UniformPhotomRatio = cards.IParam("KFIT_UNIFORM_PHOTOM_RATIO") == 1;
 
    } // if (has datacards)
 }
