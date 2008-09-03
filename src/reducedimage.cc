@@ -810,7 +810,7 @@ bool ReducedImage::MakeAperCat()
     {
       double sexsky = I.KeyVal("SEXSKY");
       double sexsigma = I.KeyVal("SEXSIGMA");
-      if (sexsky != 0) gain = sexsky/(sexsigma*sexsigma);
+      if (sexsky > 0) gain = sexsky/(sexsigma*sexsigma);
     }
   if (gain == 0)
     {
