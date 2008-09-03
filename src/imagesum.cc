@@ -477,7 +477,21 @@ bool ImageSum::MakeFits()
 
   string fileName = ReducedImage::FitsName();
   if (FileExists(fileName)) return true;
-
+  if (components.size() == 1)
+    {
+      ReducedImage &input = *(components[0].Ri);	
+      {
+	FitsImage input_image(input.FitsName());
+	FitsImage(FitsName(), input_image, input_image);
+      }
+      if (FileExists(input.FitsWeightName()))
+	{
+	  FitsImage input_weight(input.FitsWeightName());
+	  FitsImage(FitsWeightName(), input_weight, input_weight);
+	}
+      return true;
+    }
+		  
   cout <<" entering image stacking for " << Name() << endl;
   clock_t tstart = clock();
   FitsParallelSlices imageSlices(20);
@@ -625,6 +639,7 @@ bool ImageSum::MakeFits()
   cout << " CPU for stacking " 
        << float(tend-tstart)/float(CLOCKS_PER_SEC) << endl;
 
+  stack.Write();
   FitsHeaderFill();
   cout << Name() << " Image/Weight stat : " 
        << ImageAndWeightError(stack, weightImage) << endl;
