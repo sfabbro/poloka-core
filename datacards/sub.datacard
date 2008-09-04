@@ -168,8 +168,7 @@
 @KFIT_DEG_GAUSS 6 4 2
 #
 # Do we assume a uniform photom ratio (i.e. uniform kernel integral) ?
-# not implemented.
-# @KFIT_UNIFORM_PHOTOM_RATIO 1
+@KFIT_UNIFORM_PHOTOM_RATIO 1
 #
 # maximum number of stamps (i.e. number of objects used to fit)
 #
