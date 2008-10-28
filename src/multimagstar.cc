@@ -42,12 +42,12 @@ MultiMagSEStar::SetToZero()
 
 
 // CONSTRUCTORS
-MultiMagSEStar::MultiMagSEStar(const SEStar &sestar) : SEStar(sestar)
+MultiMagSEStar::MultiMagSEStar(const SEStar &sestar, double *phot_autoaper) : SEStar(sestar)
 {
   SetToZero();
   x_orig = x ;
   y_orig = y;
-  ell_aper.SetParameters(sestar,1.,8.,8.);
+  ell_aper.SetParameters(sestar,1.,0.5*phot_autoaper[0],0.5*phot_autoaper[1]);
   // les magbox sont crees et initialisees a la demande
 }
 
@@ -107,7 +107,7 @@ std::string MultiMagSEStar::WriteHeader_(ostream & pr,
 
     }
 
-  return sestarFormat+ "MultiMagSEStar 6"; 
+  return sestarFormat+ "MultiMagSEStar 7"; 
 }
 
 
@@ -140,7 +140,9 @@ MultiMagSEStar::dumpn(ostream& s) const
        <<  " flux auto : " << magboxes[k].f_auto 
 	<< " err. flux auto : " <<  magboxes[k].ef_auto 
 	<< " mag auto : " <<  magboxes[k].m_auto 
-	<< " err. mag auto : " <<  magboxes[k].em_auto << " " ; 
+	<< " err. mag auto : " <<  magboxes[k].em_auto << " " 
+	<< " mag circ : " <<  magboxes[k].m_circ 
+	<< " err. mag circ : " <<  magboxes[k].em_circ << " " ; 
       s << " fluxmax : " << magboxes[k].fluxmax << " " ;
       s << " flag : " << magboxes[k].flag << " " ;
       s << " flagbad : " << magboxes[k].flagbad << " " ;
@@ -187,6 +189,10 @@ void MultiMagSEStar::writen(ostream& s) const
        s << magboxes[k].ef_auto << " " ;
        s << magboxes[k].m_auto << " " ;
        s << magboxes[k].em_auto << " " ; 
+       s << magboxes[k].m_circ << " " ;
+       s << magboxes[k].em_circ << " " ;  
+       s << magboxes[k].m << " " ;
+       s << magboxes[k].em << " " ; 
        s << magboxes[k].fluxmax << " " ;
        s << magboxes[k].flag << " " ;
        s << magboxes[k].flagbad << " " ;
@@ -249,6 +255,13 @@ void MultiMagSEStar::read_it(fastifstream& r, const char* Format)
       r >> mb.ef_auto ;
       r >> mb.m_auto ;
       r >> mb.em_auto ; 
+      if (format >= 7)
+	{  
+	  r >> mb.m_circ ;
+	  r >> mb.em_circ ; 
+	  r >> mb.m ;
+	  r >> mb.em ;
+	}
       if (format >= 6)
 	{
 	  r >> mb.fluxmax ;
@@ -279,16 +292,28 @@ void  MultiMagSEStar::ComputeMag(int kbox, string band, double ZP, double eZP, d
   cal.band = band ;
   cal.ZP = ZP;
   cal.sigZP = eZP;
-  if (mb.f_auto > 0 )
+  if ( (mb.f_auto > 0) && (mb.ef_auto > 0) )
     {			 			  
       mb.m_auto = -2.5*log10(mb.f_auto)+ZP ;
-      mb.em_auto = fabs(2.5/log(10.)*mb.ef_auto/mb.f_auto);
+      mb.em_auto = 2.5/log(10.)*mb.ef_auto/mb.f_auto; 
     }
   else
     {
       mb.m_auto = 99 ;
       mb.em_auto = 99 ;
     }
+  if ((mb.f_circ > 0) && (mb.ef_circ > 0) )
+    {
+      mb.m_circ = -2.5*log10(mb.f_circ)+ZP ;
+      mb.em_circ = 2.5/log(10.)*mb.ef_circ/mb.f_circ;
+    }
+  else
+    {
+      mb.m_circ = 99 ;
+      mb.em_circ = 99 ;
+    }
+  mb.m = mb.m_auto ;
+  mb.em = mb.em_auto ;
 }
 
 
@@ -302,38 +327,19 @@ void  MultiMagSEStar::ComputeMag(int kbox, string band, double ZP, double eZP, d
 // R = rayon d'integration = kron FACTOR  = 2.5 * kron RADIUS
 // qui est ce qu'on recupere de SExtractor et malhencontreusement appele >Kronradius() chez nous.
 // donc pour retranscrire d en "rayon de l'ellipse de photom en pixels", il faut x par R*sqrt(AB)
-// si R * sqrt(AB) < RadMin, alors on suit la procedure de SExtractor : reset les cxx,cyy,cxy a 1,1,0 (cercle) et R =  Radius, en pixel donc.
-double MultiMagSEStar::SqEllipticDistance(double xx, double yy, double dilatation, double RadMin,double Radius) const
+// si R * sqrt(AB) < RadMin= PHOT_AUTOAPER[0]*0.5 ds la datacard, alors on suit la procedure de SExtractor : reset les cxx,cyy,cxy a 1,1,0 (cercle) et R =  Radius = = PHOT_AUTOAPER[1]*0.5, en pixel donc.
+double MultiMagSEStar::SqEllipticDistance(double xx, double yy) const
 {
-  Elliptic_Aperture ell_aper;
-  ell_aper.SetParameters(*this,dilatation,RadMin,Radius);
   double dist2 =  ell_aper.SqEllipticDistance(xx,yy);
   return dist2;
 }
 // est -on ou non dans l'ellipse (ou le cercle) de photometrie ?
 // d/Radius si cercle, d/kron factor ie KronRadius() si ellipse.
 
-double MultiMagSEStar::NormalizedDistance(double xx, double yy, double dilatation, double RadMin,double Radius) const
+double MultiMagSEStar::NormalizedDistance(double xx, double yy) const
 {
-  Elliptic_Aperture ell_aper;
-  ell_aper.SetParameters(*this,dilatation,RadMin,Radius);
-  double dist2 =  ell_aper.SqEllipticDistance(xx,yy);
-  if (dist2 > 0)
-    dist2 = sqrt(dist2);
-  else
-    return(-1);
-  if (ell_aper.IsCircle() && (Radius>0)  )  
-    return (dist2*1./Radius);
-  else
-    {
-      if (Kronradius() > 0)
-	return (dist2*1./Kronradius());
-      else
-	{
-	  cerr << "##Pb: Kronradius <=0 !!!!" << endl ;
-	}
-    }
-  return(-1);
+  double dist =  ell_aper.NormalizedEllipticDistance(xx,yy);
+  return(dist);
 }
 
 
@@ -414,18 +420,40 @@ MultiMagSEStarList::MultiMagSEStarList(const string &FileName)
 
 // just copy and initialize
 MultiMagSEStarList::MultiMagSEStarList(const SEStarList &L)
-{
+{ 
+  double phot_autoaper[2] = {16., 16.}  ;
+  if ( L.GlobVal().HasKey("PHOT_AUTOAPER_0") )
+    phot_autoaper[0] = L.GlobVal().getDoubleValue("PHOT_AUTOAPER_0") ;
+  if ( L.GlobVal().HasKey("PHOT_AUTOAPER_1") )
+    phot_autoaper[1] = L.GlobVal().getDoubleValue("PHOT_AUTOAPER_1") ;
+  cerr << "PHOT_AUTOAPERS : " << phot_autoaper[0] << " " << phot_autoaper[1]<< endl ;
+  GlobVal().AddKey("PHOT_AUTOAPER_0",phot_autoaper[0]) ;
+  GlobVal().AddKey("PHOT_AUTOAPER_1",phot_autoaper[1]) ;
+
+
   for (SEStarCIterator i = L.begin(); i != L.end(); ++i)
-    push_back(new MultiMagSEStar(**i));
+    push_back(new MultiMagSEStar(**i, phot_autoaper));
 }
 
 
 
 void
 MultiMagSEStarList::CopySEStarList(const SEStarList &L)
-{
+{ 
+  double phot_autoaper[2] = {16., 16.}  ;
+  if ( L.GlobVal().HasKey("PHOT_AUTOAPER_0") )
+    phot_autoaper[0] = L.GlobVal().getDoubleValue("PHOT_AUTOAPER_0") ;
+  if ( L.GlobVal().HasKey("PHOT_AUTOAPER_1") )
+    phot_autoaper[1] = L.GlobVal().getDoubleValue("PHOT_AUTOAPER_1") ;
+  cerr << "PHOT_AUTOAPERS : " << phot_autoaper[0] << " " << phot_autoaper[1]<< endl ;
+  GlobVal().AddKey("PHOT_AUTOAPER_0",phot_autoaper[0]) ;
+  GlobVal().AddKey("PHOT_AUTOAPER_1",phot_autoaper[1]) ;
+
+
   for (SEStarCIterator i = L.begin(); i != L.end(); ++i)
-    push_back(new MultiMagSEStar(**i));
+    push_back(new MultiMagSEStar(**i,phot_autoaper ));   
+
+ 
 }
 
 
@@ -640,7 +668,7 @@ MultiMagSEStarList::UpDate(SEStarList &L, string band)
 
 
 
-MultiMagSEStar*  MultiMagSEStarList::FindEllipticClosest(double xx, double yy, double dilatation, double RadMin, double Radius) const
+MultiMagSEStar*  MultiMagSEStarList::FindEllipticClosest(double xx, double yy) const
 {
 
   double min_dist2 = 1e30;
@@ -649,7 +677,7 @@ MultiMagSEStar*  MultiMagSEStarList::FindEllipticClosest(double xx, double yy, d
   for (MultiMagSEStarCIterator si = begin(); si!= end(); ++si) 
     { 
       const MultiMagSEStar *s = *si;
-      dist2 =  s->SqEllipticDistance(xx, yy, dilatation, RadMin,Radius);
+      dist2 =  s->SqEllipticDistance(xx, yy);
       if (dist2 < min_dist2) { min_dist2 = dist2; minstar = s;}
     }
   return (MultiMagSEStar *) minstar; // violates constness
@@ -800,7 +828,7 @@ void FindEllipticNeighb(double xsn, double ysn, double dist,
   for(MultiMagSEStarIterator itse = stlin.begin(); itse!= stlin.end();itse++)
     {
       MultiMagSEStar *sestar = *itse;
-      double n2 = sestar->SqEllipticDistance(xsn,ysn,1,8.,8.);
+      double n2 = sestar->SqEllipticDistance(xsn,ysn);
       double d2 = (xsn - sestar->x)*(xsn - sestar->x) +
 		(ysn  - sestar->y)*(ysn  - sestar->y);
       if (d2 < d2lim)
@@ -823,7 +851,7 @@ void CheckNeighbFinders(string name, double xsn, double ysn, double dist,
   for(MultiMagSEStarIterator itse = stlin.begin(); itse!= stlin.end();itse++)
     {
       MultiMagSEStar *sestar = *itse;
-      double n2 = sestar->SqEllipticDistance(xsn,ysn,1,8.,8.);
+      double n2 = sestar->SqEllipticDistance(xsn,ysn);
       double d2 = (xsn - sestar->x)*(xsn - sestar->x) +
 		(ysn  - sestar->y)*(ysn  - sestar->y);
       if (d2 < d2lim)
@@ -840,7 +868,7 @@ void CheckNeighbFinders(string name, double xsn, double ysn, double dist,
   for(MultiMagSEStarIterator itse = stl_neighb.begin(); itse!= stl_neighb.end();itse++)
     {
       MultiMagSEStar *neighb = *itse;
-      double d_norm = neighb->NormalizedDistance(xsn,ysn,1,8.,8.);
+      double d_norm = neighb->NormalizedDistance(xsn,ysn);
       if (d_norm  < d_min_norm)
 	{
 	  ifirst=ii;
@@ -863,8 +891,8 @@ void FindNormalizedDistNeighb(double xsn, double ysn, double dist,
   for(MultiMagSEStarIterator itse = stlin.begin(); itse!= stlin.end();itse++)
     {
       MultiMagSEStar *sestar = *itse;
-      double d2_ell = sestar->SqEllipticDistance(xsn,ysn,1,8.,8.);
-      double d_norm = sestar->NormalizedDistance(xsn,ysn,1,8.,8.);
+      double d2_ell = sestar->SqEllipticDistance(xsn,ysn);
+      double d_norm = sestar->NormalizedDistance(xsn,ysn);
       if (d_norm < 0)
 	cerr << "##Pb dans calcul NormalizedDistance" << endl ;
       double d2 = (xsn - sestar->x)*(xsn - sestar->x) +

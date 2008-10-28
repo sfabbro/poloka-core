@@ -48,11 +48,15 @@ public:
     double ef_circ ;
     double m_auto ;
     double em_auto ;
+    double m_circ ;
+    double em_circ ;
+    double m ;
+    double em ;
     double seeing ;
     double f_aper;
     double ef_aper ;
     double f_aper_other ;
-    ShortMagBox(){flag = 0 ; flagbad = 0 ; fluxmax = 0. ;f_circ = 0. ; ef_circ = 0. ;f_auto = 0. ; ef_auto = 0. ; m_auto = 0. ; em_auto = 0. ;  seeing=0. ;f_aper =0.;  ef_aper=0. ;  f_aper_other=0. ;}
+    ShortMagBox(){flag = 0 ; flagbad = 0 ; fluxmax = 0. ;f_circ = 0. ; ef_circ = 0. ;f_auto = 0. ; ef_auto = 0. ; m_auto = 0. ; em_auto = 0. ;  m_circ = 0. ; em_circ = 0. ;  m = 0 ; em = 0 ; seeing=0. ;f_aper =0.;  ef_aper=0. ;  f_aper_other=0. ;}
 };
 
 
@@ -93,13 +97,13 @@ class MultiMagSEStar : public SEStar {
 
  public:
   MultiMagSEStar(){SetToZero();}
-  MultiMagSEStar(const SEStar &sestar);
+  MultiMagSEStar(const SEStar &sestar, double *phot_autoaper);
  
  
   void ComputeMag(int kbox, string band, double ZP, double eZP, double & old_ZP); 
   void ComputeMag(int kbox, string band, double ZP, double eZP){double zz ; return ComputeMag(kbox, band, ZP, eZP, zz);}
- double SqEllipticDistance(double xx, double yy, double dilatation, double RadMin,double Radius) const;
- double NormalizedDistance(double xx, double yy, double dilatation, double RadMin,double Radius) const;
+ double SqEllipticDistance(double xx, double yy) const;
+ double NormalizedDistance(double xx, double yy) const;
 
   std::string WriteHeader_(ostream & pr = cout, const char* i = NULL) const;
   void read_it(fastifstream& r, const char* Format);
@@ -136,7 +140,7 @@ class MultiMagSEStarList : public StarList<MultiMagSEStar>
 bool UpDate_Assoc(SEStarList &L, string band) ;
  bool UpDate(SEStarList &L, string band);
  void ComputeMag(int kbox, string band, double ZP, double eZP);
- MultiMagSEStar*  FindEllipticClosest(double xx, double yy, double dilatation, double RadMin, double Radius) const ;
+ MultiMagSEStar*  FindEllipticClosest(double xx, double yy) const ;
 
  int GetBandNumber(string band) ;
  void SetBandNumber(string band, int n);
