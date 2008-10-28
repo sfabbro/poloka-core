@@ -30,14 +30,14 @@ public:
     int  is_circle; //-1=non, 1=oui
     int is_good ;  //-1=non, 1=oui
 
-    bool IsCircle(){return(is_circle>0); }
+    bool IsCircle() const {return(is_circle>0); }
     bool IsGood(){return(is_good>0); }
 
     Elliptic_Aperture() { xc=0. ; yc=0. ; a=0; b=0; angle=0;cxx =0 ; cyy = 0 ; cxy=0; kron_factor=0; fixradius=-1;background = 0. ;flux=0; eflux=0; nbad=0; ncos=0; fcos=0;is_circle=-1; is_good=1;  }
 
     void dump(ostream & pr){pr << " xc : " << xc << " yc : " << yc << " a: " << a << " b: " << b << " angle: " << angle <<  " cxx : " << cxx << " cyy : " << cyy << " cxy : " << cxy << " kron_factor : " << kron_factor << " fix radius : " << fixradius << " bck : " << background << " flux : " << flux << " eflux : " << eflux << " nbad : " << nbad << "is_circle : " << is_circle << "is_good : " << is_good << endl;}
 
-    // 14 nombres
+  
 
     void WriteHeader_(ostream & pr, const char* i = NULL) const ;
 
@@ -49,6 +49,7 @@ public:
 
 
     void computeflux(const Image& I, const Image& W, const Image *pC, const Image *pS, const double Gain, int segmentation_number, double scale_fact=1);
+
     //ovoid computeflux(const Image& I, const Image& W, const Image *pC, const double Gain);
     // RadMin et Radius = PHOT_AUTOAPER_[1] 
     void SetParameters(const SEStar & star,const double dilatation, 
@@ -57,8 +58,12 @@ public:
 			    const double kron_scale_factor, //2.5
 			    const double kron_radius_min, //3.5
 					   const double RadMin, const double Radius);
-    double SqEllipticDistance(double x1, double y1 );
-   double SqEllipticDistance(double x_or, double y_or, double x1, double y1 );
+    double SqEllipticDistance(double x1, double y1 ) const ;
+    double NormalizedEllipticDistance(double x1, double y1) const ;
+
+   double SqEllipticDistance(double x_or, double y_or, double x1, double y1 ) const ;
+
+
   };
 
 
