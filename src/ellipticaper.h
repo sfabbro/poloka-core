@@ -54,10 +54,6 @@ public:
     // RadMin et Radius = PHOT_AUTOAPER_[1] 
     void SetParameters(const SEStar & star,const double dilatation, 
 		       const double RadMin, const double Radius, bool fromabtheta=false);
-    void SetParameters_Aper(const AperSEStar & star,
-			    const double kron_scale_factor, //2.5
-			    const double kron_radius_min, //3.5
-					   const double RadMin, const double Radius);
     double SqEllipticDistance(double x1, double y1 ) const ;
     double NormalizedEllipticDistance(double x1, double y1) const ;
 
