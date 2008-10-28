@@ -99,6 +99,10 @@ std::string MultiMagSEStar::WriteHeader_(ostream & pr,
       pr << "#efc" << kk << i  << " : " << endl;
       pr << "#f" << kk << i  << " : " << endl;
       pr << "#ef" << kk << i  << " : " << endl;
+      pr << "#m_a" << kk << i  << " : " << endl;
+      pr << "#em_a" << kk << i  << " : " << endl;
+      pr << "#m_c" << kk << i  << " : " << endl;
+      pr << "#em_c" << kk << i  << " : " << endl;
       pr << "#m" << kk << i  << " : " << endl;
       pr << "#em" << kk << i  << " : " << endl;
       pr << "#fmx" << kk << i  << " : fluxmax " << endl;
@@ -253,14 +257,19 @@ void MultiMagSEStar::read_it(fastifstream& r, const char* Format)
       r >> mb.ef_circ ;
       r >> mb.f_auto ;
       r >> mb.ef_auto ;
-      r >> mb.m_auto ;
-      r >> mb.em_auto ; 
       if (format >= 7)
-	{  
+	{  	  
+	  r >> mb.m_auto ;
+	  r >> mb.em_auto ; 
 	  r >> mb.m_circ ;
 	  r >> mb.em_circ ; 
 	  r >> mb.m ;
 	  r >> mb.em ;
+	}
+      else
+	{
+	  r >> mb.m_auto ;
+	  r >> mb.em_auto ; 
 	}
       if (format >= 6)
 	{
