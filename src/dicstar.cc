@@ -176,13 +176,11 @@ string DicStar::WriteHeader_(ostream & pr, const char *i) const {
 template class StarList<DicStar>;
 
 DicStarList::DicStarList(const string &FileName) {
-  
-  
-  
+
   fastifstream rd(FileName.c_str());
   if (!rd)
     {
-      cout << "DicList cannot open :" << FileName << endl;
+      throw(StarListException("DicList cannot open :"+FileName));
       return ;
     }
   char c ;
@@ -191,23 +189,34 @@ DicStarList::DicStarList(const string &FileName) {
   char column[256];
   char *format = 0;
   ClearList();
-  int line = 0;
   int star_count = 0;
   while( rd >> c ) // to test eof
     {
       rd.unget() ;
       // nrl: we do not want to ignore the '@'s anymore 
-      if ( (c == '@') ) 
+      if (c == '@') 
 	{ 
 	  rd.getline(buff,4000);
+	  if (star_count)
+	    {
+	      cout << " file : " << FileName 
+		   << ": ignoring header line found after actual data" << endl
+		   << buff << endl;
+	      continue;
+	    }
 	  GlobVal().ProcessLine(buff);
 	  continue;
 	}	  
-      if ( (c == '#') ) // we jump over the line  (not always ...)
-        {
-	  
+      else if (c == '#')
+        {	  
 	  rd.getline(buff,4000);
-	  line++;
+	  if (star_count)
+	    {
+	      cout << " file : " << FileName 
+		   << ": ignoring header line found after actual data" << endl
+		   << buff << endl;
+	      continue;
+	    }
 	  /* hack something reading " format <StarType> <integer>" to drive the decoding (in Star::read) */
 	  char *p =buff+1; /* skip '#' */
 	  p += strcspn(p," \t"); /* skip leading spaces */
@@ -231,7 +240,7 @@ DicStarList::DicStarList(const string &FileName) {
 	      }
 	    }
 	}
-      else // no '#'
+      else // no '#', no '@'
 	{
 	  DicStar* s = DicStar::read(firstKey,key,rd, format); 
 	  if (rd.fail())
