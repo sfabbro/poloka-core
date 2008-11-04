@@ -246,7 +246,7 @@ public:
   Gtransfo* InverseTransfo(const double Precision,
 			   const Frame& Region) const
   {
-    if (&Region || &Precision ) {} //
+    if (&Region || Precision ) {} //
     return direct->Clone();
   }
 
@@ -494,7 +494,7 @@ GtransfoLin GtransfoLin::invert() const
 Gtransfo* GtransfoLin::InverseTransfo(const double Precision,
 				      const Frame& Region) const
 {
-  if (&Precision || &Region) {} // warning killer
+  if (&Region || Precision) {} // warning killer
   return new GtransfoLin(this->invert());
 }
 
@@ -1937,7 +1937,7 @@ Gtransfo* TanRaDec2Pix::RoughInverse(const Frame &Region) const
 Gtransfo* TanRaDec2Pix::InverseTransfo(const double Precision,
 					const Frame& Region) const
 {
-  if (&Precision || &Region) {}
+  if (&Region || Precision) {}
   return new TanPix2RaDec(LinPart().invert(),TangentPoint());
 }
 
