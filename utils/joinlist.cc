@@ -12,13 +12,14 @@
 static void usage(const char *prog)
 {
   cerr << " usage :" << endl;
-  cerr << prog << " list1 list2 ... listn -o <outname> -c <cut> [-t <tags>] [-n <minMatches>]" << std::endl
+  cerr << prog << " list1 list2 ... listn -o <outname> -c <cut> [-t <tags>] [-n <minMatches>] [-a ambiguities_handling]" << std::endl
        << " where : " << endl
        <<" - cut is to be given in units of list coordinate's units" 
        << std::endl
        << " - tags characters are used to tag output in the order of input lists (eg -t griz) " << endl
        << " - matches with less than <minCount> are dropped if provided" 
        << "     (set to 2 for 2 input lists by default)" << endl
+       << " ambiguities_handling can be 0,1,2 or 3(default)" << endl
        << "-f find transformation" <<  endl;
   
   exit(1);
@@ -33,6 +34,7 @@ int main(int nargs, char **args)
   std::string tags;
   int minCount = 0;
   bool fittransfo = false;
+  int remove_ambiguities = 3;
   for (int i=1; i <nargs; ++i)
     {
       char *arg = args[i];
@@ -44,6 +46,7 @@ int main(int nargs, char **args)
       switch (arg[1]) 
 	{
 	case 'c' : ++i; matchCut = atof(args[i]); break;
+	case 'a' : ++i; remove_ambiguities = atoi(args[i]);break;
 	case 'o' : ++i; outName = args[i]; break;
 	case 't' : ++i; tags = args[i]; break;
 	case 'n' : ++i; minCount = atoi(args[i]); break;
@@ -115,7 +118,7 @@ int main(int nargs, char **args)
 	
       }else{
 	nsm.MatchAnotherList((const BaseStarList &) l, matchCut, 
-			     l.EmptyStar(), tag);
+			     l.EmptyStar(), tag, remove_ambiguities);
 	//      if (k==1) check_list(nsm, " dans la boucle");
       }
     }

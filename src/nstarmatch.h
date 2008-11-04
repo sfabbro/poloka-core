@@ -45,8 +45,7 @@ public:
   NStarMatch() : nm(0) {};
   
   //! true size of the match vector
-  unsigned int  size() const { return stars.size(); }
-  
+  unsigned int  size() const { return stars.size(); }  
   //! add one entry into the match at a given index. Position gets updated
   void AddMatch(const BaseStar &Match, const unsigned Index);
 
@@ -82,7 +81,8 @@ public :
   int MatchAnotherList(const BaseStarList &List,
 		       const double MaxDist, 
 		       const BaseStar *EmptyStar,
-		       const string &Tag = "");
+		       const string &Tag = "",
+		       const int AmbiguitiesHandling=3);
 
   int  write(const string &FileName) const;
 

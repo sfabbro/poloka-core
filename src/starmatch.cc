@@ -81,15 +81,21 @@ void StarMatchList::SetDistance(const Gtransfo &Transfo)
 }
 
 
-int StarMatchList::RemoveAmbiguities(const Gtransfo &Transfo)
+int StarMatchList::RemoveAmbiguities(const Gtransfo &Transfo, 
+				     const int Which)
 {
+  if (!Which) return 0;
   SetDistance(Transfo);
   int initial_count = size();
-  sort(CompareS1);
-  //cout << " apres compare \n " << *this << endl;
-  unique(SameS1);
-  //cout << " apres unique \n " << *this << endl;
-  sort(CompareS2); unique(SameS2);
+  if (Which & 1)
+    {
+      sort(CompareS1);
+      unique(SameS1);
+    }
+  if (Which & 2)
+    {
+      sort(CompareS2); unique(SameS2);
+    }
   return (initial_count-size());
 }
 

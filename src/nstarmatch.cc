@@ -88,7 +88,8 @@ BaseStar *NStarMatch::GetMatch(const unsigned Index)
 int NStarMatchList::MatchAnotherList(const BaseStarList &ToMatch, 
 				     const double MaxDist, 
 				     const BaseStar *EmptyStar,
-				     const string &Tag)
+				     const string &Tag,
+				     const int AmbiguitiesHandling)
 {
   emptyStars.push_back(EmptyStar);
   unsigned Index = emptyStars.size() - 1;
@@ -106,10 +107,10 @@ int NStarMatchList::MatchAnotherList(const BaseStarList &ToMatch,
   StarMatchList *sml = ListMatchCollect((const BaseStarList &)*this,
 					ToMatch,
 					MaxDist);
-  cout << " matches " << sml->size() << endl;
+  cout << " matches before ambiguities removal : " << sml->size() << endl;
   GtransfoIdentity id;
-  sml->RemoveAmbiguities(id);
-  cout << " matches " << sml->size() << endl;
+  sml->RemoveAmbiguities(id, AmbiguitiesHandling);
+  cout << " matches after ambiguities removal : " << sml->size() << endl;
   
   vector<const BaseStar *> matchedObjects;
 
@@ -146,13 +147,6 @@ int NStarMatchList::MatchAnotherList(const BaseStarList &ToMatch,
   return nMatches;
 }
 
-/* cannot use the default StarList::write, because
-   NstarMatch may have "empty matches" (i.e. null pointers), 
-   and the way to write them is to substitute emptyStars,
-   user provided
-*/
-
-
 void  NStarMatchList::ApplyCountCut(const int MinCount)
 {
   for (NStarMatchIterator i = begin(); i != end(); )
@@ -162,6 +156,14 @@ void  NStarMatchList::ApplyCountCut(const int MinCount)
       else ++i;
     }
 }
+
+
+/* cannot use the default StarList::write, because
+   NstarMatch may have "empty matches" (i.e. null pointers), 
+   and the way to write them is to substitute emptyStars,
+   user provided
+*/
+
 
 #include <fstream>
 #include <iomanip>

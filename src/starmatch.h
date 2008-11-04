@@ -212,8 +212,9 @@ class StarMatchList : public list<StarMatch> {
 
 
   /*! cleans up the list of pairs for pairs that share one of their stars, keeping the closest one.
-     The distance is computed using Transfo. */
-  int RemoveAmbiguities(const Gtransfo &Transfo);
+     The distance is computed using Transfo. Which = 1 (2) removes ambiguities
+     on the first (second) term of the match. Which=3 does both.*/
+  int RemoveAmbiguities(const Gtransfo &Transfo, const int Which=3);
   
   
   //! sets a transfo between the 2 lists and deletes the previous or default one.  No fit.
