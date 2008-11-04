@@ -144,6 +144,9 @@ public :
 };
 
 
+class Mat;
+class Vect;
+
 /* The actual hanger for kernel fit data */
 
 //! A class to fit a convolution kernel between 2 images by least squares.
@@ -189,8 +192,11 @@ class KernelFit  :  public RefCount
   int HKernelSizeY() const { return optParams.HKernelSize;}
 
   size_t mSize; /* the size of the matrix m */
-  double *m;  /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */ // we don't save it  
-  double *b;  /* the normal equations (i.e. grad(chi2) = 0) right hand side */ // we don't save it 
+#if 0
+  Mat m;  /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */ // we don't save it  
+  Vect b;  /* the normal equations (i.e. grad(chi2) = 0) right hand side */ // we don't save it 
+#endif
+
   vector<double> solution; //[mSize]/* the weights of various kernels */
   vector<double> diffbackground; //! /* the differential background coefficient when fitted separately */
 
@@ -220,8 +226,6 @@ class KernelFit  :  public RefCount
     convolutions = NULL;
     BestImageBack = 0;
     WorstImageBack = 0;
-    m=0;
-    b=0;
     nstamps=0;
   }
   
@@ -239,22 +243,20 @@ void AllocateConvolvedStamps(); /* trick to avoid allocation and deallocation of
                                  triggered when needed */
 void DeallocateConvolvedStamps();
 
-//! sums least square matrix and vector for all stamps
-void ComputeMAndB();
 //! computes least square matrix and vector for one stamp
   //void OneStampMAndB(const Stamp &Astamp, vector<double> &StampM, vector<double> &StampB);
-  void OneStampMAndB(const Stamp &Astamp, double* StampM, double* StampB);
-//! subtract a stamp of the least square matrix and vector
-void SubtractStampFromMAndB(Stamp& AStamp); 
+  void OneStampMAndB(const Stamp &Astamp, Mat &StampM, Vect &StampB);
+
 //! actually solves the system by calling linear algebra efficient routines
-int Solve();
-double StampChi2(Stamp &stamp, double VSky, double InvGain); /* involves a kernel computation and a stamp convolution */
+  bool Solve(const Mat &M, const Vect &B);
+
+  double StampChi2(Stamp &stamp, double VSky, double InvGain); /* involves a kernel computation and a stamp convolution */
   double chi2;
   int NStampsUsed() const {return nstamps;}
 
 /* computes chi2 contributions of stamps and applies median filtering for outliers removal. iterates until
 the number of stamps involved stabilizes. */
-void FilterStamps(); 
+  void FilterStamps(Mat &M, Vect &B); 
   //! final wrapper that calls various routines to fill matrix and vector, and then solve.
 int DoTheFit(const BaseStarList &List, double &BestSeeing, double &WorstSeeing);
 int DoIt(const BaseStarList &List, double &BestSeeing, double &WorstSeeing);

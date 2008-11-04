@@ -433,8 +433,14 @@ if (convolutions)
 }
 
 
-void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *StampB)
+void KernelFit::OneStampMAndB(const Stamp &AStamp, Mat &M, Vect &B)
 {
+  /* computes the contributions of AStamp to the linear system
+     and increments accordingly M and B, which are *NOT* zeroed here.
+     Note that only the "U" part of M is used on input, 
+     and M is symetrized on output, so that the UorL choice remains confined
+     to this routine.
+  */
   int oldprec = cout.precision();
  cout << setprecision(10);
  ios::fmtflags  old_flags = cout.flags(); 
@@ -479,16 +485,15 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
        }
    }
 
- memset(StampM, 0, mSize*mSize*sizeof(double));
- memset(StampB, 0, mSize*sizeof(double));
-
     /* contributions to the matrix m */
     /* background-background terms */
  for (unsigned int ib = 0; ib < optParams.BackVar.Nterms(); ++ib)
    {
    for (unsigned int jb =0; jb<=ib; ++jb)   
      {
-     StampM[BackIndex(ib)*mSize+BackIndex(jb)] += 
+       /* BackIndex is an increasing function of its argument, 
+	  so we are filling the "U" part (j<=i) */
+       M(BackIndex(ib),BackIndex(jb)) += 
        three_scal_prod(backStamps[ib].begin(), backStamps[jb].begin(), AStamp.weight.begin(), convolvedPix);
      }
    }
@@ -511,7 +516,7 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
        for (unsigned int js =0; js < optParams.KernVar.Nterms(); ++js)
 	 {
 	 int jm = KernIndex(jk,js);
-         StampM[im*mSize+jm] += integral*spatialCoeff[is]*spatialCoeff[js];  // alard eq (3)
+         M(im,jm) += integral*spatialCoeff[is]*spatialCoeff[js];  // alard eq (3)
          }
        }
      }
@@ -523,11 +528,13 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
      for (unsigned int jb=0; jb < optParams.BackVar.Nterms(); ++jb) 
        {
        int jm = BackIndex(jb);
-       /* fill only m part for j<=i 
-	 StampM(i,j) is in principle [i*mSize+j], swap them here...*/
-       StampM[jm*mSize+im] += spatialCoeff[is]*
-	 three_scal_prod(convolutions[ik].begin(), backStamps[jb].begin(), AStamp.weight.begin(),  
-		   convolvedPix);
+       /* fill only M(i,j) for j<=i,
+	  and background is placed after kernel in params */
+       M(jm,im) += spatialCoeff[is]*
+	 three_scal_prod(convolutions[ik].begin(), 
+			 backStamps[jb].begin(), 
+			 AStamp.weight.begin(),  
+			 convolvedPix);
        }
      }
 
@@ -548,84 +555,31 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, double *StampM, double *Stamp
    for (unsigned int is =0; is < optParams.KernVar.Nterms(); ++is)
      {
      int im = KernIndex(ik,is);
-     StampB[im] += bintegral * spatialCoeff[is]; // alard eq (4)
+     B(im) += bintegral * spatialCoeff[is]; // alard eq (4)
      }
    } /* end of for (ik */
 
       /* background terms of b */
  for (unsigned int ib=0; ib < optParams.BackVar.Nterms(); ++ib)
    {
-   StampB[BackIndex(ib)] += 
+     B(BackIndex(ib)) += 
      image_scal_prod(backStamps[ib], AStamp.weight, WorstImage, WorstImageBack, 
 		     AStamp.xc - hConvolvedSize, AStamp.yc - hConvolvedSize);
    }
  delete [] spatialCoeff;
  // delete [] backCoeff;
- /* return a symtetrized matrix ... safer than too assume anything 
-    about calling routine*/
-for (size_t i=0; i<mSize; ++i) for (size_t j=i+1; j<mSize; ++j) StampM[i*mSize+j] = StampM[j*mSize+i];
+ /* return a symtetrized matrix ... safer than assuming anything 
+    about the calling routine*/
+for (size_t i=0; i<mSize; ++i) 
+  for (size_t j=i+1; j<mSize; ++j) 
+    M(i,j) = M(j,i);
 
  cout << setprecision(oldprec);
  cout.flags(old_flags);
 }
 
 
-void KernelFit::SubtractStampFromMAndB(Stamp& AStamp)
-{
- double *mStamp = NULL;
- double *bStamp = NULL;
- alloc_m_and_b(mStamp, bStamp, mSize);
- OneStampMAndB(AStamp, mStamp, bStamp);
- for (int i = mSize*mSize-1; i>=0; --i) m[i] -= mStamp[i];
- for (int i = mSize-1; i>=0; --i) b[i] -= bStamp[i];
 
- delete [] mStamp,
- delete [] bStamp;
-}
-
-
-
-void KernelFit::ComputeMAndB()
-{
-
-/* allocate the convolved stamps */
-
-
-alloc_m_and_b(m,b,mSize);
-
-double *mStamp = NULL;
-double *bStamp = NULL;
-alloc_m_and_b(mStamp, bStamp, mSize);
-
-
-for (StampIterator si = BestImageStamps->begin(); si != BestImageStamps->end(); ++si)
-  {
-    /* since the allocation of convolved stamps once for all assumes that all stamps have the same size, 
-       should check it */
-    OneStampMAndB(*si, mStamp, bStamp);
-    for (int i = mSize*mSize-1; i>=0; --i) m[i] += mStamp[i];
-    for (int i = mSize-1; i>=0; --i) b[i] += bStamp[i];
-
-  } /* end of loop on stamps */
-
-#ifdef DEBUG
- int oldprec = cout.precision();
- cout << setprecision(10);
- ios::fmtflags  old_flags = cout.flags(); 
- cout << resetiosflags(ios::fixed) ;
- cout << setiosflags(ios::scientific) ;
- cout << " matrix " << endl;
- for (int i=0; i<mSize; ++i) { for (int j=0; j<=i; ++j) cout << m[i*mSize+j] << ' '; cout << endl;}
- cout << " b " << endl;
- for (int i=0; i<mSize; ++i) cout << b[i] << ' ' ; cout <<endl;
- cout << setprecision(oldprec);
- cout.flags(old_flags);
-#endif
-
-
-delete [] mStamp;
-delete [] bStamp;
-} 
 
 
 static void KernLinComb(Kernel &Result, const vector<Kernel> &VK, double *Coeffs)
@@ -929,9 +883,10 @@ return chi2;
 }
 
 
-/* removal of stamps which are found different after kernel fit, convolution and subtraction */
-void KernelFit::FilterStamps()
- {
+/* removal of stamps which are found different after kernel fit, 
+   convolution and subtraction */
+void KernelFit::FilterStamps(Mat &m, Vect &b)
+{
  int dropped;
  int nstamps =  BestImageStamps->size();
  double *chi2s = new double[nstamps];
@@ -976,7 +931,11 @@ void KernelFit::FilterStamps()
 		  << stamp.chi2 << ' ' << stamp.nActivePix << ' ' << chi2 << endl;
 	     //if (stamp.star) stamp.star->dump();
 	     dropped++;
-	     SubtractStampFromMAndB(stamp);
+	     Mat mStamp(mSize,mSize);
+	     Vect bStamp(mSize);
+	     OneStampMAndB(stamp, mStamp, bStamp);
+	     m -= mStamp;
+	     b -= bStamp;
 	     si = BestImageStamps->erase(si);
 	   }
 	 else ++si;
@@ -984,7 +943,7 @@ void KernelFit::FilterStamps()
      if (dropped) /* we have to recompute the kernel (just solve once again the normal equation) */
        {
 	 cout << " dropped " << dropped << " stamps : refitting " << endl;
-	 Solve();
+	 Solve(m,b);
        }
      nstamps -= dropped;
    } 
@@ -1009,100 +968,107 @@ delete [] chi2s;
 }
 
 
-int KernelFit::Solve()
+bool KernelFit::Solve(const Mat &m, const Vect &b)
 {
- int oldprec = cout.precision();
- cout << setprecision(10);
- ios::fmtflags  old_flags = cout.flags(); 
- cout << resetiosflags(ios::fixed) ;
- cout << setiosflags(ios::scientific) ;
- if (solution.size()!=(unsigned int)mSize) solution.resize(mSize);
- int inversion;
+  int oldprec = cout.precision();
+  cout << setprecision(10);
+  ios::fmtflags  old_flags = cout.flags(); 
+  cout << resetiosflags(ios::fixed) ;
+  cout << setiosflags(ios::scientific) ;
+  if (solution.size()!=(unsigned int)mSize) solution.resize(mSize);
+  bool could_solve;
+
+
+  //DEBUG
+  cout << " nouveau code " << endl;
  // i.e. the integral of the kernel (photometric ratio) is constant over the image
- if (optParams.UniformPhotomRatio) {
-// use Lagrange multipliers technique
- cout <<" Integral of kernel is assumed to be constant." << endl ;
-int nKern = Kernels.size();
-int nc = optParams.KernVar.Nterms() -1; // number of constraints
-int totSize = mSize + nc;
-double *mprime = new double [totSize*totSize];
-memset(mprime,0,sizeof(double)*totSize*totSize);
-double *bprime = new double [totSize];
-memset(bprime,0,sizeof(double)*totSize);
-memcpy(bprime,b,sizeof(double)*mSize);
-for (size_t i=0; i<mSize; ++i)
-  for (size_t j=0; j<mSize; ++j)
+  if (optParams.UniformPhotomRatio) {
+    // use Lagrange multipliers technique
+    cout <<" Integral of kernel is assumed to be constant." << endl ;
+    int nKern = Kernels.size();
+    int nc = optParams.KernVar.Nterms() -1; // number of constraints
+    int totSize = mSize + nc;
+    Mat mprime(totSize,totSize);
+    Vect bprime(totSize);
+    for (unsigned k=0; k<mSize; ++k) bprime(k) = b(k);
+    for (unsigned i=0; i<mSize; ++i)
+      for (unsigned j=0; j<mSize; ++j)
+	{
+	  mprime(i,j) = m(i,j);
+	}
+    for (int ik=0; ik < nKern; ++ik)
+      {
+	double kern_int = Kernels[ik].sum();
+	for (unsigned ic =1; ic < optParams.KernVar.Nterms(); ++ic)
+	  {
+	    int ip = KernIndex(ik,ic);
+	    int jp = mSize+ic-1;
+	    mprime(ip,jp) = mprime(jp,ip) = kern_int;
+	  }
+      }
+    // DEBUG
+    //mprime.writeFits("A.fits");
+
+    /* have to use a lin eq. solver that accomodates non posdef
+       matrices : mprime is NOT posdef. */
+    could_solve = (general_solve(mprime, bprime,false /* no inverse */, "U") == 0);
+    /*
+    could_solve = (MatSolveLapack(mprime.NonConstData(), 
+				  bprime.size(), 
+				  bprime.NonConstData()) == 1);
+    */
+    cout << " Kernel Inversion " << could_solve << endl;
+    if (could_solve)
+      {
+	solution.resize(mSize);
+	for(size_t i=0; i<mSize;i++) {
+	  solution[i]=bprime(i);
+	}
+      }
+  }// end of if (constant kernel integral) ...
+  else {// NO CONSTRAINT on the variations of kernel integral
+    /* operate on a copy, to preserve m & b, in case we subtract outlier
+       stamps later. 
+       m&b are "const" BTW.*/
+    Mat mprime(m);
+    Vect bprime(b);
+    // we can use cholesky because m is (should be) posdef 
+    could_solve = (cholesky_solve(mprime,bprime, "U") == 0);
+    /*
+    could_solve = (MatSolveLapack(mprime.NonConstData(), 
+				  bprime.size(), 
+				  bprime.NonConstData()) == 1);
+    */
+    cout << " Kernel Inversion: " << could_solve << endl;
+    if (could_solve)
+      {
+	solution.resize(mSize);
+	for(unsigned int i=0; i<mSize;i++) {
+	  solution[i]=bprime(i);
+	}
+      }
+  }
+
+  Kernel kernel_at_center( optParams.HKernelSize, optParams.HKernelSize);
+  KernCompute(kernel_at_center, BestImage->Nx()/2, BestImage->Ny()/2);
+
+  KernAtCenterSum = kernel_at_center.sum();
+  cout << " Kernel integral ( = photometric ratio) " << KernAtCenterSum  << endl;
+  if (optParams.BackVar.Nterms()) 
     {
-    mprime[i*totSize+j] = m[i*mSize+j];
-    }
-for (int ik=0; ik < nKern; ++ik)
-  {
-  double kern_int = Kernels[ik].sum();
-  for (size_t ic =1; ic < optParams.KernVar.Nterms(); ++ic)
-    {
-    int ip = KernIndex(ik,ic);
-    int jp = mSize+ic-1;
-    mprime[ip*totSize+jp] = mprime[jp*totSize+ip] = kern_int;
-    }
-  }
-// have to use a lin eq. solver that accomodates non posdef matrices : mprime is NOT posdef.
-inversion=MatSolveLapack(mprime,totSize,bprime);
-cout << " Kernel Inversion: " << inversion << endl;
-if (inversion)
-  {
-    solution.resize(mSize);
-    for(size_t i=0; i<mSize;i++) {
-      solution[i]=bprime[i];
-    }
-    //memcpy(solution,bprime,sizeof(double)*mSize);
-    delete [] mprime;
-    delete [] bprime;
-  }
- }
- else {// NO CONSTRAINT on the variations of kernel integral
-/* operate on a copy, to preserve m */
-double *mprime = new double[mSize*mSize];
-double *bprime = new double[mSize];
-memcpy(mprime, m, mSize*mSize*sizeof(double));
-memcpy(bprime,b, mSize*sizeof(double));
-inversion = MatSolveLapack(mprime, mSize, bprime);
- cout << " Kernel Inversion: " << inversion << endl;
-if (inversion)
-  {
-    solution.resize(mSize);
-    for(unsigned int i=0; i<mSize;i++) {
-      solution[i]=bprime[i];
-    }
-    delete [] mprime;
-    delete [] bprime;
-  }
-}
-
-Kernel kernel_at_center( optParams.HKernelSize, optParams.HKernelSize);
-KernCompute(kernel_at_center, BestImage->Nx()/2, BestImage->Ny()/2);
-
-/* cout << "solution" << endl;
- for (int i=0; i<mSize; ++i) { 
-   cout << solution[i] << ' ' ; 
-   if ( (i%10) == 9) cout <<endl;}
-   cout <<endl; */
-
- KernAtCenterSum = kernel_at_center.sum();
- cout << " Kernel integral ( = photometric ratio) " << KernAtCenterSum  << endl;
- if (optParams.BackVar.Nterms()) 
-   {
-     cout << setprecision(10);
-     cout << " Differential background: " << endl;
-     for (size_t ib=0; ib< optParams.BackVar.Nterms(); ++ib) cout << solution[BackIndex(ib)] << " " ;
-     cout << endl;
+      cout << setprecision(10);
+      cout << " Differential background: " << endl;
+      for (size_t ib=0; ib< optParams.BackVar.Nterms(); ++ib) 
+	cout << solution[BackIndex(ib)] << " " ;
+      cout << endl;
    }
 
- double vx,vy,vxy; kernel_at_center.moments(vx,vy,vxy);
- cout << " sigmas " << sqrt(vx) << ' ' << sqrt(vy) << " rho " << vxy/sqrt(vx*vy) << endl;
- // cout << " Kernel " << endl; kernel_at_center.dump();
- cout << setprecision(oldprec);
- cout.flags(old_flags);
- return inversion;
+  double vx,vy,vxy; kernel_at_center.moments(vx,vy,vxy);
+  cout << " sigmas " << sqrt(vx) << ' ' << sqrt(vy) 
+       << " rho " << vxy/sqrt(vx*vy) << endl;
+  cout << setprecision(oldprec);
+  cout.flags(old_flags);
+  return could_solve;
 }
 
 double KernelFit::BackValue(const double&x, const double &y) const
@@ -1193,9 +1159,25 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
 
   KernelsFill();
 
-  ComputeMAndB();
-   cout << " finished computation of m and b" << endl;
-  if (!Solve())
+/* allocate the convolved stamps */
+  Mat m(mSize,mSize);
+  Vect b(mSize);
+
+
+  // fill the LS problem matrix and RHS vector (m and b)
+  for (StampIterator si = BestImageStamps->begin(); 
+       si != BestImageStamps->end(); ++si)
+    {
+      /* since the allocation of convolved stamps once for all assumes
+       that all stamps have the same size, should check it */
+      OneStampMAndB(*si, m, b);
+    } /* end of loop on stamps */
+
+
+
+  cout << " finished computation of m and b" << endl;
+
+  if (!Solve(m,b))
     {
     cerr << " KernelFit: Inversion failed  " << endl;
     delete BestImageStamps; BestImageStamps = NULL;
@@ -1203,7 +1185,7 @@ int KernelFit::DoTheFit(const BaseStarList &List, double &BestSeeing, double &Wo
     return 0;
     }
   
-  FilterStamps();
+  FilterStamps(m,b);
   clock_t tend = clock();
   cout << "CPU for the kernel fit " <<  float(tend- tstart)/float(CLOCKS_PER_SEC) << endl;
   DeallocateConvolvedStamps();
