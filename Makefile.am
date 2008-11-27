@@ -18,7 +18,7 @@ EXTRA_DIST =   autogen.sh datacards/default.conv datacards/default.nnw \
 
 
 
-SUBDIRS = cern_stuff lapack_stuff telinst src_base src_utils flat src dao psf simphot lc utils datacards cern_utils imagemagick_utils doc
+SUBDIRS = cern_stuff lapack_stuff telinst src_base src_utils flat src psf simphot lc utils datacards cern_utils imagemagick_utils
 if ENABLE_MC
 SUBDIRS += mc
 endif

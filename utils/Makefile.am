@@ -21,8 +21,8 @@ bin_PROGRAMS = \
  joinlist \
  make_weight matchusno \
  preptoads removeback selection \
- skylev sum_images valid_fits make_daophot make_lightcurve \
- rustine_for_fringe assign dbls split_fits testdao \
+ skylev sum_images valid_fits make_lightcurve \
+ rustine_for_fringe assign dbls split_fits  \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
  compute enlargeimage calibrate coordfromimage enlargedead mask2dead \
  mkcat2 seeing mergelists \
@@ -132,13 +132,9 @@ calibratefixedpos_CXXFLAGS = -I$(top_srcdir)/psf -I$(top_srcdir)/lc $(AM_CPPFLAG
 calibratefixedpos_LDFLAGS =  -ltoadslc -ltoadspsf
 
 ### Programs additionnaly depending on dao
-make_daophot_SOURCES = make_daophot.cc
-make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
-make_daophot_LDFLAGS =  -ltoadsdao
-
-testdao_SOURCES = testdao.cc
-testdao_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
-testdao_LDFLAGS =  -ltoadsdao
+#make_daophot_SOURCES = make_daophot.cc
+#make_daophot_CXXFLAGS = -I$(top_srcdir)/dao $(AM_CPPFLAGS)
+#make_daophot_LDFLAGS =  -ltoadsdao
 
 getvalueatpoint_SOURCES = getvalueatpoint.cc
 deadprop_SOURCES = deadprop.cc
