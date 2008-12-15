@@ -90,8 +90,7 @@ AM_CONDITIONAL(ENABLE_MC, test x$mc = xtrue)
 
 # Use CMT to link packages, see cmt/configure.in
 AC_ARG_ENABLE(cmt,
-[AC_HELP_STRING([--enable-cmt],[use cmt to find external software (default is NO)])],
-[CHECK_CMT],
+[AC_HELP_STRING([--disable-cmt],[do not use cmt to find external software (default is NO)])],
 [ # else put here the additionnal software to check
 CHECK_CFITSIO(2.400)
 if test  x$sex = xtrue ; then
@@ -102,7 +101,8 @@ CMT_LDFLAGS=""
 AC_SUBST(CMT_CFLAGS)
 AC_SUBST(CMT_LDFLAGS)
 fi
-])
+],
+[CHECK_CMT])
 
 # Use imagemagick to output some vignettes in gif
 AC_ARG_ENABLE(imagemagick,
@@ -121,10 +121,10 @@ AM_CONDITIONAL(IMAGEMAGICK, test x$imagemagick = xtrue)
 # this prevents during developpement to install
 # systematically the package
 AC_ARG_ENABLE(autoinstall,
-[AC_HELP_STRING([--enable-autoinstall],[automatically install package using symbolic links])],
-[autoinstall=true],
-[autoinstall=false])
-AM_CONDITIONAL(AUTOINSTALL, test x$autoinstall = xtrue)
+[AC_HELP_STRING([--disable-autoinstall],[disable automatic installation using symbolic links])],
+[autoinstall=false],
+[autoinstall=true])
+AM_CONDITIONAL(AUTOINSTALL, test x$autoinstall != xfalse)
 
 # Check cernlib 
 AC_ARG_ENABLE(cernlib,
