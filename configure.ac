@@ -90,8 +90,22 @@ AM_CONDITIONAL(ENABLE_MC, test x$mc = xtrue)
 
 # Use CMT to link packages, see cmt/configure.in
 AC_ARG_ENABLE(cmt,
-[AC_HELP_STRING([--disable-cmt],[do not use cmt to find external software (default is NO)])],
+[AC_HELP_STRING([--disable-cmt],[do not use cmt to find external software (default is yes)])],
 [ # else put here the additionnal software to check
+if test $enable_cmt = yes; then
+  use_cmt=true
+else 
+  use_cmt=false
+fi
+],
+[
+use_cmt=true
+])
+
+#may seem complicated, but AC_ARG_ENABLE(only checks if 
+if test $use_cmt = true ; then
+CHECK_CMT
+else
 CHECK_CFITSIO(2.400)
 if test  x$sex = xtrue ; then
 CHECK_SEX
@@ -101,8 +115,7 @@ CMT_LDFLAGS=""
 AC_SUBST(CMT_CFLAGS)
 AC_SUBST(CMT_LDFLAGS)
 fi
-],
-[CHECK_CMT])
+fi
 
 # Use imagemagick to output some vignettes in gif
 AC_ARG_ENABLE(imagemagick,
@@ -122,7 +135,13 @@ AM_CONDITIONAL(IMAGEMAGICK, test x$imagemagick = xtrue)
 # systematically the package
 AC_ARG_ENABLE(autoinstall,
 [AC_HELP_STRING([--disable-autoinstall],[disable automatic installation using symbolic links])],
-[autoinstall=false],
+[
+if test $enable_autoinstall = no; then
+  autoinstall=false
+else
+  autoinstall=true
+fi
+],
 [autoinstall=true])
 AM_CONDITIONAL(AUTOINSTALL, test x$autoinstall != xfalse)
 
