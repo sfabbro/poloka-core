@@ -5,7 +5,7 @@
 #include <iostream>
 
 
-//! an implementation of "smart pointers" that counts references to an object. The obejct it "points" to has to derive from RefCount. 
+//! an implementation of "smart pointers" that counts references to an object. The object it "points" to has to derive from RefCount. 
 template <class T> class CountedRef {
 
   private :
@@ -14,15 +14,15 @@ template <class T> class CountedRef {
  public:
 
   CountedRef() { p = NULL;}
-  CountedRef(T* pp) : p(pp) { if (p) (p->refCount())++;}
+  CountedRef(T* pp) : p(pp) { if (p) p->refcount++;}
   /* explicit constness violation : */
-  CountedRef(const T* pp)  { p = (T*) pp;  if (p) (p->refCount())++;}
+  CountedRef(const T* pp)  { p = (T*) pp;  if (p) p->refcount++;}
 
 #ifndef SWIG
   void operator = (const CountedRef &Right) 
     {  
-      if (p) {(p->refCount())--;if (p->refCount() == 0) delete p;}
-      if (&Right) { p = Right.p; if (p) (p->refCount())++;}
+      if (p) { p->refcount--;if (p->refcount == 0) delete p;}
+      if (&Right) { p = Right.p; if (p) p->refcount++;}
     }
 #endif
 
@@ -48,13 +48,13 @@ template <class T> class CountedRef {
 
 #endif /* __CINT__ */
 
-  virtual ~CountedRef() 
+  ~CountedRef() 
     { 
       if (!p) return;
-      (p->refCount())--;
+      p->refcount--;
       // tentative check :
-      if (p->refCount() < 0) {std::cerr << " problem in ~RefCount: aborting "  << std::endl; abort();}
-      if (p->refCount() == 0) 
+      if (p->refcount < 0) {std::cerr << " problem in ~RefCount: negative count , aborting "  << std::endl; abort();}
+      if (p->refcount == 0) 
      	{delete p;} 
     }
 };
@@ -65,7 +65,7 @@ public:
   RefCount() : refcount(0) {}
   
   /* when a RefCount is copied, it means that the object itself is copied,
-     hence the count sould be set to zero */
+     hence the ref count should be set to zero */
 
   RefCount(const RefCount &Other) 
     { 
@@ -73,8 +73,8 @@ public:
       refcount = 0;
     }
 
-  /* when a RefCount deleted, one must have zero references to it */
-  virtual ~RefCount()
+  /* when a RefCount is deleted, one must have zero references to it */
+  ~RefCount()
     { 
       if(refcount!=0) {
 	std::cerr << "Trying to delete a RefCount with non zero number of references" << std::endl;
@@ -83,8 +83,9 @@ public:
       }
     }
   
-  
-  int& refCount()   { return refcount; }
+  template <class U> friend class CountedRef;
+
+  int refCount() const   { return refcount; }
 
   
 #ifndef SWIG
