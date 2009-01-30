@@ -829,8 +829,11 @@ void DetectionProcess::SetScoresFromRef(DetectionList &List,
   for (DetectionIterator i= List.begin(); i!= List.end(); ++i)
     {
       Detection &Det = **i;
-      Pix2RaDec->apply(Det.x, Det.y, Det.ra, Det.dec);
-      Pix2RaDec->TransformErrors(Det, &Det.varXX, &Det.vRaRa);
+      if (Pix2RaDec) // some simulations don't have WCS's. no else needed
+	{
+	  Pix2RaDec->apply(Det.x, Det.y, Det.ra, Det.dec);
+	  Pix2RaDec->TransformErrors(Det, &Det.varXX, &Det.vRaRa);
+	}
       FluxFromPos(Det, Det.fluxRef);
       /* put a positive prctInc even when fluxRef<0. this simplifies 
 	 quality cuts... */
