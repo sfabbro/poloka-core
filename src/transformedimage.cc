@@ -116,7 +116,7 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   
   /* write in the header the frame coordinates */
   Frame frame(dynamic_cast<const FitsHeader&> (Original));
-  cout << " Before scaling " << frame;
+  cout << " Before scaling " << frame << endl;
   //frame = frame.ApplyTransfo(*transfoToRef);
   //  GtransfoLin *lintransfoToRef = GtransfoToLin(transfoToRef);
   //  frame = frame.ApplyTransfo(*lintransfoToRef);
@@ -129,7 +129,7 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));
-  cout << " After scaling  " << frame;
+  cout << " After scaling  " << frame << endl;
   
   Transformed.AddOrModKey("SCALFACT",scaleFactor,"Scaling factor when transforming");
 
@@ -277,7 +277,7 @@ void ImageGtransfo::TransformWeightImage(const FitsImage &Original,
 
   /* write in the header the frame coordinates */
   Frame frame(dynamic_cast<const FitsHeader&> (Original));
-  cout << " Before scaling " << frame;
+  cout << " Before scaling " << frame << endl;
   //frame = frame.ApplyTransfo(*transfoToRef);
   //  GtransfoLin *lintransfoToRef = GtransfoToLin(transfoToRef);
   //  frame = frame.ApplyTransfo(*lintransfoToRef);

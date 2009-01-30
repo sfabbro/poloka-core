@@ -451,7 +451,7 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
       else
 	toExtract += (largeFrame*currentFrame);
       cout << " after adding " << current.Name() 
-	   << ", extract frame = " << toExtract;
+	   << ", extract frame = " << toExtract << endl;
       ++i;
     }
   delete largeRaDec2Pix;
