@@ -52,6 +52,13 @@ class Ellipse
 
   double Distance(const double &X, const double &Y) const;
 
+  double SigmaX() const;
+  
+  double SigmaY() const;
+
+  //! correlation coefficient
+  double Corr() const;
+
   void dump(ostream &s = cout) const;
 
 };

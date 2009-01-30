@@ -213,13 +213,26 @@ double Ellipse::Distance(const double &X, const double &Y) const
   return sqrt(wxx*sq(X-xc)+(Y-yc)*(wyy*(Y-yc)+2.*wxy*(X-xc)));
 }
 
+double Ellipse::SigmaX() const
+{
+  return sqrt(wyy/( wxx*wyy-wxy*wxy));
+}
+
+double Ellipse::SigmaY() const
+{
+  return sqrt(wxx/( wxx*wyy-wxy*wxy));
+}
+
+double Ellipse::Corr() const
+{
+  return (-wxy/sqrt(wxx*wyy));
+}
 
 void Ellipse::dump(ostream &s) const
 { 
-  double det = wxx*wyy-wxy*wxy;;
     s << " center :(" << xc << ',' << yc << ") sigma(x,y,cor) = (" 
-      << sqrt(wyy/det) << ','<< sqrt(wxx/det)  << ',' 
-      << -wxy/sqrt(wxx*wyy) << ')' << endl;
+      << SigmaX() << ','<< SigmaY()  << ',' 
+      << Corr() << ')' << endl;
 }
 	
 
