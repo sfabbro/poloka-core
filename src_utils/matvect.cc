@@ -197,7 +197,7 @@ int cholesky_invert(Mat &A, const char* UorL)
 }
 
 
-int lapack_diagonalize_sym(Mat& A, Vect& EigenVals, const char* UorL)
+int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
 {
   assert(A.SizeX() == A.SizeY());
   
@@ -217,18 +217,16 @@ int lapack_diagonalize_sym(Mat& A, Vect& EigenVals, const char* UorL)
 	  eval, 
 	  work, &lwork, iwork, &liwork, 
 	  &info);
+
+  delete[] work;
+  delete[] iwork;
+
   
   if(info != 0)
     {
-      cout << "[lapack_diagonalize_sym] ERROR in dsysevd, info=" << info
+      cout << "[symetric_diagonalize] ERROR in dsysevd, info=" << info
 	   << endl;
-      delete[] work;
-      delete[] iwork;
-      return info;
     }
-  
-  delete[] work;
-  delete[] iwork;
   
   return info;
 }

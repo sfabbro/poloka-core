@@ -109,7 +109,7 @@ int general_solve(Mat& A, Vect& B, bool invert_A, const char* UorL);
 int symetric_solve(Mat& A, Vect& B, const char* UorL);
 
 
-int lapack_diagonalize_sym(Mat& A, Vect& EigenVals, const char* UorL);
+int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL);
 
 //! same when there are several RHS (i.e. we have several B's)
 int symetric_solve(Mat& A, Mat& B, const char* UorL);
