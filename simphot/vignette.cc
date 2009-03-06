@@ -45,6 +45,7 @@ Vignette::Vignette(SimPhotFit &SPF, const ReducedImage &Current):
   ri(&Current), simPhotFit(SPF), photomRatio(1.), 
   flux(0), sky(0)
 {
+  mjd = ri->ModifiedJulianDate();
   mmjd = ri->ModifiedModifiedJulianDate();
   seeing = ri->Seeing();
   expTime = ri->Exposure();
@@ -403,7 +404,7 @@ void Vignette::FillAAndB(Mat &A, Vect &B, const int ToDo)
       A(skyIndex,skyIndex) += weightPix.Sum();
       B(skyIndex) += ScalProd(weightPix,residuals); // B term - Sky
       // DEBUG
-      if (isnan(B(skyIndex))) abort();
+      if (isnan(B(skyIndex))) { cout << "HELLO" << endl ; abort();}
       // Sky - Flux
       if (ToDo & FIT_FLUX)
 	A(skyIndex, fluxIndex) += ScalProd(psf,weightPix);

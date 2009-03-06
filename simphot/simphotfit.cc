@@ -135,7 +135,7 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
       if (!OneIteration(CurrentToDo))  return false;
       CumulateChi2(chi2, ndof, true );
       niter++;
-      if (chi2>oldChi2)
+      if ((chi2-oldChi2)>DeltaChi2)
 	{
 	  printf(" Chi2 increased : old %12.4f new %12.f delta %12.4f\n",
 		 oldChi2,chi2,oldChi2-chi2);

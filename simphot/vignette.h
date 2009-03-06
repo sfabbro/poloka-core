@@ -25,7 +25,7 @@ class ImagePSF;
 class Vignette : public RefCount {
  private :
   ReducedImageRef ri;
-  double mmjd, seeing, expTime;
+  double mmjd, mjd, seeing, expTime;
   bool couldFitFlux;
   SimPhotFit &simPhotFit;
   GtransfoRef vignette2Model; // image to model transfo (stamp coordinates)
@@ -84,7 +84,7 @@ class Vignette : public RefCount {
   void SetFlux(const double &Val) { flux = Val;}
 
 
-
+  double MJD() const { return mjd;}
   double MMJD() const { return mmjd;}
   double Seeing() const {return seeing;}
   double ExpTime() const { return expTime;}
