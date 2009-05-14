@@ -167,7 +167,13 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 	  sumxy += w*x*y;
 	  sumw += w*star.eventWeight;
 	}
-      // normalize
+      if (sumw==0)
+	{
+	  cout << "  HistoPeakFinder no event in shape histogram : cannot figure out a peak " << endl;
+	  ok = false;
+	  Ell = Ellipse(XGuess, YGuess, 12.*xBin, 12.*yBin, 0.);
+	  break;
+	}      // normalize
       sumx /= sumw;
       sumy /= sumw;
       sumxx /= sumw;
