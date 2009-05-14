@@ -50,7 +50,7 @@ Vignette::Vignette(SimPhotFit &SPF, const ReducedImage &Current):
   seeing = ri->Seeing();
   expTime = ri->Exposure();
   const ObjectToFit &obj =  SPF.ObjToFit();
-  couldFitFlux = (mmjd >=obj.JdMin() && mmjd <= obj.JdMax());
+  couldFitFlux = (mjd >=obj.JdMin() && mjd <= obj.JdMax());
   imagePSF = FindImagePSF(&Current);
 }
 
@@ -404,7 +404,7 @@ void Vignette::FillAAndB(Mat &A, Vect &B, const int ToDo)
       A(skyIndex,skyIndex) += weightPix.Sum();
       B(skyIndex) += ScalProd(weightPix,residuals); // B term - Sky
       // DEBUG
-      if (isnan(B(skyIndex))) { cout << "HELLO" << endl ; abort();}
+      if (isnan(B(skyIndex))) { cout << "WARNING" << B(skyIndex) << endl ; cout << weightPix <<  " " << residuals << " " << ScalProd(weightPix,residuals)<< endl; abort();}
       // Sky - Flux
       if (ToDo & FIT_FLUX)
 	A(skyIndex, fluxIndex) += ScalProd(psf,weightPix);
