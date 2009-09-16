@@ -30,6 +30,7 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
 {
   geomRef = (ReducedImage *)NULL;
   writeVignettes = false;
+  writeMatrices = false ; 
   subDirPerObject = false;
   tupleFileName = "calibration.list";
 
@@ -181,7 +182,7 @@ bool  LightCurveFile::SimPhotFitAll() const
 		  dir = object.Name()+"/";
 		  MKDir(dir.c_str());
 		}
-	      simPhotFit.Write(dir,writeVignettes);
+	      simPhotFit.Write(dir,writeVignettes,writeMatrices);
 	    }
 	  else // the fit went wrong:
 	    {

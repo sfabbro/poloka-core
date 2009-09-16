@@ -35,6 +35,8 @@ class SimPhotFit : public Model
   int toDo;
   Mat A; // contains either the weight param matrix, or towards the end, the covariance, and sometimes even the Cholesky-factorized weight matrix
   Vect B;
+  Mat NightMat;      // see fillNightMat
+  
 
 
  public :
@@ -50,11 +52,13 @@ class SimPhotFit : public Model
 
   void FindModelBoundaries();
   
-  bool Write(const string &Directory, const bool WriteVignettes);
+  bool Write(const string &Directory, const bool WriteVignettes, const bool WriteMatrices);
 
   void WriteTupleHeader(ostream &Stream, const int NStars) const;
   
   void WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar) const;
+
+  void fillNightMat();
 
 
  private :

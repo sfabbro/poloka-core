@@ -199,7 +199,6 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
       cout << flush << " > SimFit::Load() : checking vignets #" << nim++ << "\r";
       // we will fit the flux according to Lc.Ref and date
       vi->CanFitFlux = Lc.Ref->IsVariable(vi->Image()->ModifiedJulianDate());
-
       vi->CanFitPos  = vi->CanFitFlux;
       //vi->DontConvolve = Lc.Ref->Image()->Name() == vi->Image()->Name(); 
       vi->DontConvolve = false;

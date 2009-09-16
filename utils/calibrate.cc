@@ -146,13 +146,13 @@ int main(int argc, char **argv)
 
     count_total++;
     
-    if(int(entry->Value("level"))<requiredlevel)  continue; // not a star with correct level 
+    //if(int(entry->Value("level"))<requiredlevel)  continue; // not a star with correct level 
     mag=entry->Value(mag_key);
     
     count_total_stars++;
     
-    star.x=entry->Value("x"); // ra (deg)
-    star.y=entry->Value("y"); // dec (deg)
+    star.x=entry->Value("ra"); // ra (deg)
+    star.y=entry->Value("dec"); // dec (deg)
     
     // now check if star is in image
     if(!radecW.InFrame(star)) continue; // bye bye
@@ -263,8 +263,8 @@ int main(int argc, char **argv)
     rstar->band = band[0];
     rstar->x = star.x;
     rstar->y = star.y;
-    rstar->ra = entry->Value("x"); // ra (deg)
-    rstar->dec = entry->Value("y"); // dec (deg)
+    rstar->ra = entry->Value("ra"); // ra (deg)
+    rstar->dec = entry->Value("dec"); // dec (deg)
     rstar->jdmin = -1.e30; // always bright
     rstar->jdmax = 1.e30;   
     lclist.Objects.push_back(rstar);
@@ -279,14 +279,14 @@ int main(int argc, char **argv)
     
     // we also want to keep calibration info
     CalibratedStar cstar(star);
-    cstar.ra=entry->Value("x");
-    cstar.dec=entry->Value("y");
-    cstar.u=entry->Value("mu");
+    cstar.ra=entry->Value("ra");
+    cstar.dec=entry->Value("dec");
+    //cstar.u=entry->Value("mu");
     cstar.g=entry->Value("mg");
     cstar.r=entry->Value("mr");
     cstar.i=entry->Value("mi");
     cstar.z=entry->Value("mz");
-    cstar.ue=entry->Value("emu");
+    //cstar.ue=entry->Value("emu");
     cstar.ge=entry->Value("emg");
     cstar.re=entry->Value("emr");
     cstar.ie=entry->Value("emi");

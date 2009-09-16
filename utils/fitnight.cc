@@ -6,6 +6,8 @@
 #include "lightcurvepoint.h"
 #include "dictfile.h"
 
+//#define DEBUG 
+
 using namespace std;
 
 static double sq(const double x) { return x*x;}
@@ -37,8 +39,8 @@ int main(int argc, char **argv)
   Mat CovarianceMat;  
   if(CovarianceMat.readFits("pmat_sn.fits")!=0)
     return -1;
-  //cout << "CovarianceMat" << endl;
-  //cout << CovarianceMat << endl;
+  // cout << "CovarianceMat" << endl;
+  // cout << CovarianceMat << endl;
 
   Mat FluxCovarianceMat = CovarianceMat.SubBlock(0,nflux-1,0,nflux-1);
   FluxCovarianceMat.Symmetrize("L");
@@ -254,13 +256,13 @@ int main(int argc, char **argv)
   for (DictFileCIterator line = lcdata.begin(); line != lcdata.end(); 
        ++line) {
     CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
-    lcp->julianday = line->Value("Date");
+    lcp->modifiedjulianday = line->Value("Date");
     lcp->flux = line->Value("Flux");
     lcpoints.push_back(lcp);
   }
 
   ofstream outputlc("lc2fit_per_night.dat");
-  outputlc << "#Date : (days since January 1st, 2003)\n"
+  outputlc << "#Date : (Modified julian date! days since January 1st, 2003)\n"
 	   << "#Flux : \n"  
 	   << "#Fluxerr : \n"
 	   << "#ZP : elixir zp\n";
@@ -271,7 +273,7 @@ int main(int argc, char **argv)
   
   
   vector< CountedRef<LightCurvePoint> > newlcpoints;
-  double jd;
+  double mjd;
   int nexpo;
   for(unsigned int night = 0; night < flux_per_night.Size(); ++ night) {
     CountedRef<LightCurvePoint> newpoint = new LightCurvePoint();
@@ -279,18 +281,20 @@ int main(int argc, char **argv)
     newpoint->eflux = sqrt(FluxPerNightCovMat(night,night));
     newpoint->computemag(zp);
     // now get julian day (mean of all exposures)
-    jd=0;
+    mjd=0;
     nexpo=0;
     for(unsigned int expo=0;expo<Abis.SizeY();++expo) {
       if(Abis(night,expo)>0.5) {
-	jd += lcpoints[expo]->julianday;
+	// VERIFIER QUE ABIS.SIZEY est = LC.POINTS.SIZE
+	cout << "Abis.sizeY:" << Abis.SizeY() << "   lcpoints.size:" << lcpoints.size() << endl;
+	mjd += lcpoints[expo]->modifiedjulianday;
 	//cout << night << " " 
 	//     << expo << " " 
 	//     << lcpoints[expo]->julianday-2452854.0 << endl;
 	nexpo++;
       }
     }
-    newpoint->julianday = jd/nexpo;
+    newpoint->modifiedjulianday = mjd/nexpo;
     
     outputlc << (*newpoint) << endl;
     newlcpoints.push_back(newpoint);

@@ -16,6 +16,7 @@ class LightCurveFile
   ReducedImageList images;
   ReducedImageRef geomRef;
   bool writeVignettes;
+  bool writeMatrices; 
   bool subDirPerObject;
   string tupleFileName;
   
@@ -33,7 +34,9 @@ class LightCurveFile
   const ReducedImageList &Images() const { return images;}
 
   bool WriteVignettes() const { return writeVignettes;}
+  bool WriteMatrices()  const { return writeMatrices;}
   void PleaseWriteVignettes() { writeVignettes = true;}
+  void PleaseWriteMatrices() { writeMatrices = true;}
 
   bool OneDirPerObject() const { return subDirPerObject;}
   void PleaseOneDirPerObject() { subDirPerObject = true;}

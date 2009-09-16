@@ -1,3 +1,4 @@
+
 #include "simphotfit.h"
 #include "imagepsf.h"
 #include "lightcurvesyntaxerror.h"
@@ -63,10 +64,12 @@ bool SimPhotFit::DoTheFit()
   // determine the size of the model we are going to fit
   // we have to load the PSF of the geomRef at the location of the SN
   BuildVignettes();
+  cout << "BuildVignettes OK " << endl;
   if (toDo & FIT_GALAXY) FindModelBoundaries();
+  cout << "FindModelBoundaries OK " << endl;
   UpdateResiduals(); // should become useless
-  bool ok;
-
+  bool ok = true;
+  cout << "UpdateResiduals OK " << endl;
   // one can only fit position if fluxes are somehow defined:
   // so we first don't fit position to get fluxes
 
@@ -78,6 +81,7 @@ bool SimPhotFit::DoTheFit()
 
   cout << "DoTheFit : do the requested fit : " << todo_2_string(toDo) << endl;
   ok = (ok && OneMinimization(toDo,15,0.1));
+  cout << "OneMinization: " << toDo << " " << ok << endl;
   if (!ok) return false;
 
   //TODO : put 5 in the datacards
@@ -126,8 +130,10 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
 				 const double DeltaChi2)
 {
   double oldChi2; int oldDof;
+  cout << "OneMinimization init ok OK" << endl; 
   CumulateChi2(oldChi2,oldDof);
   double chi2; int ndof;
+  cout << "OneMinimization CumulateChi2 ok, oldChi2, oldDof " << oldChi2 << " " << oldDof << endl;
   int niter = 0;
   while (niter<MaxIter)
     {
@@ -135,20 +141,41 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
       if (!OneIteration(CurrentToDo))  return false;
       CumulateChi2(chi2, ndof, true );
       niter++;
-      if ((chi2-oldChi2)>DeltaChi2)
+
+      if (chi2 < oldChi2-DeltaChi2)
 	{
-	  printf(" Chi2 increased : old %12.4f new %12.f delta %12.4f\n",
-		 oldChi2,chi2,oldChi2-chi2);
+	  cout << "Chi2 decreased (chi2<oldChi2-DeltaChi2) : delta chi2 =" << oldChi2-chi2 << endl;
+	  oldChi2 = chi2; 
+	  continue ; 
+	}
+
+      else
+	{
+	  printf("Chi2 increased (chi2>oldChi2-DeltaChi2): old %E new %E delta %E\n",oldChi2,chi2,oldChi2-chi2);
 	  double c0=oldChi2,c1,c2=chi2;
 	  double x0=0,x1=0.5,x2=1.;
 	  DispatchOffsets(B,-0.5, false);
 	  CumulateChi2(c1,ndof,false);
+
 	  for (int i=0; i < 10; ++i)
 	    {
-	      double xmin= ( (c0-c1)*(x0*x0-x2*x2)-(c0-c2)*(x0*x0-x1*x1) )
-		/ ( (c0-c1)*(x0-x2)-(c0-c2)*(x0-x1) ) / 2.;
-	      printf("x0 x1 x2 xmin %8.4f %8.4f %8.4f %8.4f \n", x0,x1,x2,xmin);
-	      printf("c0 c1 c2 %12.4f %12.4f %12.4f\n",c0,c1,c2);
+	      //Need a break criteria if approximation had converged
+	      if ((abs(c0-c2)<DeltaChi2) and (i!=0)) //let a first iteration
+		{
+		  cout << "Parabolic approx. converged (|c0-c2|<DeltaChi2) :  c0-c2=" << c0-c2 << endl;
+		  break;
+		}
+
+	      //Assume Chi2 as a parabole y = a*x^2 + b*x + c
+	      //Then xmin = -b/(2*a)
+	      double a = (c0*(x1-x2) - c1*(x0-x2) + c2*(x0-x1)) / ((x0*x0 - x0*(x1+x2) + x1*x2) * (x1-x2));
+	      double b =  -(c0*(x1*x1-x2*x2) - c1*(x0*x0-x2*x2) + c2*(x0*x0-x1*x1)) / ((x0*x0 - x0*(x1+x2) + x1*x2) * (x1-x2));
+	      double c = (c0*x1*x2*(x1-x2) - x0*(c1*x2*(x0-x1) - c2*x0*(x0-x1)))   / ((x0*x0 - x0*(x1+x2) + x1*x2) * (x1-x2));
+	      double xmin =  -b/(2*a);
+	      printf("Coef. of parabolic approximation of Chi2 : a=%E b=%E c=%E \n",a,b,c);
+	      printf("x0 x1 x2 xmin %E %E %E %E \n", x0,x1,x2,xmin);
+	      printf("c0 c1 c2 %E %E %E\n",c0,c1,c2);
+
 	      if (xmin<x0)
 		{
 		  x1 = x0;
@@ -179,21 +206,13 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
 		  CumulateChi2(c1,ndof,false);
 		  x1 = xmin;
 		}
+	      
 	      chi2 = c1;
-	      cout << "straight line :  chi2,  step " 
-		   << chi2 << ' ' << x1 << endl;
-	    }// end loop on straight line optimization
-	}
-      if (chi2<oldChi2)
-	{
-	  if (oldChi2-chi2 < DeltaChi2) 
-	    {
-	      cout << " converged : delta chi2 =" << oldChi2-chi2 << endl; 
-	      break;
-	    }
-	}
+	      cout << "straight line :  chi2,  step "<< chi2 << ' ' << x1 << endl;
 
-      oldChi2 = chi2;
+	    }// end loop on straight line optimization
+	  
+	}
     }
   return true;
 }
@@ -305,6 +324,9 @@ void SimPhotFit::AssignIndicesAndToDo(const int CurrentToDo)
     {
       Vignette &v = **i;
       int toDoVignette = CurrentToDo & v.CanDo();
+
+      //cout << "toDoVignette CurrentToDo V.CanDo" << toDoVignette << CurrentToDo << v.CanDo() << endl ;
+  
       if (toDoVignette & FIT_SKY)
 	{
 	  if (!fixedOneSky)
@@ -316,6 +338,7 @@ void SimPhotFit::AssignIndicesAndToDo(const int CurrentToDo)
 	    skyMap[&v] = freeIndex++;
 	}
       toDoMap[&v] = toDoVignette;
+      //cout << "toDoMap[&v]" << toDoMap[&v] << endl ;
     }  
 
   // fluxes
@@ -324,7 +347,9 @@ void SimPhotFit::AssignIndicesAndToDo(const int CurrentToDo)
       Vignette &v = **i;
       if (toDoMap.find(&v) == toDoMap.end()) abort(); // should never happen
       int toDoVignette = toDoMap[&v];
+      //cout << "toDoVignette :" << toDoVignette << endl ;
       if (toDoVignette & FIT_FLUX) fluxMap[&v] = freeIndex++;
+      //cout << "toDoVignette FIT_FLUX fluxMap[&v] :" << toDoVignette << FIT_FLUX << fluxMap[&v] << endl ;
     }
   // position
   if (CurrentToDo & FIT_POS) 
@@ -341,6 +366,7 @@ void SimPhotFit::AssignIndicesAndToDo(const int CurrentToDo)
        << " f:" << fluxMap.size()
        << " p:" << int((posIndex == -1)? 0 : 2) 
        << endl;
+
 }
 
 int SimPhotFit::SkyIndex(const Vignette* V) const
@@ -424,8 +450,9 @@ int SimPhotFit::FluxIndex(const Vignette* V) const
 #define FLUX_WEIGHT_NAME "lightcurve.weight.dat"
 
 
-bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
+bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool WriteMatrices)
 {
+  Mat Acopy = A ;
   cout << " inverting matrix " << endl;
   cholesky_invert(A,"U");
   unsigned nflux = fluxMap.size();
@@ -433,7 +460,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
   unsigned *indexMapping = new unsigned[nflux];
   Point posInImage=ObjectPosInImage();
 
-  ofstream lc((Dir+"lightcurve.dat").c_str());
+  ofstream lc((Dir+"lc2fit.dat").c_str());
   lc << "@INSTRUMENT MEGACAM" << endl;
   lc << "@BAND " << RefImage()->Band() << endl;
   lc << "@MAGSYS AB" << endl;
@@ -458,8 +485,10 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
   //  for (VignetteMap::const_iterator i = fluxMap.begin(); 
   //   i != fluxMap.end(); ++i, ++k)
   unsigned k = 0;
-  for (VignetteCIterator i = vignetteList.begin(); i != vignetteList.end(); 
-       ++i, ++k)
+
+  if ( vignetteList.size() != nflux ) cerr << "IndexMapping(vignetteList.size())  nflux(fluxMap.size()) " <<  vignetteList.size() << " " << nflux << endl ;
+
+  for (VignetteCIterator i = vignetteList.begin(); i != vignetteList.end(); ++i)
     {
       const Vignette *v = *i;
       int fluxIndex = FluxIndex(v);
@@ -467,7 +496,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
       double sigSky = 0;
       int skyIndex = SkyIndex(v);
       if (skyIndex>=0) sigSky = sqrt(A(skyIndex,skyIndex));
-      lc << setw(14) << setprecision(11) << v->MMJD() << ' ' 
+      lc << setw(14) << setprecision(11) << v->MJD() << ' ' 
 	 << setw(14) << setprecision(9) << v->GetFlux() << ' ' 
 	 << setw(12) << setprecision(9) << sqrt(A(fluxIndex,fluxIndex)) << ' '
 	 << setw(7) << setprecision(5) << zp << ' '
@@ -478,6 +507,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
 	 << endl;
       newFluxMap[v] = k;
       indexMapping[k] = fluxIndex;
+      k++;
   }
   lc.close();
 
@@ -530,7 +560,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
       int indexLC = -1;
       if (newFluxMap.find(v) != newFluxMap.end()) 
 	indexLC = newFluxMap[v];
-      vi << setw(10) << setprecision(8) << v->MMJD() << ' ' 
+      vi << setw(10) << setprecision(8) << v->MJD() << ' ' 
 	 << setw(11) << setprecision(9)<< v->GetFlux() << ' ' 
 	 << setw(11) << setprecision(9) <<sigFlux << ' ' 
 	 << setw(10) << setprecision(6) <<v->GetSky() << ' '
@@ -554,7 +584,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
   //galaxy vignette and eventually residual vignettes
   if (toDo & FIT_GALAXY)
     {
-      galaxyPixels.WriteFits(Dir+"galaxy.fits");
+      galaxyPixels.WriteFits(Dir+"galaxy_sn.fits");
       PixelBlock galaxyWeight(galaxyPixels);
       PIXEL_LOOP(galaxyWeight,i,j)
       {
@@ -569,6 +599,46 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes)
 	const Vignette &v = **i;
 	v.Write(Dir);
       }
+
+  if (WriteMatrices)
+    {
+
+      // get covariance matrix
+      cholesky_invert(Acopy,"U");
+      Acopy.writeFits(Dir+"pmat_sn.fits");
+
+      // create and get vector of flux
+      int i=0;
+      for (VignetteCIterator it = vignetteList.begin(); it != vignetteList.end() ; ++it)	
+	{
+	  const Vignette *v = *it;
+	  if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
+	    i++;
+	}
+
+      Mat vm(1,i);
+
+      i=0;
+      for (VignetteCIterator it = vignetteList.begin(); it != vignetteList.end() ; ++it)
+	{
+	  const Vignette *v = *it;
+	  if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
+	    {
+	      vm(0,i)= v->GetFlux();
+	      cout << "Flux=" << v->GetFlux() << endl; 
+	      i++;
+	    }
+	}
+
+      vm.writeFits(Dir+"/vec_sn.fits");
+
+
+      // create and get matrix of Nights and Images
+      fillNightMat();
+      NightMat.writeFits(Dir+"/nightmat_sn.fits");
+
+    }
+
   return true;
 }
 
@@ -666,3 +736,57 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
     }
 }
 
+void SimPhotFit::fillNightMat() {
+
+  
+  double mjd; // modifiedjulian day
+  vector<double> nightdates;
+  bool isinnight;
+  double timediff = 10./24.; // 10 hours
+  int nimages = 0;
+  
+  for (VignetteCIterator itVig = vignetteList.begin(); itVig != vignetteList.end(); ++itVig) {
+    if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux)) {
+      mjd = (*itVig)->ri->ModifiedJulianDate();
+      nimages++;
+      isinnight=false;
+      for(unsigned int day=0;day<nightdates.size(); ++day) {
+	if(fabs(mjd-nightdates[day])<timediff) {
+	  isinnight = true;
+	  break;
+	}
+      }
+      if(!isinnight) {
+	nightdates.push_back(mjd);
+      }
+    }
+  } 
+  int nnights = nightdates.size(); // number of nights for this lightcurve
+  NightMat.allocate(nnights,nimages); // szie of matrix
+  // now we fill this matrix
+    //        nights
+  //      <----------->
+  // i   |   1 
+  // m   |   1
+  // a   |   1
+  // g   |    1
+  // e   |    1
+  // s   |     1 ...  
+  
+  int im = 0;
+  for (VignetteCIterator itVig = vignetteList.begin(); itVig != vignetteList.end(); ++itVig) {
+    if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux)) {
+      mjd = (*itVig)->ri->ModifiedJulianDate();
+      for(unsigned int day=0;day<nightdates.size(); ++day) {
+	if(fabs(mjd-nightdates[day])<timediff) {
+	  NightMat(day,im)=1;
+	  break;
+	}
+      }
+      im++;
+    }
+  }
+  //cout << "========= NightMat ==========" << endl;
+  //cout << NightMat << endl;
+  return;
+}

@@ -45,8 +45,8 @@ Vignette::Vignette(SimPhotFit &SPF, const ReducedImage &Current):
   ri(&Current), simPhotFit(SPF), photomRatio(1.), 
   flux(0), sky(0)
 {
-  mjd = ri->ModifiedJulianDate();
   mmjd = ri->ModifiedModifiedJulianDate();
+  mjd = ri->ModifiedJulianDate();
   seeing = ri->Seeing();
   expTime = ri->Exposure();
   const ObjectToFit &obj =  SPF.ObjToFit();
@@ -402,10 +402,16 @@ void Vignette::FillAAndB(Mat &A, Vect &B, const int ToDo)
     {
       // Sky-Sky
       A(skyIndex,skyIndex) += weightPix.Sum();
-      B(skyIndex) += ScalProd(weightPix,residuals); // B term - Sky
+      B(skyIndex) += ScalProd(weightPix,residuals);
+      cout << "ScalProd(weightPix,residuals) weightPix residuals " << ScalProd(weightPix,residuals) << " " << weightPix << " " << residuals << endl ; 
+ // B term - Sky
       // DEBUG
-      if (isnan(B(skyIndex))) { cout << "WARNING" << B(skyIndex) << endl ; cout << weightPix <<  " " << residuals << " " << ScalProd(weightPix,residuals)<< endl; abort();}
-      // Sky - Flux
+      if (isnan(B(skyIndex))) 
+	{
+	  cout << "B(skyIndex)=" << B(skyIndex)	<< " " << skyIndex << endl;   
+	  abort();
+	}
+     // Sky - Flux
       if (ToDo & FIT_FLUX)
 	A(skyIndex, fluxIndex) += ScalProd(psf,weightPix);
       // Sky - Pos
