@@ -409,7 +409,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   data.Print();
   double Fond = 0., SigmaFond = 0. ;
   FitsImage *pmasksat = NULL ;
-  string nommasksat ;
+  string nommasksat;
   if (savemasksat)
     {
       FitsHeader imgheader(FitsName());
@@ -806,7 +806,12 @@ bool ReducedImage::MakeAperCat()
 
   //try to figure out a gain 
   double gain = I.KeyVal("TOADGAIN");
-  if (I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
+  /* cannot go through the the average/variance trick to figure out
+     the gain if the image comes from Swarp, which subtracts the
+     sky of input images (probably with good reasons)
+  */     
+  string inst = I.KeyVal("TOADINST");
+  if (inst != "Swarp" && I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
     {
       double sexsky = I.KeyVal("SEXSKY");
       double sexsigma = I.KeyVal("SEXSIGMA");
@@ -1105,7 +1110,7 @@ bool ReducedImage::MakeWeight()
   bool updatevar  = true;
   bool addlow = true;
   double oldvariance = 1 ;
-  double newvariance = 1./(SigmaBack()*SigmaBack());
+  double newvariance = 1./sq(SigmaBack());
   if (HasWeight())
     {
       if (true)
@@ -1311,7 +1316,8 @@ bool ReducedImage::MakeWeight()
 	  for (int j=jmin; j<jmax; ++j)
 	    for (int i=imin; i<imax; ++i)
 		flat(i,j) *= factor;
-	} 
+	}
+      /* Next line is a BUG !!! : it should read weights *= flat; */
       weights.MultiplyBySquare(flat) ;
       weights.AddOrModKey("FLATPIXS",true," this weight accounts for flat variations");
       cout << " accounting for flat variations in " << FitsWeightName() << endl;
