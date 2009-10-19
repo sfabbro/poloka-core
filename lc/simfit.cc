@@ -114,7 +114,7 @@ double SimFit::GetWorstSeeing() {
 #endif 
   double worstSeeing = 0;
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
-    double currentseeing = (*itVig)->Image()->Seeing();
+    double currentseeing = (*itVig)->Seeing();
     
     if(currentseeing>worstSeeing)
       worstSeeing=currentseeing;
@@ -122,7 +122,7 @@ double SimFit::GetWorstSeeing() {
   return worstSeeing;
 }
 
-void SimFit::Load(LightCurve& Lc, bool keepstar)
+void SimFit::Load(LightCurve& Lc, bool keepstar, bool only_reserve_images)
 {
 #ifdef FNAME
   cout << " > SimFit::Load()" << endl;
@@ -190,7 +190,18 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
   cout << " > SimFit::Load() : VignetRef() half size (" 
        << VignetRef->Hx() << ", " << VignetRef->Hy() << ")\n";
 #endif 
-
+  
+  if(only_reserve_images) {
+    nim = 0;
+    for (SimFitVignetIterator it = begin(); it != end(); ++it) {
+      SimFitVignet *vi = *it;
+      cout << flush << " > SimFit::Load() : reserving vignets #" << nim++ << "\r";
+      vi->PrepareAutoResize();
+    }
+    cout << endl;
+    return;
+  }
+  
   // now resize all vignets and initialize residuals
   nim = 0;
   for (SimFitVignetIterator it = begin(); it != end(); ++it)
@@ -198,7 +209,7 @@ void SimFit::Load(LightCurve& Lc, bool keepstar)
       SimFitVignet *vi = *it;
       cout << flush << " > SimFit::Load() : checking vignets #" << nim++ << "\r";
       // we will fit the flux according to Lc.Ref and date
-      vi->CanFitFlux = Lc.Ref->IsVariable(vi->Image()->ModifiedJulianDate());
+      vi->CanFitFlux = Lc.Ref->IsVariable(vi->ModifiedJulianDate());
 
       vi->CanFitPos  = vi->CanFitFlux;
       //vi->DontConvolve = Lc.Ref->Image()->Name() == vi->Image()->Name(); 
@@ -1407,7 +1418,7 @@ void SimFit::FatalError(const char* comment)
       const SimFitVignet *vi = *it;
       cerr << " > SimFit::FatalError() : " << fixed << right
 	   << setw(10) << vi->Image()->Name() 
-	   << " mmjd " << setprecision(2) << setw(7) << vi->Image()->ModifiedJulianDate()
+	   << " mmjd " << setprecision(2) << setw(7) << vi->ModifiedJulianDate()
 	   << " [flux=" << setprecision(1) << setw(7) << vi->Star->flux << " fit=" << boolalpha << vi->CanFitFlux
 	   << "] [pos=(" << setprecision(1) << setw(6) << vi->Star->x 
 	   << ", " << setprecision(1) << setw(6) << vi->Star->y << ") fit=" << boolalpha << vi->CanFitPos
@@ -1931,7 +1942,7 @@ void SimFit::fillNightMat(LightCurve& Lc) {
   double timediff = 10./24.; // 10 hours
   int nimages = 0;
   for (;itLc != endLc; ++itLc) {
-    jd = (*itLc)->Image()->ModifiedJulianDate();
+    jd = (*itLc)->ModifiedJulianDate();
     if(Lc.Ref->IsVariable(jd)) {
       nimages++;
       isinnight=false;
@@ -1960,7 +1971,7 @@ void SimFit::fillNightMat(LightCurve& Lc) {
   itLc = Lc.begin();
   int im = 0;
   for (;itLc != endLc; ++itLc) {
-    jd = (*itLc)->Image()->ModifiedJulianDate();
+    jd = (*itLc)->ModifiedJulianDate();
     if(Lc.Ref->IsVariable(jd)) {
       for(unsigned int day=0;day<nightdates.size(); ++day) {
 	if(fabs(jd-nightdates[day])<timediff) {
@@ -1991,7 +2002,7 @@ void SimFit::fillNightMat() { // using simfitvignet
   
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
     if((*itVig)->FitFlux) {
-      jd = (*itVig)->Image()->ModifiedJulianDate();
+      jd = (*itVig)->ModifiedJulianDate();
       nimages++;
       isinnight=false;
       for(unsigned int day=0;day<nightdates.size(); ++day) {
@@ -2020,7 +2031,7 @@ void SimFit::fillNightMat() { // using simfitvignet
   int im = 0;
   for (SimFitVignetIterator itVig = begin(); itVig != end(); ++itVig) {
     if((*itVig)->FitFlux) {
-      jd = (*itVig)->Image()->ModifiedJulianDate();
+      jd = (*itVig)->ModifiedJulianDate();
       for(unsigned int day=0;day<nightdates.size(); ++day) {
 	if(fabs(jd-nightdates[day])<timediff) {
 	  NightMat(day,im)=1;

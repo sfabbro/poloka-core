@@ -25,36 +25,39 @@ protected:
   int hx,hy;       // current half size of the vignet (hSizeX and hSizeY are the max sizes).
   void Allocate();
 
+  double seeing;
+  double mjd;
+  
 public:
 
   //! default constructor initialize everything to zero
-  Vignet(): hx(0), hy(0) {}
+  Vignet(): hx(0), hy(0), seeing(-1), mjd(-1) {}
 
   //! associate a ReducedImage
-  Vignet(const ReducedImage* Rim) : Fiducial<Window>(Rim) {}
+  Vignet(const ReducedImage* Rim) : Fiducial<Window>(Rim), seeing(-1), mjd(-1) {}
 
   //! extract a squared vignette around a point on a image and a weight of a ReducedImage
   Vignet(const ReducedImage* Rim, const int HMax)
-    : Fiducial<Window>(Rim), hx(HMax), hy(HMax)   { Resize(hx,hy); }
+    : Fiducial<Window>(Rim), hx(HMax), hy(HMax), seeing(-1), mjd(-1)   { Resize(hx,hy); }
 
   //! extract a rectangular vignette around a point on a image and a weight of a ReducedImage
   Vignet(const ReducedImage* Rim, const int HMaxX, const int HMaxY)
-    : Fiducial<Window>(Rim), hx(HMaxX), hy(HMaxY) { Resize(hx,hy); }
+    : Fiducial<Window>(Rim), hx(HMaxX), hy(HMaxY), seeing(-1), mjd(-1) { Resize(hx,hy); }
 
   //! extract a squared vignette around a point on a image and a weight of a ReducedImage
   Vignet(const Fiducial<PhotStar> *Fs, const int HMax)
-    : hx(HMax), hy(HMax)  { AssignImage(Fs->Image()); Resize(hx,hy); Load(Fs);}
+    : hx(HMax), hy(HMax), seeing(-1), mjd(-1)  { AssignImage(Fs->Image()); Resize(hx,hy); Load(Fs);}
 
   //! extract a squared vignette around a point on a image and a weight of a ReducedImage
   Vignet(const PhotStar *Star, const ReducedImage* Rim, const int HMax)
-    : Fiducial<Window>(Rim), hx(HMax), hy(HMax)   { Resize(hx,hy); Load(Star); }
+    : Fiducial<Window>(Rim), hx(HMax), hy(HMax), seeing(-1), mjd(-1)   { Resize(hx,hy); Load(Star); }
 
   //! extract a rectangular vignette around a point on a image and a weight of a ReducedImage
   Vignet(const PhotStar *Star, const ReducedImage* Rim, const int HMaxX, const int HMaxY)
-    : Fiducial<Window>(Rim), hx(HMaxX), hy(HMaxY) { Resize(hx,hy); Load(Star); }
+    : Fiducial<Window>(Rim), hx(HMaxX), hy(HMaxY), seeing(-1), mjd(-1) { Resize(hx,hy); Load(Star); }
 
   //! reads a vignet from a vignette FITS file
-  Vignet(const string &FitsFileName) {Data.readFits(FitsFileName); }
+  Vignet(const string &FitsFileName) : seeing(-1), mjd(-1) {Data.readFits(FitsFileName); }
 
   // default destructor, copy constructor and assigning operator are OK
 
@@ -123,6 +126,7 @@ public:
 	   << NValidPixels() << " ";
     return stream;
   }
+
 };
 
 //! compute and write the model into a larger FITS image

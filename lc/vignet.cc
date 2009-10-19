@@ -1,6 +1,7 @@
 #include <iomanip>
 #include "vignet.h"
 #include "fitsimage.h"
+#include "vignetserver.h"
 
 void Vignet::Allocate()
 {
@@ -50,21 +51,26 @@ void Vignet::Load(const PhotStar *AStar)
 
   Star->has_saturated_pixels=false;
   //Star->image_seeing = rim->Seeing();
+  /*
   {
     FitsHeader head(rim->FitsName());
     Star->MJD = head.KeyVal("TOADMJD");
     Star->image_seeing = head.KeyVal("SESEEING");
   }
-  Data.readFromImage(rim->FitsName(), *this,0);
-  if (rim->HasWeight()) { 
-    Weight.readFromImage(rim->FitsWeightName(), *this,0);
+  */
   
-    // read satur
-    if (rim->HasSatur()){
+  Star->MJD = ModifiedJulianDate();
+  Star->image_seeing = Seeing();
+  
+  get_vignet_from_server(FitsName(), *this,Data,0);
+  if (HasWeight()) {
+    
+    get_vignet_from_server(FitsWeightName(), *this,Weight, 0);
+  
+    if (HasSatur()) {
       Kernel satur;
-      satur.readFromImage(rim->FitsSaturName(), *this,0);
-      // ...
-
+      get_vignet_from_server(FitsSaturName(), *this, satur, 0);
+      
       DPixel *psat = satur.begin();
       DPixel *pw = Weight.begin();
       double sum = 0;
@@ -72,17 +78,15 @@ void Vignet::Load(const PhotStar *AStar)
 	sum += *psat;
 	*pw++ *= (1 - *psat++);
       }
-
+      
       //  for(int j=-Weight.HSizeY();j<=Weight.HSizeY();j++)
       //    for(int i=-Weight.HSizeX();i<=Weight.HSizeX();i++)
       //	  Weight(i,j)*=(1.-satur(i,j));      
-
-      Star->has_saturated_pixels=(sum>0);
       
+      Star->has_saturated_pixels=(sum>0);   
     }
   }
-
-  return;
+  
 }
 
 

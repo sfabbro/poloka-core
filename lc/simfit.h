@@ -118,7 +118,7 @@ public:
   void Resize(const double& ScaleFactor);
 
   //! allow to change full data set to another star
-  void Load(LightCurve& Lc, bool keepstar=false);
+  void Load(LightCurve& Lc, bool keepstar=false, bool only_reserve_images=false);
 
   //! fill the entire matrix and vectors
   void FillMatAndVec();
