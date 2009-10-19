@@ -27,6 +27,8 @@ static void usage(const char *pgname)
   cerr << "options:"<< endl;
   cerr << "     -o <catalog> : output catalog name (default is calibration.list)" << endl;
   cerr << "     -n # : max number of images (default is unlimited)" << endl;
+  cerr << "     -f # : first star to fit (def is 1, starts at 1)" << endl;
+  cerr << "     -l # : last star to fit (def is 1000, included)" << endl;
   exit(1);
 }
 
@@ -61,7 +63,8 @@ int main(int argc, char **argv)
   string matchedcatalogname = "calibration.list";
   vector<string> dbimages;
   size_t maxnimages = 0;
-
+  int first_star = 1;
+  int last_star  = 1000;
   if (argc < 7)  {usage(argv[0]);}
   for (int i=1; i<argc; ++i)
     {
@@ -72,6 +75,8 @@ int main(int argc, char **argv)
 	}
       switch (arg[1])
 	{
+	case 'f' : first_star=atoi(argv[++i]); break;
+	case 'l' : last_star=atoi(argv[++i]); break;
 	case 'r' : referencedbimage = argv[++i]; break;
 	case 'c' : catalogname = argv[++i]; break;
 	case 'o' : matchedcatalogname = argv[++i]; break;
@@ -122,6 +127,14 @@ int main(int argc, char **argv)
   string band = header.KeyVal("TOADBAND");
   string mag_key=getkey("m"+band,catalog);
   
+  double mag_limit = 99;
+  
+  if(band=="g") mag_limit = 21.;
+  if(band=="r") mag_limit = 21.;
+  if(band=="i") mag_limit = 21.;
+  if(band=="z") mag_limit = 21.;
+  
+
   BaseStar star;
   int count_total=0;
   int count_total_stars=0;
@@ -148,11 +161,16 @@ int main(int argc, char **argv)
     
     //if(int(entry->Value("level"))<requiredlevel)  continue; // not a star with correct level 
     mag=entry->Value(mag_key);
+
     
+
     count_total_stars++;
     
-    star.x=entry->Value("ra"); // ra (deg)
-    star.y=entry->Value("dec"); // dec (deg)
+    if(mag>mag_limit) continue; // ignore dim stars unused for calibration to save CPU
+
+
+    star.x=entry->Value("ra"); //star.x=entry->Value("x"); // ra (deg)
+    star.y=entry->Value("dec");//star.y=entry->Value("y"); // dec (deg)
     
     // now check if star is in image
     if(!radecW.InFrame(star)) continue; // bye bye
@@ -172,6 +190,11 @@ int main(int argc, char **argv)
     }
     count_ok++;
     
+    if(count_ok<first_star || count_ok>last_star) {
+      cout << "warning, skipping star number " << count_ok << endl;
+      continue;
+    }
+
     // mod coordinates
     star.x = closest_basestar->x;
     star.y = closest_basestar->y;
@@ -263,8 +286,8 @@ int main(int argc, char **argv)
     rstar->band = band[0];
     rstar->x = star.x;
     rstar->y = star.y;
-    rstar->ra = entry->Value("ra"); // ra (deg)
-    rstar->dec = entry->Value("dec"); // dec (deg)
+    rstar->ra = entry->Value("ra"); // entry->Value("x"); // ra (deg)
+    rstar->dec = entry->Value("dec"); // entry->Value("y"); // dec (deg)
     rstar->jdmin = -1.e30; // always bright
     rstar->jdmax = 1.e30;   
     lclist.Objects.push_back(rstar);
@@ -279,18 +302,21 @@ int main(int argc, char **argv)
     
     // we also want to keep calibration info
     CalibratedStar cstar(star);
-    cstar.ra=entry->Value("ra");
-    cstar.dec=entry->Value("dec");
-    //cstar.u=entry->Value("mu");
-    cstar.g=entry->Value("mg");
-    cstar.r=entry->Value("mr");
-    cstar.i=entry->Value("mi");
-    cstar.z=entry->Value("mz");
-    //cstar.ue=entry->Value("emu");
-    cstar.ge=entry->Value("emg");
-    cstar.re=entry->Value("emr");
-    cstar.ie=entry->Value("emi");
-    cstar.ze=entry->Value("emz");
+    
+    cstar.ra=entry->Value("ra"); // entry->Value("x");
+    cstar.dec=entry->Value("dec"); // entry->Value("y");
+    
+    if(entry->HasKey("mu")) cstar.u=entry->Value("mu"); else cstar.u=99;
+    if(entry->HasKey("mg")) cstar.g=entry->Value("mg"); else cstar.g=99;
+    if(entry->HasKey("mr")) cstar.r=entry->Value("mr"); else cstar.r=99;
+    if(entry->HasKey("mi")) cstar.i=entry->Value("mi"); else cstar.i=99;
+    if(entry->HasKey("mz")) cstar.z=entry->Value("mz"); else cstar.z=99;
+    if(entry->HasKey("emu")) cstar.ue=entry->Value("emu"); else cstar.ue=99;
+    if(entry->HasKey("emg")) cstar.ge=entry->Value("emg"); else cstar.ge=99;
+    if(entry->HasKey("emr")) cstar.re=entry->Value("emr"); else cstar.re=99;
+    if(entry->HasKey("emi")) cstar.ie=entry->Value("emi"); else cstar.ie=99;
+    if(entry->HasKey("emz")) cstar.ze=entry->Value("emz"); else cstar.ze=99;
+    
     cstar.flux=star.flux;
     cstar.id=count_total;
     cstar.x=star.x;
@@ -364,6 +390,22 @@ int main(int argc, char **argv)
   stream << "#end" <<endl;
   stream << setprecision(12);
   
+  
+  /* reserve_images
+     first call simfit::load with only_reserve_images = true
+     which calls simfitvignet::prepareautoresize
+     which in turn calls  reserve_dimage_in_server(...)
+
+     after, with the std call to simfit::load with only_reserve_images = false
+     vignet::resize calls vignet::load and there get_dimage_from_server(...)
+
+   */
+  for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
+    // each entry is a star
+    doFit.zeFit.Load(*ilc,false,true);
+  }
+
+
   
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
     

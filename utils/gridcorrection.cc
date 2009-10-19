@@ -126,8 +126,8 @@ int main(int argc, char **argv)
   
   for(DicStarIterator entry=zpstarlist.begin();entry!=zpstarlist.end();++entry,++n) {
 
-    if ( (*entry)->getval("mneas") < 10 ) {
-      cerr << "only " << (*entry)->getval("mneas") << " measurements for this star, skip it" << endl;
+    if ( (*entry)->getval("nmeas") < 10 ) {
+      cerr << "only " << (*entry)->getval("nmeas") << " measurements for this star, skip it" << endl;
       continue;
     }
     

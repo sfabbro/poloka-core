@@ -10,6 +10,7 @@
 
 #include "fastifstream.h"
 #include "starlistexception.h"
+#include <polokaexception.h>
 
 DicStar::DicStar()
   : BaseStar(0.,0.,0.) {
@@ -86,7 +87,9 @@ double DicStar::getval(const string &thekey) const {
   if (thekey == firstkeys[1]) return y;
   if (thekey == firstkeys[2]) return flux;
 
+  
   cerr << "DicStar::getval unknown key " << thekey << endl; 
+  throw(PolokaException(string("DicStar::getval unknown key ")+thekey));
   return 0;
 }
 

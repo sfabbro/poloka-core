@@ -31,6 +31,11 @@ struct Window {
     return (Pt.x > xstart) && (Pt.x < xend) 
       &&   (Pt.y > ystart) && (Pt.y < yend);
   }
+  
+  bool operator==(const Window& other) const {
+    return ( xstart==other.xstart && ystart==other.ystart && xend==other.xend && yend==other.yend );
+  }
+
 };
 
 ostream& operator << (ostream& stream, const Window& w);
@@ -39,10 +44,10 @@ ostream& operator << (ostream& stream, const Window& w);
 class DImage  
 {
 
-private :
+  
+protected:
   int nx,ny;
-  DPixel *data;
-protected: 
+  DPixel *data; 
   DPixel *data00; // address of DImage(0,0), by default same as data 
   int minindex, maxindex;
 public:

@@ -1,6 +1,7 @@
 #include <psfmatch.h>
 #include <fstream> 
 #include "simfitvignet.h"
+#include "vignetserver.h"
 
 // for kernel persistence
 //#include "kernelfit_dict.h"
@@ -672,6 +673,36 @@ SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimF
   psfmatch = 0;
 }
 
+
+void SimFitVignet::PrepareAutoResize() {
+#ifdef FNAME
+  cout << " > SimFitVignet::PrepareAutoResize()" << endl;
+#endif
+  if(!Star) {
+    cerr << "SimFitVignet::PrepareAutoResize ERROR you need a star to update this vignet, use SetStar for this" << endl;
+  }
+  int hx_ref = VignetRef->Hx();
+  int hy_ref = VignetRef->Hy();
+  if(!kernel_updated)
+    BuildKernel();
+  int hx_kernel = Kern.HSizeX();
+  int hy_kernel = Kern.HSizeY();
+  //  Resize(hx_ref-hx_kernel,hy_ref-hy_kernel); // resize vignet, this will actually read the data
+  int hx = hx_ref-hx_kernel;
+  int hy = hy_ref-hy_kernel;
+  int xc = int(Star->x);
+  int yc = int(Star->y);
+  
+  // xstart,ystart,xend,yend
+  Window window(xc-hx,yc-hy,xc+hx+1,yc+hy+1);
+  
+  reserve_vignet_in_server(FitsName(),window);
+  if (HasWeight()) {
+    reserve_vignet_in_server(FitsWeightName(),window); 
+    if (HasSatur()) reserve_vignet_in_server(FitsSaturName(),window); 
+  }
+}
+
 void SimFitVignet::AutoResize() {
 #ifdef FNAME
   cout << " > SimFitVignet::AutoResize()" << endl;
@@ -787,7 +818,7 @@ void SimFitVignet::CheckWeight() {
 
 // make sure that psf, vignet and data have proper sizes.
 // allocate if needed, do only with a Star
-void SimFitVignet::Resize( int Hx_new,  int Hy_new)
+ void SimFitVignet::Resize( int Hx_new,  int Hy_new)
 {
 #ifdef FNAME
   cout << " > SimFitVignet::Resize( int Hx_new,  int Hy_new)" << endl;

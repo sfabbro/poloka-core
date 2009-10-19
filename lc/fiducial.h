@@ -15,16 +15,18 @@ class Fiducial : public S {
 protected:
 
   CountedRef<ReducedImage> rim;
-  
+  double seeing,mjd;
+  int has_weight,has_satur;
+  string fits_name,fits_weight_name,fits_satur_name;
 public:
 
-  Fiducial() {}
+  Fiducial() : seeing(-1),mjd(-1),has_weight(-1),has_satur(-1) {}
 
   Fiducial(const S *Fid) : S(*Fid) {}
 
-  Fiducial(const ReducedImage *Rim) : rim(Rim) {}
+  Fiducial(const ReducedImage *Rim) : rim(Rim), seeing(-1), mjd(-1),has_weight(-1),has_satur(-1) {}
 
-  Fiducial(const S *Fid, const ReducedImage *Rim) : S(*Fid), rim(Rim) {}
+  Fiducial(const S *Fid, const ReducedImage *Rim) : S(*Fid), rim(Rim), seeing(-1), mjd(-1),has_weight(-1),has_satur(-1) {}
 
   const ReducedImage* Image() const { return rim; }
 
@@ -38,6 +40,8 @@ public:
     if (rim) { cerr << " Fiducial::AssignImage() : Error : " 
 		    << rim->Name() << " already assigned \n";  return; }
     rim = Rim;
+    seeing = -1;
+    mjd = -1;
     //cout << "in AssignImage rim=" << rim->Name() << endl;
   }
 
@@ -59,7 +63,7 @@ public:
     ios::fmtflags oldflags = Stream.flags();
     Stream.setf(ios::fixed);
     if (Fs.rim)
-      Stream << setw(12) << setprecision(2) << Fs.rim->JulianDate()
+      Stream << setw(12) << setprecision(2) << Fs.ModifiedJulianDate()
 	     << int(Fs.rim->Band()[0]);
     Stream << (S) (Fs);
     Stream.flags(oldflags);    
@@ -67,10 +71,51 @@ public:
   }
 
   friend bool IncreasingJulianDate(const Fiducial<S> *one, const Fiducial<S> *two)
-   { return (one->rim->JulianDate() < two->rim->JulianDate()); }
+   { return (one->ModifiedJulianDate() < two->ModifiedJulianDate()); }
 
   friend bool IncreasingSeeing(const Fiducial<S> *one, const Fiducial<S> *two)
-   { return (one->rim->Seeing() < two->rim->Seeing()); }
+   { return (one->Seeing() < two->Seeing()); }
+
+  double Seeing() const {
+    if(seeing<0) {
+      const_cast<double&>(seeing) = rim->Seeing();  
+    }
+    return seeing;
+  }
+  
+  double ModifiedJulianDate() const {
+    if(mjd<0) {
+      const_cast<double&>(mjd) = rim->ModifiedJulianDate();  
+    }
+    return mjd;
+  }
+  
+  bool HasWeight() const { 
+    if(has_weight<0) 
+      const_cast<int&>(has_weight) = (rim->HasWeight())?1:0;  
+    return has_weight==1;
+  }
+  bool HasSatur() const { 
+    if(has_satur<0) 
+      const_cast<int&>(has_satur) = (rim->HasSatur())?1:0;  
+    return has_satur==1;
+  }
+  string FitsName() const { 
+    if(fits_name=="")
+      const_cast<string&>(fits_name) = rim->FitsName();
+    return fits_name;
+  }
+  string FitsWeightName() const { 
+    if(fits_weight_name=="")
+      const_cast<string&>(fits_weight_name) = rim->FitsWeightName();
+    return fits_weight_name;
+  }
+  string FitsSaturName() const { 
+    if(fits_satur_name=="")
+      const_cast<string&>(fits_satur_name) = rim->FitsSaturName();
+    return fits_satur_name;
+  }
+  
 
 };
 

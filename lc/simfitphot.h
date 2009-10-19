@@ -4,10 +4,10 @@
 
 #include "simfit.h"
 class SimFitPhot {
-private:
-  SimFit zeFit;
   
 public:
+  
+  SimFit zeFit;
 
   SimFitPhot(LightCurveList& Fiducials,bool usegal=true);
   
@@ -16,6 +16,8 @@ public:
   bool bWriteLC;
   bool bOutputDirectoryFromName;
   
+  
+
 };
 
 

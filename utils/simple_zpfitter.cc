@@ -146,7 +146,7 @@ int main(int argc, char **argv)
     if(mag>mag_max) continue;
     if(error<=0) continue;
     if(fluxrms/flux>rms_max) continue; // keep only high S/N SNe
-    if((*entry)->getval("mneas")<nmeas_min) continue;
+    if((*entry)->getval("nmeas")<nmeas_min) continue;
     zps[n] = mag+2.5*log10(flux);
     weights[n] = 1./(error*error);
     n++;

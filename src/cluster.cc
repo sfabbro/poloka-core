@@ -64,6 +64,7 @@ long Cluster::browse_and_color(const Image& src, long x0, long y0,
 
     if (size > MAXCLUSTERSIZE) {
       // warning: killsatellites: too many recursive calls.
+      cout << "  size  " << size << "  r  " << r << endl;
       r = -1 ;
     } else {
       long north, south, east, west ;

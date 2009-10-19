@@ -265,7 +265,10 @@ public:
   
   //! auto resize vignet according to the size of vignetref and call Update()
   void AutoResize();
-
+  
+  //! do not read images but fills todo list for dimage::readfitsimage()
+  void PrepareAutoResize();
+  
   //! use Vignet::Chi2 with additionnal debugging info
   double Chi2() const;
   

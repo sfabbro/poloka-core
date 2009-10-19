@@ -183,15 +183,17 @@ public :
   }
   
   void write(ostream &s) const {
-    
     s << init_ra << " ";
     s << init_dec << " ";
-    s << fitted_ra  << " ";
-    s << fitted_dec << " ";
-    s << init_x << " ";
-    s << init_y << " ";
+    
     s << fitted_x << " ";
     s << fitted_y << " ";
+    
+    
+    
+    s << init_x << " ";
+    s << init_y << " ";
+    
     s << id << " ";
     s << mag << " ";
     s << error << " ";
@@ -281,34 +283,46 @@ int main(int argc, char **argv)
   double* values = new double[nentries];
   double flux,mag;
   
+  
+
+
   float contamination_cut = 0.005;
   double mjd;
   int count = 0;
-  for(DicStarCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
+  
+  DicStarIterator entry=catalog.begin();
+  
+  while(entry!=catalog.end()) {
     
+    bool bad = false;
+
     if(mjd_min>0) {
       mjd = (*entry)->getval("mjd");
-      if (mjd<mjd_min) continue;
-      if (mjd>mjd_max) continue;
+      bad |= (mjd<mjd_min);
+      bad |= (mjd>mjd_max);
     }
 
-    if ( (*entry)->getval("satur") >0.5 ) // cause has saturated pixels
-      continue;
+    bad |= ( (*entry)->getval("satur") >0.5 ); // cause has saturated pixels
+    
     
     if(fluxkey=="flux")
       flux = (*entry)->flux;
     else
       flux = (*entry)->getval(fluxkey);
     mag = (*entry)->getval(magkey);
-    
-    if(flux<=0) continue;
+    bad |= (mag<10);
+    bad |= ((*entry)->getval("error")<1.e-6);
+    bad |= (flux<=1);
     
     double contamination_of_neighbour = (*entry)->getval("neic");
     
-    if(contamination_of_neighbour/flux>contamination_cut) // cause contamination of neighbour
-      continue;
-    
-    values[count++]=2.5*log10(flux)+mag;
+    bad |= (contamination_of_neighbour/flux>contamination_cut); // cause contamination of neighbour
+    if(bad) {
+      entry = catalog.erase(entry);
+    }else{
+      values[count++]=2.5*log10(flux)+mag;
+      ++entry;
+    }
   }
   if (count==0) {
     cerr << "no valid entries in catalog!" << endl;
@@ -350,20 +364,21 @@ int main(int argc, char **argv)
   
   
   ofstream stream("zpstars.list");
-  stream << "# ira : as in calib. catalog" << endl;
-  stream << "# idec : as in calib. catalog" << endl;
-  stream << "# fra : fitted ra" << endl;
-  stream << "# fdec : fitted dec" << endl;
+  stream << setprecision(10);
+  stream << "# using catalog " << catalogname << endl;
+  stream << "# using mag key '" << magkey << "'" << endl;
+  stream << "# ra : as in calib. catalog" << endl;
+  stream << "# dec : as in calib. catalog" << endl;
+  stream << "# x : fitted x" << endl;
+  stream << "# y : fitted y" << endl;
   stream << "# ix : input x" << endl;
   stream << "# iy : input y" << endl;
-  stream << "# fx : fitted x" << endl;
-  stream << "# fy : fitted y" << endl;
   stream << "# id : number in calib. catalog" << endl;
   stream << "# mag : mag derived from match to catalog." << endl;
   stream << "# error : error on mag." << endl;
   stream << "# flux : flux in ref. image units" << endl;
   stream << "# fluxrms : scatter around the above" << endl;
-  stream << "# mneas : number of measurements involved in the average" << endl;
+  stream << "# nmeas : number of measurements involved in the average" << endl;
   stream << "# zpchi2 : chi2pdf ass. stable star without sys. effect" << endl;
   stream << "# zpchi2_01 : chi2pdf ass. stable star with 0.01 sys. effect" << endl;
   stream << "# nmag : level of contamination from neighbours (mag.)" << endl;
