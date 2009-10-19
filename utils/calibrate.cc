@@ -127,6 +127,14 @@ int main(int argc, char **argv)
   string band = header.KeyVal("TOADBAND");
   string mag_key=getkey("m"+band,catalog);
   
+  double mag_limit = 99;
+  
+  if(band=="g") mag_limit = 21.;
+  if(band=="r") mag_limit = 21.;
+  if(band=="i") mag_limit = 21.;
+  if(band=="z") mag_limit = 21.;
+  
+
   BaseStar star;
   int count_total=0;
   int count_total_stars=0;
@@ -153,9 +161,14 @@ int main(int argc, char **argv)
     
     //if(int(entry->Value("level"))<requiredlevel)  continue; // not a star with correct level 
     mag=entry->Value(mag_key);
+
     
+
     count_total_stars++;
     
+    if(mag>mag_limit) continue; // ignore dim stars unused for calibration to save CPU
+
+
     star.x=entry->Value("ra"); //star.x=entry->Value("x"); // ra (deg)
     star.y=entry->Value("dec");//star.y=entry->Value("y"); // dec (deg)
     
@@ -377,6 +390,22 @@ int main(int argc, char **argv)
   stream << "#end" <<endl;
   stream << setprecision(12);
   
+  
+  /* reserve_images
+     first call simfit::load with only_reserve_images = true
+     which calls simfitvignet::prepareautoresize
+     which in turn calls  reserve_dimage_in_server(...)
+
+     after, with the std call to simfit::load with only_reserve_images = false
+     vignet::resize calls vignet::load and there get_dimage_from_server(...)
+
+   */
+  for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
+    // each entry is a star
+    doFit.zeFit.Load(*ilc,false,true);
+  }
+
+
   
   for(LightCurveList::iterator ilc = lclist.begin(); ilc!= lclist.end() ; ++ilc) { // loop on lc
     
