@@ -10,7 +10,7 @@
 static void usage(const char *prog)
 {
   cerr << prog << " [-o (overwrite)] <dbimages> " << endl
-       << " makes the perture photometry catalogue of dbimage(s) and the star catalog" << endl;
+       << " makes the aperture photometry catalogue of dbimage(s) and the star catalog" << endl;
   exit (-1);
 }
   
