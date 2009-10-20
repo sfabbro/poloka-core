@@ -157,7 +157,8 @@ public:
 bool Megacam::IsTrimmed(const FitsHeader &Head) const {
   
   int nx = Head.KeyVal("NAXIS1");
-  if(nx>2048)
+  int ny = Head.KeyVal("NAXIS2");
+  if((nx>2048) || (ny>4612)) 
     return false;
   return true; 
 }
@@ -173,9 +174,11 @@ double Megacam::AmpGain(const FitsHeader &Head, int Iamp) const
 
 Frame Megacam::extract_frame(const FitsHeader &Head, const char *KeyGenName, int Iamp) const
 {
-  char ampChar = 'A'+(Iamp-1);
   char keyname[16];
+  char ampChar = 'A'+(Iamp-1);
   sprintf(keyname,"%s%c",KeyGenName,ampChar);
+  if (!Head.HasKey(keyname)) sprintf(keyname,"%s",KeyGenName);
+
   string keyval = Head.KeyVal(keyname, true);
   Frame result;
   fits_imregion_to_frame(keyval, result);
@@ -190,14 +193,18 @@ Frame Megacam::OverscanRegion(const FitsHeader &Head, const int Iamp) const
 {
   if(IsTrimmed(Head)) // if trimmed no more OverscanRegion
     return Frame();
+  if (Head.HasKey("BIASSEC")) return extract_frame(Head,"BIASSEC",Iamp);
   return extract_frame(Head,"BSEC",Iamp);
 }
 
 Frame Megacam::IlluRegion(const FitsHeader &Head, const int Iamp) const
 {
   if(!IsTrimmed(Head))
-    return extract_frame(Head,"DSEC",Iamp);
-  
+    {
+      if (Head.HasKey("DATASEC")) return extract_frame(Head,"DATASEC",Iamp);
+      else return extract_frame(Head,"DSEC",Iamp);
+    }
+
   // if trimmed we do something rather manual
   
   // first check if the geometry is what we expect
