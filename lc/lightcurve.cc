@@ -76,7 +76,7 @@ void LightCurve::write_lc2fit(ostream& Stream) const
       const Fiducial<PhotStar> *fs = *it;
       if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
 	continue;
-      lcp.julianday = fs->ModifiedJulianDate();
+      lcp.julianday = fs->Image()->ModifiedJulianDate();
       lcp.flux = fs->flux;
       lcp.eflux = sqrt(fs->varflux);
       //lcp.computemag(elixir_zp);
