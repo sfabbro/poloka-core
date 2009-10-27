@@ -59,7 +59,7 @@ return "";
 
 //********************************************************
 //! computes overscan and removes bias. Returns the average overscan value for all amps.
-static double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias)
+double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias)
 {
   Frame Illu = TotalIlluRegion(Current);
   // using Frame's for image sections: min=first pix, max = last pix

@@ -34,6 +34,9 @@ void ImageAlreadyFlatFielded(const string &InFileName, const Image &Flat,
 			     const string &OutFileName);
 double ImageNormalisation(FitsImage &Current);
 
+double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias=0);
+
+
 
 #ifdef STORAGE
 void FilterFringes(Image &FringePattern, const int GridSize, const int NInc);

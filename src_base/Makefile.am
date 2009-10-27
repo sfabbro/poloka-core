@@ -49,7 +49,9 @@ stringlist.h \
 fitstoad.h \
 astroutils.h \
 gzstream.h \
-polokaexception.h
+polokaexception.h \
+alltelinst.h
+
 
 noinst_HEADERS = wcscon.h
 
