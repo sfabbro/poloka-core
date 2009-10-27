@@ -138,7 +138,15 @@ public:
   return FitsKey("TOADBAND",name.substr(0,1));
   }
 
-  RETURN_A_VALUE(TOADNAMP,2);
+  FitsKey TOADNAMP( const FitsHeader &Head, const bool Warn) const
+  {
+    if( Head.HasKey("AMPLIST") )
+      return FitsKey("TOADNAMP", 2);
+    else
+      return FitsKey("TOADNAMP", 1);
+  }
+
+  //  RETURN_A_VALUE(TOADNAMP,2);
 
   // in principle Illu is correct
 
@@ -175,14 +183,24 @@ double Megacam::AmpGain(const FitsHeader &Head, int Iamp) const
 Frame Megacam::extract_frame(const FitsHeader &Head, const char *KeyGenName, int Iamp) const
 {
   char keyname[16];
-  char ampChar = 'A'+(Iamp-1);
-  sprintf(keyname,"%s%c",KeyGenName,ampChar);
-  if (!Head.HasKey(keyname)) sprintf(keyname,"%s",KeyGenName);
+
+  int namp = TOADNAMP(Head, false);
+  if(namp == 2)
+    {
+      char ampChar = 'A'+(Iamp-1);
+      sprintf(keyname,"%s%c",KeyGenName,ampChar);
+      if (!Head.HasKey(keyname)) sprintf(keyname,"%s",KeyGenName);
+    }
+  else
+    {
+      sprintf(keyname, "%s", KeyGenName);
+    }
 
   string keyval = Head.KeyVal(keyname, true);
   Frame result;
   fits_imregion_to_frame(keyval, result);
-  //! Megacam conventions : xMax and YMax are included to the frame
+  
+  //! Megacam conventions : xMax and YMax are included in the frame
   result.yMax++;
   result.xMax++;
   return result;
@@ -221,7 +239,7 @@ Frame Megacam::IlluRegion(const FitsHeader &Head, const int Iamp) const
     fits_imregion_to_frame("[1:1024,1:4612]", result);
   if(Iamp==2)
     fits_imregion_to_frame("[1025:2048,1:4612]", result);
-  //! Megacam conventions : xMax and YMax are included to the frame
+  //! Megacam conventions : xMax and YMax are included in the frame
   result.yMax++;
   result.xMax++;
   return result;
@@ -250,7 +268,13 @@ Frame Megacam::TotalIlluRegion(const FitsHeader &Head) const
 
 Frame Megacam::AmpRegion(const FitsHeader &Head, const int Iamp) const
 {
-  return extract_frame(Head,"CSEC",Iamp);
+  int namp = TOADNAMP(Head, false);
+  if( namp == 2)
+    return extract_frame(Head,"CSEC",Iamp);
+  else
+    {
+      return extract_frame(Head,"DATASEC",Iamp);
+    }
 }
 #endif
 
