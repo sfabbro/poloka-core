@@ -29,6 +29,13 @@ data = new float[nx*ny];
 memset(data, 0, nx*ny*sizeof(float));
 }
 
+Histo2d::Histo2d(const Histo2d &Other)
+{
+  memcpy(this, &Other, sizeof(Histo2d));
+  data = new float[nx*ny];
+  memcpy(this->data, Other.data, nx*ny*sizeof(float));
+}
+
 bool Histo2d::indices(const double &X, const double &Y, int &ix, int &iy) const
 {
   ix = (int) floor(( X - minx)*scalex);
