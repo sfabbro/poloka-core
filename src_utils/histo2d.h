@@ -1,7 +1,6 @@
 #ifndef HISTO2D__H
 #define HISTO2D__H
 
-#include <string>
 
 class Histo2d {
  
@@ -18,6 +17,8 @@ class Histo2d {
   Histo2d() {data=NULL;}
   Histo2d(int nx, float minx, float maxx, int ny, float miny,float maxy);
 
+  Histo2d(const Histo2d &Other);
+
   void Fill(float x, float y, float weight=1.);
 
   double MaxBin(double &x, double &y) const ;
@@ -28,9 +29,10 @@ class Histo2d {
 
   void ZeroBin(const double &X, const double &Y);
 
-  void Write(const std::string &FileName) const;
-
   ~Histo2d() { if (data) delete [] data;}
+
+ private:
+  void operator = (const Histo2d &Right);
 };
 
 #endif /* HISTO2D__H */
