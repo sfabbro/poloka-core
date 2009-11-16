@@ -1,6 +1,7 @@
 #ifndef HISTO2D__H
 #define HISTO2D__H
 
+#include <string>
 
 class Histo2d {
  
@@ -26,6 +27,8 @@ class Histo2d {
   double BinContent(const double &X, const double &Y) const;
 
   void ZeroBin(const double &X, const double &Y);
+
+  void Write(const std::string &FileName) const;
 
   ~Histo2d() { if (data) delete [] data;}
 };
