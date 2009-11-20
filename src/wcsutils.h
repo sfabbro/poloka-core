@@ -7,7 +7,6 @@
 class FitsHeader;
 class GtransfoLin;
 class TanPix2RaDec;
-class GtransfoCub;
 class Gtransfo;
 class Frame;
 class StringList;
@@ -91,19 +90,6 @@ double Arcmin2Area(const FitsHeader &Header);
 //! returns roughly the overlap area between two FitsHeader in arcmin^2 using WCS info
 double Arcmin2Overlap(const FitsHeader& Head1,const FitsHeader& Head2);
 
-//! cubic refinement:
-//!
-int WCS3Transfo2Header(FitsHeader &header, const GtransfoCub &CubicCorr);
-  //!
-int WCS3Transfo2Header(const string &FitsImageName, 
-		       const GtransfoCub &CubicCorr);
-
-//!
-bool WCS3TransfoFromHeader(const FitsHeader& Header, GtransfoCub &CubicCorr, 
-			   const bool Warn = true);
-//!
-bool WCS3TransfoFromHeader(const string &FitsImageName, GtransfoCub &CubicCorr,
-			   const bool Warn = true);
 
 //! update RA, DEC and EPOCH based on WCS transfo and Frame in header
 bool UpdateRaDec(FitsHeader &Header);
