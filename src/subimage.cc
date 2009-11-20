@@ -48,7 +48,7 @@ static void ShiftWCSOrigin(const FitsHeader &In, FitsHeader &Out,
      pixel space : the only example we know about is the WCS3 private
      toads keywords */
   
-
+#ifdef OLD_CODE
   GtransfoCub cubCorr;
   if (WCS3TransfoFromHeader(In, cubCorr, false))
     {
@@ -58,6 +58,19 @@ static void ShiftWCSOrigin(const FitsHeader &In, FitsHeader &Out,
       cubCorr = shift.invert() * cubCorr;
       WCS3Transfo2Header(Out, cubCorr);
     }
+#endif
+  // just check whether we are in trouble
+  if (In.HasKey("WCS3DX"))
+    {
+      cerr << "Serious problem for WCS handling : we have an old WCS " << endl
+	   << " in the header which is no longer handled properly " << endl;
+      cerr << "For file =" <<  In.FileName() << endl;
+      cerr <<" Aborting. Please contact developers " << endl;
+      abort();
+    }
+      
+	
+
 }
 
 bool SubImage::cut_in_fitsimage(string (ReducedImage::*GetFitsFileName)() const,
