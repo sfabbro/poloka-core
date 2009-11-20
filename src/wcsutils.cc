@@ -292,6 +292,170 @@ bool TanLinWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
 }
 
 
+typedef struct
+{
+  const char *fitsName;
+  const char *coeffName;
+}   DistortionMapping;
+
+
+/* pretty obsolete : unused since 2002 */
+static const DistortionMapping WCS3Names[] =
+  {
+    {"DX","dx"   },
+    {"DY",  "dy"   },
+    {"A11", "a11"  },
+    {"A12", "a12"  },
+    {"A21", "a21"  },
+    {"A22", "a22"  },
+    {"A1X2","a1x2" },
+    {"A1XY","a1xy" },
+    {"A1Y2","a1y2" },
+    {"A2X2","a2x2" },
+    {"A2XY","a2xy" },
+    {"A2Y2","a2y2" },
+    {"A1X3","a1x3" },
+    {"A1X2Y", "a1x2y"},
+    {"A1XY2", "a1xy2"},
+    {"A1Y3", "a1y3" },
+    {"A2X3","a2x3" },
+    {"A2X2Y", "a2x2y"},
+    {"A2XY2", "a2xy2"},
+    {"A2Y3","a2y3" },
+    {"end",NULL}    /* end marker */
+  };
+
+
+/* This exists in some old images , but is "bugged":
+   for the y transfo, x and y "should" be swapped,
+   according to the convention : the correct version 
+   is the DV one below. 
+   Still in the code for backward compatibility.
+*/
+static const DistortionMapping DJNames [] = 
+  {
+    {"1_0",  "dx"   },
+    {"2_0",  "dy"   },
+    {"1_1", "a11"  },
+    {"1_2", "a12"  },
+    {"2_1", "a21"  },
+    {"2_2", "a22"  },
+    {"1_4","a1x2" },  /* 1_3 and 2_3 are coeffs for r */
+    {"1_5","a1xy" },
+    {"1_6","a1y2" },
+    {"2_4","a2x2" },
+    {"2_5","a2xy" },
+    {"2_6","a2y2" },
+    {"1_7","a1x3" },
+    {"1_8", "a1x2y"},
+    {"1_9", "a1xy2"},
+    {"1_10", "a1y3" },
+    {"2_7","a2x3" },
+    {"2_8", "a2x2y"},
+    {"2_9", "a2xy2"},
+    {"2_10","a2y3" },
+    {"end",NULL} /* end marker */
+  };
+
+/* 
+   This mapping of the polynomial coefficients was proposed in a draft
+   paper about distorions handling in WCS's (Calbretta and Greisen),
+   but it disappeared in a later version.  It is no longer in the
+   current version (by May 03) of the paper (which is really a draft).
+   The actual mapping adopted is the one from Astrometrix (described
+   in the documentation of the package), see
+   http://terapix.iap.fr/soft/.
+
+   The difference with the "DJ" stuff is that for the second polynomial
+   (the DV2_# keys), the role of x and y are swapped with respect to the 
+   first polynomial.
+
+   This mapping essentially exists with "PV" as the key head. although
+   the Calabretta and Greisen paper suggests to use "DV". swarp 2.10 
+   searches for PV but not DV.
+
+*/
+
+
+static const DistortionMapping DVNames[] =   
+  {
+    {"1_0",  "dx"},
+    {"2_0",  "dy"},
+    {"1_1", "a11"},
+    {"1_2", "a12"},
+    {"2_1", "a22"},
+    {"2_2", "a21"},
+    {"1_4", "a1x2"},  /* 1_3 and 2_3 are coeffs for r */
+    {"1_5", "a1xy"},
+    {"1_6", "a1y2"},
+    {"2_4", "a2y2"},
+    {"2_5", "a2xy"},
+    {"2_6", "a2x2"},
+    {"1_7", "a1x3"},
+    {"1_8", "a1x2y"},
+    {"1_9", "a1xy2"},
+    {"1_10","a1y3"},
+    {"2_7", "a2y3" },
+    {"2_8", "a2xy2"},
+    {"2_9", "a2x2y"},
+    {"2_10","a2x3" },
+    {"end",NULL} /* end marker */
+  };
+
+
+
+/* routine the decodes a correction polynomial , independent from the 
+actual WCS type */
+static GtransfoPoly ReadWCSCorrection(const FitsHeader &Head,
+				      const string &corrTag,
+				      FitsKeyArray &corrections)
+{
+  /* first loop on Fits keys to identify the corrections scheme 
+     and evaluate correction degree */
+  int maxj = 0;
+  for (unsigned k = 0; k < corrections.size(); ++k)
+    {
+      FitsKey &key = corrections[k];
+      string keyName = key.KeyName();
+      // decoding routine
+      // analyse the keyname to guess the degree.
+      int i,j;
+      char toto[8];
+      if (sscanf(keyName.c_str(),"%2s%d_%d",toto,&i,&j) == 3)
+	if (j>maxj) maxj = j;
+    }
+  // if the highest j is 6, then second degree is enough
+  GtransfoPoly corr((maxj==6) ? 2 : 3);
+  const DistortionMapping * assoc;
+  if (corrTag == "DJ") assoc = DJNames;
+  else if (corrTag == "DV" || corrTag == "PV") assoc = DVNames;
+  else if (corrTag == "WCS3") assoc = WCS3Names;
+  unsigned tagLen = corrTag.length();
+  for (unsigned k = 0; k < corrections.size(); ++k)
+    {
+      FitsKey &key = corrections[k];
+      /* remove PV, DJ or DV at the beginning of key names (they are
+	 present by construction, and absent from the "assoc" tables)
+      */
+      const char *fitsName = key.KeyName().c_str()+tagLen;
+      double val = key; 
+      size_t j;
+      for (j=0; assoc[j].coeffName ; ++j)
+	{
+	  if (strcmp(assoc[j].fitsName,fitsName) == 0) break;
+	}
+      if (!assoc[j].coeffName) // reached the end
+	{
+	  cerr << " ReadWCSCorrection : no item named " 
+	       << fitsName << '(' << key.KeyName() << ')' << endl;
+	  continue;
+	}
+      corr.Coeff(assoc[j].coeffName) = val;
+    }
+  return corr;
+}
+
+
 bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
 		      const bool Warn)
 {
@@ -299,36 +463,13 @@ bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
   if (!TanLinWCSFromHeader(Head, TanWcs,Warn)) return false;
   // now go for non-linear distortions :
   FitsKeyArray corrections;
-  int maxj = 0;
   /* there has been a whole history of those distortions. Their
      meanings depend on the "tag" value: */
   string corrTag; // PV, DJ, DV...
   if (HasTanCorrection(Head, corrTag, &corrections))
     {
-      // convert the FitsKey's to  (name,double) pairs
-      vector<NamedValue> values;
-      for (unsigned k = 0; k < corrections.size(); ++k)
-	{
-	  FitsKey &key = corrections[k];
-	  string keyName = key.KeyName();
-	  double val = key;
-	  // remove PV, DJ or DV at the beginnig of key names for the 
-	  // decoding routine
-	  values.push_back(NamedValue(string(keyName.c_str()+2), val));
-	  // analyse the keyname to guess the degree.
-	  int i,j;
-	  char toto[8];
-	  if (sscanf(keyName.c_str(),"%2s%d_%d",toto,&i,&j) == 3)
-	    if (j>maxj) maxj = j;
-	}
-      GtransfoCub corr;
-      corr.SetValues(values, corrTag);
-      if (maxj==6)// convert to a GtransfoQuad
-	{
-	  GtransfoQuad q(corr);
-	  TanWcs.SetCorrections(&q);
-	}
-      else TanWcs.SetCorrections(&corr);
+      GtransfoPoly  corr = ReadWCSCorrection(Head,corrTag, corrections);
+      TanWcs.SetCorrections(&corr);
     }
   return true;
 }
@@ -336,22 +477,20 @@ bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
 // remove non linear corrections that apply to Tangent point WCS's
 static void RemoveTanCorrection(FitsHeader &Head)
 {
-  static string keyHead[] = {"DJ","PV","DV"};
+  static const string keyHead[] = {"DJ","PV","DV"};
+  static const DistortionMapping* assoc[] = {DJNames, DVNames, DVNames};
   static int nHead = sizeof(keyHead)/sizeof(keyHead[0]);;
-  GtransfoCub dummy;
   for (int i=0; i<nHead; ++i)
-    {
-      vector<NamedValue> keyTail;
-      dummy.GetValues(keyTail, keyHead[i]);
-      for (unsigned k =0; k < keyTail.size(); ++k)
+    {      
+      for (unsigned k =0; assoc[i][k].coeffName; ++k)
 	{
-	  string keyName = keyHead[i]+keyTail[k].name;
+	  string keyName = keyHead[i]+assoc[i][k].fitsName;
 	  if (Head.HasKey(keyName)) Head.RmKey(keyName);
 	}
     }
 }
   
-#define TOADS_WCS_VERSION "1.1"
+#define TOADS_WCS_VERSION "1.2"
 
 int TanWCS2Header(const string &FitsImageName, const TanPix2RaDec &TanWcs)
 {
@@ -383,7 +522,7 @@ void TanWCS2Header(FitsHeader &Head, const TanPix2RaDec &TanWcs)
   Point crval = TanWcs.TangentPoint();
   Head.AddOrModKey("CRVAL1",crval.x);
   Head.AddOrModKey("CRVAL2",crval.y);
-  GtransfoLin linPart = TanWcs.LinPart();
+  const GtransfoLin linPart = TanWcs.LinPart();
   Head.AddOrModKey("CD1_1",linPart.A11());
   Head.AddOrModKey("CD1_2",linPart.A12());
   Head.AddOrModKey("CD2_1",linPart.A21());
@@ -394,22 +533,32 @@ void TanWCS2Header(FitsHeader &Head, const TanPix2RaDec &TanWcs)
   if (Head.HasKey("CDELT2")) Head.RmKey("CDELT2");
 
   // corrections ?
-  if (TanWcs.Corr())
+  const GtransfoPoly *corr = TanWcs.Corr();
+  if (corr)
     {
-      GtransfoCub corr(*TanWcs.Corr());
-      vector<NamedValue> values;
-      string keyHead="PV"; // for Swarp
-      corr.GetValues(values, keyHead);
-      for (unsigned k=0; k< values.size(); ++k)
+      /* We chose to follow the PV encoding, because 
+	 I am sure (P.A) that swarp reads it (version 2.10)
+      */
+      const DistortionMapping *assoc = DVNames;
+      for (unsigned k=0; assoc[k].coeffName; ++k)
 	{
-	  if (values[k].value == 0) continue;
-	  Head.AddOrModKey(keyHead+values[k].name, values[k].value);
+	  string keyName = "PV"+string(assoc[k].fitsName);
+	  const char *coeffName = assoc[k].coeffName;
+	  if (!corr->HasCoeff(coeffName)) continue;
+	  double val = corr->Coeff(coeffName);
+	  Head.AddOrModKey(keyName, val);
 	}
     }
   Head.AddOrModKey("WCSVERS", TOADS_WCS_VERSION);
 }
 
 /************** returns the WCS (of the right kind) ***********/
+
+static bool WCS3TransfoFromHeader(const FitsHeader& Header, 
+				  GtransfoPoly &CubicCorr, 
+				  const bool Warn);
+
+
 
 /*! This routine combines a "Linear" WCS (if any) with a cubic correction
   (if any). The result is exact if the image was matched using matchusno.
@@ -446,7 +595,7 @@ bool WCSFromHeader(const FitsHeader &Head, Gtransfo* &Pix2RaDec)
     {
       GtransfoLin linPix2RaDec;
       if (!OldLinWCSFromHeader(Head,linPix2RaDec)) return false;
-      GtransfoCub cubCorr;
+      GtransfoPoly cubCorr(3);
       if (WCS3TransfoFromHeader(Head, cubCorr, /*warn = */ false))
 	{
 	  Pix2RaDec = GtransfoCompose(&linPix2RaDec, &cubCorr);
@@ -527,39 +676,6 @@ bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader)
   return true;
 }
 
-
-#ifdef STORAGE
-bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader)
-{
-  if (!HasLinWCS(FromHeader)) return false;
-  RemoveWCS(ToHeader);
-  for (unsigned ik = 0; ik<NWCSKeys; ++ik)
-    {
-      const char *keyName = WCSKeys[ik];
-      if (FromHeader.HasKey(keyName))
-	FromHeader.CopyKey(keyName, ToHeader);
-    }
-  // handle corrections
-  FitsKeyArray keys;
-  string dummy;
-  if (HasTanCorrection(FromHeader, dummy,  &keys))
-    {
-      for (unsigned k =0; k<keys.size(); ++k)
-	{
-	  FitsKey &key = keys[k];
-	  ToHeader.AddOrModKey(key.KeyName(), double(key));
-	}
-    }
-  else
-    {
-      // if the header has a cubic correction, then copy it also
-      GtransfoCub corr;
-      if (WCS3TransfoFromHeader(FromHeader, corr, /*warn  = */ false))
-	  WCS3Transfo2Header(ToHeader, corr);
-    }
-  return true;
-}
-#endif
 
 
 bool WCSTransfoBetweenHeader(const FitsHeader &Header1, const FitsHeader &Header2, GtransfoLin &Transfo1to2)
@@ -691,66 +807,37 @@ double Arcmin2Overlap(const FitsHeader& Head1,const FitsHeader& Head2)
 // We write here the 3rd order polynomial transformation from pix to Ra and Dec.
 // This corresponds by no mean to an official WCS implementation.
 
-#define TAG "WCS3"
-#define WCS_OK "WCS_OK"
-int WCS3Transfo2Header(FitsHeader &header, const GtransfoCub &CubicCorr)
-{
-   const char* comment = " 3rd order WCS transfo coefficient (unofficial WCS)";
-   vector<NamedValue> values;
-   CubicCorr.GetValues(values, TAG);
-   for (unsigned int i=0 ;i < values.size(); ++i)
-     header.AddOrModKey((TAG+string(values[i].name)).c_str(), 
-			values[i].value, comment);
-   // if the WCS was marked innacurate remove the mark.
-   if (header.HasKey(WCS_OK)) header.RmKey(WCS_OK);
-   return 1;
-}
-
-
-
-
-
-int WCS3Transfo2Header(const string &FitsImageName, const GtransfoCub &CubicCorr)
-{
-   FitsHeader header(FitsImageName, RW);
-   if (!header.IsValid()) return 0;
-   return WCS3Transfo2Header(header, CubicCorr);
-} 
-
 
 
 // To read a (cubic) transformation written in the header of the image "FitsImageName".
 //    Return the transformation
 static bool read_old_cubic_corr(const FitsHeader& Header, 
-				GtransfoCub &CubicCorr,
+				GtransfoPoly &CubicCorr,
 				const bool Warn,
 				const string &KeyHead)
 {
-   bool correct = true;
-   vector<NamedValue> values;
-   CubicCorr.GetValues(values, KeyHead); // bizarre isn't it? this is the way to get the keys under which the 
-                                // data of the transfo is stored.
-   for (unsigned int i=0; i< values.size() ;++i)
-     {
-       string sKeyName = TAG+string(values[i].name);
-       const char *keyName = sKeyName.c_str();
-       if (!Header.HasKey(keyName))
-	 {
-	   if (Warn) 
-	     cerr << " WCS3TransfoFromHeader :: no key named " 
-		  <<  keyName << endl;
-	   correct = false;
-	   continue;
-	 }
-       values[i].value = Header.KeyVal(keyName);
-     }
-   CubicCorr.SetValues(values, KeyHead);
-   return  correct;
-}  
+  bool correct = true;
+  for (unsigned k=0; WCS3Names[k].coeffName; ++k)
+    {
+      string keyName = KeyHead+string(WCS3Names[k].fitsName);
+      //       const char *keyName = sKeyName.c_str();
+      if (!Header.HasKey(keyName))
+	{
+	  if (Warn) 
+	    cerr << " read_old_cubic_corr :: no key named " 
+		 <<  keyName << endl;
+	  correct = false;
+	  continue;
+	}
+      double val = Header.KeyVal(keyName);
+      CubicCorr.Coeff(WCS3Names[k].coeffName) = val;
+    }
+  return  correct;
+}
 
 
 
-bool WCS3TransfoFromHeader(const FitsHeader& Header, GtransfoCub &CubicCorr, 
+bool WCS3TransfoFromHeader(const FitsHeader& Header, GtransfoPoly &CubicCorr, 
 			   const bool Warn)
 {
   /* due to a (temporary) bug, there exists a set of images with OLD WCS's
@@ -763,28 +850,25 @@ bool WCS3TransfoFromHeader(const FitsHeader& Header, GtransfoCub &CubicCorr,
 
 
 static void RemoveWCS3Correction(FitsHeader &Head)
-{
-  GtransfoCub dummy;
-  vector<NamedValue> values;
-  dummy.GetValues(values, "WCS3");
-  for (unsigned int i=0; i< values.size() ;++i)
+{  
+  for (unsigned k=0; WCS3Names[k].coeffName; ++k)
     {
-      string KeyName = TAG+string(values[i].name);
-      if (Head.HasKey(KeyName)) Head.RmKey(KeyName);
+      string keyName("WCS3"+string(WCS3Names[k].fitsName));
+      if (Head.HasKey(keyName)) Head.RmKey(keyName);
     }
   // due to a (temporary) bug, there are old WCS's (with WCS3 keys)
   // encoded with  the new (i_j) tagging scheme. So remove them here:
-  dummy.GetValues(values, "DJ");
-  for (unsigned int i=0; i< values.size() ;++i)
+  for (unsigned k=0; DJNames[k].coeffName; ++k)
     {
-      string KeyName = TAG+string(values[i].name);
-      if (Head.HasKey(KeyName)) Head.RmKey(KeyName);
+      string keyName("DJ"+string(DJNames[k].fitsName));
+      if (Head.HasKey(keyName)) Head.RmKey(keyName);
     }
+
 }
 
 
 
-bool WCS3TransfoFromHeader(const string &FitsImageName, GtransfoCub &Pix2RaDec,
+bool WCS3TransfoFromHeader(const string &FitsImageName, GtransfoPoly &Pix2RaDec,
 			   const bool Warn)
 {
   FitsHeader header(FitsImageName);
@@ -793,7 +877,7 @@ bool WCS3TransfoFromHeader(const string &FitsImageName, GtransfoCub &Pix2RaDec,
 
 static bool HasWCS3Correction(const FitsHeader &Head)
 {
-  GtransfoCub cubCorr;
+  GtransfoPoly cubCorr(3);
   return WCS3TransfoFromHeader(Head, cubCorr, /*warn = */ false);
 }
 
@@ -870,12 +954,12 @@ static GtransfoLin RotationFlip(const AxisDir NorthDir, const AxisDir EastDir)
 }
 
 
-//! a handy routine to compute aWCS given a RaDec reference, and a possible rotation and flip.     
+//! a handy routine to compute a WCS given a RaDec reference, and a possible rotation and flip.     
 static bool ComputeLinWCS(const FitsHeader &Head, 
-		     const Point &CrPix, 
-		     const GtransfoLin &RotFlip, 
-		     TanPix2RaDec &WCS)
-		     {
+			  const Point &CrPix, 
+			  const GtransfoLin &RotFlip, 
+			  TanPix2RaDec &WCS)
+{
   double pixscale = Head.KeyVal("TOADPIXS");
   if (pixscale == 0)
     {
