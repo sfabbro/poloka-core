@@ -8,6 +8,11 @@
 #include "algorithm" // for copy
 #include "vutils.h" /* for DArrayMedian */
 
+/* TO DO:
+   think about imposing a maximum number of matches that may 
+   be discarded in Cleanup. 
+*/
+
 ostream& operator << (ostream &stream, const StarMatch &Match)
 { 
   stream << Match.point1.x << ' ' << Match.point1.y << ' ' 
@@ -54,21 +59,23 @@ void StarMatchList::RefineTransfo(const double &NSigmas)
       nused = size();
       if (nused <= 2) { chi2 = -1; break;}
       chi2 = transfo->fit(*this);
-      // cerr << *transfo << endl; see cerr instead of cout : result will change if sextractor pass before!!
-      if (chi2<0)
-	{
-	  // cerr << " in  StarMatchList::Refine , chi2 = " << chi2 << endl;
-	  return;
-	}
+      /* convention of the fitted routines : 
+	 -  chi2 = 0 means zero degrees of freedom 
+              (this was not enforced in Gtransfo{Lin,Quad,Cub} ...)
+	 -  chi2 = -1 means ndof <0 (and hence no possible fit)
+	 --> in either case, refinement is over
+         The fact that chi2 = 0 was not enforced when necessary means
+	 that in this (rare) case, we where discarding matches at random....
+         With GtransfoPoly::fit, this is no longer the case.
+      */
+      if (chi2 <= 0)  return;
       int npair = int(size());
       if (npair == 0) break;
       double *dist = Dist2();
       double median = DArrayMedian(dist,npair);
       delete [] dist;
       cut = NSigmas*sqrt(median);
-      //cout << " nused " << nused << " chi2 " << chi2 << endl;
       nremoved = Cleanup(cut, *transfo);
-      //cout << *transfo << endl;
     } 
   while (nremoved);
 }
@@ -125,8 +132,8 @@ void StarMatchList::SetTransfoOrder(const int Order)
     {
     case 0 : SetTransfo(new GtransfoLinShift()); break;
     case 1 : SetTransfo(new GtransfoLin());      break;
-    case 2 : SetTransfo(new GtransfoQuad());     break;
-    case 3 : SetTransfo(new GtransfoCub());      break;
+    case 2 : SetTransfo(new GtransfoPoly(2));     break;
+    case 3 : SetTransfo(new GtransfoPoly(3));      break;
     default : cerr << "Wrong transfo order : " << Order << endl; order = -1; return;
     }
   order = Order;

@@ -27,6 +27,7 @@
       two pointers (unused by the class and its satellites), that enable in the end to trace back
       the stars in the caller data structures. */
 
+//! A hanger for star associations
 class StarMatch {
   
   friend class StarMatchList;
