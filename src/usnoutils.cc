@@ -1128,13 +1128,11 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   
   // Part 4.2 : fit the distortions. In principle the linear part is essentialy unity.
 
-  GtransfoCub cubCorr;
-  GtransfoQuad quadCorr;
-  GtransfoQuad *correction = NULL;
+  GtransfoPoly *correction = NULL;
+
   if (match_order>=2)
     {
-      if (match_order == 3) correction = &cubCorr;
-      if (match_order == 2) correction = &quadCorr;
+      if (match_order <= 3) correction = new GtransfoPoly(match_order);
       if (correction) 
 	{
 	  StarMatchList linFitApplied;
