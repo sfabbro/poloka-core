@@ -25,7 +25,7 @@ class ImageTransfo : public RefCount
 
 //! applies the transfo to the image.
   virtual void TransformImage(const FitsImage &Source, FitsImage& Transformed,
-			      const ReducedImage *Source, 
+			      const ReducedImage *RSource, 
 			      ReducedImage *Result, double DefaultVal = 0) const = 0;
 
 //! applies the transfo to the image. accounts for the fact that the image actually conatins weights
@@ -87,7 +87,9 @@ public:
   virtual void  dump(ostream &s = cout)const ;
 
   //! the one that transforms the image and update header.
-  void TransformImage(const FitsImage &Source, FitsImage& Transformed, const ReducedImage *Source, ReducedImage *Result, double DefaultVal = 0) const ;
+  void TransformImage(const FitsImage &Source, FitsImage& Transformed, 
+		      const ReducedImage *RSource, ReducedImage *Result, 
+		      double DefaultVal = 0) const ;
 
   //! Transforms a weight image.
   void TransformWeightImage(const FitsImage &Source, FitsImage& Transformed) const;

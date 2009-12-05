@@ -480,7 +480,7 @@ class TanRaDec2Pix : public Gtransfo
     Point TangentPoint() const;
 
     //!
-    void apply(const double Xin, const double Yin, double &Yout, double &Yout) const;
+    void apply(const double Xin, const double Yin, double &Xout, double &Yout) const;
 
     //! exact typed inverse:
     TanPix2RaDec invert() const;

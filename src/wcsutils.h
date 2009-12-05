@@ -58,7 +58,7 @@ void TanWCS2Header(FitsHeader &Head, const TanPix2RaDec &TanWcs);
 
 
 //! retrieves the (lin) transfo from header1 to header2, using WCS
-bool WCSTransfoBetweenHeader(const FitsHeader &Header1, const FitsHeader &Header1, GtransfoLin &Transfo1to2);
+bool WCSTransfoBetweenHeader(const FitsHeader &Header1, const FitsHeader &Header2, GtransfoLin &Transfo1to2);
 
 //! check the presence of World Coordinate System data 
 bool HasLinWCS(const FitsHeader &Header);
