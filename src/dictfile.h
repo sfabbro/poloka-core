@@ -1,6 +1,8 @@
 #ifndef DICTFILE__H
 #define DICTFILE__H
 
+#include <stdlib.h> // for atof
+
 
 #include <iostream>
 #include <string>
