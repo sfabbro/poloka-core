@@ -1,5 +1,5 @@
 #include <signal.h>
-
+#include <stdlib.h> // for abort
 
 #include "polokaexception.h"
 

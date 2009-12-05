@@ -1,6 +1,7 @@
 #include <math.h>
 #include "vutils.h"
 #include <algorithm>
+#include <string.h> // memcpy 
 
 using namespace std;
 

@@ -1,6 +1,8 @@
 #ifndef MATVECT__H
 #define MATVECT__H
 
+#include <stdlib.h> // for abort
+#include <string.h> // for memset
 #include <iostream>
 #include <string>
 

@@ -2,6 +2,8 @@
 #ifndef FITSIMAGE__H
 #define FITSIMAGE__H
 
+#include <string.h> // there are inline calls to strncpy
+
 enum FitsFileMode {RO = 0, RW = 1};
 
 #include <string>

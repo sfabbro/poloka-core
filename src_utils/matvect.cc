@@ -4,6 +4,7 @@
 #include <matvect.h>
 #include <fitsio.h>
 #include <assert.h>
+#include <string.h> // memcpy
 
 using namespace std;
 
