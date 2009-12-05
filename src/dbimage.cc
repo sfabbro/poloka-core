@@ -7,6 +7,7 @@
 #include "stringlist.h"
 #include "dbimage.h"
 
+#include "string.h" // strcmp
 
 struct Path
 {

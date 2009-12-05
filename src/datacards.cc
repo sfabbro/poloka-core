@@ -1,4 +1,4 @@
-// $Id: datacards.cc,v 1.3 2004/10/20 10:43:43 astier Exp $
+// $Id: datacards.cc,v 1.4 2009/12/05 08:33:15 astier Exp $
 //
 // Datacards, acquisition EROS II
 //
@@ -12,6 +12,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
+#include <string.h> // for strlen, strcmp, ...
 
 //++
 // Class	DataCards
