@@ -79,7 +79,7 @@ public:
   int Nx() const {return nx;}
   int Ny() const {return ny;}
   //! set all pixels to zero
-  void Zero() { memset(data,0,sizeof(DPixel)*nx*ny);}
+  void Zero();
   //! returns the minimum pixel value 
   DPixel MinValue() const;
   //! returns the maximum pixel value 

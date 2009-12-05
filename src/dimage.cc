@@ -1,8 +1,10 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
-#include <fitsio.h>
+#include <string.h> // memset, memcpy
 
+
+#include <fitsio.h>
 #include "dimage.h"
 #include "frame.h"
 #include "fileutils.h"
@@ -58,6 +60,11 @@ DImage& DImage::operator = (const Image& Right)
   Pixel *p = Right.begin();
   for (int i=ny*nx; i ; --i) {*p = *dp ; ++p; ++dp;}
   return *this;
+}
+
+void DImage::Zero()
+{
+  memset(data,0,sizeof(DPixel)*nx*ny);
 }
 
 DPixel DImage::MinValue() const
