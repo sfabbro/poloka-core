@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "intframe.h"
+#include <stdlib.h>
 
 #define PIXEL_LOOP(block, I, J) \
   for (int J = block.ymin; J < block.ymax; ++J) \

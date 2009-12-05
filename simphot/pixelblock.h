@@ -2,7 +2,7 @@
 #define PIXELBLOCK__H
 
 #include <string>
-
+#include <string.h>
 #include "array2d.h"
 
 typedef double PixelType; 

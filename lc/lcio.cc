@@ -1,9 +1,10 @@
 #include <string>
 
 using namespace std;
+#include <algorithm>
+
 
 #include <astroutils.h>   // JulianDay
-
 #include "lcio.h"
 
 // routine to read an object in a lightcurve file. 
