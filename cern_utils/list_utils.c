@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAXVAR 512
+#define MAXVAR 4096
 
 static char *StringNew(char *Source) /* prototype */
 {
@@ -24,19 +24,19 @@ return result;
 
 char** decode_tags(FILE *file, int *Dim)
 {
-#define MAX_LENGTH 30
+#define MAX_LINE_LENGTH 16384
 char **tags = (char **) calloc(MAXVAR,sizeof(char*));
 int i, dim = 0;
-char line[512];
+char line[MAX_LINE_LENGTH];
 
-while (fgets(line,512,file))
+while (fgets(line,MAX_LINE_LENGTH,file))
   {
   if (line[0] == '@') continue;
-  char w1[512], w2[512];
   if (line[0] != '#')
     {
     printf(" header should end by '# end'\n"); return NULL;
     }
+  char w1[MAX_LINE_LENGTH], w2[MAX_LINE_LENGTH];
   if (sscanf(line+1,"%s",w1) == 1 && strcmp(w1,"end") == 0) break;
   if (dim == MAXVAR) 
     { printf(" tuple truncated to %d variables\n",dim); continue;} 
@@ -55,7 +55,7 @@ return tags;
 char *split_line(char *Line, float *X, const int Dim, int *nread, int *nbad)
 {
   const char *p1;
-  char dummy[64];
+  char dummy[MAX_LINE_LENGTH];
   char* p2;
   int i;
   *nread = 0;
@@ -68,9 +68,9 @@ char *split_line(char *Line, float *X, const int Dim, int *nread, int *nbad)
     float value = strtod(p1,&p2);
     if (p2 == p1) /* try to read a bunch of chars to go on */
       {
-	int nread;
+	int nread=0;
 	sscanf(p1,"%s%n",dummy,&nread);
-	if (nread == 0) break;
+	if (nread == 0) break; // means end of line
 	(*nbad)++;
 	p1 += nread;
 	X[i] = 1e30;
@@ -86,45 +86,45 @@ char *split_line(char *Line, float *X, const int Dim, int *nread, int *nbad)
 }
 
 
-
-int read_data(FILE *File, int Dim, void (Processor)(int*,float*), int *ProcData)
+int read_data(FILE *File, int Dim, void (Processor)(int*,float*), 
+	      int *ProcData, bool print_bad_lines)
 {
-float x[MAXVAR];
-char line[8192];
- int count = 0;
-int miss = 0; int more = 0;
- int bad = 0;
+  char line[MAX_LINE_LENGTH];
+  int count = 0;
+  int miss = 0; int more = 0;
+  int bad = 0;
+  float x[MAXVAR];
 
- if (Dim>MAXVAR)
-   {
-     Dim = MAXVAR;
-   }
-while (fgets(line,8192,File))
-  {
-  char *left_over;
-  int nread;
-  int nbad;
-  if (strlen(line) <= 1) continue;
-  if (line[0] == '#' || line[0] == '@') continue;
-  left_over = split_line(line,x,Dim,&nread, &nbad);
-  if (nread < Dim) miss++;
-  if (atof(left_over)) more++;
-  if (nbad) bad++;
-  if (Processor) Processor(ProcData,x);
-  count ++;
-  }
-if (miss )
-  {
-  printf(" when reading colums, we missed items on %d rows \n",miss);
-  }
-if (more)
-  {
-  printf(" when reading colums, we had too many items on %d rows \n",more);
-  }
-if (bad)
-  {
+  if (Dim>MAXVAR)
+    {
+      Dim = MAXVAR;
+    }
+  while (fgets(line,MAX_LINE_LENGTH,File))
+    {
+      char *left_over;
+      int nread;
+      int nbad;
+      if (line[0] == '#' || line[0] == '@') continue;
+      size_t len=strlen(line);
+      if (len <= 1) continue;
+      if (line[len-1] == '\n') line[len-1] = '\0'; 
+      left_over = split_line(line,x,Dim,&nread, &nbad);
+      bool error = false;
+      if (nread < Dim) {miss++; error=true;}
+      if (atof(left_over)) {more++; error = true;}
+      if (nbad) {bad++; error = true;}
+      if (print_bad_lines && error)
+	printf(" bad line :\n%s\n",line);
+      if (Processor) Processor(ProcData,x);
+      count ++;
+    }
+  if (miss )
+    printf(" when reading colums, we missed items on %d rows \n",miss);
+  if (more)
+    printf(" when reading colums, we had too many items on %d rows \n",more);
+  if (bad)
     printf(" when reading colums, we had bad conversions on %d rows\n",bad);
-  }
- return count;
+  return count;
 }
+
 
