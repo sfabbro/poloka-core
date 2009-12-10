@@ -19,8 +19,7 @@ extern "C" {
 #include <define.h> /* from sextractor, mandatory for nex one () */
 #include <globals.h> /* from sextractor. nice name isn't it ? */
 #include <types.h> 
-
-  //#include <prefs.h> // a ajouter pour la version v244
+#include <prefs.h> // a ajouter pour la version v244
 	   }
 
 
