@@ -74,7 +74,7 @@ if (!tags) return 0;
     printf( " could not open %s\n",HbkFileName); fclose(in); return 0;
   }
 tuple_book(Id, "toto", tags, dim);
-nrec = read_data(in, dim, my_hfn, &Id);
+ nrec = read_data(in, dim, my_hfn, &Id, /* print_bad_lines =  */ false);
  printf(" %d entries written to %s\n", nrec, HbkFileName);
 tuple_end(Id);
 return 1;
