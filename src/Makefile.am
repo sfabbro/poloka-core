@@ -49,7 +49,6 @@ libtoads_la_SOURCES =  \
   fastfinder.cc               fastfinder.h     \
   usnoutils.cc                usnoutils.h      \
   gtransfo.cc                 gtransfo.h       \
-                              gtransfocomposition.h \
   align_box.cc                align_box.h      \
   quali_box.cc                quali_box.h      \
   seeing_box.cc               seeing_box.h     \
