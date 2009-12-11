@@ -151,7 +151,7 @@ va_list args;
 va_start (args,Message);
  vsnprintf (mess,8192,Message,args);
 va_end(args);
- cerr << mess;
+ cerr << mess << endl;
  throw (DbConfigException(mess));
 }
 
@@ -350,8 +350,8 @@ void DbConfigExample()
 << "# where to find astrometric catalogs (non-USNO catalogs usually)" << endl
 << "CatalogPath" << endl
 << "{" << endl
+<< "  ." << endl
 << "  /data/my_catalogs" << endl
-<< "  /data/my_od/catalogs" << endl
 << "  /data/catalogs/D*" << endl
 << "}" << endl
 << endl
@@ -373,7 +373,7 @@ void DbConfigExample()
 
 
 
-string DbConfigFile::FindCatalog(const string &FileName, const bool Warn) const
+string DbConfigFile::FindCatalog(const string &FileName, const bool Throw) const
 {
   if (FileName == "") return "";
   if (FileName[0] == '/')
@@ -385,14 +385,15 @@ string DbConfigFile::FindCatalog(const string &FileName, const bool Warn) const
       std::string cand = catalog_pathes[i]+FileName;
       if (FileExists(cand)) return cand;
     }
-  if (Warn) std::cerr << "DbConfigFindCatalog :  cannot locate " << FileName << std::endl;
+  if (Throw) 
+    FatalError("DbConfigFindCatalog :  cannot locate %s",FileName.c_str());
   return "";
 }
 
 // locator for catalogs
-string DbConfigFindCatalog(const string &FileName, const bool Warn)
+string DbConfigFindCatalog(const string &FileName, const bool Throw)
 {
-  return DbConfig()->FindCatalog(FileName, Warn);
+  return DbConfig()->FindCatalog(FileName, Throw);
 }
 
 

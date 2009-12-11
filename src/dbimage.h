@@ -300,7 +300,7 @@ int DbConfigSetDumpLevel(const int level);
 string DbConfigFileName();
 
 //! locate a catalog within pathes given in the CatalogPath section of your dbconfig
-string DbConfigFindCatalog(const string &FileName, const bool Warn = true);
+string DbConfigFindCatalog(const string &FileName, const bool Throw = true);
 
 
 #endif /* __cplusplus */
