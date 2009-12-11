@@ -112,7 +112,6 @@ listmatch.h      \
 fastfinder.h     \
 usnoutils.h      \
 gtransfo.h       \
-gtransfocomposition.h \
 align_box.h      \
 quali_box.h      \
 seeing_box.h     \
