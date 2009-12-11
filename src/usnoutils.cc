@@ -651,7 +651,7 @@ MatchCards::MatchCards()
    linMatchCut = 1.5;
    linMatchMinCount = 10;
    distortionDegree = 3;
-   secondMatchCut = 1;
+   secondMatchCut = 1.0;
    writeWCS = true;
    asciiWCS = false;
    wcsFileName = "";
@@ -703,7 +703,7 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
 
 static bool UsnoCollect(const Frame &usnoFrame, const TanPix2RaDec &Wcs, BaseStarList &UsnoCat)
 {
-  
+  UsnoCat.clear();
   UsnoRead(usnoFrame, RColor, UsnoCat);
   if (UsnoCat.size() == 0)
     {
@@ -912,8 +912,6 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	
   BaseStarList usnoList;
   UsnoCollect(skyRegion, guessWcs, usnoList);
-  usnoList.write("usno.list");
-
 
   // Part 2 : find an initial match.
   StarMatchList *initialMatch = NULL;
