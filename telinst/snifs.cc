@@ -1,7 +1,14 @@
 #ifdef USE_WCS
 static bool GuessLinWCS_snifs(const FitsHeader &Head, TanPix2RaDec &Guess)
 {
-  return ComputeLinWCS(Head, Point(1000,0), RotationFlip(Down,Left), Guess);
+  /* (1000,0) is roughly the location of the ra,dec point in rebinned 
+     images containing both CCDs. The WCS should be guessed a little bit more seriously. 
+     These images are however useless for astrometry. They should be cut in 
+     2 pieces (or patched)
+   */
+  return (TanLinWCSFromHeader(Head,Guess, /* warn = */ false) ||
+	  ComputeLinWCS(Head, Point(1000,0), RotationFlip(Down,Left), Guess));
+ 
 }
 
 
