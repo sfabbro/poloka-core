@@ -459,6 +459,14 @@ SolList Solutions;
      Solutions.push_back(a_list);
     }
 
+  if (Solutions.size() == 0)
+    {
+      cout << " error In ListMatchup : not a single pair match " << endl;
+      cout << " Probably, the relative scale of lists is not within bounds" << endl;
+      cout << " here : " << minRatio << ' ' << maxRatio << endl;
+      return NULL;
+    }
+
 
   Solutions.sort(DecreasingQuality);
   StarMatchList *best = *Solutions.begin();
@@ -499,6 +507,7 @@ L2.FluxSort();
 GtransfoLin flip(0,0,1,0,0,-1);
 StarMatchList *flipped   =  ListMatchupRotShift(L1,L2,flip, Conditions);
 StarMatchList *unflipped =  ListMatchupRotShift(L1,L2, GtransfoIdentity(), Conditions);
+ if (! flipped  || !unflipped) return NULL;
 if (Conditions.PrintLevel >=1)
   {
   cout << " unflipped  Residual " << unflipped->Residual() << " nused " << unflipped->Nused() << endl;
