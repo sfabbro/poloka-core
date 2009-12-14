@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <fitsimage.h>
 
@@ -31,11 +32,18 @@ int main(int argc0, char** argv0) {
   int argc = 1; 
 
   bool floatOutput = false;
+
+  bool printlist = false ;
+
   for (int i=1; i<argc0; ++i)
     {
       if (string(argv0[i]) == "-f")
         {
 	  floatOutput = true; continue;
+	}
+      if (string(argv0[i]) == "-P")
+        {
+	  printlist = true; continue;
 	}
       argv[argc] = argv0[i];
       argc++;
@@ -84,6 +92,16 @@ int main(int argc0, char** argv0) {
     }
     FitsImage im(argv[5],image1,image3);
     if (floatOutput) im.SetWriteAsFloat();
+
+    if(printlist)
+      {
+	ofstream pr("xyf.list");
+	pr << "#x : " << endl << "#y : " << endl << "#f : " << endl << "#end " << endl ;
+	for(int i = 0 ; i < im.Nx() ; i++)
+	  for(int j = 0 ; j < im.Ny() ; j++)
+	    pr << i << " " << j << " " << im(i,j) << endl ;
+	pr.close() ;
+      }
   }
   
   

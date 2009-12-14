@@ -187,6 +187,12 @@ bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R,
 	  deno += (sq(xp)-sx2*sq(y-2.*R*xp)/d)/sy2;
 
 	}
+      // no protection for dividing by zero
+      if ( fabs(deno) < 1.e-20 )
+	{
+	  cerr << "WARNING SlowPhotomRatio : dividing by zero" << endl ; 
+	  return false ;
+	}
       R += num/deno;
       Var = 1/deno;
       double chi2Mean, chi2Med, chi2Sig;
@@ -200,6 +206,12 @@ bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R,
       if (outliers) niter ++;
       }   while (niter < 10);
   delete [] chi2Vals;
+  
+  if ( isnan(R))
+    {      
+      cerr  << "WARNING SlowPhotomRatio : nan value " << endl ;
+      return false ;
+    }
   cout << " chi2 photom ratio, niter " << chi2/(L.size()-1) << ' ' << niter << endl;
   return (niter<10);
 }

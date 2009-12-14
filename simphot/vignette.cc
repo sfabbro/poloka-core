@@ -93,7 +93,7 @@ bool Vignette::SetGeomTransfos()
   frame.CutMargin(-radius); // right size
   stampLimits = frame;
   convolvedStampLimits = stampLimits; // until SetKernel eventually updates
-
+  cerr << " #SetGeomTransfo :  seeing = " << seeing << " convolvedStampLimits = " << convolvedStampLimits << endl ;
   //DEBUG
   cout << ri->Name() << " stampLimits " << stampLimits << endl;
 
@@ -116,10 +116,10 @@ static Frame FloatFrame(const IntFrame &IF)
 void Vignette::ComputeModelLimits(Frame &ModelFrame) const
 {
   Frame currentFrame= FloatFrame(convolvedStampLimits);
-
   // TODO : if oversampling, we have to do something here: enlarge a little bit
   // current frame.
   ModelFrame = ApplyTransfo(currentFrame, *vignette2Model, LargeFrame);
+  cerr << " #ComputeModelLimits : convolvedStampLimits=" << convolvedStampLimits << " apres transfo : " << ModelFrame.Nx() << " ResamplerBoundarySize = " << ResamplerBoundarySize() << endl ;
   // now add the resampling overhead:
   // Frame::CutMargin increases the frame size if argument is <0
   ModelFrame.CutMargin(-ResamplerBoundarySize());
@@ -403,7 +403,7 @@ void Vignette::FillAAndB(Mat &A, Vect &B, const int ToDo)
       // Sky-Sky
       A(skyIndex,skyIndex) += weightPix.Sum();
       B(skyIndex) += ScalProd(weightPix,residuals);
-      cout << "ScalProd(weightPix,residuals) weightPix residuals " << ScalProd(weightPix,residuals) << " " << weightPix << " " << residuals << endl ; 
+      //cout << "ScalProd(weightPix,residuals) weightPix residuals " << ScalProd(weightPix,residuals) << " " << weightPix << " " << residuals << endl ; 
  // B term - Sky
       // DEBUG
       if (isnan(B(skyIndex))) 
@@ -493,7 +493,9 @@ bool Vignette::SetKernel()
   //DEBUG
 
   convolvedStampLimits = stampLimits;
-  convolvedStampLimits.CutMargin(-HalfKernelSize());
+  convolvedStampLimits.CutMargin(-HalfKernelSize());  
+  cerr << " #SetKernel : convolvedStampLimits = " << convolvedStampLimits << endl ;
+
   return true;
 }
 
@@ -510,6 +512,10 @@ bool Vignette::ReadPixels()
   if (!weightPix.ReadFromFits(ri->FitsWeightName(), int (intPos.x), int (intPos.y))) return false;
   weightPix *= photomRatio*photomRatio;
 
+  // print de DEBUG des vignettes
+  //weightPix.WriteFits(Name()+"_weightpix.fits");
+  //imagePix.WriteFits(Name()+"_imagepix.fits");
+  
   return true;
 
 }

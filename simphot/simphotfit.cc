@@ -1,7 +1,10 @@
-
 #include "simphotfit.h"
 #include "imagepsf.h"
 #include "lightcurvesyntaxerror.h"
+
+  
+#include <fstream>
+#include <iomanip>
 
 
 /* extracted from SimPhotFit constructor, so that it can be called
@@ -133,7 +136,7 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
   cout << "OneMinimization init ok OK" << endl; 
   CumulateChi2(oldChi2,oldDof);
   double chi2; int ndof;
-  cout << "OneMinimization CumulateChi2 ok, oldChi2, oldDof " << oldChi2 << " " << oldDof << endl;
+  cout << "OneMinimization CumulateChi2 ok, oldChi2, oldDof " << setprecision(15) << oldChi2 << " " << oldDof << endl;
   int niter = 0;
   while (niter<MaxIter)
     {
@@ -142,16 +145,16 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
       CumulateChi2(chi2, ndof, true );
       niter++;
 
+      cout << "OneMinimization : niter oldchi2 chi2 " << niter << setprecision(15) << " " << oldChi2 << " " << chi2 << endl ;
       if (chi2 < oldChi2-DeltaChi2)
 	{
-	  cout << "Chi2 decreased (chi2<oldChi2-DeltaChi2) : delta chi2 =" << oldChi2-chi2 << endl;
+	  cout << "OneMinimization : Chi2 decreased (chi2<oldChi2-DeltaChi2) : delta chi2 =" << oldChi2-chi2 << endl;
 	  oldChi2 = chi2; 
 	  continue ; 
 	}
-
-      else
+      else // chi2 increased or is slightly decreased
 	{
-	  printf("Chi2 increased (chi2>oldChi2-DeltaChi2): old %E new %E delta %E\n",oldChi2,chi2,oldChi2-chi2);
+	  cerr << "OneMinimization : chi2>oldChi2-DeltaChi2 --> parabolic approx : delta chi2 =" << oldChi2-chi2 << endl;
 	  double c0=oldChi2,c1,c2=chi2;
 	  double x0=0,x1=0.5,x2=1.;
 	  DispatchOffsets(B,-0.5, false);
@@ -159,22 +162,40 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
 
 	  for (int i=0; i < 10; ++i)
 	    {
+	      cout << "OneMinimization : c0, c1, c2 " << c0 << " " << c1 << " " << c2 << endl ;
 	      //Need a break criteria if approximation had converged
-	      if ((abs(c0-c2)<DeltaChi2) and (i!=0)) //let a first iteration
+	      if ( abs(c0-c2)<DeltaChi2 )
 		{
-		  cout << "Parabolic approx. converged (|c0-c2|<DeltaChi2) :  c0-c2=" << c0-c2 << endl;
-		  break;
+		  if (abs(c0-c1)<DeltaChi2)
+		    {
+		      cout << "OneMinimization : Parabolic approx. converged (|c0-c2|<DeltaChi2 && |c0-c1|<DeltaChi2) :  c0-c2=" 
+			   << c0-c2 << " c0-c1=" << c0-c1 << endl;
+		      break;
+		    }
+		  else // au cas ou c0 et c2 sont de chaque cote du puits de parabole, a la meme hauteur
+		    cerr << "OneMinimization  : Parabolic approx. near convergence (|c0-c2|<DeltaChi2) :  c0-c2=" 
+			   << c0-c2 << " c0-c1=" << c0-c1 << endl;
 		}
-
 	      //Assume Chi2 as a parabole y = a*x^2 + b*x + c
 	      //Then xmin = -b/(2*a)
 	      double a = (c0*(x1-x2) - c1*(x0-x2) + c2*(x0-x1)) / ((x0*x0 - x0*(x1+x2) + x1*x2) * (x1-x2));
 	      double b =  -(c0*(x1*x1-x2*x2) - c1*(x0*x0-x2*x2) + c2*(x0*x0-x1*x1)) / ((x0*x0 - x0*(x1+x2) + x1*x2) * (x1-x2));
 	      double c = (c0*x1*x2*(x1-x2) - x0*(c1*x2*(x0-x1) - c2*x0*(x0-x1)))   / ((x0*x0 - x0*(x1+x2) + x1*x2) * (x1-x2));
+	      if (fabs(a) < 1e-20)
+		{
+		  cerr << "OneMinimization  : zero value for a : should be protected ????? " << endl ;
+		}
+	      
+	      if ( a < 0 )
+		{
+		cerr << "OneMinimization : negative value for a : c0= " 
+		     << c0 << " c1= " << c1  << " c2= " << c2 << endl ;
+		}
+
 	      double xmin =  -b/(2*a);
-	      printf("Coef. of parabolic approximation of Chi2 : a=%E b=%E c=%E \n",a,b,c);
-	      printf("x0 x1 x2 xmin %E %E %E %E \n", x0,x1,x2,xmin);
-	      printf("c0 c1 c2 %E %E %E\n",c0,c1,c2);
+	      printf("OneMinization : Coef. of parabolic approximation of Chi2 : a=%E b=%E c=%E \n",a,b,c);
+	      printf("OneMinization : x0 x1 x2 xmin %E %E %E %E \n", x0,x1,x2,xmin);
+	      printf("OneMinization : c0 c1 c2 %E %E %E\n",c0,c1,c2);
 
 	      if (xmin<x0)
 		{
@@ -208,12 +229,25 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
 		}
 	      
 	      chi2 = c1;
-	      cout << "straight line :  chi2,  step "<< chi2 << ' ' << x1 << endl;
+	      cout << "OneMinization : parabolic approx :  chi2,  step "<< chi2 << ' ' << x1 << endl;
 
-	    }// end loop on straight line optimization
-	  
-	}
-    }
+	    }//fin loop for on straight line optimization
+
+	  if (chi2<=oldChi2)
+	    {
+	      if (oldChi2-chi2 < DeltaChi2) 
+		{
+		  cout << " OneMinization : converged : niter oldchi2, chi2, delta chi2 =" << niter << " " << oldChi2<< " " << chi2 << " " << oldChi2-chi2 << endl; 
+		  break;
+		}
+	    }
+
+	  oldChi2 = chi2;
+	
+	}// fin else chi2 has slightly decreased or increased
+
+    }//fin loop while
+
   return true;
 }
 
@@ -283,6 +317,7 @@ void SimPhotFit::FindModelBoundaries()
       const Vignette &v = **i;
       Frame frame;
       v.ComputeModelLimits(frame);
+      cerr << "# FindModelBoundaries - vignette frame size : " << frame.Nx() << endl ;
       modelFrame += frame;
     }
   cout << " Limits (in pixels) of the fitted model " << modelFrame;
@@ -442,10 +477,6 @@ int SimPhotFit::FluxIndex(const Vignette* V) const
 */
 
 
-
-  
-#include <fstream>
-#include <iomanip>
 
 #define FLUX_WEIGHT_NAME "lightcurve.weight.dat"
 
