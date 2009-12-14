@@ -652,11 +652,10 @@ std::string SubstitutePattern(const std::string &InputString,
       pinputn = wheren+lpat;
       npatt++;      
     }
-  cerr << "Input String Lenght : " << sizein << endl ;
-  cerr << "Pattern occurrence : " << npatt << endl ;
+  //  cerr << "Input String Length : " << sizein << endl ;
+  //  cerr << "Pattern occurrence : " << npatt << endl ;
   int sizeout = sizein + npatt * (lpatout - lpat + 10 );
-  cerr << "Estimated Substituted String Length : " << sizeout << endl ;
-
+  //  cerr << "Estimated Substituted String Length : " << sizeout << endl ;
 
   char *output = new char[sizeout];
   char *pout = output;
@@ -669,6 +668,8 @@ std::string SubstitutePattern(const std::string &InputString,
       pinput = where+lpat;
     }
   strcpy(pout, pinput);// copy the remainder
-  return std::string(output);
+  std::string toto(output);
+  delete [] output;
+  return toto;
 }
 
