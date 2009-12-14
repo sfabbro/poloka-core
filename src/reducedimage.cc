@@ -1571,11 +1571,7 @@ ReducedImage::has_key(const char *KeyName, const string &RoutineName) const
   if (FileExists(fileName))
     {
       FitsHeader header(fileName);
-      if (header.IsValid())
-	if ( header.HasKey(KeyName) )
-	  return true;
-	else
-	  return false ;
+      return (header.IsValid() && header.HasKey(KeyName));
     }
   cerr << " ReducedImage::"<< RoutineName 
        << " : cannot Read key " << KeyName 
@@ -2541,7 +2537,7 @@ Frame CommonFrame(ReducedImageList &RedList)
   Frame frame_common(RedList.front()->UsablePart());
   for (ReducedImageCIterator im = RedList.begin(); im != RedList.end(); ++im)
     frame_common *= Frame((*im)->UsablePart());
-  cout << " Common frame for ReduceImageList: " << frame_common;
+  cout << " Common frame for ReduceImageList: " << frame_common << endl;
   return frame_common;
 }
 

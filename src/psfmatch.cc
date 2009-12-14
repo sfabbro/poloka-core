@@ -349,7 +349,7 @@ bool PsfMatch::FitKernel(const bool KeepImages)
   
   if(getenv("DUMP_FIT_LIST"))
     objectsUsedToFit.write(best->Name()+worst->Name()+".fit.list");
-  cout << " Frame limits for the fit: " << intersection;
+  cout << " Frame limits for the fit: " << intersection << endl;
 
   KernelFitRef direct_fit = init_and_do_the_fit(objectsUsedToFit,best,worst);
 
