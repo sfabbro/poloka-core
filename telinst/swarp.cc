@@ -13,11 +13,19 @@ public :
   // translators
   TRANSLATOR_DEC(TOADPIXS)
   {
-    if (Head.HasKey("CDELT2", true))
+    if (Head.HasKey("CDELT2", false))
       {
 	double cdelt2 = Head.KeyVal("CDELT2");
 	return FitsKey("TOADPIXS",fabs(cdelt2*3600.));
       }
+    else if (Head.HasKey("CD1_1",false))
+      {
+	double cd1_1 = Head.KeyVal("CD1_1");
+	double cd1_2 = Head.KeyVal("CD1_2");
+	double cd2_2 = Head.KeyVal("CD2_2");
+	double cd2_1 = Head.KeyVal("CD2_1");
+	return FitsKey("TOADPIXS",sqrt(fabs(cd1_1*cd2_2-cd1_2*cd2_1)));
+      }	
     else return FitsKey("TOADPIXS", 0.);
   }
 
