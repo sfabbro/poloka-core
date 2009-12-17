@@ -133,9 +133,13 @@ public:
   };
 
   FitsKey TOADBAND(const FitsHeader &Head, const bool Warn) const
-  { string name = Head.KeyVal("FILTER",Warn);
-  // extract the first character of .e.g :  'i.MP9701' 
-  return FitsKey("TOADBAND",name.substr(0,1));
+  { 
+    string name = Head.KeyVal("FILTER",Warn);
+    // extract the first character of .e.g :  'i.MP9701'
+    // not exact after the filter break...
+    if (name == "i.MP9701") return FitsKey("TOADBAND","i");
+    if (name == "i.MP9702") return FitsKey("TOADBAND","y");
+    return FitsKey("TOADBAND",name.substr(0,1));
   }
 
   FitsKey TOADNAMP( const FitsHeader &Head, const bool Warn) const
