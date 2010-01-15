@@ -36,7 +36,7 @@ class SimPhotFit : public Model
   Mat A; // contains either the weight param matrix, or towards the end, the covariance, and sometimes even the Cholesky-factorized weight matrix
   Vect B;
   Mat NightMat;      // see fillNightMat
-  
+  Mat A_with_posfitted;  // contains  the weight param matrix of the fit without fixed position
 
 
  public :

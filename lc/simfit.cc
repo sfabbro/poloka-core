@@ -1418,7 +1418,7 @@ void SimFit::FatalError(const char* comment)
       const SimFitVignet *vi = *it;
       cerr << " > SimFit::FatalError() : " << fixed << right
 	   << setw(10) << vi->Image()->Name() 
-	   << " mmjd " << setprecision(2) << setw(7) << vi->ModifiedJulianDate()
+	   << " mjd " << setprecision(2) << setw(7) << vi->ModifiedJulianDate()
 	   << " [flux=" << setprecision(1) << setw(7) << vi->Star->flux << " fit=" << boolalpha << vi->CanFitFlux
 	   << "] [pos=(" << setprecision(1) << setw(6) << vi->Star->x 
 	   << ", " << setprecision(1) << setw(6) << vi->Star->y << ") fit=" << boolalpha << vi->CanFitPos
@@ -1616,6 +1616,7 @@ bool SimFit::GetCovariance()
       if ((fit_flux) && (*it)->FitFlux) {
 	// (*it)->Star->varflux = sigscale * PMat(fluxind,fluxind++); // DO NOT USE THIS
 	(*it)->Star->varflux = sigscale * PMat(fluxind,fluxind);
+	(*it)->Star->sigscale_varflux = sigscale ;
 	fluxind++;
       }
       if (fit_sky && (*it)->FitSky) {  

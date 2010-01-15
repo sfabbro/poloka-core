@@ -14,6 +14,9 @@ struct CalibratedStar : public BaseStar {
   double ra,dec;
   double u,g,r,i,z,x,y;
   double ue,ge,re,ie,ze;
+  double neighborDist,neighborFlux;
+  double neighborFluxContamination;
+  double neighborNsigma;
   int id;
 };
 
@@ -21,11 +24,17 @@ struct CalibratedStar : public BaseStar {
 class Frame;
 class Gtransfo;
 
+#include "reducedimage.h"
+
 class CalibratedStarList : public StarList<CalibratedStar>
 {
  public :
+   // check ra dec catalog is in frame and return x y list
   CalibratedStarList(const string &CatalogName, const Gtransfo *WCS, 
 		     const Frame& ImageFrame);
+
+ // check ra dec catalog is in refimage frame, compares with refimage apersecatalog to get contamination, and return x y list
+  CalibratedStarList(const string &CatalogName,const  ReducedImageRef & refimage);
 
   CalibratedStarList() {};
 

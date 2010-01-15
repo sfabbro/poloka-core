@@ -86,6 +86,9 @@ bool SimPhotFit::DoTheFit()
   ok = (ok && OneMinimization(toDo,15,0.1));
   cout << "OneMinization: " << toDo << " " << ok << endl;
   if (!ok) return false;
+  A_with_posfitted = A; // just get a backup, for position fit estimators
+  cout << " inverting matrix " << endl;
+  cholesky_invert(A_with_posfitted,"U");
 
   //TODO : put 5 in the datacards
   double nsig = 5;
@@ -100,6 +103,12 @@ bool SimPhotFit::DoTheFit()
   if ( (toDo & FIT_POS) || outPix != 0) 
     ok = (ok && OneMinimization(toDo,15,0.01));
 
+  // here is some I/Os protection about covmat
+  // A has to be inverted in the end of the fit
+
+  cout << " inverting matrix " << endl;
+  cholesky_invert(A,"U");
+  
   return ok;
 }
 
@@ -483,9 +492,7 @@ int SimPhotFit::FluxIndex(const Vignette* V) const
 
 bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool WriteMatrices)
 {
-  Mat Acopy = A ;
-  cout << " inverting matrix " << endl;
-  cholesky_invert(A,"U");
+
   unsigned nflux = fluxMap.size();
   VignetteMap newFluxMap;
   unsigned *indexMapping = new unsigned[nflux];
@@ -587,6 +594,13 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
       int skyIndex = SkyIndex(v);
       if (skyIndex >= 0) sigSky = sqrt(A(skyIndex,skyIndex));
 
+      double sigPosX = 0, sigPosY = 0;
+      int posIndex = PosIndex();
+      if (posIndex >= 0)
+	{
+	  sigPosX = sqrt(A_with_posfitted(posIndex,posIndex));
+	  sigPosY = sqrt(A_with_posfitted(posIndex+1,posIndex+1));
+	}
 
       int indexLC = -1;
       if (newFluxMap.find(v) != newFluxMap.end()) 
@@ -635,8 +649,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
     {
 
       // get covariance matrix
-      cholesky_invert(Acopy,"U");
-      Acopy.writeFits(Dir+"pmat_sn.fits");
+      A.writeFits(Dir+"pmat_sn.fits");
 
       // create and get vector of flux
       int i=0;
@@ -680,10 +693,17 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
   Stream << "@NIMAGES " << vignetteList.size() << endl;
   Stream << "#x :" << endl;
   Stream << "#y :" << endl;
+  Stream << "#xerror :" << endl;
+  Stream << "#yerror :" << endl;
   Stream << "#flux :" << endl;
   Stream << "#error :" << endl;
   Stream << "#sky :" << endl;
   Stream << "#skyerror :" << endl;
+  Stream << "#name : dbimage name" << endl;
+  Stream << "#mjd : obs date " << endl;
+  Stream << "#seeing: " << endl;
+  Stream << "#exptime: " << endl;
+  Stream << "#phratio: photom ratio" << endl;
   Stream << "#mag :" << endl;
   Stream << "#mage :" << endl;
   Stream << "#ra : initial " << endl;
@@ -701,8 +721,6 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
   Stream << "#ie : from catalog" << endl;
   Stream << "#ze : from catalog" << endl;
   Stream << "#img : image number" << endl;
-  Stream << "#mmjd : obs date " << endl;
-  Stream  << "#seeing: " << endl;
   Stream << "#star : star number in the catalog (first =1)" << endl;
   Stream << "#chi2v : chi2 of this vignette per dof " << endl;
   Stream << "#chi2pdf : chi2 of PSF photometry per dof" << endl;
@@ -728,6 +746,13 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
     {
       const Vignette *v = *i;
 
+      double sigPosX = 0, sigPosY = 0;
+      int posIndex = PosIndex();
+      if (posIndex >= 0)
+	{
+	  sigPosX = sqrt(A_with_posfitted(posIndex,posIndex));
+	  sigPosY = sqrt(A_with_posfitted(posIndex+1,posIndex+1));
+	}
 
       int fluxIndex = FluxIndex(v);
       if (fluxIndex < 0) continue;
@@ -748,8 +773,13 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
 
       Point fittedPos( ObjectPosInImage());
       Stream << fittedPos.x << ' ' << fittedPos.y << ' '
+	     << sigPosX  << ' ' << sigPosY << ' '
 	     << v->GetFlux() << ' ' << sigFlux << ' '
 	     << v->GetSky() << ' ' << sigSky << ' '
+	     << v->Name() << ' ' << v->MJD() << ' ' 
+	     << v->Seeing() << ' '
+  	     << v->ExpTime() << ' '
+       	     << v->PhotomRatio() << ' ' 
 	     << mag << ' ' << mage << ' '
 	     << CStar.ra << ' ' << CStar.dec << ' '
 	     << CStar.x << ' ' << CStar.y << ' '
@@ -759,8 +789,7 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
 	// mags uncertainties
 	     << CStar.ue << ' ' << CStar.ge << ' ' << CStar.re << ' ' 
 	     << CStar.ie << ' ' << CStar.ze << ' '
-	     << img_count << ' ' << v->MMJD() << ' ' 
-	     << v->Seeing() << ' ' 
+	     << img_count << ' '
 	     << CStar.id << ' ' 
 	     << chi2Vignette << ' ' << chi2Glob << ' '
 	     << endl;

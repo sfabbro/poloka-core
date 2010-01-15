@@ -28,7 +28,7 @@ class LightCurveFile
   bool SimPhotFitAll() const;
 
   //! fit objects in calib catalog
-  bool  SimPhotFitAllCalib(const string &CalibCatalog) const;
+  bool  SimPhotFitAllCalib(const string &CalibCatalog, int itype=1, int Nmax=-1) const;
 
   const ReducedImage* GeomRef() const { return geomRef;}
   const ReducedImageList &Images() const { return images;}

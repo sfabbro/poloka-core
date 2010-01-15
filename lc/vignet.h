@@ -25,8 +25,9 @@ protected:
   int hx,hy;       // current half size of the vignet (hSizeX and hSizeY are the max sizes).
   void Allocate();
 
+  double exptime; 
   double seeing;
-  double mjd;
+  double mjd; 
   
 public:
 

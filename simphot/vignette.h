@@ -89,6 +89,7 @@ class Vignette : public RefCount {
   double MMJD() const { return mmjd;}
   double MJD() const { return mjd;}
   double Seeing() const {return seeing;}
+  double PhotomRatio() const {return photomRatio ;}
   double ExpTime() const { return expTime;}
 
  private :

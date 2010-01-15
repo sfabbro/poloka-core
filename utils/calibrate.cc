@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
   DictFile catalog(catalogname);
   
-  int requiredlevel=2;
+  //int requiredlevel=2;
   // get keys for mag
   string band = header.KeyVal("TOADBAND");
   string mag_key=getkey("m"+band,catalog);
@@ -161,7 +161,6 @@ int main(int argc, char **argv)
     
     //if(int(entry->Value("level"))<requiredlevel)  continue; // not a star with correct level 
     mag=entry->Value(mag_key);
-
     
 
     count_total_stars++;
@@ -335,7 +334,9 @@ int main(int argc, char **argv)
     assocs[(RefStar*)rstar] = cstar;
     //if(count_ok>0)
     //break;
-  }
+
+  } // FIN BOUCLE FOR
+
   
   cout << count_total << " objects in the catalog" << endl;
   cout << count_total_stars << " correct stars (with mag in band " << band << ") in the catalog" << endl;
@@ -353,16 +354,23 @@ int main(int argc, char **argv)
   
   // now we want to write many many things, let's make a list
   ofstream stream(matchedcatalogname.c_str());
+  stream << "@CALIBCATALOG " << catalogname << endl;
   stream << "@NSTARS " << count_ok << endl;
   stream << "@NIMAGES " << lclist.Images.size() << endl;
   stream << "#x :" << endl;
   stream << "#y :" << endl;
+  stream << "#xerror :" << endl;
+  stream << "#yerror :" << endl;
   stream << "#flux :" << endl;
   stream << "#error :" << endl;
   stream << "#sky :" << endl;
   stream << "#skyerror :" << endl;
+  stream << "#name :" << endl;
   stream << "#mjd :" << endl;
-  stream << "#seeing :" << endl; 
+  stream << "#seeing :" << endl;
+  stream << "#exptime :" << endl;
+  stream << "#phratio :" << endl; 
+  stream << "#sigscale :" << endl; 
   stream << "#mag :" << endl;
   stream << "#mage :" << endl;
   stream << "#ra : initial " << endl;
@@ -420,11 +428,21 @@ int main(int argc, char **argv)
       const Fiducial<PhotStar> *fs = *it;
       if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
 	continue;
-      
+
+      double sigposX = 0;
+      double sigposY=0;
+
       stream << fs->x << " ";
       stream << fs->y << " ";
+      if(fs->varx>0)
+	stream << sqrt(fs->varx) << " ";
+      else
+	stream << 0 << " ";
+      if(fs->vary>0)
+	stream << sqrt(fs->vary) << " ";
+      else
+	stream << 0 << " ";
       stream << fs->flux << " ";
-
       if(fs->varflux>0)
 	stream << sqrt(fs->varflux) << " ";
       else
@@ -434,8 +452,13 @@ int main(int argc, char **argv)
 	stream << sqrt(fs->varsky) << " ";
       else
 	stream << 0 << " ";
-      stream << fs->MJD << " ";
-      stream << fs->image_seeing << " ";
+
+      stream << fs->Name() << " ";
+      stream << fs->ModifiedJulianDate() << " ";
+      stream << fs->Seeing() << " ";
+      stream << fs->ExposureTime() << " ";
+      stream << fs->photomratio << " ";
+      stream << fs->sigscale_varflux << " ";
       
       // mag
       if (band=="u") stream << cstar.u << " " << cstar.ue << " ";

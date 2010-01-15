@@ -59,7 +59,6 @@ void Vignet::Load(const PhotStar *AStar)
   }
   */
   
-  Star->MJD = ModifiedJulianDate();
   Star->image_seeing = Seeing();
   
   get_vignet_from_server(FitsName(), *this,Data,0);

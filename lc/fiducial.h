@@ -15,18 +15,18 @@ class Fiducial : public S {
 protected:
 
   CountedRef<ReducedImage> rim;
-  double seeing,mjd;
+  double seeing,mjd, exptime;
   int has_weight,has_satur;
   string fits_name,fits_weight_name,fits_satur_name;
 public:
 
-  Fiducial() : seeing(-1),mjd(-1),has_weight(-1),has_satur(-1) {}
+  Fiducial() : seeing(-1),mjd(-1),has_weight(-1),has_satur(-1), exptime(-1) {}
 
   Fiducial(const S *Fid) : S(*Fid) {}
 
-  Fiducial(const ReducedImage *Rim) : rim(Rim), seeing(-1), mjd(-1),has_weight(-1),has_satur(-1) {}
+  Fiducial(const ReducedImage *Rim) : rim(Rim), seeing(-1), mjd(-1), exptime(-1), has_weight(-1),has_satur(-1) {}
 
-  Fiducial(const S *Fid, const ReducedImage *Rim) : S(*Fid), rim(Rim), seeing(-1), mjd(-1),has_weight(-1),has_satur(-1) {}
+  Fiducial(const S *Fid, const ReducedImage *Rim) : S(*Fid), rim(Rim), seeing(-1), mjd(-1), exptime(-1), has_weight(-1),has_satur(-1) {}
 
   const ReducedImage* Image() const { return rim; }
 
@@ -35,6 +35,8 @@ public:
     return (rim->Name() == Rim->Name());
   }
 
+  string Name() const { return rim->Name();}
+
   void AssignImage(const ReducedImage *Rim) 
   { 
     if (rim) { cerr << " Fiducial::AssignImage() : Error : " 
@@ -42,6 +44,7 @@ public:
     rim = Rim;
     seeing = -1;
     mjd = -1;
+    exptime= -1;
     //cout << "in AssignImage rim=" << rim->Name() << endl;
   }
 
@@ -90,6 +93,13 @@ public:
     return mjd;
   }
   
+  double ExposureTime() const {
+    if(exptime<0) {
+      const_cast<double&>(exptime) = rim->Exposure();  
+    }
+    return exptime;
+  }
+
   bool HasWeight() const { 
     if(has_weight<0) 
       const_cast<int&>(has_weight) = (rim->HasWeight())?1:0;  
