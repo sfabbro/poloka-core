@@ -2,6 +2,9 @@
 #include "fileutils.h"
 //#include "fatalerror.h"
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
+
 
 void FatalError(const std::string &Message, const bool Abort=true)
 {
@@ -40,6 +43,12 @@ bool DictFileEntry::HasKey(const string &Key) const
 }
 
 
+void DictFileEntry::writen(ofstream & pr) const
+{
+  for (int ii = 0 ; ii < file.Dict().size() ; ii++)
+    pr << elements[ii] << " " ;
+
+}
 
       
 void DictFileEntry::AddKey(const string &Key, const string &Val)
