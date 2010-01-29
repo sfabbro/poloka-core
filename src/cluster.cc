@@ -1,3 +1,4 @@
+#define CHECK_BOUNDS
 #include "cluster.h"
 #include "reducedimage.h"
 #include "fitsimage.h"
@@ -14,6 +15,7 @@
 
 double sqr(const double & x){return x*x;};
 
+#define CHECK_BOUNDS
 
 Cluster::Cluster(long c) 
 {
@@ -22,68 +24,75 @@ Cluster::Cluster(long c)
   xsum = ysum = x2sum = xysum = y2sum = 0.0 ;
 }
 
-
-
-long Cluster::browse_and_color(const Image& src, long x0, long y0, 
-		      double threshold, Image& map) 
+struct Pix
 {
-  long xsize = src.Nx() ; long ysize = src.Ny() ;
-  
-  //      cerr << "debug: killsatellites: browse_and_color: begin "
-  //  	 << "(color=" << color << ")" 
-  //  	 << "((x0 y0)=(" << x0 << " " << y0 << ")" << ")" 
-    //  	 << endl ;
+  const int i,j;
+  Pix(int ii, int jj) : i(ii), j(jj) {};
+};
 
-    if (size < 0) {
-      return -1 ;
-    }
+#include <stack>
 
-    if ((x0 < 0) || (x0 >= xsize) ||
-	(y0 < 0) || (y0 >= ysize)) {
-      return 0 ;
-    }
-    
-    if (map(x0, y0) != 0) {
-      return 0 ;
-    }
-    
-    if (src(x0, y0) < threshold) {
-      return 0 ;
-    }
-    
-    map(x0, y0) = color ;
-    
-    size += 1 ;
-    xsum += x0 ;
-    ysum += y0 ;
-    x2sum += x0*x0 ;
-    xysum += x0*y0 ;
-    y2sum += y0*y0 ;
-    
-    long r ;
 
-    if (size > MAXCLUSTERSIZE) {
-      // warning: killsatellites: too many recursive calls.
-      r = -1 ;
-    } else {
-      long north, south, east, west ;
-      north = browse_and_color(src, x0, y0+1, threshold, map) ;
-      south = browse_and_color(src, x0, y0-1, threshold, map) ;
-      east = browse_and_color(src, x0+1, y0, threshold, map) ;
-      west = browse_and_color(src, x0-1, y0, threshold, map) ;
-      if ((north < 0) || (south < 0) || (east < 0) || (west < 0)) {
-	r = -1 ;
-      } else {
-	r = 1 + north + south + east + west ;
+/* this routine used to be recursive. We now use a stack instead,
+   in order to avoid stupid crashes due to call stack overflow 
+*/
+
+long Cluster::browse_and_color(const Image& src, long xStart, long yStart, 
+			       double threshold, Image& map) 
+{
+  stack<Pix> pixStack;
+
+  int xsize = src.Nx() ; 
+  int ysize = src.Ny() ;
+    
+  pixStack.push(Pix(xStart,yStart));
+
+
+  do
+    {
+      const Pix &pix = pixStack.top();
+      int x0 = pix.i;
+      int y0 = pix.j;
+      pixStack.pop(); // remove it
+
+      if ((x0 < 0) || (x0 >= xsize) ||
+	  (y0 < 0) || (y0 >= ysize)) {
+	continue;
       }
-    }
+    
+      if (map(x0, y0) != 0) continue;
+    
+      if (src(x0, y0) < threshold) continue;
+
+
+      map(x0, y0) = color ;
+    
+      size += 1 ;
+      xsum += x0 ;
+      ysum += y0 ;
+      x2sum += x0*x0 ;
+      xysum += x0*y0 ;
+      y2sum += y0*y0 ;
+
+      // no more recursive calls, so no limit !
+#ifdef STORAGE
+      if (size > MAXCLUSTERSIZE) {
+	// warning: killsatellites: too many recursive calls.
+	r = -1 ;
+      }
+#endif
+      pixStack.push(Pix(x0  , y0+1));
+      pixStack.push(Pix(x0  , y0-1));
+      pixStack.push(Pix(x0+1, y0  ));
+      pixStack.push(Pix(x0-1, y0  ));
+    } while (! pixStack.empty());
     
     //      cerr << "debug: killsatellites: browse_and_color: end "
     //  	 << "(color=" << color << ")" 
     //  	 << "(r=" << r << ")" 
     //  	 << endl ;
     
-    return r ;
+    return size ;
 }
 
 
@@ -199,11 +208,8 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
 	} 
 	else 
 	  {
-	    if (npixels) 
-	    {
-	      push_back(current) ;
-	      nextcolor++ ;
-	    }
+	    if (npixels) nextcolor++ ;
+	    if (npixels>20) push_back(current); // later  cuts are much more stringent
 	  }
 	
       }
@@ -287,6 +293,7 @@ bool ClusterList::Cut()
   return(trackfound);
 }
 
+#include <assert.h>
 
 Image ClusterList::Mask()
 {
@@ -296,8 +303,11 @@ Image ClusterList::Mask()
 
   if(!trackfound) return Mask;
 
-  for (int j =0; j!=colors->Ny()-1; ++j)
-    for (int i =0; i!=colors->Ny()-1; ++i)
+  int nx = colors->Nx();
+  int ny = colors->Ny();
+
+  for (int j =0; j<ny; ++j)
+    for (int i =0; i<nx; ++i)
       {
 	if((*colors)(i,j)==0) continue;
 	for ( ClusterCIterator it = begin(); it != end(); ++it)
@@ -307,7 +317,12 @@ Image ClusterList::Mask()
 	      Mask(i,j) = 1;
 	  }
       }
-  cout<< "Mask Done" << endl;
+  // checks : 
+  int count1 = 0;
+  for ( ClusterCIterator it = begin(); it != end(); ++it) count1 += it->size;
+  int count2 = int(Mask.SumPixels() +0.5);
+  cout<< " Mask Done : npix masked  = " << count2 << endl;
+  assert(count1 == count2);
   return(Mask);
   
 }
