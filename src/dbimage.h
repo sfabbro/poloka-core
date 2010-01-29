@@ -76,7 +76,6 @@ ImageNames
 #endif
 
 
-
 #ifdef __cplusplus /* this file is also included by the dbfileParse.c 
 which is C code generated from dbfile.y */
 

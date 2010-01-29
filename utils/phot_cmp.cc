@@ -11,6 +11,7 @@
 
 
 #include "dictfile.h"
+#include "fileutils.h"
 
 
 using namespace std;
@@ -67,26 +68,15 @@ int main(int argc, char **argv) {
 	}
     }
   double mjdref = 52640.0 ;
-  //double mjdref = LocalJulDate(01, 01, 2003, 0, 0, 0)-2400000.5;
-  //cerr << setprecision(12) << setiosflags(ios::fixed) << mjdref << endl ;
-
-  /*DictFile l1(nomc.c_str());
-  ComputeMeans(l1) ;
-  l1.Write("essai.list");
-  DictFile l2(nomc.c_str());
-  FastComputeMeans(l2) ;
-  l2.Write("essai_fast.list");
-
-  exit(0);*/
 
  
   DictFile lc(nomc.c_str()); 
   DictFile ln(nomn.c_str()); 
 
   // calcul du fluxmoyen
-  cerr << "Computing means for " << nomc << endl ;
+  cerr << "Computing means for " << nomc << " list" << endl ;
   FastComputeMeans(lc) ;
-  cerr << "Computing means for " << nomn << endl ;
+  cerr << "Computing means for " << nomn << " list" << endl ;
   FastComputeMeans(ln) ;
 
   cerr << "Joining lists " << endl ;
@@ -99,30 +89,47 @@ int main(int argc, char **argv) {
   int *c_seen = new int[lc.size()] ;
   for(int i = 0 ; i < lc.size() ; i++) c_seen[i] = -1 ;
   int count = 0 ;
-  for(DictFileIterator it =  ln.begin(); it !=ln.end(); it++)
+  for(DictFileIterator it =  ln.begin(); it !=ln.end(); it++, count++)
     {
       double nstar = it->Value("star");
       int nnstar = int(nstar);
-      // double mmjd  = it->Value("mmjd");
-      string name  = it->Value("name");
+      string name="";
+      if (it->HasKey("name")) name = (string)  it->Value("name");
       bool is_seen = false ;
       int nc = 0 ;
       for(DictFileIterator itc =  lc.begin(); itc !=lc.end(); itc++, nc++)
 	{	  
 	  double nstarc = itc->Value("star");
 	  int nnstarc = int(nstarc);
-	  //double mjdc  = itc->Value("mjd");
-	  //double mmjdc  = mjdc - mjdref ;
-	  string namec  = itc->Value("name");
-	  //if (( nnstarc == nnstar ) && ( fabs(mmjd-mmjdc)<1.e-5))
-	  if (( nnstarc == nnstar ) && ( name == namec ))
+
+	  string namec="" ;
+	  if (itc->HasKey("name")) 
+	    {
+	      namec = (string) itc->Value("name");
+	    }
+	  bool is_same = false ;
+	  if (( name != "" ) && ( namec != "" ))
+	    {
+	      if ( name == namec ) is_same = true ;
+	    }
+	  else
+	    {
+	      if ( !it->HasKey("mjd")) cerr << "PAS DE CLEF MJD" << endl ;
+	      if ( !itc->HasKey("mjd")) cerr << "PAS DE CLEF MJD C" << endl ;
+	      double mjd = it->Value("mjd");
+	      double mjdc = itc->Value("mjd");
+	      if (count < 1) cerr << setprecision(10) << mjd << " " << mjdc << endl ;
+	      if (fabs(mjd-mjdc)<0.0000001)
+		 is_same = true ;
+
+	    }
+	  if (( nnstarc == nnstar ) && is_same)
 	    {
 	      itc->writen(pr);
 	      it->writen(pr);
 	      pr << endl ;
 	      if(c_seen[nc] > 0 ) cerr << " ERROR : starc " << nnstarc << " + date " 
 				       << namec << "seen twice !!! " << endl ;
-	      //			       << mmjd << "seen twice !!! " << endl ;
 	      c_seen[nc] = 1 ;
 	      is_seen = true ;
 	      break ;
@@ -132,11 +139,10 @@ int main(int argc, char **argv) {
 	{
 	  cerr << " starn  " << nnstar << " + date " 
 	       << name << " not seen " << endl ;
-	  //	       << mmjd << " not seen " << endl ;
-	  for(int ie = 0 ; ie < lc.Dict().size() ; ie++)
+	   for(int ie = 0 ; ie < lc.Dict().size() ; ie++)
 	    pr << " -1 " ;
-	  it->writen(pr);
-	  pr << endl ;
+	   it->writen(pr);
+	   pr << endl ;
 	}
     }
   int nc = 0 ;
@@ -146,15 +152,13 @@ int main(int argc, char **argv) {
        {
 	 double nstarc = itc->Value("star");
 	  int nnstarc = int(nstarc);
-	  //double mjdc  = itc->Value("mjd");
-	  //double mmjdc = mjdc-mjdref ;
-	  string namec  = itc->Value("name");
+	  string namec  = "" ;
+	  if ( itc->HasKey("name")) namec = (string) itc->Value("name");
 	  cerr << " starc " << nnstarc << " + date " 
 	       << namec << " not seen " << endl ;
-	  //	       << mmjdc << " not seen " << endl ;
 	  itc->writen(pr);
 	  for(int ie = 0 ; ie < ln.Dict().size() ; ie++)
-	    pr << " -1 " ;
+	   pr << " -1 " ;
 	  pr << endl ;
 	}
     }
@@ -193,9 +197,9 @@ void ComputeMeans(DictFile & l)
   double *err_flux = new double[l.size()];
 
   l.AddKey("npoints");
-  l.AddKey("mean_flux");
-  l.AddKey("mean_err");
-  l.AddKey("rms_flux");
+  l.AddKey("mnflux");
+  l.AddKey("mnerr");
+  l.AddKey("rmsflux");
   int i = 0 ;
   for(DictFileIterator line = l.begin(); line != l.end(); line++, i++)
     {
@@ -204,16 +208,16 @@ void ComputeMeans(DictFile & l)
       err_flux[i] = line->Value("error");
       star_numbers[i] = int(nstar);
       line->AddKey("npoints", " -10 " );
-      line->AddKey("mean_flux", " -10 " );
-      line->AddKey("mean_err", " -10 " );
-      line->AddKey("rms_flux", " -10 " );
+      line->AddKey("mnflux", " -10 " );
+      line->AddKey("mnerr", " -10 " );
+      line->AddKey("rmsflux", " -10 " );
     }
   int index = 0 ;
   for(DictFileIterator line = l.begin(); line != l.end(); line++)
     {
       cerr << "Computing mean for star " << index << endl ;
       index++;
-      double mflux = line->Value("mean_flux");
+      double mflux = line->Value("mnflux");
       if (mflux > -10) continue ;
       double nstar = line->Value("star");
       int nnstar = int(nstar);
@@ -248,9 +252,9 @@ void ComputeMeans(DictFile & l)
 	  if ( nnstar2 == nnstar )
 	    {
 	      line2->ModKey("npoints", ntot);
-	      line2->ModKey("mean_flux", mean);
-	      line2->ModKey("rms_flux", rms);
-	      line2->ModKey("mean_err", emean);
+	      line2->ModKey("mnflux", mean);
+	      line2->ModKey("rmsflux", rms);
+	      line2->ModKey("mnerr", emean);
 	    }
 	}
     }
@@ -276,9 +280,9 @@ void FastComputeMeans(DictFile & l)
   
  
   l.AddKey("npoints");
-  l.AddKey("mean_flux");
-  l.AddKey("mean_err");
-  l.AddKey("rms_flux");
+  l.AddKey("mnflux");
+  l.AddKey("mnerr");
+  l.AddKey("rmsflux");
 
 
   map<int,LC> llcc ;
@@ -286,9 +290,17 @@ void FastComputeMeans(DictFile & l)
   for(DictFileIterator line = l.begin(); line != l.end(); line++)
     {
       line->AddKey("npoints", " -10 " );
-      line->AddKey("mean_flux", " -10 " );
-      line->AddKey("mean_err", " -10 " );
-      line->AddKey("rms_flux", " -10 " );
+      line->AddKey("mnflux", " -10 " );
+      line->AddKey("mnerr", " -10 " );
+      line->AddKey("rmsflux", " -10 " );
+
+      if (line->HasKey("name") )
+	{
+	  string thename = line->Value("name");
+	  string pattern = "p" ;
+	  RemovePattern(thename, pattern);
+	  line->ModKey("name", thename);
+	}
       
       double nstar = line->Value("star");
       int nnstar = int(nstar) ;
@@ -341,57 +353,11 @@ void FastComputeMeans(DictFile & l)
       int nnstar2 = int(nstar2);
       LC & mylc = llcc[nnstar2];
       line2->ModKey("npoints", mylc.npoint);
-      line2->ModKey("mean_flux", mylc.mflux);
-      line2->ModKey("rms_flux",  mylc.rmsflux);
-      line2->ModKey("mean_err", mylc.meflux);
+      line2->ModKey("mnflux", mylc.mflux);
+      line2->ModKey("rmsflux",  mylc.rmsflux);
+      line2->ModKey("mnerr", mylc.meflux);
     }
 }
 
 
-double LocalJulDate(const int day, const int month, const int year, 
-	       const int hour, const int min, const double sec)
-{
-
-  /* decimal day fraction	*/
-  double frac = (( double)hour/ 24.0)
-    + ((double) min / 1440.0)
-    + (sec / 86400.0);
-
-  /* convert date to format YYYY.MMDDdd	*/
-  double gyr = (double) year
-    + (0.01 * (double) month)
-    + (0.0001 * (double) day)
-    + (0.0001 * frac) + 1.0e-9;
-
-  /* conversion factors */
-  long iy0, im0;
-  if ( month <= 2 )
-    {
-      iy0 = year - 1L;
-      im0 = month + 12;
-    }
-  else
-    {
-      iy0 = year;
-      im0 = month;
-    }
-  long ia = iy0 / 100L;
-  long ib = 2L - ia + (ia >> 2);
-
-  /* calculate julian date	*/
-  long ljd;
-  if ( year <= 0L )
-    ljd = (long) ((365.25 * (double) iy0) - 0.75)
-      + (long) (30.6001 * (im0 + 1L) )
-      + (long) day + 1720994L;
-  else
-    ljd = (long) (365.25 * (double) iy0)
-      + (long) (30.6001 * (double) (im0 + 1L))
-      + (long) day + 1720994L;
-
-  /* on or after 15 October 1582	*/
-  if ( gyr >= 1582.1015 )ljd += ib;
-
-  return (double) ljd + frac + 0.5;
-}	
 

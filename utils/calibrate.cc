@@ -15,7 +15,7 @@
 #include <imageutils.h>
 #include <apersestar.h>
 #include <fastfinder.h>
-
+#include <string>
 #include <map>
 #include <iomanip>
 
@@ -431,6 +431,8 @@ int main(int argc, char **argv)
 
       double sigposX = 0;
       double sigposY=0;
+      string rimname = fs->Name() ; 
+      string dbimname = rimname.erase(0,20); 
 
       stream << fs->x << " ";
       stream << fs->y << " ";
@@ -453,7 +455,7 @@ int main(int argc, char **argv)
       else
 	stream << 0 << " ";
 
-      stream << fs->Name() << " ";
+      stream << dbimname << " ";
       stream << fs->ModifiedJulianDate() << " ";
       stream << fs->Seeing() << " ";
       stream << fs->ExposureTime() << " ";

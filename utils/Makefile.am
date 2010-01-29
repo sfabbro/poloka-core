@@ -32,7 +32,7 @@ bin_PROGRAMS = \
  deadprop checkmask sumpixels \
  wcs_for_vignets \
  apercorr simple_zpfitter compute_zp_phot \
- phot_cmp.cc
+ phot_cmp
 
 if ENABLE_MC
 bin_PROGRAMS += make_mc_cat makesub  make_dualsub  mc_addsn make_lcsim
