@@ -16,7 +16,7 @@
 /* sextractor header files do not contain any provision for inclusion in C++ sources */
 
 extern "C" {
-#include <define.h> /* from sextractor, mandatory for nex one () */
+#include <define.h> /* from sextractor, mandatory for next one () */
 #include <globals.h> /* from sextractor. nice name isn't it ? */
 #include <types.h> 
 #include <prefs.h> // a ajouter pour la version v244
@@ -69,6 +69,10 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   star->y = obj2->sposy + DECALAGE_CAT_SE;
   // a cause de cet offset, on met DECALAGE_SE_IJ et DECALAGE_IJ_SE a 0.0
   star->flux =   obj2->flux_best;
+
+  star->vx = obj->poserr_mx2;
+  star->vy = obj->poserr_my2;
+  star->vxy = obj->poserr_mxy;
 
   star->N()  = obj->number ;
   star->X_Peak() = obj->peakx + DECALAGE_CAT_SE ;
