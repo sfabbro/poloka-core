@@ -592,9 +592,9 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
   else Det.eFlux = -1;
   if (flux != 0)
     { // no need to account for sumPSf != 1
-      Det.varXX = varXX/sqr(flux);
-      Det.varYY = varYY/sqr(flux);
-      Det.varXY = varXY/sqr(flux);
+      Det.vx = varXX/sqr(flux);
+      Det.vy = varYY/sqr(flux);
+      Det.vxy = varXY/sqr(flux);
     }
   if ( fabs(S) > 1.e-20 )
     {
@@ -831,8 +831,11 @@ void DetectionProcess::SetScoresFromRef(DetectionList &List,
       Detection &Det = **i;
       if (Pix2RaDec) // some simulations don't have WCS's. no else needed
 	{
-	  Pix2RaDec->apply(Det.x, Det.y, Det.ra, Det.dec);
-	  Pix2RaDec->TransformErrors(Det, &Det.varXX, &Det.vRaRa);
+	  FatPoint raDec;
+	  Pix2RaDec->TransformPosAndErrors(Det, raDec);
+	  Det.vRaRa = raDec.vx;
+	  Det.vDecDec = raDec.vy;
+	  Det.vRaDec = raDec.vxy;
 	}
       FluxFromPos(Det, Det.fluxRef);
       /* put a positive prctInc even when fluxRef<0. this simplifies 
@@ -864,9 +867,9 @@ Detection::Detection(const double X, const double Y, const double Flux)
   sig2NoiseCv = 0;
   xs = 0;
   ys = 0;
-  varXX = 0; 
-  varYY = 0; 
-  varXY = 0; 
+  vx = 0; 
+  vy = 0; 
+  vxy = 0; 
   area = 0; 
   nBad = 0; 
   distBad = 0; 
@@ -888,15 +891,16 @@ Detection::Detection(const double X, const double Y, const double Flux)
 
 void Detection::read_it(fastifstream& r, const char * Format)
 {
-  if (Format) {}; // avoid a warning
+  int format = DecodeFormat(Format, "Detection");
   BaseStar::read_it(r, Format);
-  r  >> eFlux 
+  r >> eFlux 
     >> sig2Noise 
     >> aperFlux 
     >> sig2NoiseCv 
-    >> xs >> ys
-    >> varXX >> varYY >> varXY 
-    >> area 
+    >> xs >> ys;
+  if (format<3) // moved position uncertainties into BaseStar 
+    r >> vx >> vy >> vxy;
+  r >> area 
     >> nBad 
     >> distBad 
     >> mxx >> myy >> mxy
@@ -907,7 +911,6 @@ void Detection::read_it(fastifstream& r, const char * Format)
     >> xObj >> yObj
      >> fluxObjRef >> distObjRef
     ;
-  int format = DecodeFormat(Format, "Detection");
   /* the test that comes just after is far from being full proof: the
      actual format was changed w/o changing the label. What shows the
      format change is the presence of "fwhmref" in the file header. 
@@ -953,9 +956,11 @@ std::string Detection::WriteHeader_(ostream & stream, const char*i) const
   	 << "# s2ncv"<< i <<" : sig2noise at detection" << endl
 	 << "# xs" << i << " : x detection position " << endl
 	 << "# ys" << i << " : y detection position " << endl
+    /* position variance now in BaseStar (FatPoint indeed)
   	 << "# varxx"<< i <<" : pos variance" << endl
   	 << "# varyy"<< i <<" : pos variance" << endl
   	 << "# varxy"<< i <<" : pos variance" << endl
+    */
   	 << "# area"<< i <<" : number of pixels used in aperflux" << endl
   	 << "# nbad"<< i <<" : number of bad pixels use in flux" << endl
 	 << "# distbad" << i << " : distance to nearest bad pix" << endl
@@ -978,7 +983,10 @@ std::string Detection::WriteHeader_(ostream & stream, const char*i) const
 	 << "# back"<<i<<" : local background " << endl
 	      
     ;
-  return baseStarFormat + " Detection 2 "; 
+  /*
+    format == 3 means that varXX, varYY, and varXY just disappear : 
+    we now use the ones in BAseStar (FatPoint indeed) */
+  return baseStarFormat + " Detection 3 "; 
 }
 
 #include <iomanip>
@@ -992,7 +1000,10 @@ void Detection::writen(ostream &s) const
     << aperFlux << ' ' 
     << sig2NoiseCv << ' ' 
     << xs << ' ' << ys << ' '
-    << varXX << ' ' << varYY << ' ' << varXY << ' ' 
+    /* 
+       << varXX << ' ' << varYY << ' ' << varXY << ' ' 
+       position uncertainties moved into BaseStar 
+    */
     << area << ' ' 
     << nBad << ' ' 
     << distBad << ' ' 

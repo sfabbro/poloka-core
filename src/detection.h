@@ -17,9 +17,11 @@ class Detection : public BaseStar
   double sig2NoiseCv;
   double xs; // start position
   double ys; // start position
+  /*
   double varXX; // pos error. ordering xx,yy,xy relevant...
   double varYY; // pos error
   double varXY; // pos error
+  */
   int area; // number of pixels  used in aperflux
   int nBad; // number of bad pixels (i.e. w=0)
   double distBad; // distance to nearest bad pixel
@@ -29,7 +31,7 @@ class Detection : public BaseStar
   // Reference related scores
   double ra;
   double dec;
-  double vRaRa, vDecDec , vRaDec; // ordering important.
+  double vRaRa, vDecDec , vRaDec;
   double fluxRef; // flux under the SN
   double prctInc; // flux/fluxref if fluxref>0 100. if not
   double xObj, yObj; // coordinates of object on ref
@@ -65,14 +67,14 @@ class Detection : public BaseStar
   double Myy() const { return myy;}
   double &Myy() { return myy;}
 
-  double VarXX() const { return varXX;}
-  double &VarXX() { return varXX;}
+  double VarXX() const { return vx;}
+  double &VarXX() { return vx;}
 
-  double VarXY() const { return varXY;}
-  double &VarXY() { return varXY;}
+  double VarXY() const { return vxy;}
+  double &VarXY() { return vxy;}
   
-  double VarYY() const { return varYY;}
-  double &VarYY() { return varYY;}
+  double VarYY() const { return vy;}
+  double &VarYY() { return vy;}
 
   double VarRaRa() const { return vRaRa;}
   double &VarRaRa() { return vRaRa;}
