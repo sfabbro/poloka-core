@@ -29,9 +29,6 @@ public:
   //! distance squared to Other
    double Dist2(const Point& Other) const { return ((x-Other.x)*(x-Other.x) + (y-Other.y)*(y-Other.y));};
 
-  //! Operator can be e.g. a Gtransfo.
-   template<class Operator> void Apply(const Operator &Op) { *this = Op(*this);}
-
   //! Sum
   Point operator + (const Point &Right) const { return Point(x+Right.x, y+Right.y);}
 
