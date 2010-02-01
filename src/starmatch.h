@@ -34,15 +34,16 @@ class StarMatch {
 
 public: /* if one sets that private, then fitting routines will be a nightmare. we could set all the Transfo classes friend... */
   
-  Point point1, point2; //!< 2 points 
+  FatPoint point1, point2; //!< 2 points 
   CountedRef<BaseStar> s1, s2; //!< the Star pointers (the pointer is in fact generic, pointed data is never used).
   double distance;
+  double chi2;
 
 public :
   //! constructor.
   /*! gives 2 points (that contain the geometry), plus pointers to the Star objects
     (which are there for user convenience). */
-  StarMatch(const Point &p1, const Point &p2, const BaseStar *S1, const BaseStar *S2) : 
+  StarMatch(const FatPoint &p1, const FatPoint &p2, const BaseStar *S1, const BaseStar *S2) : 
     point1(p1), point2(p2), s1(S1), s2(S2), distance(0.) {};
   
   // the next one would require that StarMatch knows BaseStar which is not mandatory for StarMatch to work
@@ -50,6 +51,9 @@ public :
 
   //! returns the distance from T(p1) to p2. 
   double Distance(const Gtransfo &T) const { return  point2.Distance(T.apply(point1)); };
+
+  //! returns the chi2 (using errors in the FatPoint's)
+  double Chi2(const Gtransfo &T) const;
 
   //! to be used before sorting on distances. 
   void SetDistance(const Gtransfo &T) { distance = Distance(T);};
@@ -157,13 +161,13 @@ use, you have to clone it.
 ostream& operator << (ostream &stream, const StarMatchList &List);
 #endif
 
-
 class StarMatchList : public list<StarMatch> {
 
   private :
   int nused;
   int order;
   double chi2;
+  double dist2;
   CountedRef<Gtransfo> transfo;
 
 
@@ -188,13 +192,14 @@ class StarMatchList : public list<StarMatch> {
   /*! Clone it if you want to store it permanently */
   const Gtransfo *Transfo() const { return &*(transfo);}
 
-  //! access to the chi2 of the last fit. 
+  //! access to the sum of squared residuals of the last call to RefineTransfo. 
+  double Dist2() const { return dist2;}
+
+
+  //! access to the chi2 of the last call to RefineTransfo. 
   double Chi2() const { return chi2;}
 
-  //! computes the chi2 even when there is no fit
-  void SetChi2();
-
-  //! returns the number of pairs entering the last fit. 
+  //! returns the number of pairs from the last call to RefineTransfo
   int Nused() const { return nused;}
   
 
@@ -208,14 +213,13 @@ class StarMatchList : public list<StarMatch> {
   //! swaps elements 1 and 2 of each starmatch in list. 
     void Swap () ;
 
-  //! returns the average residual. 
-  double Residual() const { if (nused != 0) return sqrt(chi2/nused); else return -1;}
-
+  //! returns the average 1d Residual (last call to RefineTransfo)
+    double Residual() const;
 
   /*! cleans up the list of pairs for pairs that share one of their stars, keeping the closest one.
      The distance is computed using Transfo. Which = 1 (2) removes ambiguities
      on the first (second) term of the match. Which=3 does both.*/
-  int RemoveAmbiguities(const Gtransfo &Transfo, const int Which=3);
+  unsigned RemoveAmbiguities(const Gtransfo &Transfo, const int Which=3);
   
   
   //! sets a transfo between the 2 lists and deletes the previous or default one.  No fit.
@@ -254,8 +258,6 @@ class StarMatchList : public list<StarMatch> {
   void write(ostream &pr, const Gtransfo *tf=NULL) const;
 
 
-
-
     //! enables to dump a match list through : cout << List; 
   void dump(ostream & stream = cout) const { stream << *this; }
 
@@ -263,11 +265,12 @@ class StarMatchList : public list<StarMatch> {
 
     private:
 
-  int Cleanup(double DistanceCut, const Gtransfo &Transfo);
+  //! computes the chi2 even when there is no fit.
+  void SetChi2();
 
 
-  //! calculates the distance squares of pair lists 
-  double* Dist2() const;
+  unsigned Cleanup(double DistanceCut, const Gtransfo &Transfo);
+
 
   StarMatchList(const StarMatchList&); // copies nor properly handled 
   void operator=(const StarMatchList&);
@@ -276,8 +279,14 @@ class StarMatchList : public list<StarMatch> {
 };
 
 //! r.m.s of 1 dim residual plots (corrected for fit d.o.f)
-double FitResidual(const double Chi2, const StarMatchList &S, const Gtransfo &T);
-			
+double FitResidual(const double Dist2, const StarMatchList &S, const Gtransfo &T);
 
+//! r.m.s of 1 dim residual plots (corrected for fit d.o.f)
+double FitResidual(const StarMatchList &S, const Gtransfo &T);
 
+//! sum of distance squared			
+double ComputeDist2(const StarMatchList &S, const Gtransfo &T);
+
+//! the actual chi2
+double ComputeChi2(const StarMatchList &L, const Gtransfo &T);
 #endif /* STARMATCH__H */

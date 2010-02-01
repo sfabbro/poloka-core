@@ -13,6 +13,21 @@
    be discarded in Cleanup. 
 */
 
+static double sq(const double &x) { return x*x;}
+
+double StarMatch::Chi2(const Gtransfo &T) const
+{
+  FatPoint tr;
+  T.TransformPosAndErrors(point1, tr);
+  double vxx = tr.vx + point2.vx;
+  double vyy = tr.vy + point2.vy;
+  double vxy = tr.vxy + point2.vxy;
+  double det = vxx*vyy-vxy*vxy;
+  return (vyy*sq(tr.x-point2.x) + vxx*sq(tr.y-point2.y)
+	  -2*vxy*(tr.x-point2.x)*(tr.y-point2.y))/det;
+}
+
+
 ostream& operator << (ostream &stream, const StarMatch &Match)
 { 
   stream << Match.point1.x << ' ' << Match.point1.y << ' ' 
@@ -27,32 +42,60 @@ ostream& operator << (ostream &stream, const StarMatchList &List)
   return stream;
 } 
 
-double *StarMatchList::Dist2() const
+static double* chi2_array(const StarMatchList &L,const Gtransfo &T)
 {
-  StarMatchCIterator smi;
-  int npair = int(this->size());
+  unsigned s = L.size();
+  double *res = new double[s];
+  unsigned count = 0;
+  for (StarMatchCIterator it= L.begin(); it!= L.end(); ++it)
+    res[count++] = it->Chi2(T);
+  return res;
+}
+
+
+static unsigned chi2_cleanup(StarMatchList &L,  const double Chi2Cut, 
+			     const Gtransfo &T)
+{
+  unsigned erased = L.RemoveAmbiguities(T);
+  for (StarMatchIterator smi = L.begin(); smi != L.end(); )
+    {
+      if (smi->chi2  > Chi2Cut)
+	{
+	  smi = L.erase(smi);
+	  erased++;
+	}
+      else ++smi;
+    }
+  return erased;
+}
+  
+
+
+static double *get_dist2_array(const StarMatchList &L, const Gtransfo &T)
+{
+  unsigned npair = L.size();
   if (npair == 0) return NULL; 
   double *dist = new double [npair];
 
-  int i=0;
-  for (smi = begin(); smi != end(); ++smi, ++i)
+  unsigned i=0;
+  for (  StarMatchCIterator smi = L.begin(); smi != L.end(); ++smi, ++i)
     {
-      const StarMatch &match = *smi;
-      const Point &p1 = match.point1;
-      const Point &p2 = match.point2;
-      dist[i] = p2.Dist2(transfo->apply(p1));
+      const Point &p1 = smi->point1;
+      const Point &p2 = smi->point2;
+      dist[i] = p2.Dist2(T.apply(p1));
     }
   return dist;
 }
 
-  /*! removes pairs beyond NSigmas (where the sigma scale is
+
+  /*! removes pairs beyond NSigmas in distance (where the sigma scale is
      set by the fit) and iterates until stabilization of the number of pairs. 
      If the transfo is not assigned, it will be set to a GtransfoLinear. User
      can set an other type/degree using SetTransfo() before call. */
 void StarMatchList::RefineTransfo(const double &NSigmas)
 {
   double cut;
-  int nremoved;
+  unsigned nremoved;
   if (!transfo) transfo = new GtransfoLin;
   do 
     {
@@ -65,21 +108,36 @@ void StarMatchList::RefineTransfo(const double &NSigmas)
 	 -  chi2 = -1 means ndof <0 (and hence no possible fit)
 	 --> in either case, refinement is over
          The fact that chi2 = 0 was not enforced when necessary means
-	 that in this (rare) case, we where discarding matches at random....
+	 that in this (rare) case, we were discarding matches at random....
          With GtransfoPoly::fit, this is no longer the case.
       */
       if (chi2 <= 0)  return;
-      int npair = int(size());
-      if (npair == 0) break;
-      double *dist = Dist2();
-      double median = DArrayMedian(dist,npair);
-      delete [] dist;
-      cut = NSigmas*sqrt(median);
-      nremoved = Cleanup(cut, *transfo);
+      unsigned npair = int(size());
+      if (npair == 0) break; // should never happen
+
+      // compute some chi2 statistics
+      double *chi2 = new double[npair];
+      unsigned count = 0;
+      for (StarMatchIterator it= begin(); it!= end(); ++it)
+	chi2[count++] = it->chi2 = it->Chi2(*transfo);
+      double median = DArrayMedian(chi2,npair);
+      delete [] chi2;
+
+      // discard outliers : the cut is understood as a "distance" cut
+      cut = sq(NSigmas)*median;
+      nremoved = chi2_cleanup(*this, cut, *transfo);
     } 
   while (nremoved);
+  dist2 = ComputeDist2(*this, *transfo);
 }
 
+
+/* not very robust : assumes that we went through Refine just before... */
+double StarMatchList::Residual() const
+{
+  int deno = (2.*nused - transfo->Npar());
+  return (deno>0) ? sqrt(dist2/deno) : -1; // is -1 a good idea?
+}
 
 
 void StarMatchList::SetDistance(const Gtransfo &Transfo)
@@ -88,7 +146,7 @@ void StarMatchList::SetDistance(const Gtransfo &Transfo)
 }
 
 
-int StarMatchList::RemoveAmbiguities(const Gtransfo &Transfo, 
+unsigned StarMatchList::RemoveAmbiguities(const Gtransfo &Transfo, 
 				     const int Which)
 {
   if (!Which) return 0;
@@ -108,14 +166,14 @@ int StarMatchList::RemoveAmbiguities(const Gtransfo &Transfo,
 
 
 
-int StarMatchList::Cleanup(double DistanceCut, const Gtransfo &ResultTransfo)
+unsigned StarMatchList::Cleanup(double DistanceCut, const Gtransfo &ResultTransfo)
 {
 StarMatchIterator smi;
 
 int erased = RemoveAmbiguities(ResultTransfo);
 for (smi = begin(); smi != end(); )
   {
-  double distance = (*smi).point2.Distance(ResultTransfo(((*smi).point1)));
+  double distance = (*smi).point2.Distance(ResultTransfo.apply((*smi).point1));
   if (distance > DistanceCut)
     {
     smi = erase(smi);
@@ -170,43 +228,6 @@ for (si = begin(); si != end() && count < NKeep; ++count, ++si);
 erase(si, end());
 }
 
-#ifdef STORAGE
-void StarMatchList::write(ostream & pr) const
-{
-
-  if ( empty() )
-    {
-      cerr << " Can't write empty StarMatchList " << endl ;
-      return ;
-    }
-
-  const StarMatch &starm = front(); 
-  (starm.s1)->WriteHeader_(pr,"1");
-  (starm.s2)->WriteHeader_(pr,"2");
-  pr << "# dx : diff in x" << std::endl;
-  pr << "# dy : diff in y" << std::endl;
-  pr << "# dass : association distance"  << endl ; 
-  pr << "# end " << endl ;
-
- 
-  GtransfoIdentity id ;
-  for (StarMatchCIterator it= begin(); it!= end(); it++ )
-    {
-      const StarMatch &starm = *it ;
-
-      (starm.s1)->writen(pr);
-      pr << " " ;
-      (starm.s2)->writen(pr);
-      pr << " " ;
-      double dx = starm.s1->x - starm.s2->x;
-      double dy = starm.s1->y - starm.s2->y;
-      pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy);
-      pr << endl ;
-    }
-}
-#endif
-
-
 void StarMatchList::write_wnoheader(ostream & pr, const Gtransfo* Transfo) const
 {
 
@@ -228,16 +249,21 @@ void StarMatchList::write_wnoheader(ostream & pr, const Gtransfo* Transfo) const
       (starm.s1)->writen(pr);
       pr << " " ;
       // transformed coordinates
-      Point p1 = *starm.s1;
-      if (Transfo) p1=Transfo->apply(p1);
+      FatPoint p1 = *starm.s1;
+      if (Transfo) Transfo->TransformPosAndErrors(p1,p1);
       pr << p1.x << ' ' << p1.y << ' ';
+      double sx = sqrt(p1.vx);
+      double sy = sqrt(p1.vy);
+      pr << sx << ' ' << sy << ' ' << p1.vxy/(sx*sy) << ' ';
 
       (starm.s2)->writen(pr);
 
       // compute offsets here  because they can be rounded off by paw.
       double dx = p1.x - starm.s2->x;
       double dy = p1.y - starm.s2->y;
-      pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy);
+      pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy) << ' ';
+      // chi2 assoc
+      pr << it->Chi2(*Transfo) << ' ';
       pr << endl ;
     }
   pr.flags(old_flags);
@@ -254,13 +280,17 @@ void StarMatchList::write(ostream &pr, const Gtransfo *tf) const
 
   const StarMatch &starm = front(); 
   (starm.s1)->WriteHeader_(pr, "1");
-  pr << "# x1tf: coordonnees x1 transformee "  << endl ; 
-  pr << "# y1tf: coordonnees y1 transformee "  << endl ; 
+  pr << "# x1tf: transformed x1 coordinate "  << endl ; 
+  pr << "# y1tf: transformed y1 coordinate "  << endl ; 
+  pr << "# sx1tf: transformed sx1 "  << endl ; 
+  pr << "# sy1tf: transformed sy1 "  << endl ; 
+  pr << "# rxy1tf: transformed rhoxy1 "  << endl ; 
 
   (starm.s2)->WriteHeader_(pr, "2");
   pr << "# dx : diff in x" << std::endl;
   pr << "# dy : diff in y" << std::endl;
   pr << "# dass : association distance"  << endl ; 
+  pr << "# chi2ass : assoc chi2"  << endl ; 
   pr << "# end " << endl ;
 
   write_wnoheader(pr, tf);
@@ -273,25 +303,6 @@ StarMatchList::write(const string &filename, const Gtransfo *tf) const
   write(pr, tf);
   pr.close();
 }
-
-#ifdef STORAGE
-void
-StarMatchList::write(const string &filename) const
-{
-  ofstream pr(filename.c_str()) ;
-  //  cerr <<"Writing with fixed precision " << endl ;
-  pr  << resetiosflags(ios::scientific) ;
-  pr  << setiosflags(ios::fixed) ;
-  int oldprec = pr.precision();
-  pr<< setprecision(10);
-  write(pr);
-  pr.close();
-}
-#endif
-
-
-
-
 
 
 void StarMatchList::Swap()
@@ -335,10 +346,11 @@ void StarMatchList::ApplyTransfo(StarMatchList &Transformed,
 void StarMatchList::SetChi2()
 {
   chi2 = 0;
-  nused = int(size());
-  double *dist2 = Dist2();
-  for (int i=0; i<nused; ++i) chi2 += dist2[i];
-  if (dist2) delete [] dist2;
+  for (StarMatchIterator i= begin(); i != end(); ++i)
+    {
+      i->chi2 = i->Chi2(*transfo);
+      chi2 += i->chi2;
+    }
 }
 
 void StarMatchList::DumpTransfo(ostream &stream) const
@@ -352,10 +364,31 @@ void StarMatchList::DumpTransfo(ostream &stream) const
 }
 
 
-double FitResidual(const double Chi2, const StarMatchList &S, const Gtransfo &T)
+double FitResidual(const double Dist2, const StarMatchList &S, const Gtransfo &T)
 {
-  return sqrt(Chi2/(2.*S.size()-T.Npar()));
+  return sqrt(Dist2/(2.*S.size()-T.Npar()));
 }
 
 
+double FitResidual(const StarMatchList &S, const Gtransfo &T)
+{
+  return FitResidual(ComputeDist2(S,T),S,T);
+}
 
+double ComputeDist2(const StarMatchList &S, const Gtransfo &T)
+{
+  double dist2 = 0;
+  for (StarMatchCIterator i = S.begin(); i != S.end(); ++i)
+    dist2 += T.apply(i->point1).Dist2(i->point2);
+  return dist2;
+}
+
+double ComputeChi2(const StarMatchList &L, const Gtransfo &T)
+{
+  unsigned s= L.size();
+  double *chi2s = chi2_array(L,T);
+  double chi2 = 0;
+  for (unsigned k=0; k<s; ++k) chi2 += chi2s[k];
+  delete [] chi2s;
+  return chi2;
+}
