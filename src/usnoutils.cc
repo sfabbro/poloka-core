@@ -6,7 +6,6 @@
 
 #include "fitsimage.h"
 #include "gtransfo.h"
-#include "basestar.h"
 #include "sestar.h"
 #include "fileutils.h"
 #include "vutils.h"
@@ -16,7 +15,6 @@
 #include "astroutils.h" /* For RaDec2000 */
 #include "usnoutils.h"
 #include "wcsutils.h"
-#include "fitstoad.h"
 #include "listmatch.h"
 #include "fastfinder.h"
 #include "imageutils.h"
@@ -28,14 +26,14 @@
 #define     M_PI            3.14159265358979323846  /* pi */
 #endif
 
-#ifdef TO_BE_DONE
-- in UsnoProcess, there is only one "collection".
-  it would be better to do two of them, one with a large tolerance
-  (say 5"),  then a fit and a second one with a smaller (1.5") tolerance.
-- read the various cuts (those tolerances) in datacards.
-- read from a "virtual catalog"
-#endif
 
+/* TO DO
+- Enforce UsnoCollect and UsnoRead to provide some projection transfo 
+so that we would apply the transfo and define errors in the tangent plane 
+(ie. and orthonormal coordinate system).
+*/
+
+static double sq(const double &x) { return x*x;}
 
 
 //! finds the zeropoint for magnitudes
@@ -116,7 +114,7 @@ static inline void read_a_star(FILE *ifp, unsigned int &raword, unsigned int  &d
 static void readusno(const string &filebase,double minra,double maxra,
 		     double mindec,double maxdec, UsnoColor Color,
 		     BaseStarList &ApmList, 
-		     const Gtransfo& T= GtransfoIdentity())
+		     const GtransfoLinShift& T= GtransfoLinShift(0,0))
 {
 
 char line[80];
@@ -215,9 +213,17 @@ while (raword<minraword && !feof(ifp)) read_a_star(ifp, raword, decword, magword
         {
 	  //cout << raword << ' ' << decword << ' ' << mag << endl;
           BaseStar *s = new BaseStar(ra,dec,mag);
+	  /* We have to set errors here, because there is no single place 
+	     below where it could easily be done. I wish we had a projection 
+	     transfo in hand to define errors in the tangent plane.
+	     For the value, we chose 0.3" r.m.s
+	  */
+	  s->vx = sq(0.3/3600/cos(dec*M_PI/180.));
+	  s->vy = sq(0.3/3600);
+	  s->vxy = 0;
 	  if (s->x <minra || s->x > maxra) 
 	    cout << " problem with usno star  : " << s ;
-          *s = T.apply(*s);
+          *s = T.apply(*s); // no need to transfor errors : the transfo is a shift
 	  ApmList.push_back(s);
         }        
     }
@@ -241,7 +247,7 @@ static void read_ascii_astrom_file(const string &FileName,
 				  double MinRa,  double MaxRa,
 				  double MinDec, double MaxDec, 
 				  BaseStarList &ApmList, 
-				  const Gtransfo& T= GtransfoIdentity())
+				  const GtransfoLinShift& T= GtransfoLinShift(0,0))
 {
   FILE *file = fopen(FileName.c_str(),"r");
   if (!file)
@@ -361,7 +367,7 @@ static void actual_usno_read(const string &usnodir,
   fprintf(stderr,"Returning.\n");
 #endif
   int count = ApmList.size();
-  cout << " collected " << count  << " objects" << endl;  
+  cout << " collected " << count  << " objects" << endl;
 }
 
 
@@ -408,10 +414,6 @@ int UsnoRead(double minra, double maxra,
     }
   return ApmList.size();
 }
-
-
-static double sq(const double &x){return x*x;}
-
 
 static bool check_guess(const GtransfoLin &Guess)
 {
@@ -538,7 +540,7 @@ static void FillMatchFile(const FitsHeader &Header, const SEStarList &ImageList,
       const BaseStar *s2 = it->s2;
       usedUsno.push_back(s2);
       double cosdec = cos(s2->y*M_PI/180.);
-      Point ra_dec_im = Pix2RaDec(*s1);
+      Point ra_dec_im = Pix2RaDec.apply(*s1);
       double distsec = sqrt(sq((ra_dec_im.x-s2->x)*cosdec)+sq(ra_dec_im.y-s2->y))*3600.;
 
       fprintf(matchstream,"%8.2f %8.2f %12.6f %12.6f %12.1f %12.6f %12.6f %6.2f %12.1f %8.3f\n",
@@ -616,7 +618,7 @@ static void FillAllStarsFile(const DbImage &dbImage, const Gtransfo &Pix2RaDec)
   for (SEStarCIterator it = imageList.begin(); it != imageList.end();++it  )
     {
       const SEStar &star = **it;
-      Point ra_dec_im = Pix2RaDec(star);
+      Point ra_dec_im = Pix2RaDec.apply(star);
       fprintf(matchstream,"%8.2f %8.2f %12.6f %12.6f %12.1f %12.6f %12.6f %6.2f %12.1f %8.3f\n",
 	      //             x     y     ra     dec   flux   ra      dec   mag  apflux
 	      star.x, star.y, ra_dec_im.x, ra_dec_im.y, star.flux,ra_dec_im.x, ra_dec_im.y, -10., star.flux, 0.);
@@ -751,7 +753,7 @@ static StarMatchList *RefineMatch(const SEStarList &sestarlist, const BaseStarLi
   accurateMatch->RefineTransfo(4.);
   std::cout << " after fitting a linear transfo, we have " 
 	    << accurateMatch->size() << " pairs left, " 
-	    << "1d residual : " << FitResidual(accurateMatch->Chi2(), 
+	    << "1d residual : " << FitResidual(accurateMatch->Dist2(), 
 					       *accurateMatch, 
 					       *accurateMatch->Transfo())*3600
 	    << "\""
@@ -782,7 +784,6 @@ static StarMatchList *RefineMatch(const SEStarList &sestarlist, const BaseStarLi
 	    << "order = " << match_order << ')'	<< std::endl;
 
 
-
   // recollect using the higher order tranfo we just refined:
   StarMatchList *newMatch = ListMatchCollect(*SE2Base(&sestarlist), 
 					     usnoList, 
@@ -800,7 +801,7 @@ static StarMatchList *RefineMatch(const SEStarList &sestarlist, const BaseStarLi
 
   std::cout << " number of matches after refine "  << newMatch->size() 
 	    << ", " << "1d residual " 
-	    << FitResidual(newMatch->Chi2(), *newMatch, 
+	    << FitResidual(newMatch->Dist2(), *newMatch, 
 			   *newMatch->Transfo())*3600 
 	    << std::endl;
 
@@ -912,6 +913,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	
   BaseStarList usnoList;
   UsnoCollect(skyRegion, guessWcs, usnoList);
+  //  DEBUG
+  //  usnoList.write("usno.list");
 
   // Part 2 : find an initial match.
   StarMatchList *initialMatch = NULL;
@@ -1092,7 +1095,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
   std::cout << " number of matches after refine "  << accurateMatch->size() 
 	    << ", " << "1d residual " 
-	    << FitResidual(accurateMatch->Chi2(), *accurateMatch, 
+	    << FitResidual(accurateMatch->Dist2(), *accurateMatch, 
 			   *accurateMatch->Transfo())*3600 
 	    << std::endl;
 
@@ -1119,8 +1122,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   // Part 4.1 : get the best linear description of our match, so that tools that ignore distortion terms
   // in WCS (such as ds9) are not too wrong
   GtransfoLin linFit;
-  double residual = 3600.*FitResidual(linFit.fit(*accurateMatch), 
-				      *accurateMatch, linFit);
+  linFit.fit(*accurateMatch);
+  double residual = 3600.*FitResidual(*accurateMatch, linFit);
   cout << " 1d residual before fitting corrections " << residual 
        << " arcsec " << endl;
   
@@ -1135,8 +1138,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	{
 	  StarMatchList linFitApplied;
 	  accurateMatch->ApplyTransfo(linFitApplied, &linFit);
-	  double chi2 = correction->fit(linFitApplied);
-	  residual = FitResidual(chi2, linFitApplied, *correction)*3600;
+	  correction->fit(linFitApplied);
+	  residual = FitResidual(linFitApplied, *correction)*3600;
 	  cout << " 1d residual after fitting corrections " 
 	       << residual << " arcsec " << endl;
 	}
