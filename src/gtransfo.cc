@@ -1,10 +1,13 @@
-#include "gtransfo.h"
 #include <iostream>
 #include <iomanip>
 #include <iterator> /* for ostream_iterator */
-#include "frame.h"
 #include "matvect.h"
 #include <math.h> // for sin and cos and may be others
+
+#include "gtransfo.h"
+#include "frame.h"
+#include "polokaexception.h"
+
 
 bool IsIdentity(const Gtransfo *a_transfo)
 { return (dynamic_cast<const GtransfoIdentity*>(a_transfo) != NULL);}
@@ -105,6 +108,26 @@ GtransfoLin Gtransfo::LinearApproximation(const Point &Where,
   Derivative(Where, der, Step);
   return GtransfoLinShift(outWhere.x, outWhere.y)*der*GtransfoLinShift(-Where.x, -Where.y);
 }
+
+
+void Gtransfo::TransformPosAndErrors(const FatPoint &In, FatPoint &Out) const
+{
+  FatPoint res; // in case In and Out are the same address...
+  res = apply(In);
+  GtransfoLin der;
+  // could save a call here, since Derivative needs the transform of where that we already have
+  // 0.01 may not be a very good idea in all cases. May be we should provide a way of altering that.
+  Derivative(In, der, 0.01);
+  double a11 = der.A11();
+  double a22 = der.A22();
+  double a21 = der.A21();
+  double a12 = der.A12();
+  res.vx = a11*(a11*In.vx + 2*a12*In.vxy) + a12*a12*In.vy;
+  res.vy = a21*a21*In.vx + a22*a22*In.vy + 2.*a21*a22*In.vxy;
+  res.vxy = a21*a11*In.vx + a22*a12*In.vy + (a21*a12+a11*a22)*In.vxy;
+  Out = res;
+}
+
 
 void Gtransfo::TransformErrors(const Point &Where,
 			       const double *VIn, double *VOut) const
@@ -465,13 +488,18 @@ GtransfoLin GtransfoIdentity::LinearApproximation(const Point &Where, const doub
 
 #include "matvect.h"
 
-//! Default transfo : xidentity for all degrees (>=1 )
+//! Default transfo : identity for all degrees (>=1 )
 GtransfoPoly::GtransfoPoly(const unsigned Deg) : 
   deg(Deg),nterms((deg+1)*(deg+2)/2)
-{						
+{
+  // allocate vectors, since we know their length
+  monomials.reserve(nterms);
+  coeffs.reserve(2*nterms);
+  // fill them
   monomials.insert(monomials.begin(), nterms,0);
   coeffs.insert(coeffs.begin(), 2*nterms, 0);
-  if (deg>=1) //default : identity
+  // default is supposed to be the identity
+  if (deg>=1)
     {
       Coeff(1,0,0) = 1;
       Coeff(0,1,1) = 1;
@@ -493,6 +521,8 @@ void GtransfoPoly::apply(const double Xin, const double Yin,
     This routine computes the monomials only once for both
     polynomials.  This is why GtransfoPoly does not use an auxilary
     class (such as PolyXY) to handle each polynomial.
+
+    The code works even if &Xin == &Xout (or &Yin == &Yout)
   */
   vector<double> &m = (vector<double>&) monomials; //constness violation
 
@@ -519,8 +549,159 @@ void GtransfoPoly::apply(const double Xin, const double Yin,
 }
 
 
+void GtransfoPoly::Derivative(const Point &Where,
+			      GtransfoLin &Der, const double Step) const
+{ /* routine checked against numerical derivatives from Gtransfo::Derivative */
+  if (deg == 1)
+    {
+      Der = GtransfoLin(*this);
+      Der.dx() = Der.dy() = 0;
+      return;
+    }
+
+  double *dermx = new double [2*nterms];
+  double *dermy = dermx+nterms;
+  double xin = Where.x;
+  double yin = Where.y;
+
+  double xx = 1;
+  double xxm1 = 1; // xx^(ix-1)
+  for (unsigned ix = 0; ix<=deg; ++ix)
+    {
+      unsigned k=(ix)*(ix+1)/2;
+      // iy = 0
+      dermx[k] = ix*xxm1; 
+      dermy[k] = 0;
+      k+= ix+2;
+      double yym1 = 1; // yy^(iy-1)
+      for (unsigned iy = 1; iy<=deg-ix; ++iy)
+	{
+	  dermx[k] = ix*xxm1*yym1*yin;
+	  dermy[k] = iy*xx*yym1;
+	  yym1 *= yin;
+	  k+= ix+iy+2;
+	}
+    xx *= xin;
+    if (ix>=1) xxm1 *= xin;
+    }
+
+  Der.dx() = 0;
+  Der.dy() = 0;
+
+  const double *mx = &dermx[0];
+  const double *my = &dermy[0];
+  const double *c = &coeffs[0];
+  // dx' 
+  double a11=0, a12 = 0; 
+  for (int k=nterms; k--; )
+    {
+      a11 += (*(mx++))*(*c);
+      a12 += (*(my++))*(*(c++));
+    }
+  Der.a11() = a11;
+  Der.a12() = a12;
+  // dy'
+  double a21 = 0, a22 = 0;
+  mx = &dermx[0];
+  my = &dermy[0];
+  for (int k=nterms; k--; )
+    {
+      a21 += (*(mx++))*(*c);
+      a22 += (*(my++))*(*(c++));
+    }
+  Der.a21() = a21;
+  Der.a22() = a22;
+
+  delete [] dermx;
+}
+
+void GtransfoPoly::TransformPosAndErrors(const FatPoint &In, FatPoint &Out) const
+{
+  /* 
+     The results from this routine were compared to what comes out from apply and 
+     TransformErrors. The Derivative routine was checked against
+     numerical derivatives from Gtransfo::Derivative. (P.A dec 2009).
+
+     This routine could be made much simpler by calling apply and Derivative
+     (i.e. you just suppress it, and the fallback is the generic version in Gtransfo).
+     BTW, I checked that both routines provide the same result.
+     This version is however faster (monomials get recycled), but we probably don't really care.
+  */
+  vector<double> &m = (vector<double>&) monomials; //constness violation
+  FatPoint  res; // to store the result, because nothing forbids &In == &Out.
+  // I would like to avoid that : 
+  double *dermx = new double [2*nterms]; // monomials for derivative w.r.t. x
+  double *dermy = dermx+nterms;  // same for y
+  double xin = In.x;
+  double yin = In.y;
+
+  double xx = 1;
+  double xxm1 = 1; // xx^(ix-1)
+  for (unsigned ix = 0; ix<=deg; ++ix)
+    {
+      unsigned k=(ix)*(ix+1)/2;
+      // iy = 0
+      dermx[k] = ix*xxm1; 
+      dermy[k] = 0;
+      m[k] = xx;
+      k+= ix+2;
+      double yy = yin;
+      double yym1 = 1; // yy^(iy-1)
+      for (unsigned iy = 1; iy<=deg-ix; ++iy)
+	{
+	  m[k] = xx*yy;
+	  dermx[k] = ix*xxm1*yy;
+	  dermy[k] = iy*xx*yym1;
+	  yym1 *= yin;
+	  yy *= yin;
+	  k+= ix+iy+2;
+	}
+    xx *= xin;
+    if (ix>=1) xxm1 *= xin;
+    }
+
+  // output position 
+  double xout = 0, yout=0;
+  const double *c = &coeffs[0];
+  const double *pm = &monomials[0];
+  for (int k=nterms; k--; ) xout +=  (*(pm++))*(*(c++));
+  pm = &monomials[0];
+  for (int k=nterms; k--; ) yout +=  (*(pm++))*(*(c++));
+  res.x = xout; res.y = yout;
+
+  // derivatives 
+  c = &coeffs[0];
+  const double *mx = &dermx[0];
+  const double *my = &dermy[0];
+  double a11=0, a12 = 0; 
+  for (int k=nterms; k--; )
+    {
+      a11 += (*(mx++))*(*c);
+      a12 += (*(my++))*(*(c++));
+    }
+
+  double a21 = 0, a22 = 0;
+  mx = &dermx[0];
+  my = &dermy[0];
+  for (int k=nterms; k--; )
+    {
+      a21 += (*(mx++))*(*c);
+      a22 += (*(my++))*(*(c++));
+    }
+
+  // output co-variance
+  res.vx = a11*(a11*In.vx + 2*a12*In.vxy) + a12*a12*In.vy;
+  res.vy = a21*a21*In.vx + a22*a22*In.vy + 2.*a21*a22*In.vxy;
+  res.vxy = a21*a11*In.vx + a22*a12*In.vy + (a21*a12+a11*a22)*In.vxy;
+  Out = res;
+  delete [] dermx;// cleanup  
+}
 
 #include <assert.h>
+/* The coefficient ordering is defined both here *AND* in the 
+   GtransfoPoly::apply, GtransfoPoly::Derivative, ... routines
+   Change all or none ! */
+
 double GtransfoPoly::Coeff(const unsigned Degx, const unsigned Degy,
 			   const unsigned WhichCoord) const
 {
@@ -693,57 +874,48 @@ static GtransfoPoly my_shift_to_center(const StarMatchList &List)
   result.Coeff(0,0,1) = -yav/count;
   return result;
 }
-  
-//HACK
-//#include "apersestar.h"
 
 static double sq(const double &x) { return x*x;}
-
-double  GtransfoPoly::fit(const StarMatchList &List)
+  
+double GtransfoPoly::do_the_fit(const StarMatchList &List, 
+				const Gtransfo &ShiftToCenter,
+				const bool UseErrors)
 {
-  if (List.size()< nterms)
-    {
-      cerr << " GtransfoPoly::fit : trying to fit a polynomial transfo of degree " << deg << "with only " << List.size() << " matches " << endl;
-      return -1;
-    }
   Mat A(2*nterms,2*nterms);
   Vect B(2*nterms);
-
   double sumr2 = 0;
-
-  GtransfoPoly shift_to_center = my_shift_to_center(List);
-
-  double dummy;
   for (StarMatchCIterator it = List.begin(); it != List.end(); ++it)
     {
       const StarMatch &a_match = *it;
-      Point point1 = shift_to_center.apply(a_match.point1);
-      const Point &point2 = a_match.point2;
-      apply(point1.x, point1.y, dummy, dummy); // to fill the monomials
-      double wxx = 1;
-      double wyy = 1;
-      double wxy = 0;
-#ifdef STORAGE      /* Hack */
-      const BaseStar *bs1 = a_match.s1;
-      const SEStar *s1 = dynamic_cast<const SEStar*>(bs1);
-      if (s1)
+      Point tmp = ShiftToCenter.apply(a_match.point1);
+      FatPoint point1(tmp, a_match.point1.vx, a_match.point1.vy, 
+		      a_match.point1.vxy);
+      const FatPoint &point2 = a_match.point2;
+      double wxx,wyy,wxy;
+      FatPoint tr1;
+      if (UseErrors)
 	{
-	  double fact = sq(s1->EFlux()/s1->flux);
-	  double vxx = fact*s1->Mxx();
-	  double vyy = fact*s1->Myy();
-	  double vxy = fact*s1->Mxy();
-	  double d = vxx*vyy-vxy*vxy;
-	  wxx = vyy/d;
-	  wyy = vxx/d;
-	  wxy = -vxy/d;
+	  TransformPosAndErrors(point1, tr1);// it also fills the monomials
+	  double vxx = (tr1.vx+point2.vx);
+	  double vyy = (tr1.vy+point2.vy);
+	  double vxy = (tr1.vxy+point2.vxy);
+	  double det = vxx*vyy-vxy*vxy;
+	  wxx = vyy/det;
+	  wyy = vxx/det;
+	  wxy = -vxy/det;
 	}
-#endif
-      
-      
-      sumr2 += wxx*sq(point2.x) + wyy*sq(point2.y) 
-	+2*wxy*point2.x*point2.y ;
-      double bxcoeff = wxx*point2.x +wxy*point2.y ;
-      double bycoeff = wyy*point2.y +wxy*point2.x;
+      else 
+	{
+	  wxx = wyy = 1; wxy = 0;
+	  apply(point1.x, point1.y ,tr1.x, tr1.y);
+	}
+      double resx = point2.x - tr1.x;
+      double resy = point2.y - tr1.y;
+      sumr2 += wxx*sq(resx) + wyy*sq(resy) 
+	+2*wxy*resx*resy;
+
+      double bxcoeff = wxx*resx + wxy*resy ;
+      double bycoeff = wyy*resy + wxy*resx;
       for (unsigned j=0; j<nterms; ++j)
 	{
 	  for (unsigned i=0; i<=j; ++i)
@@ -756,14 +928,32 @@ double  GtransfoPoly::fit(const StarMatchList &List)
 	  B(j+nterms) += bycoeff*monomials[j];
 	}
     } // end loop on points
-  Vect sol(B);
-  //  A.writeFits("A.fits");
 
-  if (cholesky_solve(A,sol,"U") != 0) return -1;
-  for (unsigned k=0; k< 2*nterms; ++k) coeffs[k] = sol(k);
+  Vect sol(B);
+  if (cholesky_solve(A,sol,"U") != 0) return false;
+  for (unsigned k=0; k< 2*nterms; ++k) coeffs[k] += sol(k);
+  if (List.size() == nterms) return 0;
+  return (sumr2-B*sol);
+}
+
+
+double  GtransfoPoly::fit(const StarMatchList &List)
+{
+  if (List.size()< nterms)
+    {
+      cerr << " GtransfoPoly::fit : trying to fit a polynomial transfo of degree " << deg << "with only " << List.size() << " matches " << endl;
+      return -1;
+    }
+
+  GtransfoPoly shift_to_center = my_shift_to_center(List);
+
+  do_the_fit(List, shift_to_center, false); // get a rough solution
+  do_the_fit(List, shift_to_center, true); // weight with it
+  double chi2 = do_the_fit(List, shift_to_center, true); // once more
+  
   (*this) = (*this)*shift_to_center;
   if (List.size() == nterms) return 0;
-  return (sumr2-B*sol); // compact chi2 form  
+  return chi2;
 }
 
 
@@ -841,7 +1031,7 @@ static void operator += (PolyXY &Left, const PolyXY &Right)
       Left.Coeff(i,j) += Right.Coeff(i,j);
 }
 
-/* mulitplication by a scalar */
+/* multiplication by a scalar */
 static PolyXY operator * (const long double &a, const PolyXY &P)
 {
   PolyXY result(P);
@@ -956,9 +1146,18 @@ GtransfoLin::GtransfoLin(const GtransfoPoly &P) : GtransfoPoly(1)
 
 GtransfoLin GtransfoLin::operator*(const  GtransfoLin &Right) const
 {
-  // return GtransfoLin((*this)*Right); // does not work : recursive call
-  // to enforce the call of GtransfoPoly::operator *
-  return GtransfoLin(GtransfoPoly::operator*(Right));
+  // There is a general routine in GtransfoPoly that would do the job: 
+  //  return GtransfoLin(GtransfoPoly::operator*(Right));
+  // however, we are using this composition of linear stuff heavily in 
+  // Gtransfo::LinearApproximation, itself used in InverseTransfo::apply.
+  // So, for sake of efficiency, and since it is easy, we take a shortcut:
+  GtransfoLin result;
+  apply(Right.Dx(), Right.Dy(), result.dx(), result.dy());
+  result.a11() = this->A11()*Right.A11() + this->A12()*Right.A21();
+  result.a12() = this->A11()*Right.A12() + this->A12()*Right.A22();
+  result.a21() = this->A21()*Right.A11() + this->A22()*Right.A21();
+  result.a22() = this->A21()*Right.A12() + this->A22()*Right.A22();
+  return result;
 }
 
 void GtransfoLin::Derivative(const Point &Where, GtransfoLin &Derivative, 
@@ -1037,12 +1236,17 @@ double  GtransfoLinShift::fit(const StarMatchList &List)
 
   for (StarMatchCIterator it = List.begin(); it != List.end(); it++)
     {
-      double deltax = it->point2.x - it->point1.x;
-      double deltay = it->point2.y - it->point1.y;
-      //WEIGHTS : TO UPDATE
-      double wxx = 1;
-      double wyy = 1;
-      double wxy = 0;
+      const FatPoint &point1 = it->point1;
+      const FatPoint &point2 = it->point2;      
+      double deltax = point2.x - point1.x;
+      double deltay = point2.y - point1.y;
+      double vxx = point1.vx+point2.vx;
+      double vyy = point1.vy+point2.vy;
+      double vxy = point1.vxy+point2.vxy;
+      double det = vxx*vyy-vxy*vxy;      
+      double wxx = vyy/det;
+      double wyy = vxx/det;
+      double wxy = -vxy/det;
       B(0) +=  deltax*wxx + wxy*deltay;
       B(1) +=  deltay*wyy + wxy*deltax;
       A(0,0) += wxx;
@@ -1106,7 +1310,7 @@ static double rad2deg(const double &rad)
    from what convention (angles in degrees for WCS's)
    would expect.
    So, no more "automatic" degrees to radians and 
-   radians to dgrees convertion. They are explicitely 
+   radians to degrees conversion. They are explicitely 
    done in apply (for TanPix2RaDec and TanRaDec2Pix).
    This is a minor concern though....
 */
@@ -1248,6 +1452,12 @@ const GtransfoPoly* TanPix2RaDec::Corr() const
   return corr;
 }
 
+GtransfoPoly TanPix2RaDec::Pix2TangentPlane() const
+{
+  if (corr) return (*corr)*linPix2Tan;
+  else return linPix2Tan;
+}
+
 
 Point TanPix2RaDec::CrPix() const
 {
@@ -1290,7 +1500,7 @@ double  TanPix2RaDec::fit(const StarMatchList &List)
      message shows up, we'll think about it.
   */
   if (&List) {} // warning killer
-  cerr << "TanPix2RaDec::fit is NOT implemented (although it is doable) " << endl;
+  throw(PolokaException("TanPix2RaDec::fit is NOT implemented (although it is doable)) "));
   return -1;
 }
 
@@ -1331,6 +1541,59 @@ GtransfoLin TanRaDec2Pix::LinPart() const
 {
   return linTan2Pix;
 }
+
+// Use analytic derivatives, computed at the same time as the transform itself
+void TanRaDec2Pix::TransformPosAndErrors(const FatPoint &In, 
+					 FatPoint &Out) const
+{
+  /* this routine is very similar to apply, but also propagates errors.
+     The deg2rad and rad2deg are ignored for errors because they act as
+     2 global scalings that cancel each other. 
+     Derivatives were computed using maple:
+
+     l1 := sin(a - a0) cos(d)
+     m1 := sin(d)*sin(d0)+cos(d)*cos(d0)*cos(a-a0);
+     l2 := sin(d)*cos(d0)-cos(d)*sin(d0)*cos(a-a0);
+     simplify(diff(l1/m1,a);
+     simplify(diff(l1/m1,d);
+     simplify(diff(l2/m1,a);
+     simplify(diff(l2/m1,d);
+
+     Checked against Gtransfo::TransformPosAndErrors (dec 09)
+  */
+  double ra = deg2rad(In.x);
+  double dec = deg2rad(In.y);
+  if (ra-ra0 >  M_PI ) ra -= (2.* M_PI);
+  if (ra-ra0 < -M_PI ) ra += (2.* M_PI);
+  
+  double coss = cos(dec);
+  double sins = sin(dec);
+  double sinda = sin(ra-ra0);
+  double cosda = cos(ra -ra0);
+  double l = sinda * coss;
+  double m = sins * sin0 + coss * cos0 * cosda;
+  l = l/m;
+  m = (sins * cos0 - coss * sin0 * cosda)/ m;
+
+  // derivatives
+  double deno = sq(sin0)-sq(coss)+sq(coss*cos0)*(1+sq(cosda))+2*sins*sin0*coss*cos0*cosda;
+  double a11 = coss*(cosda*sins*sin0+coss*cos0)/deno;
+  double a12 = sinda*sin0/deno;
+  double a21 = coss*sinda*sins/deno;
+  double a22 = cosda/deno;
+  
+  FatPoint tmp;
+  tmp.vx = a11*(a11*In.vx + 2*a12*In.vxy) + a12*a12*In.vy;
+  tmp.vy = a21*a21*In.vx + a22*a22*In.vy + 2.*a21*a22*In.vxy;
+  tmp.vxy = a21*a11*In.vx + a22*a12*In.vy + (a21*a12+a11*a22)*In.vxy;
+
+  // l and m are now coordinates in the tangent plane, in radians.
+  tmp.x = rad2deg(l);
+  tmp.y = rad2deg(m);
+  
+  linTan2Pix.TransformPosAndErrors(tmp, Out);
+}  
+
 
 void TanRaDec2Pix::apply(const double Xin, const double Yin, double &Xout, double &Yout) const
 {
@@ -1386,7 +1649,7 @@ Gtransfo *TanRaDec2Pix::Clone() const
 double TanRaDec2Pix::fit(const StarMatchList &List)
 {
   if (&List) {} // warning killer
-  cerr << " no way yet to fit TanRaDec2Pix (because it seemed useless!)" << endl;
+  throw(PolokaException("TanRaDec2Pix::fit is NOT implemented (although it is doable)) "));
   return -1;
 }
 
@@ -1412,7 +1675,7 @@ void UserTransfo::dump(ostream &stream) const
 double UserTransfo::fit(const StarMatchList &List)
 {
   if (&List) {} // warning killer
-  cerr << " no UserTransfo::fit  function defined " << endl;
+  throw(PolokaException("UserTransfo::fit is NOT implemented (and will never be)) "));
   return -1;
 }
 

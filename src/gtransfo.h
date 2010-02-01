@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "point.h"
+#include "fatpoint.h"
 #include "countedref.h"
 
 class StarMatchList;
@@ -62,9 +62,8 @@ public:
     this(T1(p1)) = T2(p2), use StarMatchList::ApplyTransfo beforehand. */
   virtual double fit(const StarMatchList &List) = 0;
 
-
   //! allows to write MyTransfo(MyStar)
-  Point operator()(const Point &In) const { return apply(In);};
+  void TransformStar(FatPoint &In) const { TransformPosAndErrors(In,In); }
 
   //! returns the local jacobian.
   virtual double Jacobian(const Point &P) const {return Jacobian(P.x, P.y);}
@@ -86,6 +85,9 @@ public:
   //! linear (local) approximation.
   virtual GtransfoLin LinearApproximation(const Point &Where, 
 					  const double step = 0.01) const;
+
+  virtual void TransformPosAndErrors(const FatPoint &In, FatPoint &Out) const;
+
 
   //! transform errors (represented as double[3] in order V(xx),V(yy),Cov(xy))
   virtual void TransformErrors(const Point &Where, const double *VIn, 
@@ -206,6 +208,13 @@ public :
   Point apply(const Point &P) const
   { double xout, yout; apply(P.x, P.y, xout, yout); return Point(xout,yout);}
 
+  //! specialised analytic routine
+  void Derivative(const Point &Where, GtransfoLin &Der, 
+		  const double Step = 0.01) const;
+
+  //! a mix of apply and Derivative
+  virtual void TransformPosAndErrors(const FatPoint &In, FatPoint &Out) const;
+
   //! returns degree
   unsigned Degree() const { return deg;}
 
@@ -254,6 +263,10 @@ public :
 
   //! Derivative w.r.t parameters. Derivatives should be al least 2*NPar long. first Npar, for x, last Npar for y.
   void ParamDerivatives(const Point &Where, double *Derivatives) const;
+
+private :
+  double do_the_fit(const StarMatchList &List, const Gtransfo &InTransfo,
+		    const bool UseErrors);
 
 };
 
@@ -325,6 +338,7 @@ protected :
 
   friend class Gtransfo;
   friend class GtransfoIdentity; // for Gtransfo::Derivative
+  friend class GtransfoPoly; // // for Gtransfo::Derivative
   
 protected:
   
@@ -383,33 +397,33 @@ class TanRaDec2Pix; // the inverse of TanPix2RaDec.
 class TanPix2RaDec : public Gtransfo {
   
 
-    GtransfoLin linPix2Tan; // pixels to tangent plane (internally in radians)
-    GtransfoPoly *corr;
-    double ra0, dec0; // in radians
-    double cos0, sin0; // cos(dec0), sin(dec0) 
+  GtransfoLin linPix2Tan; // pixels to tangent plane (internally in radians)
+  GtransfoPoly *corr;
+  double ra0, dec0; // in radians
+  double cos0, sin0; // cos(dec0), sin(dec0) 
   
- public:
+public:
     //! Pix2Tan describes the transfo from pix to tangent plane (in degrees). TangentPoint in degrees. Corrections are applied between Lin and deprojection parts (as in Swarp).
-    TanPix2RaDec(const GtransfoLin &Pix2Tan, const Point &TangentPoint, 
-		 const GtransfoPoly* Corrections = NULL);
+  TanPix2RaDec(const GtransfoLin &Pix2Tan, const Point &TangentPoint, 
+	       const GtransfoPoly* Corrections = NULL);
 
-    TanPix2RaDec(const TanPix2RaDec &Original);
+  TanPix2RaDec(const TanPix2RaDec &Original);
 
 #ifndef SWIG    
-    void operator = (const TanPix2RaDec &);
+  void operator = (const TanPix2RaDec &);
 #endif
 
     
-    TanPix2RaDec();
+  TanPix2RaDec();
 
-    void apply(const double Xin, const double Yin, 
-	       double &Xout, double &Yout) const;
-
-    Point apply(const Point &Pin) const 
-	{double xout, yout; apply(Pin.x, Pin.y, xout,yout); return Point(xout,yout);}
+  void apply(const double Xin, const double Yin, 
+	     double &Xout, double &Yout) const;
+  
+  Point apply(const Point &Pin) const 
+  {double xout, yout; apply(Pin.x, Pin.y, xout,yout); return Point(xout,yout);}
 
     //! composition with GtransfoLin
-    TanPix2RaDec operator *(const GtransfoLin &Right) const;
+  TanPix2RaDec operator *(const GtransfoLin &Right) const;
 
   Gtransfo *ReduceCompo(const Gtransfo *Right) const;
 
@@ -438,8 +452,11 @@ class TanPix2RaDec : public Gtransfo {
     //! The Linear part (corresponding to CD's and CRPIX's)
     GtransfoLin LinPart() const;
 
-    //! the correction 
+    //! the "correction" 
     const GtransfoPoly* Corr() const; 
+
+    //! transfo from pix to tangent plane ((*corr)*LinPart)
+    GtransfoPoly Pix2TangentPlane() const;
 
     //! the CRPIX values (this is WCS jargon)
     Point CrPix() const;
@@ -481,6 +498,12 @@ class TanRaDec2Pix : public Gtransfo
 
     //!
     void apply(const double Xin, const double Yin, double &Xout, double &Yout) const;
+
+    //! transform with analytical derivatives
+    void TransformPosAndErrors(const FatPoint &In, 
+			       FatPoint &Out) const;
+
+
 
     //! exact typed inverse:
     TanPix2RaDec invert() const;
