@@ -20,6 +20,7 @@ if USESEXTRACTOR
 AM_CPPFLAGS += $($<_cppflags)
 optimize_it = -O3
 
+cluster.cc_cppflags = $(optimize_it)
 kernelfit.cc_cppflags = $(optimize_it)
 dimage.cc_cppflags = $(optimize_it)
 listmatch.cc_cppflags = $(optimize_it)
