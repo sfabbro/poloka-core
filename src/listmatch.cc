@@ -76,7 +76,7 @@ class Segment{
   /* constructor (could set last argument to identity by default)  */
   Segment(const BaseStar *S1, const BaseStar *S2, const int S1Rank, const Gtransfo &Tin)
       {s1rank = S1Rank; s1=S1; s2=S2;  
-      Point P1 = Tin(*S1); Point P2= Tin(*S2); dx = P2.x - P1.x; dy = P2.y - P1.y; r = sqrt(dx*dx+dy*dy);}
+      Point P1 = Tin.apply(*S1); Point P2= Tin.apply(*S2); dx = P2.x - P1.x; dy = P2.y - P1.y; r = sqrt(dx*dx+dy*dy);}
 
   /* arg(Seg2/(*this)) if considered as complex(dx,dy) */
   double relative_angle(Segment *Seg2) 
@@ -156,10 +156,10 @@ for (SegmentPairListCIterator spi = PairList.begin(); spi != PairList.end(); spi
      but only once the beginning of segments because they all have the same, 
      given the selection 3 lines above  */
   if (matchList->size() == 0) 
-     matchList->push_back(StarMatch(Tin(*(a_pair.first->s1)), *(a_pair.second->s1), 
+     matchList->push_back(StarMatch(Tin.apply(*(a_pair.first->s1)), *(a_pair.second->s1), 
                             a_pair.first->s1, a_pair.second->s1));
   /* always store the match at end */
-  matchList->push_back(StarMatch(Tin(*(a_pair.first->s2)), *(a_pair.second->s2), 
+  matchList->push_back(StarMatch(Tin.apply(*(a_pair.first->s2)), *(a_pair.second->s2), 
                             a_pair.first->s2, a_pair.second->s2));
   }
 // cout << " matchList size " << matchList->size() << endl;
@@ -170,7 +170,7 @@ return matchList;
 static bool DecreasingQuality(const StarMatchList* first, const StarMatchList *second)
 {
 int idiff = first->Nused() - second->Nused();
-if   (idiff != 0) return ( idiff > 0); else return(first->Residual() < second->Residual());
+if   (idiff != 0) return ( idiff > 0); else return(first->Dist2() < second->Dist2());
 }
 
 /* many matching solutions (StarMatchList) will be compared. Store them in a SolList : */
@@ -290,7 +290,7 @@ for (int i = 0; i<Conditions.MaxTrialCount; ++i)
     historank.Fill(dr1,dr2,-maxval);
     // cout << maxval << ' ' ; cout << dr1 << ' ' << dr2 << endl;
     StarMatchList *a_list = MatchListExtract(pairList, int(dr1), int(dr2), GtransfoIdentity());
-    a_list->RefineTransfo(Conditions.NSigmas);
+    a_list->RefineTransfo(Conditions.NSigmas); // mandatory for the sorting fields to be filled
     // cout << " list size after Refine " << a_list->size() << endl;
     Solutions.push_back(a_list);
     }
@@ -674,12 +674,13 @@ StarMatchList *ListMatchCollect(const BaseStarList &L1,
 
     }
   matches->SetTransfo(Guess);
-  matches->SetChi2();
 
   return matches;
 }
 
-
+#ifdef STORAGE
+// unused
+//! iteratively collect and fits, with the same transfo kind, until the residual increases
 StarMatchList *CollectAndFit(const BaseStarList &L1, const BaseStarList &L2,
 			     const Gtransfo *Guess, const double MaxDist)
 {
@@ -710,8 +711,7 @@ StarMatchList *CollectAndFit(const BaseStarList &L1, const BaseStarList &L2,
     }
   return prevMatch;
 }
-  
-
+#endif 
 
 
 
@@ -734,7 +734,6 @@ StarMatchList *ListMatchCollect(const BaseStarList &L1, const BaseStarList &L2, 
     }
 
   matches->SetTransfo(new GtransfoIdentity);
-  matches->SetChi2();
 
   return matches;
 }
