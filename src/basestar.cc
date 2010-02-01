@@ -1,8 +1,8 @@
-#include <cstdio>
-#include <cstdlib>
+#include <assert.h>
 
-#include <iomanip>
+//#include <iomanip>
 #include "basestar.h"
+
 
 
 using namespace std;
@@ -17,13 +17,15 @@ be able to locate all occurences of this shift, we #define MEMPIX2DISK 1*/
 
 
 /* comment to the comment :
-this prooves to be a bad idea : BaseStar's may contain coordinates
+this proves to be a bad idea : BaseStar's may contain coordinates
 which do NOT represent pixels. It could be degrees for example.
 In this case subtracting 1 is a very bad idea. So it is no longer the case.
 Old files (BaseStar format = 1) are correctly interpreted, but we no
 longer use this trick of having different coordinate origins on disk and
 in memory.
 */
+
+static double sq(const double &x) { return x*x;}
 
 
 #include "fastifstream.h"
@@ -33,8 +35,17 @@ void BaseStar::read_it(fastifstream & rd, const char *format)
  int formatValue = 0;
  if (format) 
    formatValue = DecodeFormat(format,"BaseStar");
- rd >> x >> y >> flux;
- if (formatValue == 1) // only shift back if shifted when written
+ if (formatValue == 3)
+   {
+     rd >> x >> y >> vx >> vy >> vxy >> flux;
+     /* write sig(x) sig(y), rho ... */
+     vxy *= (vx*vy);
+     vx *= vx;
+     vy *= vy;
+   }
+ else if (formatValue == 2)
+   rd >> x >> y >> flux;
+ else if (formatValue == 1) // only shift back if shifted when written
    {
      x -= MEMPIX2DISK;
      y -= MEMPIX2DISK;
@@ -56,8 +67,11 @@ string BaseStar::WriteHeader_(ostream & stream, const char*i) const
   if (i==NULL) i = "";
   stream << "# x"<< i <<" : x position (pixels)" << endl 
 	 << "# y"<< i <<" : y position (pixels)" << endl 
-	 << "# flux"<< i <<" : flux en unites du pixel" << endl ;
-  return " BaseStar 2 "; 
+	 << "# sx"<< i <<" : x position r.m.s " << endl
+	 << "# sy"<< i <<" : y position r.m.s " << endl
+	 << "# rhoxy"<< i <<" : xy correlation " << endl
+	 << "# flux"<< i <<" : flux in image ADUs" << endl ;
+  return " BaseStar 3 "; 
 }
 
 void BaseStar::WriteHeader(ostream & stream) const
@@ -70,7 +84,16 @@ void BaseStar::WriteHeader(ostream & stream) const
 
 void BaseStar::writen(ostream &s) const 
 {
-  s << x << " " << y << " " << flux << " " ;
+  assert(vx>0 && vy>0 && sq(vxy)<vx*vy);
+  /* write (sigx,sigy,rho) rather than (vx,vy,vxy). 
+     This limits shortcomings of truncation, and is more useful 
+     when reading or plotting.
+  */
+  double sx = sqrt(vx);
+  double sy = sqrt(vy);
+  s << x << ' ' << y << ' ' 
+    << sx << ' ' << sy << ' ' << vxy/sx/sy << ' ' 
+    << flux << ' ' ;
 }
 
 

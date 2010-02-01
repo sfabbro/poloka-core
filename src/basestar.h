@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <string>
 
-#include "point.h"
+#include "fatpoint.h"
 #include "countedref.h"
 
 
@@ -35,8 +35,11 @@ class fastifstream;
 #define DECALAGE_XY_IJ 0.
 /*! \file */
 
+// tell other pieces of code that BaseStar now derives from FatPoint (instead of Point)
+#define BASESTAR_HAS_POSITION_ERRORS
+
 //! The base class for handling stars. Used by all matching routines.
-class BaseStar : public Point, public RefCount
+class BaseStar : public FatPoint, public RefCount
 {
 
   public : // si quelqu'un connait un moyen efficace d'eviter ca...
@@ -46,9 +49,9 @@ double flux;
   public:
  BaseStar(){x=0;y=0;flux=0;};
   //! constructor
- BaseStar(double xx, double yy, double ff) : Point(xx,yy), flux(ff) 
+ BaseStar(double xx, double yy, double ff) : FatPoint(xx,yy), flux(ff) 
   {};
- BaseStar(const Point &a_point, double a_flux) : Point(a_point), flux(a_flux)
+ BaseStar(const Point &a_point, double a_flux) : FatPoint(a_point), flux(a_flux)
   {};
 
   //! access stuff.
