@@ -21,18 +21,18 @@ class StringList;
 bool WCSFromHeader(const FitsHeader &Head, Gtransfo* &Pix2RaDec);
 
 //! same as above
-bool WCSFromHeader(const string &FitsName, Gtransfo* &Pix2RaDec);
+bool WCSFromHeader(const std::string &FitsName, Gtransfo* &Pix2RaDec);
 
 
 
 //! Fills the fits file header with provided WCS transfo 
-int WCSTransfo2Header(const string &FitsImageName, const GtransfoLin &Pix2RaDec);
+int WCSTransfo2Header(const std::string &FitsImageName, const GtransfoLin &Pix2RaDec);
 
 //! 
 int WCSTransfo2Header(FitsHeader &header, const GtransfoLin &Pix2RaDec);
 
 //! retrieves the (lin) WCS transfo from a header. 
-bool WCSLinTransfoFromHeader(const string &FitsImageName, GtransfoLin &Pix2RaDec);
+bool WCSLinTransfoFromHeader(const std::string &FitsImageName, GtransfoLin &Pix2RaDec);
 
 //! 
 bool WCSLinTransfoFromHeader(const FitsHeader& Header, GtransfoLin &Pix2RaDec);
@@ -49,7 +49,7 @@ bool TanWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
 		      const bool Warn = false);
 
 //! write it
-int TanWCS2Header(const string &FitsImageName, const TanPix2RaDec &TanWcs);
+int TanWCS2Header(const std::string &FitsImageName, const TanPix2RaDec &TanWcs);
 
 //! write it
 void TanWCS2Header(FitsHeader &Head, const TanPix2RaDec &TanWcs);

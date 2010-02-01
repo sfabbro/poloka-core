@@ -211,7 +211,7 @@ static bool OldLinWCSFromHeader(const FitsHeader& Header, GtransfoLin &Pix2RaDec
 
    GtransfoLin rotateur(ra_rot, dec_rot, -a11, -a12, -a21, -a22);
    Point rotpix(x_rot, y_rot);
-   Point delta = rotateur(rotpix);
+   Point delta = rotateur.apply(rotpix);
    
    Pix2RaDec = GtransfoLin(delta.x, delta.y, a11, a12, a21, a22);
    return true;
