@@ -42,7 +42,7 @@ int main(int nargs, char **args)
   TransformedImage transformed(newimagename,*refimage,&transfo);
   transformed.Execute(DoFits | DoCatalog | DoSatur | DoWeight | DoCosmic);
 
-  FitsHeader head(transformed.FitsName());
+  FitsHeader head(transformed.FitsName(),RW);
   head.AddOrModKey("XMARGIN", marginx, "X margin width of enlarged image");
   head.AddOrModKey("YMARGIN", marginy, "Y margin width of enlarged image");
   
