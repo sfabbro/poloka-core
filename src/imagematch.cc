@@ -216,14 +216,17 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 static double transfo_diff(const BaseStarList &List, const Gtransfo *T1, const Gtransfo*T2)
 {
   double diff2 = 0;
-  Point tf1,tf2;
+  FatPoint tf1;
+  Point tf2;
   int count = 0;
   for (BaseStarCIterator si = List.begin(); si != List.end(); ++si)
     {
       const BaseStar *s = *si;
-      T1->apply(*s, tf1);
+      T1->TransformPosAndErrors(*s, tf1);
       T2->apply(*s, tf2);
-      diff2 += tf1.Dist2(tf2);
+      double dx = tf1.x-tf2.x;
+      double dy = tf1.y-tf2.y;
+      diff2 += (tf1.vy*dx*dx + tf1.vx*dy*dy - 2*tf1.vxy*dx*dy)/(tf1.vx*tf1.vy-tf1.vxy*tf1.vxy);
       count ++;
     }
   if (count) return diff2/double(count);
@@ -251,13 +254,12 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 
   Gtransfo *usedToCollect = One2Two->Clone();
   StarMatchList *refinedMatch = ListMatchCollect(List1, List2, usedToCollect, refine_toldist);  
-  refinedMatch->SetChi2();
-  double curChi2Red = refinedMatch->Chi2() / refinedMatch->Dof();
+  double curChi2Red = ComputeChi2(*refinedMatch, *usedToCollect) / refinedMatch->Dof();
   
   int oldprec = cout.precision();
   cout << setprecision(3);
   cout << " RefineGuess : Order " << order 
-       << " Resid " << refinedMatch->Residual() 
+       << " Resid " << FitResidual(*refinedMatch, *usedToCollect) 
        << " Nused " << refinedMatch->size() 
        << " Chi2/DOF " << curChi2Red << endl;
   cout << " RefineGuess : Start looping \n";
