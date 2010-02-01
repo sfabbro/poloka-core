@@ -22,7 +22,7 @@ template<class Star> int StarList<Star>::read(fastifstream & r)
 {
   char c ;
   char buff[4096];
-  char format[512];
+  char format[4096];
   ClearList();
   while( r >> c ) // to test eof
     {
@@ -40,27 +40,24 @@ template<class Star> int StarList<Star>::read(fastifstream & r)
 	  char *p = strstr(buff,"format");
 	  if (p) /* this test is enough because the format is the last line of the header ... */
           {
-	    strncpy(format,p + strlen("format"),512);
+	    strncpy(format,p + strlen("format"),4096);
           }
         }
-      else
+      else // actual star data
 	{
 	  Star* s = dynamic_cast<Star*>(Star::read(r, format));
-	  if (!r) 
+	  if (!r) // means I/O issue 
 	    {
-	      if (s) delete s;
+	      delete s;
 	      return 0;
 	    }
+	  if (!s) return 0; // other kind of I/O issue. 
 	  // read the end of line, in case there are some items left
 	  r.getline(buff,4096);
-	  if (!s) 
-	    {
-	      return 0;
-	    }
-	  push_back(s);
+	  push_back(s); // append just read star to the list.
 	}
     }
-  return 1 ;
+  return 1;
 }
 
 template<class Star> int 
@@ -79,7 +76,7 @@ StarList<Star>::ascii_read(const string &FileName)
       throw(StarListException("StarList :cannot open file="+FileName));
     }
   int count = read(rd);
-  if (rd.fail()) // to be tested with ifstrem... I guess it does not work.
+  if (rd.fail()) // to be tested with ifstream... I guess it does not work.
     throw(StarListException("bad extraction in StarList reader, file="+FileName));
   return count;
 }
@@ -94,7 +91,7 @@ template<class Star> int StarList<Star>::write(const string &FileName) const
     }
   write(pr);
   pr.close();
- return 1;
+  return 1;
 }
 
 
@@ -113,10 +110,9 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
   for (unsigned k = 0; k < globs.size(); ++k)
     pr << '@' << globs[k] << endl;
 
-  // check pr a faire avant, close a faire tout seul
   const Star *theFirst = this->front();
   // if (!theFirst) return 0;
-  if (this->size() == 0) // it seems that we can have this->size(0 == 0 with this->front() != NULL !
+  if (this->size() == 0) // it seems that we can have this->size() == 0 with this->front() != NULL !
     {
       Star dummy;
       dummy.WriteHeader(pr);

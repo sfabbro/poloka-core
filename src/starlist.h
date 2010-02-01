@@ -113,7 +113,7 @@ typedef typename list<Element>::iterator StarIterator;
   /*! could be extended to other type of transformations. */
 
   template<class Operator> void ApplyTransfo(const Operator &Op) 
-    {for (StarIterator p = this->begin(); p != this->end(); ++p) (*p)->Apply(Op);}
+  {for (StarIterator p = this->begin(); p != this->end(); ++p) Op.TransformStar(*(*p));}
 
   //! returns the closest Star from a given location. 
   Star* FindClosest(double X, double Y) const;
