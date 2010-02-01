@@ -254,7 +254,8 @@ void AperSEStar::ComputePos(const Image& I, const Image& W)
 }
 
 
-void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
+void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W, 
+				    const double &Gain)
 {
   gflag &= ~(BAD_GAUSS_MOMENTS);
   double det = Mxx()*Myy() - sq(Mxy());
@@ -284,6 +285,9 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
   int ny = I.Ny();
   double weightedX = x;
   double weightedY = y;
+  double varxx = -1;
+  double varyy = -1;
+  double varxy = 0;
 
   while (iter < 50)
     {
@@ -293,12 +297,20 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
       int jmin = int(floor(y - radius ));
       int jmax = int(ceil(y + radius ));
 
+      // position
       double sumx = 0;
       double sumy = 0;
+      // weighted secon moments
       double sumxx = 0;
       double sumyy = 0;
       double sumxy = 0;
       double sumw = 0;
+      // for position variance
+      double sumxxw2 = 0;
+      double sumyyw2 = 0;
+      double sumxyw2 = 0;
+
+
 
       nbad = 0;
       for (int j = jmin; j <= jmax; ++j)
@@ -316,26 +328,35 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
 	      }
             // Gaussian weighting "window function":
 	    wg = exp(-0.5*wg);
-	    // pixel weight
+	    double pix = I(i,j);
+	    double wgi = wg*pix;
+	    sumx += wgi*dx;
+	    sumy += wgi*dy;
+	    sumxx += wgi*dx*dx;
+	    sumyy += wgi*dy*dy;
+	    sumxy += wgi*dx*dy;
+	    sumw += wgi;
 	    double w = W(i,j);
-	    if (w <= 0)
+	    if (w <= 0) nbad += 1;
+	    else 
 	      {
-		nbad += 1;
+	    // ingredients for the pixel variance
+	    /* contrarily to the above computations, this is only useful
+	       at the last iteration */
+		double pixvar = 1/w+pix/Gain;
+		double wv = wg*wg*pixvar;
+		sumxxw2 += dx*dx*wv;
+		sumyyw2 += dy*dy*wv;
+		sumxyw2 += dx*dy*wv;		
 	      }
-	    wg *= I(i,j);
-	    sumx += wg*dx;
-	    sumy += wg*dy;
-	    sumxx += wg*dx*dx;
-	    sumyy += wg*dy*dy;
-	    sumxy += wg*dx*dy;
-	    sumw += wg;
-	  }
+	    
+	  } // end loop on pixels
       if (sumw <= 0)
 	{
 	  gflag |= BAD_GAUSS_MOMENTS;
 	  wxx = wyy = 12;
 	  wxy = 0;
-	  break; 
+	  break; // end of iterations
 	}
       sumx /= sumw;
       sumy /= sumw;
@@ -393,7 +414,14 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
       wxx = new_wxx;
       wyy = new_wyy;
       wxy = new_wxy;
-      if (stop_iter) break;
+      if (stop_iter) 
+	{
+	  // position variance is not needed to loop
+	  varxx = sumxxw2/sq(sumw);
+	  varyy = sumyyw2/sq(sumw);
+	  varxy = sumxyw2/sq(sumw);
+	  break;
+	}
     }// end of iteration.
 
   det = wxx*wyy-sq(wxy);
@@ -402,11 +430,18 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W)
   gmyy = wxx/det;
   gmxy = -wxy/det;
   if (gmxx <0) abort(); // hopefully never happens
-  if (nbad != 0) gflag |= BAD_GAUSS_MOMENTS;
+  if (nbad != 0) gflag |= (BAD_GAUSS_MOMENTS+BAD_GAUSS_POS_VARIANCE);
+  if (varxx == -1) gflag |= BAD_GAUSS_POS_VARIANCE;
   if ((gflag & BAD_GAUSS_MOMENTS) == 0)
     { // can then use the "fitted" position
       x = weightedX;
       y = weightedY;
+    }
+  if ((gflag & BAD_GAUSS_POS_VARIANCE) == 0)
+    {
+      vx = varxx;
+      vy = varyy;
+      vxy = varxy;
     }
 }
   

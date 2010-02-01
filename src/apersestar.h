@@ -7,6 +7,7 @@
 class Image;
 
 #define BAD_GAUSS_MOMENTS 1
+#define BAD_GAUSS_POS_VARIANCE 2
 
 
 class fastifstream;
@@ -82,7 +83,8 @@ void computeflux(const Image& I, const Image& W, const Image *C,
 		   const Image &Seg, const double Gain, const double Radius,
 		   bool sort_radii=true);
   void ComputePos(const Image&I, const Image &W);
-  void ComputeShapeAndPos(const Image&I, const Image &W);
+  void ComputeShapeAndPos(const Image&I, const Image &W, 
+			  const double &Gain);
 
   Aperture InterpolateFlux(const double &Radius) const;
 
