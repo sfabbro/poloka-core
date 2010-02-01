@@ -420,6 +420,13 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   SEStarList stlse ;
   int status = SEStarListMake(data, stlse, Fond, SigmaFond, pmasksat);
   if (status == 0) {return 0;}
+  // DEBUG
+  if (!FileExists(data.FitsSegmentationName))
+    {
+      cout << " ReducedImage::MakeCatalog : cannot find object mask " <<data.FitsSegmentationName << endl;
+    }
+  //END DEBUG
+
 
   // we re-flag for saturation here
   int nsat = FlagSaturatedStars(stlse, data.saturation);
@@ -733,6 +740,33 @@ bool ReducedImage::MakeAperCat()
       return false;
     }
 
+  //try to figure out a gain (needed for photometry and to compute pos error)
+  double gain = 1;
+  double toadpixs = 1;
+  { // open a block to close the file after use
+
+  FitsHeader  I(FitsName());
+  gain = I.KeyVal("TOADGAIN");
+  toadpixs = I.KeyVal("TOADPIXS");
+  /* cannot go through the the average/variance trick to figure out
+     the gain if the image comes from Swarp, which subtracts the
+     sky of input images (probably with good reasons)
+  */     
+  string inst = I.KeyVal("TOADINST");
+  if (inst != "Swarp" && I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
+    {
+      double sexsky = I.KeyVal("SEXSKY");
+      double sexsigma = I.KeyVal("SEXSIGMA");
+      if (sexsky > 0) gain = sexsky/(sexsigma*sexsigma);
+    }
+  if (gain == 0)
+    {
+      cout << " cannot figure out a gain" << endl;
+      gain = 1;
+    }
+  cout << " Assuming a gain of " << gain << endl;
+  }
+
   //this code now "slices" the input images in order to accomodate monsters
 
   int ySliceSize = 500;
@@ -768,7 +802,7 @@ bool ReducedImage::MakeAperCat()
 	    if (s.y < yStarMax && s.y >= yStarMin)
 	      {
 		s.y -= offset;
-		s.ComputeShapeAndPos(*slices[0],*slices[1]);
+		s.ComputeShapeAndPos(*slices[0], *slices[1], gain);
 		s.y += offset;
 	      }
 	  }
@@ -800,31 +834,7 @@ bool ReducedImage::MakeAperCat()
   cout << Name () << ": old seeing " <<  Seeing() << " new " << seeing << endl;
   
   SetGFSeeing(seeing," Seeing from a Gaussian fit to objects");
-  
-  // various minor things to do before computing aperture photometry
-  FitsHeader  I(FitsName());
-
-  //try to figure out a gain 
-  double gain = I.KeyVal("TOADGAIN");
-  /* cannot go through the the average/variance trick to figure out
-     the gain if the image comes from Swarp, which subtracts the
-     sky of input images (probably with good reasons)
-  */     
-  string inst = I.KeyVal("TOADINST");
-  if (inst != "Swarp" && I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
-    {
-      double sexsky = I.KeyVal("SEXSKY");
-      double sexsigma = I.KeyVal("SEXSIGMA");
-      if (sexsky > 0) gain = sexsky/(sexsigma*sexsigma);
-    }
-  if (gain == 0)
-    {
-      cout << " cannot figure out a gain" << endl;
-      gain = 1;
-    }
-  cout << " Assuming a gain of " << gain << endl;
-
-  
+    
   // get aperture radius, either from datacards or provide defaults
   bool fixed_aper_rads = false;
   vector<double> rads;
@@ -840,7 +850,7 @@ bool ReducedImage::MakeAperCat()
       for(int i=0;i<n;i++) 
 	{
 	  double r = cards.DParam("FIXED_APER_RADS",i);
-	  r /= double(I.KeyVal("TOADPIXS"));
+	  r /= toadpixs;
 	  cout << " " << r;
 	  rads.push_back(r);
 	}
@@ -1469,6 +1479,7 @@ bool ReducedImage::MakeCosmic()
 bool ReducedImage::MakeSatellite()
 {
   if (FileExists(FitsSatelliteName())) return true;
+  if (!MakeWeight()) return false;
   clock_t tstart = clock();
   {
     FitsHeader head(FitsName());
