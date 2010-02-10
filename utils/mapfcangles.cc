@@ -1,3 +1,6 @@
+// -*- C++ -*-
+// 
+#include <math.h>
 #include <iostream>
 
 #include <frame.h>
@@ -107,10 +110,18 @@ int main(int nargs, char **args)
 {
   FitsImage ax("ax.fits",nx_prev,ny_prev);
   FitsImage ay("ay.fits",nx_prev,ny_prev);
+  FitsImage theta("theta.fits",nx_prev,ny_prev);
+  FitsImage phi("phi.fits",nx_prev,ny_prev);
+
   ax.ModKey("BITPIX",-32);
   ay.ModKey("BITPIX",-32);
+  theta.ModKey("BITPIX",-32);
+  phi.ModKey("BITPIX",-32);
+    
   FitsHeader toto(args[1]);
-  Point center(double(toto.KeyVal("RA_DEG")), double(toto.KeyVal("DEC_DEG")));
+  Point center(double(toto.KeyVal("RA_DEG")), double(toto.KeyVal("DEC_DEG")));  
+  TanRaDec2Pix radec2pix( GtransfoLin(), center );  
+  
   for (int i=1; i< nargs; ++i)
     {
       const char *arg = args[i];
@@ -149,8 +160,14 @@ int main(int nargs, char **args)
 		yprev = ybottom[j0][2*col0+iamp]+(j-8)/16;
 	      Point where_pix(i, j);
 	      Point where_sky = wcs->apply(where_pix);
-	      ax(xprev,yprev) = where_sky.x-center.x;
-	      ay(xprev,yprev) = where_sky.y-center.y;
+	      Point where_tp;
+	      radec2pix.apply( where_sky.x, where_sky.y, 
+			       where_tp.x,  where_tp.y );
+	      
+	      ax(xprev,yprev) = where_tp.x; // -center.x;
+	      ay(xprev,yprev) = where_tp.y; // center.y;
+	      theta( xprev, yprev ) = sqrt( where_tp.x*where_tp.x + where_tp.y*where_tp.y ) * M_PI / 180.;
+	      phi( xprev, yprev )   = -atan2( where_tp.y, where_tp.x );
 
 	      /*
 		ax(xprev,yprev) = 2*col0+iamp;
