@@ -1,0 +1,29 @@
+# -*- mode: python; -*- 
+# 
+# 
+
+
+def build( bld ):
+    
+    sources = bld.path.ant_glob('*.cc')
+    sources = sources.split()
+    sources.remove('virtualinstrument.cc')
+    sources.remove('alltelinst.cc')
+    
+    c_sources = bld.path.ant_glob('*.c')
+    c_sources = c_sources.split()
+    c_sources.remove('slasub.c')
+    
+#     c_objects = bld( features = 'cc', 
+#                      source = c_sources, 
+#                      )
+    
+    cxx_objects = bld( features = "cc cxx cshlib", 
+                       source   = sources + c_sources,
+                       target   = 'toads_base', 
+                       includes = [ '.' ], 
+                       libs     = ['m'], 
+                       uselib_local = ['lapack_stuff'],
+                       vnum     = '0.1.0' )
+
+    

@@ -1,0 +1,70 @@
+# -*- mode: python -*-
+# 
+
+
+
+
+
+def build( bld ):
+    
+    sources = "fitsimagearray.cc fitsset.cc fringeutils.cc superflat.cc"
+        
+    lib = bld( features = 'cxx cshlib', 
+               source = sources,
+               target = 'toadsflat', 
+               includes = [ '.', '../src_utils', '../src_base', '../src' ], 
+               libs     = [ 'm' ], 
+               uselib_local = [ 'toadslib', 'toads_base', 'toads_utils' ],
+               vnum     = '0.1.0' )
+    
+    
+    correlation = bld( features = 'cxx cprogram', 
+                       source   = 'correlation.cc', 
+                       target   = 'correlation',
+                       includes = [ '.', '../src_utils', '../src_base', 
+                                    '../src' ],
+                       uselib_local = [ 'toadslib', 'toads_base', 
+                                        'toads_utils', 'toadsflat' ] )
+
+    defringe = bld( features = 'cxx cprogram', 
+                    source   = 'defringe.cc', 
+                    target   = 'defringe',
+                    includes = [ '.', '../src_utils', '../src_base', 
+                                 '../src' ],
+                    uselib_local = [ 'toadslib', 'toads_base', 
+                                     'toads_utils', 'toadsflat' ] )
+    
+    fringefinder = bld( features = 'cxx cprogram', 
+                        source   = 'fringefinder.cc', 
+                        target   = 'fringefinder',
+                        includes = [ '.', '../src_utils', '../src_base', 
+                                     '../src' ],
+                        uselib_local = [ 'toadslib', 'toads_base', 
+                                         'toads_utils', 'toadsflat' ] )
+
+#     makefringe = bld( features = 'cxx cprogram', 
+#                       source   = 'makefringe.cc', 
+#                       target   = 'makefringe',
+#                       includes = [ '.', '../src_utils', '../src_base', 
+#                                    '../src' ],
+#                       uselib_local = [ 'toadslib', 'toads_base', 
+#                                        'toads_utils', 'toadsflat' ] )
+
+#     medianstack = bld( features = 'cxx cprogram', 
+#                        source   = 'medianstack.cc', 
+#                        target   = 'medianstack',
+#                        includes = [ '.', '../src_utils', '../src_base', 
+#                                     '../src' ],
+#                        uselib_local = [ 'toadslib', 'toads_base', 
+#                                         'toads_utils', 'toadsflat' ] )
+
+#     trim = bld( features = 'cxx cprogram', 
+#                 source   = 'trim.cc', 
+#                 target   = 'trim',
+#                 uselib_local = [ 'toadslib', 'toads_base', 
+#                                  'toads_utils', 'toadsflat' ],
+#                 includes = [ '.', '../src_utils', '../src_base', 
+#                              '../src' ]
+#                 )
+    
+    

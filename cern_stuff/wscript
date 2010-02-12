@@ -1,0 +1,15 @@
+# -*- mode: python -*-
+# 
+
+
+
+def build( bld ):
+    
+    sources = bld.path.ant_glob('*.F')
+        
+    lib = bld( features = 'fortran cshlib', 
+               source = sources,
+               target = 'cern_stuff', 
+               libs   = 'gfortran',
+               vnum     = '0.1.0' )
+    

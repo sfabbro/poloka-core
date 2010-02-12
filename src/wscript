@@ -1,0 +1,40 @@
+# -*- mode: python -*-
+# 
+
+
+
+def build( bld ):
+    
+    sources = bld.path.ant_glob('*.cc', bld=False)
+        
+    lib = bld( name = 'toadslib', 
+               features = 'cc cxx cshlib', 
+               source = sources,
+               target = 'toadslib', 
+               includes = [ '.', '../src_utils', '../src_base', 
+                            '../../sex/src', '../../cfitsio/src' ], 
+               libs     = [ 'm', 'sex', 'wcs', 'fits', 'cfitsio', 'z'], 
+               libpath  = [ '../../sex/build/default/src', 
+                            '../../sex/build/default/src/wcs', 
+                            '../../sex/build/default/src/fits', 
+                            '../../cfitsio/src'], 
+               uselib_local = ['toads_base', 'toads_utils', 'lapack_stuff', 'cern_stuff'], 
+               vnum     = '0.1.0', 
+               add_objects = 'parser_objects' )
+    
+    lib.rpath = [ '../../sex/build/default/src', 
+                  '../../sex/build/default/src/wcs', 
+                  '../../sex/build/default/src/fits', 
+                  '../../cfitsio/src']
+    
+    parser = bld( # name = 'parse', 
+                  features = 'cc', 
+                  source   = 'dbfileParse.y dbfileLex.l', 
+                  target   = 'parser_objects',
+                  includes = ['.']
+                  )
+                  
+    bld ( source = 'dbfileParse.tab.h', 
+          target = 'dbfileParse.h', 
+          rule   = 'cp ${SRC} ${TGT}', 
+          after  = 'parser_objects' )

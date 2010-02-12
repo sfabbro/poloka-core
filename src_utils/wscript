@@ -1,0 +1,17 @@
+# -*- mode: python; -*- 
+
+
+
+
+def build( bld ):
+    
+    sources = bld.path.ant_glob('*.cc')
+    
+    lib = bld( features = "cxx cshlib", 
+               source   = sources, 
+               target   = 'toads_utils', 
+               includes = ['.', '../src_base'], 
+               libs     = [ 'm' ], 
+               uselib_local = [ 'cern_stuff', 'lapack_stuff' ],
+               vnum     = '0.1.0' )
+    

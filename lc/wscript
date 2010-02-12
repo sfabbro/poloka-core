@@ -1,0 +1,39 @@
+# -*- mode: python; -*- 
+# 
+# 
+
+
+def build( bld ):
+    
+    sources = bld.path.ant_glob('*.cc').split()
+    
+    sources.remove('lightcurveguru.cc')
+    sources.remove('psfphot.cc')
+    sources.remove('daopsfphot.cc')
+    sources.remove('daopsffitphot.cc')
+    
+    bld( features = "cxx cshlib", 
+         source   = sources,
+         target   = 'toadslc', 
+         includes = [ '.', 
+                      '../src_base', 
+                      '../src_utils', 
+                      '../src',
+                      '../psf' ], 
+         libs     = [ 'm' ], 
+         uselib_local = [ 'toads_base', 
+                          'toads_utils', 
+                          'toadspsf', 
+                          'toadslib' ],
+         vnum     = '0.1.0' )
+
+#     bld( features = "cxx cprogram", 
+#          source   = "make_lightcurve.cc", 
+#          includes = [ '.' ],
+#          uselib_local = [ 'toads_base', 
+#                           'toads_utils', 
+#                           'toadspsf', 
+#                           'toadslib', 
+#                           'toadslc' ],
+#          vnum  = '0.1.0' )
+         

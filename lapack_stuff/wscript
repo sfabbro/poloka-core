@@ -1,0 +1,15 @@
+# -*- mode: python -*-
+# 
+
+
+
+def build( bld ):
+    
+    sources = bld.path.ant_glob('*.f')
+        
+    lib = bld( features = 'fortran cshlib', 
+               source = sources,
+               target = 'lapack_stuff', 
+               libs   = ['gfortran'],
+               vnum     = '0.1.0' )
+    
