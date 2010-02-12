@@ -33,6 +33,17 @@ def build( bld ):
         
         target = src.replace('.cc', '')
         
+        local_libs= [ 'toads_base', 
+                      'toads_utils', 
+                      'cern_stuff', 
+                      'toadsflat',
+                      'toadslib', 
+                      'toadspsf',
+                      'toadslc' ]
+        
+        if not bld.env.global_lapack:
+            local_libs += ['lapack_stuff']
+        
         bld( features = 'cxx cprogram', 
              source = src,
              target = target,
@@ -45,14 +56,7 @@ def build( bld ):
                           '../../sex/build/default/src/wcs', 
                           '../../sex/build/default/src/fits', 
                           '../../cfitsio/src'], 
-             uselib_local = [ 'toads_base', 
-                              'toads_utils', 
-                              'lapack_stuff', 
-                              'cern_stuff', 
-                              'toadsflat',
-                              'toadslib', 
-                              'toadspsf',
-                              'toadslc' ], 
+             uselib_local = local_libs,
              vnum     = '0.1.0' )
                   
 

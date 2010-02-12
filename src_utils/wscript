@@ -6,12 +6,18 @@
 def build( bld ):
     
     sources = bld.path.ant_glob('*.cc')
-    
+    local_libs= ['cern_stuff']
+    if not bld.env.global_lapack:
+        local_libs += ['lapack_stuff']
+    libs = [ 'm']
+    if bld.env.global_lapack:
+        libs.append('lapack')
     lib = bld( features = "cxx cshlib", 
                source   = sources, 
                target   = 'toads_utils', 
                includes = ['.', '../src_base'], 
-               libs     = [ 'm' ], 
-               uselib_local = [ 'cern_stuff', 'lapack_stuff' ],
+               libs     = libs, 
+               uselib_local = local_libs,
+               uselib = ['CFITSIO'],
                vnum     = '0.1.0' )
     

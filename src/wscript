@@ -1,11 +1,20 @@
 # -*- mode: python -*-
 # 
 
-
+import pprint
 
 def build( bld ):
     
     sources = bld.path.ant_glob('*.cc', bld=False)
+    local_libs= ['toads_base', 'toads_utils', 'cern_stuff']
+    if not bld.env.global_lapack:
+        local_libs += ['lapack_stuff']
+        
+    libs = [ 'm', 'sex', 'wcs', 'fits', 'cfitsio', 'z']
+    if bld.env.global_lapack:
+        libs.append('lapack')
+        
+    
         
     lib = bld( name = 'toadslib', 
                features = 'cc cxx cshlib', 
@@ -13,20 +22,22 @@ def build( bld ):
                target = 'toadslib', 
                includes = [ '.', '../src_utils', '../src_base', 
                             '../../sex/src', '../../cfitsio/src' ], 
-               libs     = [ 'm', 'sex', 'wcs', 'fits', 'cfitsio', 'z'], 
+               libs     = libs, 
                libpath  = [ '../../sex/build/default/src', 
                             '../../sex/build/default/src/wcs', 
                             '../../sex/build/default/src/fits', 
                             '../../cfitsio/src'], 
-               uselib_local = ['toads_base', 'toads_utils', 'lapack_stuff', 'cern_stuff'], 
+               uselib_local = local_libs, 
+               uselib = ['SEX','CFITSIO' ],
                vnum     = '0.1.0', 
                add_objects = 'parser_objects' )
     
-    lib.rpath = [ '../../sex/build/default/src', 
-                  '../../sex/build/default/src/wcs', 
-                  '../../sex/build/default/src/fits', 
-                  '../../cfitsio/src']
-    
+#     lib.rpath = [ '../../sex/build/default/src', 
+#                   '../../sex/build/default/src/wcs', 
+#                   '../../sex/build/default/src/fits', 
+#                   '../../cfitsio/src']
+    pprint.pprint( bld.env.get_merged_dict())
+    lib.rpath = bld.env.LIBPATH_CFITSIO + bld.env.LIBPATH_SEX
     parser = bld( # name = 'parse', 
                   features = 'cc', 
                   source   = 'dbfileParse.y dbfileLex.l', 

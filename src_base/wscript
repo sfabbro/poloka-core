@@ -17,13 +17,19 @@ def build( bld ):
 #     c_objects = bld( features = 'cc', 
 #                      source = c_sources, 
 #                      )
-    
+    local_libs = []
+    if not bld.env.global_lapack:
+        local_libs = ['lapack_stuff']
+    libs = [ 'm']
+    if bld.env.global_lapack:
+        libs.append('lapack')
     cxx_objects = bld( features = "cc cxx cshlib", 
                        source   = sources + c_sources,
                        target   = 'toads_base', 
                        includes = [ '.' ], 
-                       libs     = ['m'], 
-                       uselib_local = ['lapack_stuff'],
+                       libs     = libs, 
+                       uselib_local = local_libs,
+                       uselib = ['CFITSIO'],
                        vnum     = '0.1.0' )
 
     

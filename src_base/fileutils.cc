@@ -545,7 +545,7 @@ int StringMatchPattern (
 		  continue;
 		}
 	    }
-	  pos                = strstr (token2,words[count]);
+	  pos                = const_cast<char *>(strstr (token2,words[count]));
 	  if(pos==NULL)      {match=0;break;}
 	  if((count==(wnumber-1)) && (a_pattern[lpattern-1]!='*') ) /*Last word.*/
 	    {

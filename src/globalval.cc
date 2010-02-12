@@ -1,8 +1,8 @@
 // 
 // \file globalval.cc
 // 
-// Last modified: $Date: 2009/12/05 08:24:12 $
-// By:            $Author: astier $
+// Last modified: $Date: 2010/02/12 17:00:03 $
+// By:            $Author: betoule $
 // 
 #include <iostream>
 #include <sstream>
@@ -10,7 +10,7 @@
 #include "fileutils.h" // for DecomposeString 
 #include <stdlib.h> // for atof
 #include <string.h>// for strlen
-
+#include <cstdio>
 
 bool GlobalVal::HasKey(const string &Key) const
 {
