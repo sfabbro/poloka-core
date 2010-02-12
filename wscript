@@ -12,18 +12,7 @@ APPNAME  = 'poloka'
 VERSION  = '0.1.0'
 srcdir   = '.'
 
-def find_arch():
-    # find the architecture
-    import Configure
-    if commands.getstatus('which fs'):
-        ret = commands.getstatusoutput('fs sys')[1]
-        blddir = 'build.'+ ret.split("'")[-2]
-    else:
-        ret = os.uname()
-        blddir = 'build.'+ ret[0]+'-'+ret[-1]
-    return blddir
-
-blddir   = find_arch()
+blddir   = 'build'
 
 
 
@@ -39,6 +28,18 @@ def set_options( ctx ):
     
 
 def configure( conf ):
+
+    
+    if conf.find_program('fs'):
+        ret = commands.getstatusoutput('fs sys')[1]
+        targ = 'build.'+ ret.split("'")[-2]
+    else:
+        ret = os.uname()
+        targ = 'build.'+ ret[0]+'-'+ret[-1]
+    
+    
+    conf.env.NAME=targ
+    conf.env.set_variant(targ)
     
     # fortran compilers (not included by default in waf-1.5)
     conf.check_tool( 'compiler_fortran', tooldir='./wtools' )

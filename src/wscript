@@ -2,7 +2,7 @@
 # 
 
 import pprint
-
+import os
 def build( bld ):
     
     sources = bld.path.ant_glob('*.cc', bld=False)
@@ -36,8 +36,10 @@ def build( bld ):
 #                   '../../sex/build/default/src/wcs', 
 #                   '../../sex/build/default/src/fits', 
 #                   '../../cfitsio/src']
-    pprint.pprint( bld.env.get_merged_dict())
-    lib.rpath = bld.env.LIBPATH_CFITSIO + bld.env.LIBPATH_SEX
+
+    cdir = os.path.join(bld.bdir,bld.env.NAME)
+    lib.rpath = bld.env.LIBPATH_CFITSIO + bld.env.LIBPATH_SEX \
+        + [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]
     parser = bld( # name = 'parse', 
                   features = 'cc', 
                   source   = 'dbfileParse.y dbfileLex.l', 
