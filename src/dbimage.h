@@ -86,9 +86,9 @@ which is C code generated from dbfile.y */
 using namespace std;
 
 
-typedef enum DbImageKind { Raw = 1, Calibrated, Elixir};
-typedef enum DbImageCatalogKind { SExtractor = 1, Fitted_for_seeing , DaophotAls, DaophotAp, DaophotNei, DaophotLst, DaophotPk, DaophotNst};
-typedef enum DbImagePsfKind { DaophotPsf = 1};
+enum DbImageKind { Raw = 1, Calibrated, Elixir};
+enum DbImageCatalogKind { SExtractor = 1, Fitted_for_seeing , DaophotAls, DaophotAp, DaophotNei, DaophotLst, DaophotPk, DaophotNst};
+enum DbImagePsfKind { DaophotPsf = 1};
 
 class Path;
 

@@ -1,3 +1,5 @@
+
+#include <string.h>
 #include <stdlib.h> // for the setenv stuff
 #include <fstream>
 
