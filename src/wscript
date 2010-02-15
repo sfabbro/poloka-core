@@ -12,13 +12,28 @@ def build( bld ):
         
     libs = [ 'm', 'sex', 'wcs', 'fits', 'cfitsio', 'z']
     if bld.env.global_lapack:
-        libs.append('lapack')
+        libs.append('lapack')    
         
+        
+    bld ( name = 'flex', 
+          source   = 'dbfileLex.l',
+          target   = 'dbfileLex.c',
+          includes = [ '.' ], 
+          rule     = 'flex -o ${TGT} ${SRC}',
+          before   = 'cc cxx',
+          )
     
-        
+    bld ( name = 'bis', 
+          source = 'dbfileParse.y', 
+          target = [ 'dbfileParse.c', 'dbfileParse.h', ], 
+          rule   = 'bison -y -l -d ${SRC} -o ${TGT[0].abspath(env)}',
+          includes = [ '.' ],
+          before   = 'cc cxx'
+          )
+
     lib = bld( name = 'toadslib', 
                features = 'cc cxx cshlib', 
-               source = sources,
+               source = sources + ' dbfileParse.c dbfileLex.c' ,
                target = 'toadslib', 
                includes = [ '.', '../src_utils', '../src_base', 
                             '../../sex/src', '../../cfitsio/src' ], 
@@ -29,25 +44,10 @@ def build( bld ):
                             '../../cfitsio/src'], 
                uselib_local = local_libs, 
                uselib = ['SEX','CFITSIO' ],
-               vnum     = '0.1.0', 
-               add_objects = 'parser_objects' )
+               vnum     = '0.1.0' )
     
-#     lib.rpath = [ '../../sex/build/default/src', 
-#                   '../../sex/build/default/src/wcs', 
-#                   '../../sex/build/default/src/fits', 
-#                   '../../cfitsio/src']
-
     cdir = os.path.join(bld.bdir,bld.env.NAME)
     lib.rpath = bld.env.LIBPATH_CFITSIO + bld.env.LIBPATH_SEX \
         + [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]
-    parser = bld( # name = 'parse', 
-                  features = 'cc', 
-                  source   = 'dbfileParse.y dbfileLex.l', 
-                  target   = 'parser_objects',
-                  includes = ['.']
-                  )
-                  
-    bld ( source = 'dbfileParse.tab.h', 
-          target = 'dbfileParse.h', 
-          rule   = 'cp ${SRC} ${TGT}', 
-          after  = 'parser_objects' )
+    
+ 

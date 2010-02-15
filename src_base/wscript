@@ -14,15 +14,17 @@ def build( bld ):
     c_sources = c_sources.split()
     c_sources.remove('slasub.c')
     
-#     c_objects = bld( features = 'cc', 
-#                      source = c_sources, 
-#                      )
+    #     c_objects = bld( features = 'cc', 
+    #                      source = c_sources, 
+    #                      )
+    
     local_libs = []
     if not bld.env.global_lapack:
         local_libs = ['lapack_stuff']
     libs = [ 'm']
     if bld.env.global_lapack:
         libs.append('lapack')
+        
     cxx_objects = bld( features = "cc cxx cshlib", 
                        source   = sources + c_sources,
                        target   = 'toads_base', 

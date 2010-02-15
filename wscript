@@ -23,8 +23,8 @@ def set_options( ctx ):
     ctx.tool_options('compiler_fortran', tooldir='./wtools')
     ctx.tool_options('flex')
     ctx.tool_options('bison')
-    ctx.add_option('--with-cfitsio', action='store', default='/home/betoule/soft/cfitsio/v3r006/Linux-i686/', help='Path to the cfitsio root dir')
-    ctx.add_option('--with-sex', action='store', default='/home/betoule/soft/sex/v222/Linux-i686/', help='Path to the cfitsio root dir')
+    ctx.add_option('--with-cfitsio', action='store', help='Path to the cfitsio root dir')
+    ctx.add_option('--with-sex', action='store', help='Path to the cfitsio root dir')
     
 
 def configure( conf ):
@@ -84,30 +84,30 @@ def configure( conf ):
         
     # pkg config 
     conf.find_program('pkg-config')
-    conf.env.CPPPATH_CFITSIO=[Options.options.with_cfitsio+'../src/']
-    conf.env.CPPPATH_SEX=[Options.options.with_sex+'../src/',Options.options.with_sex+'../src/wcs',Options.options.with_sex+'../src/fits']
-    conf.env.LIBPATH_CFITSIO=[Options.options.with_cfitsio]
-    conf.env.LIBPATH_SEX=[Options.options.with_sex]
-    conf.env.LIB_CFITSIO='cfitsio'
-    conf.env.LIB_SEX=['sex','fits','wcs']
+    #     conf.env.CPPPATH_CFITSIO=[Options.options.with_cfitsio+'../src/']
+    #     conf.env.CPPPATH_SEX=[Options.options.with_sex+'../src/',Options.options.with_sex+'../src/wcs',Options.options.with_sex+'../src/fits']
+    #     conf.env.LIBPATH_CFITSIO=[Options.options.with_cfitsio]
+    #     conf.env.LIBPATH_SEX=[Options.options.with_sex]
+    #     conf.env.LIB_CFITSIO='cfitsio'
+    #     conf.env.LIB_SEX=['sex','fits','wcs']
 
-#     # sextractor 
-#     try:
-#         conf.check_cfg( path='sex-config',
-#                         args = '--cflags --libs', 
-#                         package = 'sextractor', 
-#                         mandatory = True )
-#     except Configure.ConfigurationError:
-#         conf.fatal('unable to locate sextractor.')
+    # sextractor 
+    try:
+        conf.check_cfg( args = '--cflags --libs', 
+                        package = 'sex-2.2.2', 
+                        mandatory = True, 
+                        uselib_store = 'SEX' )
+    except Configure.ConfigurationError:
+        conf.fatal('unable to locate sextractor.')
         
-#     # cfitsio 
-#     try:
-#         conf.check_cfg( path='cfitsio-config', 
-#                         args = '--cflags --libs', 
-#                         package = 'cfitsio', 
-#                         mandatory = True )
-#     except Configure.ConfigurationError:
-#         conf.fatal('unable to locate cfitsio')
+    # cfitsio 
+    try:
+        conf.check_cfg( args = '--cflags --libs', 
+                        package = 'cfitsio-3.0.0', 
+                        mandatory = True, 
+                        uselib_store = 'CFITSIO' )
+    except Configure.ConfigurationError:
+        conf.fatal('unable to locate cfitsio')
         
     
 
