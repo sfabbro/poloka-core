@@ -7,17 +7,17 @@
 PhotStar::PhotStar()
   : BaseStar(0,0,0), sky(0.), varflux(0.), varx(0.), vary(0.), 
     covxy(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
-{has_saturated_pixels = false; image_seeing=0;}
+{has_saturated_pixels = false;n_saturated_pixels = 0 ; image_seeing=0;}
 
 PhotStar::PhotStar(const BaseStar &BStar)
   : BaseStar(BStar), sky(0.), varflux(0.), varx(0.), vary(0.), 
     covxy(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
-{has_saturated_pixels = false; image_seeing=0;}
+{has_saturated_pixels = false; n_saturated_pixels = 0 ;image_seeing=0;}
 
 PhotStar::PhotStar(const SEStar &SStar)
   : BaseStar(SStar), sky(SStar.Fond()), varflux(SStar.EFlux()*SStar.EFlux()),
     varx(0.), vary(0.), covxy(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
-{has_saturated_pixels = false; image_seeing=0;}
+{has_saturated_pixels = false; n_saturated_pixels = 0 ;image_seeing=0;}
 
 void PhotStar::writen(ostream &Stream) const
 {

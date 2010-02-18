@@ -724,6 +724,8 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
   Stream << "#star : star number in the catalog (first =1)" << endl;
   Stream << "#chi2v : chi2 of this vignette per dof " << endl;
   Stream << "#chi2pdf : chi2 of PSF photometry per dof" << endl;
+  Stream << "#satur : 1 if some pixels are saturated" << endl;
+  Stream << "#nsatur : number of pixels  saturated" << endl;
   Stream << "#end" <<endl;
   Stream << setprecision(12);
 }
@@ -792,6 +794,7 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
 	     << img_count << ' '
 	     << CStar.id << ' ' 
 	     << chi2Vignette << ' ' << chi2Glob << ' '
+	     << v->has_saturated_pixels << ' ' <<  v->n_saturated_pixels << ' '
 	     << endl;
     }
 }

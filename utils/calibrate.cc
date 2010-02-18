@@ -391,6 +391,7 @@ int main(int argc, char **argv)
   stream << "#star : start number in the catalog" << endl;
   stream << "#chi2pdf : chi2 pdf of total PSF photometry" << endl;
   stream << "#satur : 1 if some pixels are saturated" << endl;
+  stream << "#nsatur : number of pixels  saturated" << endl;
   stream << "#neid : distance to nearest neighbor" << endl;
   stream << "#neif : flux of nearest neighbor" << endl;
   stream << "#neic : flux contamination due to nearest neighbor" << endl;
@@ -426,8 +427,11 @@ int main(int argc, char **argv)
     for (LightCurve::const_iterator it = ilc->begin(); it != ilc->end(); ++it) { // loop on points
       count_img++;
       const Fiducial<PhotStar> *fs = *it;
-      if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
-	continue;
+
+      // ###########"" WWWWWWWWARNING
+      // on l'enleve pour test 15/02/2010
+      //if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
+      //continue;
 
       double sigposX = 0;
       double sigposY=0;
@@ -491,6 +495,7 @@ int main(int argc, char **argv)
 	stream << 1 << " ";  
       else
 	stream << 0 << " ";  
+      stream << fs->n_saturated_pixels << " ";
       stream << cstar.neighborDist << " "; 
       stream << cstar.neighborFlux << " "; 
       stream << cstar.neighborFluxContamination << " ";  

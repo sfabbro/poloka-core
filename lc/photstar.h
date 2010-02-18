@@ -19,6 +19,7 @@ public:
 
   double sky, varflux, varx, vary, covxy, varsky, photomratio, sigscale_varflux;
   bool has_saturated_pixels;
+  int n_saturated_pixels;
   double image_seeing; 
   
   // photomratio needed to keep the information from simfitvignet -> lightcurve (we have to move this somewhere else)

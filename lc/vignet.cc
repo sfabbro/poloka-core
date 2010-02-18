@@ -82,7 +82,9 @@ void Vignet::Load(const PhotStar *AStar)
       //    for(int i=-Weight.HSizeX();i<=Weight.HSizeX();i++)
       //	  Weight(i,j)*=(1.-satur(i,j));      
       
+      
       Star->has_saturated_pixels=(sum>0);   
+      Star->n_saturated_pixels=sum;   
     }
   }
   

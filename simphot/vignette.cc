@@ -512,6 +512,30 @@ bool Vignette::ReadPixels()
   if (!weightPix.ReadFromFits(ri->FitsWeightName(), int (intPos.x), int (intPos.y))) return false;
   weightPix *= photomRatio*photomRatio;
 
+  PixelBlock saturPix ;
+  saturPix.Allocate(stampLimits);
+  if (saturPix.ReadFromFits(ri->FitsSaturName(), int (intPos.x), int (intPos.y))) // il y a une carte de satur
+    {
+      PixelType *pw = weightPix.begin();
+      PixelType *ps = saturPix.begin();
+      double sum = 0 ;
+      for( ; pw < weightPix.end() && ps < saturPix.end() ; pw++, ps++)
+	{
+	  *pw *= (1-*ps) ;
+	  sum += *ps ;
+	}
+
+      has_saturated_pixels=(sum>0);   
+      n_saturated_pixels=sum;    
+    }
+  else
+    {
+      // on dit rien ???
+      //return false ;
+    }
+
+
+
   // print de DEBUG des vignettes
   //weightPix.WriteFits(Name()+"_weightpix.fits");
   //imagePix.WriteFits(Name()+"_imagepix.fits");

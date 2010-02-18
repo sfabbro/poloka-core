@@ -54,6 +54,8 @@ class Vignette : public RefCount {
   ReducedImageRef ri;
 
   bool couldFitFlux;
+  bool has_saturated_pixels;
+  int n_saturated_pixels;
 
   Vignette(SimPhotFit &SPF,const ReducedImage &Current);
 
