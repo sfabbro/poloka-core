@@ -105,6 +105,7 @@ datacards.h      \
 datdetec.h       \
 countedref.h     \
 basestar.h       \
+fatpoint.h       \
 nstarmatch.h     \
 sestar.h         \
 starlist.h       \
