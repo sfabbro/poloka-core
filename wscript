@@ -3,7 +3,6 @@
 
 import os
 import sys
-sys.path.append('./wtools')
 import Options
 import Configure
 import commands
@@ -40,7 +39,7 @@ def configure( conf ):
     
     conf.env.NAME=targ
     conf.env.set_variant(targ)
-    
+        
     # fortran compilers (not included by default in waf-1.5)
     conf.check_tool( 'compiler_fortran', tooldir='./wtools' )
     
@@ -110,6 +109,7 @@ def configure( conf ):
         conf.fatal('unable to locate cfitsio')
         
     
+    conf.env['POLOKA_VERSION'] = VERSION
 
 
 def build( bld ):
@@ -123,23 +123,18 @@ def build( bld ):
                        "flat", 
                        "lc",
                        "utils" ] )
+    
     if not bld.env.global_lapack:
         bld.add_subdirs(["lapack_stuff"])
-    # if the thing is not installed 
-    
-#     obj = bld( 'subst', 
-#                target = 'poloka.pc', 
-#                source = 'poloka.pc.in' )
-    
-#     obj.dict = { 'NAME': APPNAME, 
-#                  'VERSION': VERSION, 
-#                  'REQUIREMENTS': '',
-#                  'CONFLICTS': '',
-#                  'LIBS': bld.env.LIBS, 
-#                  'LIBS_PRIVATE': '', 
-#                  'CFLAGS': bld.env.CFLAGS }
 
-#     dd = obj.env.get_merged_dict()
-#     import pprint
-#     pprint.pprint( dd )
-#     print bld.path.__class__
+
+    obj = bld( 'subst', 
+               target = 'poloka.pc', 
+               source = 'poloka.pc.in' )
+    
+    obj.dict = { 'PREFIX': bld.env['PREFIX'], 
+                 'VERSION': bld.env['POLOKA_VERSION'] }
+    
+    bld.install_as( '${PREFIX}/lib/pkgconfig/poloka-${POLOKA_VERSION}.pc', 
+                    'poloka.pc' )
+    

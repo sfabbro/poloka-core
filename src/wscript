@@ -50,4 +50,9 @@ def build( bld ):
     lib.rpath = bld.env.LIBPATH_CFITSIO + bld.env.LIBPATH_SEX \
         + [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]
     
- 
+    
+    # install the headers 
+    headers = bld.path.ant_glob( '*.h' ) + " starlist.cc"
+    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
+    
+    
