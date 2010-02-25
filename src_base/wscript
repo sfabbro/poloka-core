@@ -33,5 +33,8 @@ def build( bld ):
                        uselib_local = local_libs,
                        uselib = ['CFITSIO'],
                        vnum     = '0.1.0' )
-
+    
+    # install the headers 
+    headers = bld.path.ant_glob( '*.h' )
+    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
     

@@ -6,6 +6,7 @@
 
 enum FitsFileMode {RO = 0, RW = 1};
 
+#include <string.h>
 #include <string>
 #include <cstdio>
 #include "image.h"
