@@ -25,14 +25,15 @@ def build( bld ):
     if bld.env.global_lapack:
         libs.append('lapack')
         
-    cxx_objects = bld( features = "cc cxx cshlib", 
-                       source   = sources + c_sources,
-                       target   = 'toads_base', 
-                       includes = [ '.' ], 
-                       libs     = libs, 
-                       uselib_local = local_libs,
-                       uselib = ['CFITSIO'],
-                       vnum     = '0.1.0' )
+    lib = bld( features = "cc cxx cshlib", 
+               source   = sources + c_sources,
+               target   = 'toads_base', 
+               includes = [ '.' ], 
+               libs     = libs, 
+               uselib_local = local_libs,
+               uselib = ['CFITSIO'],
+               vnum     = '0.1.0' )    
+    lib.rpath = bld.env['PREFIX'] + '/lib'
     
     # install the headers 
     headers = bld.path.ant_glob( '*.h' )

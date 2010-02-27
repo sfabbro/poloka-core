@@ -44,21 +44,18 @@ def build( bld ):
         if not bld.env.global_lapack:
             local_libs += ['lapack_stuff']
         
-        bld( features = 'cxx cprogram', 
-             source = src,
-             target = target,
-             includes = [ '.', '../src_utils', '../src_base', '../src', '../flat',
-                          '../../sex/src', '../../cfitsio/src', 
-                          '../psf', 
-                          '../lc' ], 
-             libs     = [ 'm', 'sex', 'wcs', 'fits', 'cfitsio', 'z'], 
-             libpath  = [ '../../sex/build/default/src', 
-                          '../../sex/build/default/src/wcs', 
-                          '../../sex/build/default/src/fits', 
-                          '../../cfitsio/src'], 
-             uselib_local = local_libs,
-             vnum     = '0.1.0' )
+        prog = bld( features = 'cxx cprogram', 
+                    source = src,
+                    target = target,
+                    includes = [ '.', '../src_utils', '../src_base', '../src', '../flat',
+                                 '../psf', '../lc' ], 
+                    libs     = [ 'm', 'z'], 
+                    uselib = [ 'CFITSIO', 'SEX' ],
+                    uselib_local = local_libs,
+                    vnum     = '0.1.0' )
                   
+        
+        prog.rpath = bld.env['PREFIX'] + '/lib'
 
 
 

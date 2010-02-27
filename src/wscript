@@ -10,7 +10,8 @@ def build( bld ):
     if not bld.env.global_lapack:
         local_libs += ['lapack_stuff']
         
-    libs = [ 'm', 'sex', 'wcs', 'fits', 'cfitsio', 'z']
+    #    libs = [ 'm', 'sex', 'wcs', 'fits', 'cfitsio', 'z']
+    libs = [ 'm', 'z']
     if bld.env.global_lapack:
         libs.append('lapack')    
         
@@ -19,7 +20,7 @@ def build( bld ):
           source   = 'dbfileLex.l',
           target   = 'dbfileLex.c',
           includes = [ '.' ], 
-          rule     = 'flex -o ${TGT} ${SRC}',
+          rule     = 'flex -o${TGT} ${SRC}',
           before   = 'cc cxx',
           )
     
@@ -35,21 +36,19 @@ def build( bld ):
                features = 'cc cxx cshlib', 
                source = sources + ' dbfileParse.c dbfileLex.c' ,
                target = 'toadslib', 
-               includes = [ '.', '../src_utils', '../src_base', 
-                            '../../sex/src', '../../cfitsio/src' ], 
+               includes = [ '.', '../src_utils', '../src_base' ],
                libs     = libs, 
-               libpath  = [ '../../sex/build/default/src', 
-                            '../../sex/build/default/src/wcs', 
-                            '../../sex/build/default/src/fits', 
-                            '../../cfitsio/src'], 
+               #                libpath  = [ '../../sex/build/default/src', 
+               #                             '../../sex/build/default/src/wcs', 
+               #                             '../../sex/build/default/src/fits', 
+               #                             '../../cfitsio/src'], 
                uselib_local = local_libs, 
                uselib = ['SEX','CFITSIO' ],
                vnum     = '0.1.0' )
     
     cdir = os.path.join(bld.bdir,bld.env.NAME)
     lib.rpath = bld.env.LIBPATH_CFITSIO + bld.env.LIBPATH_SEX \
-        + [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]
-    
+        + [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]    
     
     # install the headers 
     headers = bld.path.ant_glob( '*.h' ) + " starlist.cc"

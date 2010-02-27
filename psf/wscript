@@ -17,3 +17,4 @@ def build( bld ):
                uselib_local = [ 'toadslib', 'toads_base', 'toads_utils' ],
                vnum     = '0.1.0' )
     
+    lib.rpath = bld.env['PREFIX'] + '/lib'
