@@ -22,7 +22,7 @@ class LC
 {
 public :
   vector<double> vec_flux;
-  vector<double>vec_eflux;
+  vector<double> vec_eflux;
   int star_number ;
   int npoint ;
   double mag ;
@@ -48,7 +48,6 @@ void FastComputeMeans(DictFile & l, map<int,LC> & llcc);
 void WriteShortHeader_(DictFile & l, ofstream & pr, string suffixe);
 double LocalJulDate(const int day, const int month, const int year, 
 	       const int hour, const int min, const double sec);
-
 /*************** ajouter ds dictfile.cc *************/
 /*
 void DictFileEntry::writen(ofstream & pr) const

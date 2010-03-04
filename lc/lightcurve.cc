@@ -63,7 +63,9 @@ void LightCurve::write_lc2fit(ostream& Stream) const
   if (front()->Image()) Stream << "#Date : (MJD)\n";
   Stream << "#Flux : in units of ADU in reference image\n"  
          << "#Fluxerr : \n"
-	 << "#ZP : elixir zp\n";
+	 << "#ZP : elixir zp\n"
+	 << "#sigscale : sigma scale factor\n";
+  
   if (front()->Image()) Stream << "#Image : \n";
   Stream << "@INSTRUMENT MEGACAM\n";
   Stream << "@BAND " << Ref->band << "\n";
@@ -82,6 +84,7 @@ void LightCurve::write_lc2fit(ostream& Stream) const
       //lcp.computemag(elixir_zp);
       lcp.zeropoint = elixir_zp;
       Stream << lcp;
+      Stream << fs->sigscale_varflux ; 
       if (fs->Image()) 
 	Stream << "  " << fs->Image()->Name();
       else 
