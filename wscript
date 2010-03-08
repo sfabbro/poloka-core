@@ -47,11 +47,12 @@ def configure( conf ):
     conf.check_tool( 'compiler_cc' )
     # TODO: why is -fPIC -DPIC not specified by default for gcc ? 
     #       is there a SharedObject() method like in scons ? 
-    conf.env['CCFLAGS'] = [ '-fPIC', '-DPIC' ]
+    conf.env['CCFLAGS'] = [ '-fPIC', '-DPIC', '-g' ]
     
     # c++ compiler 
     conf.check_tool( 'compiler_cxx' )
-    
+    conf.env.append_value( 'CXXFLAGS', ['-g'] );    
+
     # flex and bison
     conf.check_tool( 'flex' )
     conf.env['FLEXFLAGS'] = '' 
@@ -75,7 +76,8 @@ def configure( conf ):
     try:
         conf.find_program( 'cernlib', mandatory = True )
         conf.check_cfg( path='cernlib', args='', 
-                        package='mathlib packlib',
+                        package='mathlib pawlib',
+                        #                        package='mathlib packlib',
                         uselib_store='cern' )
     except Configure.ConfigurationError:
         conf.fatal('CERNLIB not found.')
@@ -122,6 +124,7 @@ def build( bld ):
                        "psf", 
                        "flat", 
                        "lc",
+                       "mc",
                        "utils" ] )
     
     if not bld.env.global_lapack:

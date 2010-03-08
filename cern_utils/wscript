@@ -6,21 +6,23 @@
 def build( bld ):
     
         
-    bld( features = 'cxx cprogram', 
-         source = 'l2tup.cc',
-         target = 'l2tup', 
-         includes = [ '.', '../src_base' ],
-         libs   = [ 'm', 'cfitsio', 'z' ],
-         uselib = 'cern',
-         uselib_local = [ 'toads_base', 'toads_utils'],
-         vnum     = '0.1.0' )
+    prog1 = bld( features = 'cxx cprogram', 
+                 source = 'l2tup.cc',
+                 target = 'l2tup', 
+                 includes = [ '.', '../src_base' ],
+                 libs   = [ 'm', 'cfitsio', 'z' ],
+                 uselib = 'cern',
+                 uselib_local = [ 'toads_base', 'toads_utils'],
+                 vnum     = '0.1.0' )
+    prog1.rpath = bld.env['PREFIX'] + '/lib'
 
-    bld( features = 'cxx cprogram', 
-         source = 'im2tup.cc',
-         target = 'im2tup', 
-         includes = [ '.', '../src_base' ],
-         libs   = [ 'm', 'cfitsio', 'z' ],
-         uselib = 'cern',
-         uselib_local = [ 'toads_base', 'toads_utils'],
-         vnum     = '0.1.0' )
+    prog2 = bld( features = 'cxx cprogram', 
+                source = 'im2tup.cc',
+                target = 'im2tup', 
+                includes = [ '.', '../src_base' ],
+                libs   = [ 'm', 'cfitsio', 'z' ],
+                uselib = 'cern',
+                uselib_local = [ 'toads_base', 'toads_utils'],
+                vnum     = '0.1.0' )
 
+    prog2.rpath = bld.env['PREFIX'] + '/lib'

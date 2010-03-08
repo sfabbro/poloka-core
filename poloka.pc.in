@@ -5,6 +5,6 @@ includedir=${prefix}/include/poloka-@VERSION@
 Name: poloka
 Description: This is poloka
 Version: @VERSION@
-Libs: -L${libdir} -ltoadslib -ltoads_base -ltoads_utils
+Libs: -L${libdir} -ltoadslib -ltoads_base -ltoads_utils -ltoadsmc
 Libs.private: -lm
 Cflags: -I${includedir}

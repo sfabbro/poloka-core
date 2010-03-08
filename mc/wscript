@@ -1,0 +1,25 @@
+# -*- mode: python -*-
+# 
+
+
+
+
+
+def build( bld ):
+    
+    sources = "myrdm.cc"
+    headers = "myrdm.h"
+        
+    lib = bld( features = 'cxx cshlib', 
+               source = sources,
+               target = 'toadsmc', 
+               includes = [ '.', '../src_utils', '../src_base', '../src' ], 
+               libs     = [ 'm' ], 
+               uselib_local = [ 'toadslib', 'toads_base', 'toads_utils' ],
+               vnum     = '0.1.0' )
+    
+    lib.rpath = bld.env['PREFIX'] + '/lib'
+    
+    # install the headers 
+    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
+ 
