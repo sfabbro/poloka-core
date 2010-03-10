@@ -222,7 +222,7 @@ DicStarList::DicStarList(const string &FileName) {
 	    }
 	  /* hack something reading " format <StarType> <integer>" to drive the decoding (in Star::read) */
 	  char *p =buff+1; /* skip '#' */
-	  p += strcspn(p," \t"); /* skip leading spaces */
+	  p += strspn(p," \t"); /* skip leading spaces */
 	  if (strstr(p,"format") == p)  /* this test is enough because the format is the last line of the header ... */
 	    format = p + strlen("format");
           else
