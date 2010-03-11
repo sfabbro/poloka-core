@@ -183,8 +183,6 @@ void DicStarList::init(const string &FileName) {
   fastifstream rd(FileName.c_str());
   vector<string> allKeys;
 
-  unsigned baseStarLength = 0;
-
   if (!rd)
     {
       throw(StarListException("DicList cannot open :"+FileName));
@@ -195,7 +193,7 @@ void DicStarList::init(const string &FileName) {
   char buff[LINE_LENGTH];
   char onekey[400];
   char column[256];
-  char *format = NULL;
+  const char *format = NULL;
   ClearList();
   int star_count = 0;
   while( rd >> c ) // to test eof
@@ -230,14 +228,14 @@ void DicStarList::init(const string &FileName) {
 	  p += strspn(p," \t"); /* skip leading spaces */
 	  if (strstr(p,"format") == p)  /* this test is enough because the format is the last line of the header ... */
 	    {
-	      format = p + strlen("format");
-	      size_t l = strlen(format)+2;
+	      char *toto = p + strlen("format");
+	      size_t l = strlen(toto)+2;
 	      // this s a memory leak , but it only happens once per list.
-	      format = (char *) malloc(l);
-	      strcpy(format,p + strlen("format"));
-	      baseStarLength = NValsBaseStar(format);
+	      toto = (char *) malloc(l);
+	      strcpy(toto,p + strlen("format"));
+	      format = toto;
 	    }
-          else
+          else // it should be a regular key, or "end"
 	    {
 	    //	    if(line>3)
 	    if(sscanf(buff+1," %[^: ] %s",onekey,column)==2 
@@ -248,24 +246,29 @@ void DicStarList::init(const string &FileName) {
 	      }
 	    if(sscanf(buff,"# %s",onekey) == 1 && strcmp(onekey,"end")==0) 
 	      {
-		if (baseStarLength == 0)
-		  {
-		    cout << "*******************************************************************" << endl;
-		    cout << " the file " << FileName << " does not contain a BaseStar format tag" << endl;
-		    cout << " it is not likely that the decoding of this file is going nuts. " << endl;
-		    cout << " If your file begins with x,y, flux, add \'#format BaseStar 2\' in its header. " << endl;
-		    cout << " If your file begins with x,y, sx,sy,rhoxy, flux, add \'#format BaseStar 3\' in its header. " << endl;		    
-		    cout << "*******************************************************************" << endl;
-		    baseStarLength = 3;
-		    format = "BaseStar 2 ";
-		  }
-		for (unsigned k=0; k<allKeys.size(); ++k)
-		  if (k<baseStarLength) firstKey.push_back(allKeys[k]); else key.push_back(allKeys[k]);
+		// DEBUG
 	      }
 	    }
 	}
       else // no '#', no '@'
 	{
+	  if (firstKey.size() == 0) // handle the split between BaseStar keys and others
+	    {	      
+	      unsigned baseStarLength;
+	      if ( format == NULL || (baseStarLength = NValsBaseStar(format)) < 3)
+		{
+		  cout << "*******************************************************************" << endl;
+		  cout << " the file " << FileName << " does not contain a BaseStar format tag" << endl;
+		  cout << " it is not likely that the decoding of this file is going nuts. " << endl;
+		  cout << " If your file begins with x,y, flux, add \'#format BaseStar 2\' in its header. " << endl;
+		  cout << " If your file begins with x,y, sx,sy,rhoxy, flux, add \'#format BaseStar 3\' in its header. " << endl;		    
+		  cout << "*******************************************************************" << endl;
+		  baseStarLength = 3;
+		  format = "BaseStar 2 ";
+		}
+	      for (unsigned k=0; k<allKeys.size(); ++k)
+		if (k<baseStarLength) firstKey.push_back(allKeys[k]); else key.push_back(allKeys[k]);
+	      }	      
 	  DicStar* s = DicStar::read(firstKey,key,rd, format); 
 	  if (rd.fail())
 	    {
