@@ -91,7 +91,8 @@ double flux;
   //  ClassDef(BaseStar,1) // no ";" ....
 };
 
-
+//! Number of values read for this format
+unsigned NValsBaseStar(const char *Format);
 
 
 //! enables to sort easily a starList (of anything that derives from BaseStar) 

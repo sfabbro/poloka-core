@@ -2,7 +2,7 @@
 
 //#include <iomanip>
 #include "basestar.h"
-
+#include "starlistexception.h"
 
 
 using namespace std;
@@ -43,14 +43,24 @@ void BaseStar::read_it(fastifstream & rd, const char *format)
      vx *= vx;
      vy *= vy;
    }
- else if (formatValue == 2)
+ else if (formatValue == 2 || formatValue == 0)
    rd >> x >> y >> flux;
  else if (formatValue == 1) // only shift back if shifted when written
    {
      x -= MEMPIX2DISK;
      y -= MEMPIX2DISK;
    }
+ else throw(StarListException(" Unknown format value for BaseStar "));
 }  
+
+/* this routine is used by DicStar. It *HAS* to be consistent with BaseStar::read_it, above */
+unsigned NValsBaseStar(const char *Format)
+{
+  int formatValue = DecodeFormat(Format, "BaseStar");
+  if (formatValue <= 2) return 3;
+  if (formatValue == 3) return 6;
+  return 0;
+}
 
 
 
