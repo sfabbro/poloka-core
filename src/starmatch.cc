@@ -250,12 +250,14 @@ void StarMatchList::write_wnoheader(ostream & pr, const Gtransfo* Transfo) const
       pr << " " ;
       // transformed coordinates
       FatPoint p1 = *starm.s1;
-      if (Transfo) Transfo->TransformPosAndErrors(p1,p1);
-      pr << p1.x << ' ' << p1.y << ' ';
-      double sx = sqrt(p1.vx);
-      double sy = sqrt(p1.vy);
-      pr << sx << ' ' << sy << ' ' << p1.vxy/(sx*sy) << ' ';
-
+      if (Transfo) 
+	{
+	  Transfo->TransformPosAndErrors(p1,p1);
+	  pr << p1.x << ' ' << p1.y << ' ';
+	  double sx = sqrt(p1.vx);
+	  double sy = sqrt(p1.vy);
+	  pr << sx << ' ' << sy << ' ' << p1.vxy/(sx*sy) << ' ';
+	}
       (starm.s2)->writen(pr);
 
       // compute offsets here  because they can be rounded off by paw.
@@ -263,7 +265,10 @@ void StarMatchList::write_wnoheader(ostream & pr, const Gtransfo* Transfo) const
       double dy = p1.y - starm.s2->y;
       pr << dx << ' '  << dy << ' ' << sqrt(dx*dx+dy*dy) << ' ';
       // chi2 assoc
-      pr << it->Chi2(*Transfo) << ' ';
+      if (Transfo)
+	pr << it->Chi2(*Transfo) << ' ';
+      else 
+	pr << it->Chi2(GtransfoIdentity()) << ' ';
       pr << endl ;
     }
   pr.flags(old_flags);
@@ -280,12 +285,14 @@ void StarMatchList::write(ostream &pr, const Gtransfo *tf) const
 
   const StarMatch &starm = front(); 
   (starm.s1)->WriteHeader_(pr, "1");
-  pr << "# x1tf: transformed x1 coordinate "  << endl ; 
-  pr << "# y1tf: transformed y1 coordinate "  << endl ; 
-  pr << "# sx1tf: transformed sx1 "  << endl ; 
-  pr << "# sy1tf: transformed sy1 "  << endl ; 
-  pr << "# rxy1tf: transformed rhoxy1 "  << endl ; 
-
+  if (tf)
+    {
+      pr << "# x1tf: transformed x1 coordinate "  << endl ; 
+      pr << "# y1tf: transformed y1 coordinate "  << endl ; 
+      pr << "# sx1tf: transformed sx1 "  << endl ; 
+      pr << "# sy1tf: transformed sy1 "  << endl ; 
+      pr << "# rxy1tf: transformed rhoxy1 "  << endl ; 
+    }
   (starm.s2)->WriteHeader_(pr, "2");
   pr << "# dx : diff in x" << std::endl;
   pr << "# dy : diff in y" << std::endl;
