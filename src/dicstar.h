@@ -18,13 +18,14 @@ class fastifstream;
 class DicStar : public BaseStar {
  
   int rank; // position in the file.
+  const char *format; // it could be a CountedRef on a string
  
   public :
   
   
     DicStar();
   DicStar(double xx, double yy, double ff); 
-  DicStar(const std::vector<string>& firstKeys, const std::vector<string>& newkeys); 
+  DicStar(const std::vector<string>& firstKeys, const std::vector<string>& newkeys,const char *Format ); 
 
 
   bool HasKey(const string &Key) const;
@@ -44,8 +45,8 @@ class DicStar : public BaseStar {
   //! to read and create the object  
   static DicStar* read(const std::vector<string> &firstKeys, const std::vector<string>& newkeys, fastifstream& r, const char *Format); 
 
-  static DicStar* read(fastifstream& r, const char *Format); 
-  
+  //! this routine should probably not be used
+  static DicStar* read(fastifstream& r, const char *Format); // should no be used, in fact
 
   //!  to write the StarList header with the string appended to every ntuple variable (with no end)
   string WriteHeader_(ostream & pr = cout, const char *i=NULL) const;
@@ -95,10 +96,16 @@ class DicStarList : public  StarList<DicStar> {
   DicStarList() {};
   ~DicStarList() {};
   DicStarList(const string &FileName);
+  void init(const string &FileName);
+
   bool HasKey(const string &Key) const ;
  private:
   std::vector<string> key;
   std::vector<string> firstKey;
+  //  unsigned baseStarLength;
+
+  int read(fastifstream & r); // should not be used
+
 };
 
 typedef DicStarList::const_iterator DicStarCIterator;
