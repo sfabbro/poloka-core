@@ -25,6 +25,10 @@ def set_options( ctx ):
     ctx.add_option('--with-cfitsio', action='store', help='Path to the cfitsio root dir')
     ctx.add_option('--with-sex', action='store', help='Path to the cfitsio root dir')
     
+    ctx.add_option('--no-global-lapack', action='store_false',
+                   default=True, dest='global_lapack',
+                   help='use/no do use system lapack library')
+    
 
 def configure( conf ):
 
@@ -51,8 +55,8 @@ def configure( conf ):
     
     # c++ compiler 
     conf.check_tool( 'compiler_cxx' )
-    conf.env.append_value( 'CXXFLAGS', ['-g'] );    
-
+    conf.env.append_value( 'CXXFLAGS', ['-g'] );
+    
     # flex and bison
     conf.check_tool( 'flex' )
     conf.env['FLEXFLAGS'] = '' 
@@ -67,10 +71,15 @@ def configure( conf ):
     conf.check_cc( lib='z', msg='checking for zlib' )    
     
     # lapack
-    if conf.check_cc( lib='lapack', msg='checking for lapack' ):
-        conf.env.global_lapack = True
-    else:
-        conf.env.global_lapack = False
+    if Options.options.global_lapack:
+        if conf.check_cc( lib='lapack', msg='checking for lapack' ):
+            conf.env.global_lapack = True
+        else:
+            conf.env.global_lapack = False
+        
+    # for ccsnls01
+    
+    #    conf.env.global_lapack = False
     
     # cernlib 
     try:
@@ -119,7 +128,7 @@ def build( bld ):
     bld.add_subdirs( [ "cern_stuff",
                        "src_base",
                        "src_utils", 
-                       "cern_utils",
+                       #                       "cern_utils",
                        "src", 
                        "psf", 
                        "flat", 
