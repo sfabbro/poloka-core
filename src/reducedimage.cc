@@ -1886,7 +1886,25 @@ double ReducedImage::BackLevel() const
       return 0;
 
     }
+}double ReducedImage::BackLevelNoSub() const
+{
+  FitsHeader head(FitsName());
+  if (head.IsValid())
+    {
+      if (head.HasKey("BACKLEV")) return double(head.KeyVal("BACKLEV")); // set by transformedimage and such
+      if (head.HasKey("SEXSKY")) return double(head.KeyVal("SEXSKY"));   // set when making the catalog.
+      if (head.HasKey("SKYLEV")) return double(head.KeyVal("SKYLEV"));   // set when flatfielding
+      cerr << " no way to figure out BackLevel in " << Name() << endl;
+      return 0;
+    }
+  else //
+    {
+      cerr << " ReducedImage::BackLevel  could not read file " << FitsName() << endl;
+      return 0;
+
+    }
 }
+
 
 bool ReducedImage::IsSkySub() const
 {

@@ -48,7 +48,11 @@ Vignette::Vignette(SimPhotFit &SPF, const ReducedImage &Current):
   mmjd = ri->ModifiedModifiedJulianDate();
   mjd = ri->ModifiedJulianDate();
   seeing = ri->Seeing();
-  expTime = ri->Exposure();
+  exptime = ri->Exposure();
+  seeing = ri->GFSeeing();
+  sesky = ri->BackLevelNoSub();
+  sigsky = ri->SigmaBack();
+  size_n_seeing = SPF.vignette_size_n_seeing;
   const ObjectToFit &obj =  SPF.ObjToFit();
   couldFitFlux = (mjd >=obj.JdMin() && mjd <= obj.JdMax());
   imagePSF = FindImagePSF(&Current);
@@ -87,8 +91,9 @@ bool Vignette::SetGeomTransfos()
   GtransfoLin reverseShift(shiftHere.invert());
   model2Vignette = GtransfoCompose(&reverseShift, trFromRef);
 
-  //TODO : put "4" into the datacards
-  int radius = nearest_integer(4 * seeing+1);
+  //TODO : put "4" into the datacards : put in size_n_seeing now
+  cerr << "#SetGeomTransfo : size_n_seeing= " << size_n_seeing << endl ;
+  int radius = nearest_integer(size_n_seeing * seeing+1);
   IntFrame frame; // NULL Frame
   frame.CutMargin(-radius); // right size
   stampLimits = frame;
@@ -549,6 +554,7 @@ void Vignette::Write(const string &Directory) const
 {
   string genericName = Directory+ri->Name();
   imagePix.WriteFits(genericName+".fits");  
+  //imagePSF.WriteFits(genericName+".psf.fits");
   weightPix.WriteFits(genericName+".weight.fits");
   residuals.WriteFits(genericName+".res.fits");
   kernel.WriteFits(genericName+".kernel.fits");
@@ -561,6 +567,7 @@ void Vignette::Write(const string &Directory) const
   ConvolveImage(resampRefPSF, kernel, conv);
   PixelBlock thisPSF(conv); // borrow the Frame
   GetPSF(thisPSF);
+  thisPSF.WriteFits(genericName+".psfconv.fits");
   PixelBlock diff = thisPSF-conv;
   diff.WriteFits(genericName+".psfconvres.fits");
 }

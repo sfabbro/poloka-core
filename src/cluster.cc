@@ -29,10 +29,10 @@ long Cluster::browse_and_color(const Image& src, long x0, long y0,
 {
   long xsize = src.Nx() ; long ysize = src.Ny() ;
   
-  //      cerr << "debug: killsatellites: browse_and_color: begin "
-  //  	 << "(color=" << color << ")" 
-  //  	 << "((x0 y0)=(" << x0 << " " << y0 << ")" << ")" 
-    //  	 << endl ;
+  cerr << "debug: killsatellites: browse_and_color: begin "
+       << "(color=" << color << ")" 
+       << "((x0 y0)=(" << x0 << " " << y0 << ")" << ")" 
+       << endl ;
 
     if (size < 0) {
       return -1 ;
@@ -79,10 +79,10 @@ long Cluster::browse_and_color(const Image& src, long x0, long y0,
       }
     }
     
-    //      cerr << "debug: killsatellites: browse_and_color: end "
-    //  	 << "(color=" << color << ")" 
-    //  	 << "(r=" << r << ")" 
-    //  	 << endl ;
+          cerr << "debug: killsatellites: browse_and_color: end "
+     	 << "(color=" << color << ")" 
+      	 << "(r=" << r << ")" 
+      	 << endl ;
     
     return r ;
 }
@@ -166,6 +166,7 @@ ClusterList::ClusterList(ReducedImage & inrim, int debuglev)
 	  continue ;
 	
 	Cluster current(nextcolor) ;
+	cerr << "warning NF : color(x0,y0) = " << x0 << " " << y0 << " " << (*colors)(x0,y0) << endl;
 	
 	npixels = current.browse_and_color(infits, x0, y0, 
 					    threshold, (*colors)) ;

@@ -5,7 +5,7 @@
   
 #include <fstream>
 #include <iomanip>
-
+#include <string>
 
 /* extracted from SimPhotFit constructor, so that it can be called
    when parsing the lightcurve file. It enables to check values when
@@ -56,7 +56,9 @@ static string todo_2_string(const int ToDo)
 SimPhotFit::SimPhotFit(const ObjectToFit &Obj, const LightCurveFile &LCFile):
   Model(LCFile.GeomRef(), Obj),
   objToFit(Obj), lcFile(LCFile)
-{
+{ 
+  vignette_size_n_seeing = 4. ;// vignette size in seeing
+
   maxKernelSize = 0;
   toDo = DecodeFitType(objToFit.FitType());
 }
@@ -117,11 +119,12 @@ bool SimPhotFit::BuildVignettes()
 {
   const ReducedImageList &images = lcFile.Images();
   bool willFitGal = (toDo & FIT_GALAXY);
+  double photom_ratio_threshold = 0.1 ;
   for (ReducedImageCIterator i = images.begin(); i != images.end(); ++i)
     {
       const ReducedImage &current = **i;
       Vignette *v = new Vignette(*this, current);
-      if (v->SetGeomTransfos() && (!willFitGal || v->SetKernel()))
+      if (v->SetGeomTransfos() && (!willFitGal || v->SetKernel()) && (v->PhotomRatio()>photom_ratio_threshold )  )
 	{
 	  vignetteList.push_back(v);
 	  maxKernelSize = max(maxKernelSize,v->HalfKernelSize());
@@ -513,7 +516,12 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
   lc << "# ZP:"  << endl;
   lc << "# sky :" << endl;
   lc << "# esky :" << endl;
-  lc << "# seeing :" << endl;
+  lc << "# seeing: " << endl;
+  lc << "# exptime: " << endl;
+  lc << "# phratio: photom ratio" << endl;
+  lc << "# gseeing: GFSeeing" << endl;
+  lc << "# sesky: SESky" << endl;
+  lc << "# sigsky: SIGSky" << endl;
   lc << "# name :" << endl;
   lc << "#end" << endl;
 
@@ -529,11 +537,17 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
   for (VignetteCIterator i = vignetteList.begin(); i != vignetteList.end(); ++i)
     {
       const Vignette *v = *i;
+
+      string dbim_name= v->Name();
+      size_t pos = dbim_name.find("p");
+      if(pos!=string::npos) {dbim_name.replace(pos,1,"");}
+
       int fluxIndex = FluxIndex(v);
       if (fluxIndex <0 )  continue;
       double sigSky = 0;
       int skyIndex = SkyIndex(v);
       if (skyIndex>=0) sigSky = sqrt(A(skyIndex,skyIndex));
+      cerr << "fluxindex: " << fluxIndex << endl ;
       lc << setw(14) << setprecision(11) << v->MJD() << ' ' 
 	 << setw(14) << setprecision(9) << v->GetFlux() << ' ' 
 	 << setw(12) << setprecision(9) << sqrt(A(fluxIndex,fluxIndex)) << ' '
@@ -541,7 +555,12 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
 	 << setw(10) << setprecision(7) << v->GetSky() << ' '
 	 << setw(10) << setprecision(7) << sigSky << ' '
 	 << setw(8) << setprecision(7) << v->Seeing() << ' '
-	 << v->Name() << ' '
+	 << setw(8) << setprecision(7) << v->ExpTime() << ' '
+	 << setw(8) << setprecision(7) << v->PhotomRatio() << ' '
+	 << setw(8) << setprecision(7) << v->GFSeeing() << ' '
+	 << setw(8) << setprecision(7) << v->SESky() << ' '
+	 << setw(8) << setprecision(7) << v->SIGSky() << ' '
+	 << dbim_name << ' '
 	 << endl;
       newFluxMap[v] = k;
       indexMapping[k] = fluxIndex;
@@ -549,11 +568,13 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
   }
   lc.close();
 
-
   //flux covariance matrix
   Mat fluxWeight(nflux,nflux);
   // A is a covariance, so fluxWeight is also a covariance 
   A.ExtractSubMat(indexMapping, nflux, fluxWeight);
+  fluxWeight.writeFits("flux_pmat_sn.fits");
+
+
   // convert it to weight
   fluxWeight.CholeskyInvert("U");
   fluxWeight.Symmetrize("U");
@@ -583,6 +604,11 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
   for (VignetteCIterator i = vignetteList.begin(); i != vignetteList.end();++i)
     {
       const Vignette *v = *i;
+
+      string dbim_name= v->Name();
+      size_t pos = dbim_name.find("p");
+      if(pos!=string::npos) {dbim_name.replace(pos,1,"");}
+
       int flag = 0; 
       if (toDoMap.find(v) != toDoMap.end()) flag = toDoMap[v];
 
@@ -619,7 +645,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
 	 << ((flag&FIT_FLUX)>0) << ' '
 	 << ((flag&FIT_POS)>0) << ' '
 	 << indexLC << ' '
-	 << v->Name() << ' '
+	 << dbim_name << ' '
 	 << endl;
     }
   vi.close();
@@ -640,24 +666,31 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
     }
   if (WriteVignettes)
     for (VignetteCIterator i = vignetteList.begin(); i != vignetteList.end();++i)
-      {
-	const Vignette &v = **i;
-	v.Write(Dir);
+      {	  
+	const Vignette *v = *i;
+	if (fluxMap.find(v) != fluxMap.end())
+	  {
+	   const Vignette &v2 = **i;
+	    v2.Write(Dir);
+	  }
       }
 
   if (WriteMatrices)
     {
 
       // get covariance matrix
-      A.writeFits(Dir+"pmat_sn.fits");
+      A.writeFits(Dir+"pmat_sn_bkup.fits");
 
       // create and get vector of flux
       int i=0;
       for (VignetteCIterator it = vignetteList.begin(); it != vignetteList.end() ; ++it)	
-	{
+	{   
 	  const Vignette *v = *it;
-	  if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
-	    i++;
+	  if (fluxMap.find(v) != fluxMap.end())
+	    {
+	      if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
+		i++;
+	    }
 	}
 
       Mat vm(1,i);
@@ -666,11 +699,14 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
       for (VignetteCIterator it = vignetteList.begin(); it != vignetteList.end() ; ++it)
 	{
 	  const Vignette *v = *it;
-	  if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
+	  if (fluxMap.find(v) != fluxMap.end())
 	    {
-	      vm(0,i)= v->GetFlux();
-	      cout << "Flux=" << v->GetFlux() << endl; 
-	      i++;
+	      if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
+		{
+		  vm(0,i)= v->GetFlux();
+		  cout << "Flux=" << v->GetFlux() << endl; 
+		  i++;
+		}
 	    }
 	}
 
@@ -704,6 +740,9 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
   Stream << "#seeing: " << endl;
   Stream << "#exptime: " << endl;
   Stream << "#phratio: photom ratio" << endl;
+  Stream << "#gseeing: GFSeeing" << endl;
+  Stream << "#sesky: SESky" << endl;
+  Stream << "#sigsky: SIGSky" << endl;
   Stream << "#mag :" << endl;
   Stream << "#mage :" << endl;
   Stream << "#ra : initial " << endl;
@@ -748,6 +787,10 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
     {
       const Vignette *v = *i;
 
+      string dbim_name= v->Name();
+      size_t pos = dbim_name.find("p");
+      if(pos!=string::npos) {dbim_name.replace(pos,1,"");}
+
       double sigPosX = 0, sigPosY = 0;
       int posIndex = PosIndex();
       if (posIndex >= 0)
@@ -778,10 +821,13 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
 	     << sigPosX  << ' ' << sigPosY << ' '
 	     << v->GetFlux() << ' ' << sigFlux << ' '
 	     << v->GetSky() << ' ' << sigSky << ' '
-	     << v->Name() << ' ' << v->MJD() << ' ' 
+	     << dbim_name << ' ' << v->MJD() << ' ' 
 	     << v->Seeing() << ' '
   	     << v->ExpTime() << ' '
        	     << v->PhotomRatio() << ' ' 
+	     << v->GFSeeing() << ' '
+  	     << v->SESky() << ' '
+       	     << v->SIGSky() << ' '
 	     << mag << ' ' << mage << ' '
 	     << CStar.ra << ' ' << CStar.dec << ' '
 	     << CStar.x << ' ' << CStar.y << ' '
@@ -808,22 +854,31 @@ void SimPhotFit::fillNightMat() {
   double timediff = 10./24.; // 10 hours
   int nimages = 0;
   
-  for (VignetteCIterator itVig = vignetteList.begin(); itVig != vignetteList.end(); ++itVig) {
-    if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux)) {
-      mjd = (*itVig)->ri->ModifiedJulianDate();
-      nimages++;
-      isinnight=false;
-      for(unsigned int day=0;day<nightdates.size(); ++day) {
-	if(fabs(mjd-nightdates[day])<timediff) {
-	  isinnight = true;
-	  break;
+  for (VignetteCIterator itVig = vignetteList.begin(); itVig != vignetteList.end(); ++itVig) 
+    {
+      const Vignette *v = *itVig;
+      if (fluxMap.find(v) != fluxMap.end())
+	{ 
+	  if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux)) 
+	    {
+	    mjd = (*itVig)->ri->ModifiedJulianDate();
+	    nimages++;
+	    isinnight=false;
+	    for(unsigned int day=0;day<nightdates.size(); ++day) 
+	      {
+	      if(fabs(mjd-nightdates[day])<timediff) 
+		{
+		isinnight = true;
+		break;
+		}
+	      }
+	    if(!isinnight) 
+	      {
+		nightdates.push_back(mjd);
+	      }
+	    }
 	}
-      }
-      if(!isinnight) {
-	nightdates.push_back(mjd);
-      }
-    }
-  } 
+    } 
   int nnights = nightdates.size(); // number of nights for this lightcurve
   NightMat.allocate(nnights,nimages); // szie of matrix
   // now we fill this matrix
@@ -837,18 +892,26 @@ void SimPhotFit::fillNightMat() {
   // s   |     1 ...  
   
   int im = 0;
-  for (VignetteCIterator itVig = vignetteList.begin(); itVig != vignetteList.end(); ++itVig) {
-    if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux)) {
-      mjd = (*itVig)->ri->ModifiedJulianDate();
-      for(unsigned int day=0;day<nightdates.size(); ++day) {
-	if(fabs(mjd-nightdates[day])<timediff) {
-	  NightMat(day,im)=1;
-	  break;
+  for (VignetteCIterator itVig = vignetteList.begin(); itVig != vignetteList.end(); ++itVig)
+    {
+       const Vignette *v = *itVig;
+       if (fluxMap.find(v) != fluxMap.end())
+	{
+	  if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux))
+	    {
+	      mjd = (*itVig)->ri->ModifiedJulianDate();
+	      for(unsigned int day=0;day<nightdates.size(); ++day)
+		{
+		  if(fabs(mjd-nightdates[day])<timediff)
+		    {
+		      NightMat(day,im)=1;
+		      break;
+		    }
+		}
+	      im++;
+	    }
 	}
-      }
-      im++;
     }
-  }
   //cout << "========= NightMat ==========" << endl;
   //cout << NightMat << endl;
   return;

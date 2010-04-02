@@ -359,17 +359,20 @@ int main(int argc, char **argv)
   stream << "@NIMAGES " << lclist.Images.size() << endl;
   stream << "#x :" << endl;
   stream << "#y :" << endl;
-  stream << "#xerror :" << endl;
-  stream << "#yerror :" << endl;
   stream << "#flux :" << endl;
   stream << "#error :" << endl;
   stream << "#sky :" << endl;
   stream << "#skyerror :" << endl;
+  stream << "#xerror :" << endl;
+  stream << "#yerror :" << endl;
   stream << "#name :" << endl;
   stream << "#mjd :" << endl;
   stream << "#seeing :" << endl;
   stream << "#exptime :" << endl;
-  stream << "#phratio :" << endl; 
+  stream << "#phratio :" << endl;
+  stream << "#gseeing :" << endl;
+  stream << "#sesky :" << endl;
+  stream << "#sigsky :" << endl;
   stream << "#sigscale :" << endl; 
   stream << "#mag :" << endl;
   stream << "#mage :" << endl;
@@ -435,19 +438,17 @@ int main(int argc, char **argv)
 
       double sigposX = 0;
       double sigposY=0;
-      string rimname = fs->Name() ; 
-      string dbimname = rimname.erase(0,20); 
+
+      string aligned_name = fs->Name() ; 
+      size_t align_pos = aligned_name.find("enlarged");
+      string dbim_name;
+      if(align_pos!=string::npos) dbim_name = aligned_name.erase(0,align_pos+8); 
+      size_t pos = dbim_name.find("p");
+
+      if(pos!=string::npos) dbim_name.replace(pos,1,"");
 
       stream << fs->x << " ";
       stream << fs->y << " ";
-      if(fs->varx>0)
-	stream << sqrt(fs->varx) << " ";
-      else
-	stream << 0 << " ";
-      if(fs->vary>0)
-	stream << sqrt(fs->vary) << " ";
-      else
-	stream << 0 << " ";
       stream << fs->flux << " ";
       if(fs->varflux>0)
 	stream << sqrt(fs->varflux) << " ";
@@ -458,12 +459,22 @@ int main(int argc, char **argv)
 	stream << sqrt(fs->varsky) << " ";
       else
 	stream << 0 << " ";
-
-      stream << dbimname << " ";
+      if(fs->varx>0)
+	stream << sqrt(fs->varx) << " ";
+      else
+	stream << 0 << " ";
+      if(fs->vary>0)
+	stream << sqrt(fs->vary) << " ";
+      else
+	stream << 0 << " ";
+      stream << dbim_name << " ";
       stream << fs->ModifiedJulianDate() << " ";
       stream << fs->Seeing() << " ";
       stream << fs->ExposureTime() << " ";
       stream << fs->photomratio << " ";
+      stream << fs->GFSeeing() << " ";
+      stream << fs->SESky() << " ";
+      stream << fs->SIGSky() << " ";
       stream << fs->sigscale_varflux << " ";
       
       // mag

@@ -24,7 +24,9 @@ class ImagePSF;
 
 class Vignette : public RefCount {
  private :
-  double mmjd, mjd, seeing, expTime;
+  double mmjd, mjd, seeing, exptime;
+  double gfseeing, sesky, sigsky;
+  double size_n_seeing ;
   SimPhotFit &simPhotFit;
   GtransfoRef vignette2Model; // image to model transfo (stamp coordinates)
   GtransfoRef model2Vignette; // image to model transfo (stamp coordinates)
@@ -92,8 +94,10 @@ class Vignette : public RefCount {
   double MJD() const { return mjd;}
   double Seeing() const {return seeing;}
   double PhotomRatio() const {return photomRatio ;}
-  double ExpTime() const { return expTime;}
-
+  double ExpTime() const { return exptime;}
+  double GFSeeing() const {return gfseeing;}
+  double SESky() const {return sesky ;}
+  double SIGSky() const { return sigsky;}
  private :
 
   void ComputeGalaxyDerivatives(Array4D &);

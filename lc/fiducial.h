@@ -16,17 +16,18 @@ protected:
 
   CountedRef<ReducedImage> rim;
   double seeing,mjd, exptime;
+  double gfseeing,sesky, sigsky;
   int has_weight,has_satur;
   string fits_name,fits_weight_name,fits_satur_name;
 public:
 
-  Fiducial() : seeing(-1),mjd(-1),has_weight(-1),has_satur(-1), exptime(-1) {}
+  Fiducial() : gfseeing(-1),sesky(-1),sigsky(-1),seeing(-1),mjd(-1),has_weight(-1),has_satur(-1), exptime(-1) {}
 
   Fiducial(const S *Fid) : S(*Fid) {}
 
-  Fiducial(const ReducedImage *Rim) : rim(Rim), seeing(-1), mjd(-1), exptime(-1), has_weight(-1),has_satur(-1) {}
+  Fiducial(const ReducedImage *Rim) : rim(Rim), gfseeing(-1),sesky(-1),sigsky(-1),seeing(-1), mjd(-1), exptime(-1), has_weight(-1),has_satur(-1) {}
 
-  Fiducial(const S *Fid, const ReducedImage *Rim) : S(*Fid), rim(Rim), seeing(-1), mjd(-1), exptime(-1), has_weight(-1),has_satur(-1) {}
+  Fiducial(const S *Fid, const ReducedImage *Rim) : S(*Fid), rim(Rim), gfseeing(-1),sesky(-1),sigsky(-1),seeing(-1), mjd(-1), exptime(-1), has_weight(-1),has_satur(-1) {}
 
   const ReducedImage* Image() const { return rim; }
 
@@ -100,11 +101,33 @@ public:
     return exptime;
   }
 
+  double GFSeeing() const {
+    if(gfseeing<0) {
+      const_cast<double&>(gfseeing) = rim->GFSeeing();  
+    }
+    return gfseeing;
+  }
+
+  double SESky() const {
+    if(sesky<0) {
+      const_cast<double&>(sesky) = rim->BackLevelNoSub();  
+    }
+    return sesky;
+  }
+
+  double SIGSky() const {
+    if(sigsky<0) {
+      const_cast<double&>(sigsky) = rim->SigmaBack();  
+    }
+    return sigsky;
+  }
+
   bool HasWeight() const { 
     if(has_weight<0) 
       const_cast<int&>(has_weight) = (rim->HasWeight())?1:0;  
     return has_weight==1;
   }
+
   bool HasSatur() const { 
     if(has_satur<0) 
       const_cast<int&>(has_satur) = (rim->HasSatur())?1:0;  

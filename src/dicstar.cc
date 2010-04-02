@@ -245,7 +245,7 @@ DicStarList::DicStarList(const string &FileName) {
 	}
       else // no '#', no '@'
 	{
-	  DicStar* s = DicStar::read(firstKey,key,rd, format); 
+	  DicStar* s = DicStar::read(firstKey,key,rd, format);
 	  if (rd.fail())
 	    {
 	      if (s) delete s;

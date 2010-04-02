@@ -25,10 +25,10 @@ class LightCurveFile
   LightCurveFile(const string &LCFileName);
 
   //! regular fit: fits objects in LCFile
-  bool SimPhotFitAll() const;
+  bool SimPhotFitAll(double vignette_size_n_seeing=-1) const;
 
   //! fit objects in calib catalog
-  bool  SimPhotFitAllCalib(const string &CalibCatalog, int itype=1, int Nmax=-1) const;
+  bool  SimPhotFitAllCalib(const string &CalibCatalog, int itype=1, int Nmax=-1, double vignette_size_n_seeing=-1) const;
 
   const ReducedImage* GeomRef() const { return geomRef;}
   const ReducedImageList &Images() const { return images;}

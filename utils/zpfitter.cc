@@ -267,7 +267,6 @@ int main(int argc, char **argv)
     cerr << "cant find catalog " << catalogname << endl;
     usage(argv[0]);
   }
-  
   DicStarList catalog(catalogname);
   if ( catalog.empty()) {
     cerr << "catalog is empty" << endl;
@@ -309,6 +308,8 @@ int main(int argc, char **argv)
       flux = (*entry)->flux;
     else
       flux = (*entry)->getval(fluxkey);
+    if (magkey=="y") 
+      magkey="i";
     mag = (*entry)->getval(magkey);
     bad |= (mag<10);
     bad |= ((*entry)->getval("error")<1.e-6);

@@ -227,7 +227,9 @@ Usefull in case of artificially smoothed images
   //! the (average) sky level as it should appear on the image.
   void RemoveBackLevel();
   double BackLevel() const;
+  double BackLevelNoSub() const;
 
+  double SESky() const;
   bool SetBackLevel(const double &Value, const string Comment= "");
   bool SetSESky(const double &Value,  const string Comment = "");
   void RemoveSESky();

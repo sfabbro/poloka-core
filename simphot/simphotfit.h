@@ -28,6 +28,7 @@ class CalibratedStar;
 class SimPhotFit : public Model
 {
  private:
+
   ObjectToFit objToFit; // could perhaps be a reference...
   const LightCurveFile &lcFile;
   VignetteList vignetteList;
@@ -40,6 +41,8 @@ class SimPhotFit : public Model
 
 
  public :
+
+  double vignette_size_n_seeing ;
   SimPhotFit(const ObjectToFit &O, const LightCurveFile &LCFile);
 
   const ObjectToFit &ObjToFit() const { return objToFit;}

@@ -104,7 +104,7 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
 #include "calibratedstar.h"
 #include <fstream>
 
-bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, int itype, int Nmax) const
+bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, int itype, int Nmax, double vignette_size_n_seeing) const
 {
   bool status = true;
   string band = geomRef->Band();
@@ -124,6 +124,10 @@ bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, int ity
       try
 	{
 	  SimPhotFit simPhotFit(object, *this);
+
+	  if(vignette_size_n_seeing>0) 
+	    simPhotFit.vignette_size_n_seeing = vignette_size_n_seeing ;
+
 	  bool thisStatus = simPhotFit.DoTheFit();
 	  cout << "Fit Done for star " << star_count << endl ;
 	  status &= thisStatus;
@@ -157,7 +161,7 @@ bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, int ity
 }
 
 
-bool  LightCurveFile::SimPhotFitAll() const
+bool  LightCurveFile::SimPhotFitAll(double vignette_size_n_seeing) const
 {
   bool status = true;
   for (ObjectToFitCIterator i = objects.begin(); i != objects.end(); ++i)
@@ -166,6 +170,10 @@ bool  LightCurveFile::SimPhotFitAll() const
       try
 	{
 	  SimPhotFit simPhotFit(object, *this);
+
+	  if(vignette_size_n_seeing>0) 
+	  simPhotFit.vignette_size_n_seeing = vignette_size_n_seeing ;
+
 	  bool thisStatus = simPhotFit.DoTheFit();
 	  status &= thisStatus;
 	  if (thisStatus) // output results
