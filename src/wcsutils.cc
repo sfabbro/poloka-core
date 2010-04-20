@@ -1039,5 +1039,8 @@ Frame SkyRegion(const FitsHeader &Header)
 }
 
 
-
-
+bool  CheckWCSIsAccurate( const FitsHeader & header )
+{
+  return ( (header.HasKey("WCSVERS")) || 
+	   ("Swarp" == string(header.KeyVal("TOADINST"))) );
+}

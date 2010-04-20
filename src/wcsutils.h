@@ -98,6 +98,9 @@ bool GuessLinWCS(const FitsHeader &Header, TanPix2RaDec &Guess);
 
 Frame SkyRegion(const FitsHeader &Header);
 
+// check that the WCS is more accurate than the default one.
+bool  CheckWCSIsAccurate( const FitsHeader & header );
+
 
 #endif /* WCSUTILS__H */
 

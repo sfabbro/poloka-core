@@ -10,6 +10,8 @@ class Image;
 #define BAD_GAUSS_POS_VARIANCE 2
 
 
+
+
 class fastifstream;
 
 //
@@ -70,9 +72,10 @@ void computeflux(const Image& I, const Image& W, const Image *C,
 		 const double Gain, const double Radius, bool sort_radii);
 
 
-  AperSEStar() {zero();}
-  AperSEStar(const SEStar &sestar) : SEStar(sestar) {zero();}
-  
+ AperSEStar() {zero();}
+ AperSEStar(const SEStar &sestar) : SEStar(sestar) {zero();}
+ // ~AperSEStar() { __NB_APERSESTARS__ -= 1; } 
+ 
   //! computes flux (& co) and stores it into an added Aperture instance.
       // sort_radii = true: apertures are sorted in increasing radii order
   // 2 images : image + weight image

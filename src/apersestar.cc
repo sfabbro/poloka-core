@@ -533,6 +533,7 @@ void AperSEStar::read_it(fastifstream& r, const char* Format)
 
   unsigned naper;
   r >> naper;
+  apers.reserve( naper );
   for (unsigned k=0; k < naper; ++k)
     {
       apers.push_back(Aperture());
