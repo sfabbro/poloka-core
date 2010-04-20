@@ -31,6 +31,11 @@
 - Enforce UsnoCollect and UsnoRead to provide some projection transfo 
 so that we would apply the transfo and define errors in the tangent plane 
 (ie. and orthonormal coordinate system).
+
+- Detect if the match is ok only on a fraction of the CCD (this
+  happened on the grid data. To do this, compute the rms of the x and
+  y coordinates of the matches and compare them with the CCD size /
+  sqrt(12)...
 */
 
 static double sq(const double &x) { return x*x;}
@@ -662,6 +667,7 @@ MatchCards::MatchCards()
    ignoreSatur = false;
    ignoreBad = false;
    cards_read = false;
+   minSigToNoise = 0.;
 }
 
 #include "datacards.h"
@@ -689,6 +695,7 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
   READ_IF_EXISTS(dumpMatches,"DUMP_MATCHES",IParam);
   READ_IF_EXISTS(ignoreBad,"IGNORE_BAD",IParam);
   READ_IF_EXISTS(ignoreSatur,"IGNORE_SATUR",IParam);
+  READ_IF_EXISTS(minSigToNoise, "MIN_SIG_TO_NOISE", DParam);
 
   astromCatalogName = DbConfigFindCatalog(astromCatalogName);
 
@@ -820,7 +827,7 @@ static StarMatchList *RefineMatch(const SEStarList &sestarlist, const BaseStarLi
    4) split the result into a linear term (the CDi_j in WCS's and distortion terms
    5) output all that, lists, Fitsheader
    6) figure out a zero point and write it into the header
-
+   
 */
 bool UsnoProcess(const string &fitsFileName, const string &catalogName, 
 		 DbImage *dbimage)
@@ -874,7 +881,41 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 		 << " after removing bad objects" << std::endl;
     }
 
-
+  
+  // 
+  // If a min sig-to-noise is requested, remove the objects with a
+  // sig-to-noise exceeding this value. 
+  // --nrl  [2010-04-19 Mon]
+  // 
+  if( MatchPrefs.minSigToNoise > 0. )
+    {
+      unsigned int nb_killed = 0;
+      for( SEStarIterator I = sestarlist.begin(); I!=sestarlist.end(); )
+	{
+	  SEStar & s = **I;
+	  if( s.EFlux() < 0. ) 
+	    {
+	      I = sestarlist.erase(I);
+	      nb_killed++;
+	      continue;
+	    }
+	  if( s.flux / s.EFlux() < MatchPrefs.minSigToNoise ) 
+	    {
+	      I = sestarlist.erase(I);
+	      nb_killed++;
+	      continue;
+	    }
+	  I++;
+	}
+      cout << "[UsnoProcess] removed " << nb_killed << " objects of SNR lower than "
+	   << MatchPrefs.minSigToNoise << endl
+	   << "              left with " << sestarlist.size() 
+	   << " objects."
+	   << endl;
+    }
+  
+  
+  
   // now count "good objects" for judging latter the match quality (from the fraction of matched objects)
   unsigned ngoodImageObjects = 0;
   for (SEStarCIterator i = sestarlist.begin(); i !=sestarlist.end(); ++i )

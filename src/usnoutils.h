@@ -21,7 +21,8 @@ struct MatchCards {
   bool dumpMatches;
   bool ignoreSatur;
   bool ignoreBad;
-
+  double minSigToNoise;
+  
   MatchCards();
   bool ReadCards(const string &CardsFileName);
 
