@@ -2,6 +2,7 @@
 
 
 import os
+import os.path as op
 import sys
 import Options
 import Configure
@@ -31,7 +32,6 @@ def set_options( ctx ):
     
 
 def configure( conf ):
-
     
     if conf.find_program('fs'):
         ret = commands.getstatusoutput('fs sys')[1]
@@ -76,8 +76,6 @@ def configure( conf ):
             conf.env.global_lapack = True
         else:
             conf.env.global_lapack = False
-        
-    # for ccsnls01
     
     #    conf.env.global_lapack = False
     
@@ -89,18 +87,19 @@ def configure( conf ):
                         #                        package='mathlib packlib',
                         uselib_store='cern' )
     except Configure.ConfigurationError:
-        conf.fatal('CERNLIB not found.')
-        
+        conf.warning('CERNLIB not found.')
         
     # pkg config 
-    conf.find_program('pkg-config')
-    #     conf.env.CPPPATH_CFITSIO=[Options.options.with_cfitsio+'../src/']
-    #     conf.env.CPPPATH_SEX=[Options.options.with_sex+'../src/',Options.options.with_sex+'../src/wcs',Options.options.with_sex+'../src/fits']
-    #     conf.env.LIBPATH_CFITSIO=[Options.options.with_cfitsio]
-    #     conf.env.LIBPATH_SEX=[Options.options.with_sex]
-    #     conf.env.LIB_CFITSIO='cfitsio'
-    #     conf.env.LIB_SEX=['sex','fits','wcs']
-
+    try:
+        conf.find_program('pkg-config')
+        pkgcpath = op.join( Options.options.prefix, 'lib', 'pkgconfig')
+        if os.environ.has_key('PKG_CONFIG_PATH'):
+            os.environ['PKG_CONFIG_PATH'] = pkgcpath + ":" + os.environ['PKG_CONFIG_PATH']
+        else:
+            os.environ['PKG_CONFIG_PATH'] = pkgcpath
+    except Configure.ConfigurationError:
+        conf.fatal('pkg-config not found')
+    
     # sextractor 
     try:
         conf.check_cfg( args = '--cflags --libs', 
