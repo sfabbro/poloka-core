@@ -31,15 +31,30 @@ public:
 
   TRANSLATOR_DEC(TOADGAIN) {
 
-    cout << " Could not find a gain for HAWKI" << endl;
-    return  FitsKey("TOADGAIN" , 1);
-    /*
-    if ( string(Head.KeyVal("HIERARCH ESO DET WIN TYPE")) == "SW")
-      return FitsKey("TOADGAIN" , 1);
-    if ( string(Head.KeyVal("HIERARCH ESO DET WIN TYPE")) != "LW")
-      return FitsKey("TOADGAIN" , 1);
-    return  FitsKey("TOADGAIN" , 1);
+    // gains of the four HAWK chips (A courtesy of Chris Lidman):
+    /*The gain is the product of two factors
+
+    gain * DET.NDIT
+
+    where DET.DIT is the of reads that are averaged into a single image.
+
+    The gains are different for each chip. They are:
+
+    CHIP1  1.705 
+    CHIP2  1.870 
+    CHIP3  1.735 
+    CHIP4  2.110
+
     */
+    static double gains[4] = {1.705,1.87,1.73,2.11};
+    int chip = Head.KeyVal("ESO DET CHIP NO");
+    if (chip<1 || chip >4)
+      {
+	cout << "Invalid chip number in image " << Head.FileName() << endl;
+	return FitsKey("TOADGAIN",-1);
+      }
+    double nreads = Head.KeyVal("ESO DET NDIT");
+    return FitsKey("TOADGAIN",gains[chip-1]*nreads);
   }
 
   TRANSLATOR_DEC(TOADRDON) {
@@ -60,6 +75,13 @@ public:
     Observation type.
    */
   SIMPLE_TRANSLATOR(TOADTYPE,"HIERARCH ESO DPR TYPE");
+
+
+  SIMPLE_TRANSLATOR(TOADCHIP,"ESO DET CHIP NO");
+
+
+  
+
 
 };
 #endif
