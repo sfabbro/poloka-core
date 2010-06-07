@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <matvect.h>
+#include <polokaexception.h>
 #include "fileutils.h"
 
 
@@ -25,7 +26,8 @@ int main(int argc, char **argv)
     }
   }
 
- 
+ try {
+   
   // vecteur de flux
   Vect FluxVec;
   {
@@ -312,6 +314,14 @@ int main(int argc, char **argv)
     // now get julian day (mean of all exposures)
     mjd=0;
     nexpo=0;
+
+    if(Abis.SizeY() != lcpoints.size()) {
+      char message[1000];
+      sprintf(message,"NOT SAME NUMBER OF EXPOSURES in fitnight nightmat=%d lc=%d",int(Abis.SizeY()),int(lcpoints.size()));
+      throw(PolokaException(message));
+    }
+
+
     for(unsigned int expo=0;expo<Abis.SizeY();++expo) {
       if(Abis(night,expo)>0.5) {
 	// VERIFIER QUE ABIS.SIZEY est = LC.POINTS.SIZE
@@ -329,7 +339,11 @@ int main(int argc, char **argv)
     newlcpoints.push_back(newpoint);
   }
   outputlc.close();
-  
+  }catch(PolokaException p)
+    {
+      p.PrintMessage(cout);
+      return EXIT_FAILURE;	      
+    }
   return 0;
 }
 
