@@ -146,8 +146,12 @@ int main(int argc, char **argv)
     cout << "chi2/ndf = " << chi2/ndf << endl;
 #endif
    
-    if(chi2/ndf<1.5 || suppressedfluxes.size()>=6)
+    if(ndf==0 || chi2/ndf<1.5 || suppressedfluxes.size()>=6) {
+      if(ndf == 0) {
+	cout << "WARNING NDF=0 " << endl;
+      }
       break;
+    }
 
     int outlier = -1;
     double flux_chi2;
@@ -185,15 +189,19 @@ int main(int argc, char **argv)
   Vect B = FluxVec - A*flux_per_night;
   double chi2 = B.transposed()*FluxWeightMat*B;     
   int ndf = A.SizeY()-A.SizeX();
-  
+  double chi2ndf = 0;  
+  if(ndf>0) chi2ndf=chi2/ndf;
+
   cout << "SUMMARY " 
        << FluxVec.Size() << " " 
        << flux_per_night.Size() << " "
        << noutliers << " " 
-       << chi2/ndf << endl;
+       << chi2ndf << endl;
   
   // if chi2dof>1 scale all errors
-  double chi2ndf = chi2/ndf;
+  
+  
+
   if(chi2ndf>1) {
     for(unsigned int j= 0; j<FluxPerNightCovMat.SizeY();j++)
       for(unsigned int i= 0; i<FluxPerNightCovMat.SizeX();i++) {
