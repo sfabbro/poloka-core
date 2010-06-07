@@ -82,8 +82,11 @@ void LightCurve::write_lc2fit(ostream& Stream) const
   for (LightCurve::const_iterator it = begin(); it != end(); ++it)
     {      
       const Fiducial<PhotStar> *fs = *it;
-      if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
+
+      // can generate problems if fitted flux is by chance in this range
+      if(fabs(fs->flux)<1.e-30) // do not print unfitted fluxes
 	continue;
+
       lcp.modifiedjulianday = fs->ModifiedJulianDate();
       lcp.flux = fs->flux;
       lcp.eflux = sqrt(fs->varflux);
