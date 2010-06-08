@@ -32,7 +32,7 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
   writeVignettes = false;
   writeMatrices = false ; 
   subDirPerObject = false;
-  tupleFileName = "calibration_wnr.list";
+
 
   ifstream stream(LCFileName.c_str());
   if (!stream)
@@ -104,7 +104,7 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
 #include "calibratedstar.h"
 #include <fstream>
 
-bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, int itype, int Nmax, double vignette_size_n_seeing) const
+bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, const string &OutputCatalog, int itype, int Nmax, double vignette_size_n_seeing) const
 {
   bool status = true;
   string band = geomRef->Band();
@@ -135,7 +135,7 @@ bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, int ity
 	    {
 	      if (i == cls.begin())// first of the list
 		{
-		  tuple.open(tupleFileName.c_str());
+		  tuple.open(OutputCatalog.c_str());
 		  tuple <<"@CALIBCATALOG " << CalibCatalogName << endl;
 		  simPhotFit.WriteTupleHeader(tuple, cls.size());
 		}

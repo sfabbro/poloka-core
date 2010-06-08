@@ -547,7 +547,6 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
       double sigSky = 0;
       int skyIndex = SkyIndex(v);
       if (skyIndex>=0) sigSky = sqrt(A(skyIndex,skyIndex));
-      cerr << "fluxindex: " << fluxIndex << endl ;
       lc << setw(14) << setprecision(11) << v->MJD() << ' ' 
 	 << setw(14) << setprecision(9) << v->GetFlux() << ' ' 
 	 << setw(12) << setprecision(9) << sqrt(A(fluxIndex,fluxIndex)) << ' '
@@ -567,6 +566,53 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
       k++;
   }
   lc.close();
+
+  ofstream lstream((Dir+"lightcurve_sn.dat").c_str());
+  lstream << "# x : x position (pixels) "  << endl;
+  lstream << "# y : y position (pixels) "  << endl;
+  lstream << "# flux : flux en unites du pixel "  << endl;
+  lstream << "# sky : mean sky value per pixel "  << endl;
+  lstream << "# varflux : variance of measured flux " << endl;
+  lstream << "# varx : variance in x position (pixels) " << endl;
+  lstream << "# vary : variance in y position (pixels) " << endl;
+  lstream << "# varsky : variance in sky measurement " << endl;
+  lstream << "#end" << endl;
+
+  for (VignetteCIterator i = vignetteList.begin(); i != vignetteList.end(); ++i)
+    {
+      
+      const Vignette *v = *i;
+
+      double sigPosX = 0, sigPosY = 0;
+      int posIndex = PosIndex();
+      if (posIndex >= 0)
+	{
+	  sigPosX = sqrt(A_with_posfitted(posIndex,posIndex));
+	  sigPosY = sqrt(A_with_posfitted(posIndex+1,posIndex+1));
+	}
+
+      int fluxIndex = FluxIndex(v);
+      if (fluxIndex < 0) continue;
+      double sigFlux=sqrt(A(fluxIndex,fluxIndex));
+
+      double sigSky = 0;
+      int skyIndex = SkyIndex(v);
+      if (skyIndex >= 0) sigSky = sqrt(A(skyIndex,skyIndex));
+
+      Point fittedPos( ObjectPosInImage());
+
+      lstream << setw(10) << setprecision(7) << fittedPos.x << ' ' 
+	      << setw(10) << setprecision(7) << fittedPos.y << ' '
+	      << setw(10) << setprecision(7) << v->GetFlux() << ' ' 
+	      << setw(10) << setprecision(7) << v->GetSky() << ' ' 
+	      << setw(10) << setprecision(7) << sigFlux << ' '
+	      << setw(10) << setprecision(7) << sigPosX  << ' ' 
+	      << setw(10) << setprecision(7) << sigPosY << ' '
+	      << setw(10) << setprecision(7) << sigSky << ' '
+	      << endl;
+    }
+
+  lstream.close();
 
   //flux covariance matrix
   Mat fluxWeight(nflux,nflux);

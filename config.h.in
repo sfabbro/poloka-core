@@ -19,6 +19,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `cfitsio' library (-lcfitsio). */
+#undef HAVE_LIBCFITSIO
+
 /* Define to 1 if you have the `crypt' library (-lcrypt). */
 #undef HAVE_LIBCRYPT
 
@@ -30,6 +33,9 @@
 
 /* Define to 1 if you have the `nsl' library (-lnsl). */
 #undef HAVE_LIBNSL
+
+/* Define to 1 if you have the `sex' library (-lsex). */
+#undef HAVE_LIBSEX
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H

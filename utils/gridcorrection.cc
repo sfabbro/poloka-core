@@ -27,6 +27,8 @@ int main(int argc, char **argv)
   string output_zpstarlist_filename = "grid_corrected_zpstars.list";
   float x_coord = -1000;
   float y_coord = -1000;
+  bool yes_x_coordinate = false ;
+  bool yes_y_coordinate = false ;
   
   if (argc < 9)  {usage(argv[0]);}
 
@@ -40,8 +42,8 @@ int main(int argc, char **argv)
 	}
       switch (arg[1])
 	{
-	case 'x' : x_coord = atof(argv[++i]); break;
-	case 'y' : y_coord = atof(argv[++i]); break;
+	case 'x' : x_coord = atof(argv[++i]); yes_x_coordinate = true ; break;
+	case 'y' : y_coord = atof(argv[++i]); yes_y_coordinate = true ; break;
 	case 'l' : zpstarlist_filename = argv[++i]; break;
 	case 's' : scatterflat_filename = argv[++i]; break;
 	case 'g' : grid_filename = argv[++i]; break;
@@ -53,14 +55,17 @@ int main(int argc, char **argv)
 	}
     }
   
-  if( ( (zpstarlist_filename == "") && ( (x_coord<0) || (y_coord<0) ) )
+  // missing files AND 1 our both coordinates
+  // if( ( (zpstarlist_filename == "") && ( (x_coord<0) || (y_coord<0) ) )
+  if( ( (zpstarlist_filename == "") && ( !yes_x_coordinate || !yes_y_coordinate ))
       || (scatterflat_filename == "")
       || (grid_filename == "")
       || (referenceimage_filename == "") )
     {usage(argv[0]);}
   
   try {
-    if(x_coord<0) // use zpstarlist
+    //    if(x_coord<0) // use zpstarlist
+    if(!yes_x_coordinate ) // use zpstarlist
       if ( ! FileExists(zpstarlist_filename) )
 	throw(PolokaException("cannot read "+zpstarlist_filename));
     if ( ! FileExists(scatterflat_filename) )
@@ -93,15 +98,23 @@ int main(int argc, char **argv)
   int grid_dx = STD_NX/grid_nx;
   int grid_dy = STD_NY/grid_ny;
   
-  
+  cout << "gridcorrection DEBUG grid dx,dy = " << grid_dx << " " << grid_dy << endl; 
+  cout << "gridcorrection DEBUG scatter dx,dy = " << scatter_dx << " " << scatter_dy << endl; 
+ 
   cout << "gridcorrection DEBUG offsets = " << x_offset << " " << y_offset << endl;
+  cout << "gridcorrection DEBUG true coords  = " << x_coord-x_offset << " " << y_coord-y_offset << endl;
 
-  if(x_coord>=0 && y_coord>=0) {
+  // if(x_coord>=0 && y_coord>=0) {
+  if(yes_x_coordinate && yes_y_coordinate) {
     int x_scatter = min(max(0,int( floor((x_coord-x_offset)/scatter_dx) )),scatter_nx-1);
     int y_scatter = min(max(0,int( floor((y_coord-y_offset)/scatter_dy) )),scatter_ny-1);
     int x_grid = min(max(0,int( floor((x_coord-x_offset)/grid_dx) )),grid_nx-1);
     int y_grid = min(max(0,int( floor((y_coord-y_offset)/grid_dy) )),grid_ny-1);
-    
+ 
+    cout << "gridcorrection DEBUG x_scatter, y_scatter : " << x_scatter << " " << y_scatter << endl ;  
+    cout << "gridcorrection DEBUG x_grid, y_grid : " << x_grid << " " << y_grid << endl ;
+  
+   
     float scatter_value = scatter(x_scatter,y_scatter);
     float grid_value = grid(x_grid,y_grid);
     float corr = scatter_value/grid_value;

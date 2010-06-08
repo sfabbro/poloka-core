@@ -32,7 +32,9 @@ bin_PROGRAMS = \
  deadprop checkmask sumpixels \
  wcs_for_vignets \
  apercorr simple_zpfitter compute_zp_phot \
- phot_cmp phot_cmp_quick phot_cmp_snlc phot_cmp_snlc_fitnight
+ phot_cmp phot_cmp_snlc phot_cmp_snlc_fitnight
+ #list_sne_cmp 
+
 
 if ENABLE_MC
 bin_PROGRAMS += make_mc_cat makesub  make_dualsub  mc_addsn make_lcsim
@@ -210,9 +212,9 @@ gridcorrection_SOURCES = gridcorrection.cc
 simple_zpfitter_SOURCES = simple_zpfitter.cc
 compute_zp_phot_SOURCES = compute_zp_phot.cc
 phot_cmp_SOURCES = phot_cmp.cc
-phot_cmp_quick_SOURCES = phot_cmp_quick.cc
 phot_cmp_snlc_SOURCES = phot_cmp_snlc.cc
 phot_cmp_snlc_fitnight_SOURCES = phot_cmp_snlc_fitnight.cc
+#list_sne_cmp_SOURCES = list_sne_cmp.cc
 
 #calibsummary_SOURCES = calibsummary.cc
 calibrationhacker_SOURCES = calibrationhacker.cc

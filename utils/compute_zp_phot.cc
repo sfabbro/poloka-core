@@ -121,14 +121,15 @@ int main(int argc, char **argv)
   double k = 3 ;
   int niter = 3 ;
   //!!!! ZPtab_c order will be preturbated.
-  double zp_c  = clipmean(ZPtab_c, n_c , sigzp_c,k, niter);
-  string comment = " w.r.t to phot. calibration catalog " ;
-  head.AddOrModKey("ZP_PHOT",zp_c, comment.c_str());
+  double zp_c  = -1 ;
+  if (n_c>0) zp_c = clipmean(ZPtab_c, n_c , sigzp_c,k, niter);
   cout << "OLD ZP : " << zporig << endl ;
   cout << "ZPphot " << setprecision (6) << zp_c << endl ;
   cout << "sig_ZPphot " << setprecision (6) << sigzp_c << endl ;
   cout << "Nstars_ZPphot  " << n_c << endl ;
-
+  if (n_c<=0) zp_c = -1 ;
+  string comment = " w.r.t to phot. calibration catalog " ;
+  head.AddOrModKey("ZP_PHOT",zp_c, comment.c_str());
   delete[] ZPtab_c ;
     
   delete Pix2RaDec ;

@@ -15,7 +15,6 @@
 #include "vutils.h"
 #include "gaussianfit.h"
 
-
 using namespace std;
 
 class LC
@@ -67,8 +66,8 @@ void DictFileEntry::writen(ofstream & pr) const
 
 
 
-
 int main(int argc, char **argv) {
+
 
   char cc ;
   string nomc, nomn, nomo ;

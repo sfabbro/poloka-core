@@ -38,6 +38,7 @@ private :
   double sum_fw01;
   double sum_f2w01;
   
+  
 public :
   double init_ra,init_dec;
   double init_x,init_y;  
@@ -45,7 +46,9 @@ public :
   double fitted_x,fitted_y;
   double mag,error;
   double psfchi2,zpchi2,zpchi2_01;
-  double nmag,ndist;
+  double nmag;
+  double ndist; 
+  double neic;
   double mag_min,mag_max;
   double g,ge,r,re,i,ie,z,ze;
   double catalog_mag;
@@ -57,11 +60,12 @@ public :
   int satur;
   int contam;
   int var;
+  int var_3;
+  int var_rms;
   int nostar;
   int id;
   
   // not saved in file:
-  double neic;
   double flux_min,flux_max;
   
   int nmeas() const {
@@ -91,6 +95,8 @@ public :
     satur = 0;
     contam = 0;
     var = 0;
+    var_3 = 0;
+    var_rms = 0;
     nostar = 0;
     flux_min = 1.e30;
     flux_max = -1.e30;
@@ -109,9 +115,10 @@ public :
     fitted_y = istar->getval("y");
     
     psfchi2 = istar->getval("chi2pdf");
-    neic = istar->getval("neic"); 
-    ndist = istar->getval("neid"); 
-
+    if (istar->HasKey("neic")) {neic = istar->getval("neic");}
+    else {neic=0;}
+    if (istar->HasKey("neid")) {ndist = istar->getval("neid");}
+    else {ndist=0;}
     g = istar->getval("g");
     ge = istar->getval("ge");
     r = istar->getval("r");
@@ -124,7 +131,7 @@ public :
     catalog_mage= istar->getval("mage");
     
     double w = 1./sqr(istar->getval("error"));
-    flux = istar->flux;
+    flux = istar->getval("flux");
 		     
     sum_1 += 1;
     sum_w += w;
@@ -133,10 +140,12 @@ public :
     sum_s += istar->getval("sky");
     
     if(flux>0) { // why requiring (flux>0) ?? P.A.
-      double w01 = 1./(sqr(istar->getval("error"))+sqr(0.01*istar->flux));
+      double w01 = 1./(sqr(istar->getval("error"))+sqr(0.01*istar->getval("flux")));
       sum_w01 += w01;
       sum_fw01 += flux*w01;
       sum_f2w01 += flux*flux*w01;
+
+   
     }
     
     if(istar->getval("satur")>0.5) satur = 1;
@@ -165,13 +174,18 @@ public :
     
     zpchi2_01 = (sum_f2w01 + sum_w01*sqr(flux) - 2.*sum_fw01*flux)/(sum_1-1.);
     
-    // scores
+    // scores (for WNR cat neic=0, no star will be contam flagged)
     nmag = neic/flux*2.5/log(10.);
     if(nmag>0.005)
       contam = 1;
     
-    if(zpchi2_01>5)
+    if(fluxrms>0 && flux>0 && fluxrms/flux>0.05)
+      var_rms = 1;
+
+   if(zpchi2_01>5)
       var = 1;
+   if(zpchi2_01>3)
+      var_3 = 1;
     
     if(psfchi2>100)
       nostar = 1;
@@ -211,6 +225,8 @@ public :
     s << satur << " ";
     s << contam << " ";
     s << var << " ";
+    s << var_3 << " ";
+    s << var_rms << " ";
     s << nostar << " ";
     s << g << " ";
     s << ge << " ";
@@ -303,20 +319,21 @@ int main(int argc, char **argv)
 
     bad |= ( (*entry)->getval("satur") >0.5 ); // cause has saturated pixels
     
-    
     if(fluxkey=="flux")
-      flux = (*entry)->flux;
+      flux = (*entry)->getval("flux"); // warning WNR cats are not well ordered for disctar cause not x y flux (no time a this point for reprocessing). So ask explicitely for "flux" key 
     else
       flux = (*entry)->getval(fluxkey);
-    if (magkey=="y") 
-      magkey="i";
+
     mag = (*entry)->getval(magkey);
     bad |= (mag<10);
     bad |= ((*entry)->getval("error")<1.e-6);
     bad |= (flux<=1);
-    
-    double contamination_of_neighbour = (*entry)->getval("neic");
-    
+    double contamination_of_neighbour ; 
+    if ((*entry)->HasKey("neic"))
+	contamination_of_neighbour = (*entry)->getval("neic");
+    else
+	contamination_of_neighbour = 0;
+
     bad |= (contamination_of_neighbour/flux>contamination_cut); // cause contamination of neighbour
     if(bad) {
       entry = catalog.erase(entry);
@@ -391,6 +408,8 @@ int main(int argc, char **argv)
   stream << "# satur : 0=ok" << endl;
   stream << "# contam : 0=ok, else contamination" << endl;
   stream << "# var : 0=ok else variable star" << endl;
+  stream << "# var_3 : 0=ok else variable star" << endl;
+  stream << "# var_rms : 0=ok else variable star" << endl;
   stream << "# nostar : 0=ok else probably a galaxy" << endl;   
   stream << "# g : " << endl;
   stream << "# ge : " << endl;
@@ -412,11 +431,27 @@ int main(int argc, char **argv)
   double sum_chi2_of_stars = 0; // compute total chi2 once dispersion between measurements of a star propagated into error
   double sum_ndf_of_stars  = 0; 
   
+  int nstar_var = 0, nstar_contam=0, nstar_nostar=0;
+  int nstar_var_3 = 0 ;
+  int nstar_var_rms = 0 ;
+  int nstar_not_var_et_rms = 0 ;
+  int nstar_not_var_3_et_rms = 0 ;
+  int nstar_tot=0;
   for(DicStarCIterator entry=catalog.begin();entry!=catalog.end();++entry) {
     
     // if new star, dump results here
     if(current_star.id != (*entry)->getval("star")) {
       current_star.process();
+      nstar_tot++;
+      if (current_star.contam> 0 ) nstar_contam++;
+      if (current_star.var> 0 ) nstar_var++;
+      if (current_star.var_3> 0 ) nstar_var_3++;
+      if (current_star.var_rms> 0 ) nstar_var_rms++;
+      if (current_star.var_rms> 0 && current_star.var <=0 ) nstar_not_var_et_rms++;
+      if (current_star.var_rms> 0 && current_star.var_3 <=0 ) nstar_not_var_3_et_rms++;
+      
+      if (current_star.nostar> 0 ) nstar_nostar++;
+
       if(current_star.id>0) {
 	stream << current_star << endl;
 	sum_chi2_of_images += current_star.zpchi2*current_star.nmeas();
@@ -433,7 +468,38 @@ int main(int argc, char **argv)
   
   sum_ndf_of_images -= 1 ; // for the free zp parameter
   sum_ndf_of_stars -= 1 ; // for the free zp parameter
-  
+
+
+  cout << "@NSTAR_INIT " << nstar_tot << endl ;
+  cout << "@NSTAR_VAR " << nstar_var << endl ; 
+  cout << "@NSTAR_VAR_PCT " << 100.*nstar_var/nstar_tot  << endl ;
+  cout << "@NSTAR_VAR_3 " << nstar_var_3 << endl ; 
+  cout << "@NSTAR_VAR_3_PCT " << 100.*nstar_var_3/nstar_tot  << endl ;
+  cout << "@NSTAR_VAR_RMS " << nstar_var_rms << endl ; 
+  cout << "@NSTAR_VAR_RMS_PCT " << 100.*nstar_var_rms/nstar_tot  << endl ;
+  cout << "@NSTAR_NOT_VAR_AND_RMS " << nstar_not_var_et_rms << endl ; 
+  cout << "@NSTAR_NOT_VAR_AND_RMS_PCT " << 100.*nstar_not_var_et_rms/nstar_tot  << endl ;
+  cout << "@NSTAR_NOT_VAR_3_AND_RMS " << nstar_not_var_3_et_rms << endl ; 
+  cout << "@NSTAR_NOT_VAR_3_AND_RMS_PCT " << 100.*nstar_not_var_3_et_rms/nstar_tot  << endl ;
+
+  cout << "@NSTAR_CONTAM " << nstar_contam << endl ;
+  cout << "@NSTAR_CONTAM_PCT " << 100.*nstar_contam/nstar_tot  << endl ;
+  cout << "@NSTAR_NOSTAR " << nstar_nostar << endl ;
+
+
+  fprintf(file,"@NSTAR_INIT %d\n",nstar_tot);
+  fprintf(file,"@NSTAR_VAR %d \n",nstar_var); 
+  fprintf(file,"@NSTAR_VAR_PCT %2.1f \n",100.*nstar_var/nstar_tot );
+  fprintf(file,"@NSTAR_VAR_3 %d \n",nstar_var_3); 
+  fprintf(file,"@NSTAR_VAR_3_PCT %2.1f \n",100.*nstar_var_3/nstar_tot );
+  fprintf(file,"@NSTAR_VAR_RMS %d \n",nstar_var_rms); 
+  fprintf(file,"@NSTAR_VAR_RMS_PCT %2.1f \n",100.*nstar_var_rms/nstar_tot );
+  fprintf(file,"@NSTAR_CONTAM %d \n",nstar_contam);
+  fprintf(file,"@NSTAR_CONTAM_PCT %2.1f \n",100.*nstar_contam/nstar_tot );
+  fprintf(file,"@NSTAR_NOSTAR %d \n",nstar_nostar);
+
+
+  fprintf(file,"@NSTAR_NOSTAR_PCT %2.1f \n",100.*nstar_nostar/nstar_tot );
   fprintf(file,"@CHI2PDF_OF_IMAGES %6.6f\n",sum_chi2_of_images/sum_ndf_of_images);
   fprintf(file,"@CHI2PDF_OF_IMAGES_01 %6.6f\n",sum_chi2_of_images_01/sum_ndf_of_images);
   fprintf(file,"@NDF_OF_IMAGES %6.6f\n",sum_ndf_of_images);   
