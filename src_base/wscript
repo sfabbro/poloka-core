@@ -2,21 +2,123 @@
 # 
 # 
 
+import os
+import os.path as op
+import string
+import re
+
+
+
+expr_ttester = re.compile("class\s+([\w\d_]+).+TYPE_TESTER.+")
+expr_tselector = re.compile("class\s+([\w\d_]+).+TYPE_SELECTOR.+");
+
+def scan_for_types( filename ):
+    
+    ret_ttester = []
+    ret_tselector = []
+    
+    f = open(filename)
+    for line in f.readlines():
+        ret = expr_ttester.search(line)
+        if ret != None:
+            ret_ttester.append( ret.group(1) )
+        ret = expr_tselector.search(line)
+        if ret != None:
+            ret_tselector.append( ret.group(1) )
+    f.close()
+    
+    return ret_ttester, ret_tselector
+
+
+
+def gen_alltelinst(task):
+    """
+    Generate the alltelinst.h and alltelinst.cc files.
+    """
+    
+    #    print task.inputs
+    #    print task.outputs
+    
+    src = task.inputs[0].srcpath(task.env)
+
+    
+    # code fragments from task inputs 
+    src_list = ""
+    include_list = ""
+    acceptor_list = ""
+    declaration_list = ""
+    is_of_kind_list = ""
+    
+    for src in task.inputs:
+        src_path = src.srcpath(task.env)
+        src_list  = src_list + " " + src_path
+        include_list = include_list + '\n#include "../telinst/%s"' % op.basename(src_path)
+        ttype, acctype = scan_for_types(src_path)
+        for t in ttype:
+            declaration_list = declaration_list + "\nclass %s;" % t 
+            is_of_kind_list = is_of_kind_list + "\ntemplate bool IsOfKind<%s>(const FitsHeader &);" % t
+            is_of_kind_list = is_of_kind_list + "\ntemplate bool IsOfKind<%s>(const string &);" % t
+        for t in ttype:
+            acceptor_list = acceptor_list + "&%s::Acceptor,\n" % t 
+
+            #     print src_list
+            #     print "*" * 72
+            #     print include_list
+            #     print "*" * 72
+            #     print acceptor_list
+            #     print "*" * 72
+    
+    
+    # header file 
+    tgt = task.outputs[0].bldpath(task.env)
+    f = open( tgt, 'w' )
+    f.write("/* automatically generated from %s */\n\n" % src_list)
+    f.write("#ifndef ALLTELINST__H\n#define ALLTELINST__H\n\n")
+    f.write("%s" % declaration_list)
+    f.write("\n#endif\n\n")
+    f.close()
+    
+    # src file
+    tgt = task.outputs[1].bldpath(task.env) 
+    f = open( tgt, 'w' )
+    f.write("/* automatically generated from %s */\n\n" % src_list)
+    f.write("%s\n\n" % include_list)
+    f.write("""#ifndef USE_WCS
+static AcceptorType AcceptorsArray [] = {
+%s};
+%s
+#endif
+""" % (acceptor_list, is_of_kind_list) )
+    f.close()
+
+
+
 
 def build( bld ):
     
     sources = bld.path.ant_glob('*.cc')
     sources = sources.split()
     sources.remove('virtualinstrument.cc')
-    sources.remove('alltelinst.cc')
+    if 'alltelinst.cc' in sources:
+        sources.remove('alltelinst.cc')
     
     c_sources = bld.path.ant_glob('*.c')
     c_sources = c_sources.split()
     c_sources.remove('slasub.c')
     
-    #     c_objects = bld( features = 'cc', 
-    #                      source = c_sources, 
-    #                      )
+    #    bld.path.find_dir('../telinst').abspath()
+    telinst_sources = bld.path.find_dir('../telinst').ant_glob('*.cc', flat=False)
+    src = ""
+    for s in telinst_sources:
+        src = src + " " + s.srcpath(bld.env)
+        
+    print src 
+    
+    bld ( name   = 'alltelinst', 
+          rule = gen_alltelinst, 
+          source = src,
+          target = ["alltelinst.h", "alltelinst.cc"], 
+          before = 'cc cxx' )    
     
     local_libs = []
     if not bld.env.global_lapack:
@@ -32,7 +134,8 @@ def build( bld ):
                libs     = libs, 
                uselib_local = local_libs,
                uselib = ['CFITSIO'],
-               vnum     = '0.1.0' )    
+               vnum     = '0.1.0', 
+               after    = 'alltelinst' )    
     lib.rpath = bld.env['PREFIX'] + '/lib'
     
     # install the headers 
