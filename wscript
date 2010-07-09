@@ -86,8 +86,10 @@ def configure( conf ):
                         package='mathlib pawlib',
                         #                        package='mathlib packlib',
                         uselib_store='cern' )
+        conf.env.HAVE_CERN = 1
     except Configure.ConfigurationError:
-        conf.warning('CERNLIB not found.')
+        print 'CERNLIB not found.'
+        conf.env.HAVE_CERN = 0
         
     # pkg config 
     try:
@@ -120,6 +122,7 @@ def configure( conf ):
         
     
     conf.env['POLOKA_VERSION'] = VERSION
+    conf.write_config_header("config.h")
 
 
 def build( bld ):
