@@ -33,7 +33,7 @@ def set_options( ctx ):
 
 def configure( conf ):
     
-    if conf.find_program('fs'):
+    if conf.find_program('fs') and os.system('fs sys') == 0:
         ret = commands.getstatusoutput('fs sys')[1]
         targ = 'build.'+ ret.split("'")[-2]
     else:
@@ -88,8 +88,11 @@ def configure( conf ):
                         uselib_store='cern' )
         conf.env.HAVE_CERN = 1
     except Configure.ConfigurationError:
-        print 'CERNLIB not found.'
+        #        print 'CERNLIB not found.'        
         conf.env.HAVE_CERN = 0
+        # for the moment, this is still a fatal error
+        conf.fatal('cernlib not found. please install it first.')
+        
         
     # pkg config 
     try:
