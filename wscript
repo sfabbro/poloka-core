@@ -127,10 +127,8 @@ def configure( conf ):
 
 def build( bld ):
     
-    bld.add_subdirs( [ "cern_stuff",
-                       "src_base",
+    bld.add_subdirs( [ "src_base",
                        "src_utils", 
-                       #                       "cern_utils",
                        "src", 
                        "psf", 
                        "flat", 
@@ -140,6 +138,10 @@ def build( bld ):
     
     if not bld.env.global_lapack:
         bld.add_subdirs(["lapack_stuff"])
+
+    if bld.env.HAVE_CERN:
+        bld.add_subdirs("cern_utils")
+        bld.add_subdirs("cern_stuff")
 
 
     obj = bld( 'subst', 
