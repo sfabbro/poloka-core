@@ -33,7 +33,7 @@ def set_options( ctx ):
     
 
 
-def parse_cernlib_flags(line,uselib,env):
+def parse_cernlib_flags(line,uselib,env,at_sys_name):
     """
     Special workaround to parse cernlib flags
     """
@@ -73,8 +73,7 @@ def parse_cernlib_flags(line,uselib,env):
             env.append_unique('CCFLAGS_'+uselib,x)
             env.append_unique('CXXFLAGS_'+uselib,x)
         elif x.startswith('/'):
-            t = x.replace('@sys', 'amd64_sl5')
-            print t
+            t = x.replace('@sys', at_sys_name)
             env.append_unique('LIBPATH_'+uselib, op.dirname(t))
             
             libname = op.basename(x).replace('.a', '')
@@ -84,10 +83,13 @@ def parse_cernlib_flags(line,uselib,env):
 
 
 def configure( conf ):
+
+    at_sys_name = None
     
     if conf.find_program('fs') and os.system('fs sys') == 0:
         ret = commands.getstatusoutput('fs sys')[1]
-        targ = 'build.'+ ret.split("'")[-2]
+        at_sys_name = ret.split("'")[-2]
+        targ = 'build.'+ at_sys_name
     else:
         ret = os.uname()
         targ = 'build.'+ ret[0]+'-'+ret[-1]
@@ -136,14 +138,13 @@ def configure( conf ):
         
         conf.find_program( 'cernlib', mandatory = True )
         ret = commands.getstatusoutput('cernlib mathlib pawlib')
-        print ret
         
         if ret[0] != 0:
             raise Configure.ConfigurationError
         
         line = ret[1]
         try:
-            parse_cernlib_flags(line, 'cern', conf.env)
+            parse_cernlib_flags(line, 'cern', conf.env, at_sys_name)
         except:
             print sys.exc_info()
         
