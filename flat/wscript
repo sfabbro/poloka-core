@@ -20,7 +20,7 @@ def build( bld ):
     lib.rpath = bld.env['PREFIX'] + '/lib'
     
     
-    prog_sources = "correlation.cc defringe.cc fringefinder.cc".split()
+    prog_sources = "correlation.cc defringe.cc fringefinder.cc trim.cc".split()
     for src in prog_sources:
         
         target = src.replace('.cc', '')

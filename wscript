@@ -155,7 +155,6 @@ def configure( conf ):
         # for the moment, this is still a fatal error
         conf.fatal('cernlib not found. please install it first.')
         
-        
     # pkg config 
     try:
         conf.find_program('pkg-config')
