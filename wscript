@@ -7,6 +7,7 @@ import sys
 import Options
 import Configure
 import commands
+import shlex
 
 APPNAME  = 'poloka'
 VERSION  = '0.1.0'
@@ -30,6 +31,57 @@ def set_options( ctx ):
                    default=True, dest='global_lapack',
                    help='use/no do use system lapack library')
     
+
+
+def parse_cernlib_flags(line,uselib,env):
+    """
+    Special workaround to parse cernlib flags
+    """
+    
+    lst=shlex.split(line)
+    while lst:
+        x=lst.pop(0)
+        st=x[:2]
+        ot=x[2:]
+        if st=='-I'or st=='/I':
+            if not ot:ot=lst.pop(0)
+            env.append_unique('CPPPATH_'+uselib,ot)
+        elif st=='-D':
+            if not ot:ot=lst.pop(0)
+            env.append_unique('CXXDEFINES_'+uselib,ot)
+            env.append_unique('CCDEFINES_'+uselib,ot)
+        elif st=='-l':
+            if not ot:ot=lst.pop(0)
+            env.append_unique('LIB_'+uselib,ot)
+        elif st=='-L':
+            if not ot:ot=lst.pop(0)
+            env.append_unique('LIBPATH_'+uselib,ot)
+        elif x=='-pthread'or x.startswith('+'):
+            env.append_unique('CCFLAGS_'+uselib,x)
+            env.append_unique('CXXFLAGS_'+uselib,x)
+            env.append_unique('LINKFLAGS_'+uselib,x)
+        elif x=='-framework':
+            env.append_unique('FRAMEWORK_'+uselib,lst.pop(0))
+        elif x.startswith('-F'):
+            env.append_unique('FRAMEWORKPATH_'+uselib,x[2:])
+        elif x.startswith('-std'):
+            env.append_unique('CCFLAGS_'+uselib,x)
+            env.append_unique('LINKFLAGS_'+uselib,x)
+        elif x.startswith('-Wl'):
+            env.append_unique('LINKFLAGS_'+uselib,x)
+        elif x.startswith('-m')or x.startswith('-f'):
+            env.append_unique('CCFLAGS_'+uselib,x)
+            env.append_unique('CXXFLAGS_'+uselib,x)
+        elif x.startswith('/'):
+            t = x.replace('@sys', 'amd64_sl5')
+            print t
+            env.append_unique('LIBPATH_'+uselib, op.dirname(t))
+            
+            libname = op.basename(x).replace('.a', '')
+            if libname[0:3] == 'lib': libname = libname[3:]
+            env.append_unique('STATICLIB_'+uselib, libname)
+
+
 
 def configure( conf ):
     
@@ -81,11 +133,20 @@ def configure( conf ):
     
     # cernlib 
     try:
+        
         conf.find_program( 'cernlib', mandatory = True )
-        conf.check_cfg( path='cernlib', args='', 
-                        package='mathlib pawlib',
-                        #                        package='mathlib packlib',
-                        uselib_store='cern' )
+        ret = commands.getstatusoutput('cernlib mathlib pawlib')
+        print ret
+        
+        if ret[0] != 0:
+            raise Configure.ConfigurationError
+        
+        line = ret[1]
+        try:
+            parse_cernlib_flags(line, 'cern', conf.env)
+        except:
+            print sys.exc_info()
+        
         conf.env.HAVE_CERN = 1
     except Configure.ConfigurationError:
         #        print 'CERNLIB not found.'        

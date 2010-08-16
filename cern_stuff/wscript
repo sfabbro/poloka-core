@@ -11,5 +11,6 @@ def build( bld ):
                source = sources,
                target = 'cern_stuff', 
                libs   = 'gfortran',
+               #               libs   = 'g2c',
                vnum     = '0.1.0' )
     
