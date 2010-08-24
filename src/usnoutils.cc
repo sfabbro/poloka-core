@@ -436,31 +436,30 @@ static bool check_guess(const GtransfoLin &Guess)
 }
   
 
-static GtransfoLin *FindShift(const SEStarList &ImageList, const BaseStarList &UsnoCat, const unsigned &MinMatches)
+static GtransfoLin *FindShift(const SEStarList &ImageList, 
+			      const BaseStarList &UsnoCat, 
+			      const unsigned &MinMatches)
 {
   GtransfoLin *shift = NULL;
-  if (!getenv("NO_SHIFT"))
-    {
   // try to guess a simple shift, in case the guessed WCS is good:
-      cout << " trying to guess a shift" << endl;
-      shift = ListMatchupShift(*SE2Base(&ImageList), UsnoCat, 
-					    GtransfoIdentity(), 200.,10.);
-      StarMatchList *match = ListMatchCollect(*SE2Base(&ImageList),
-					      UsnoCat, shift, 10.);
-      unsigned shiftMatches = match->size();
-      delete match;
-      if (shiftMatches >= MinMatches)
-	{
-	  // considered as good :
-	  cout << " found " << shiftMatches << " matches with a simple shift" 
+  cout << " trying to guess a shift" << endl;
+  shift = ListMatchupShift(*SE2Base(&ImageList), UsnoCat, 
+			   GtransfoIdentity(), 200.,10.);
+  StarMatchList *match = ListMatchCollect(*SE2Base(&ImageList),
+					  UsnoCat, shift, 10.);
+  unsigned shiftMatches = match->size();
+  delete match;
+  if (shiftMatches >= MinMatches)
+    {
+      // considered as good :
+      cout << " found " << shiftMatches << " matches with a simple shift" 
 	   << endl;
-	  return shift;
-	}
-      else
-	{
-	  cout << " only " << shiftMatches << " matches found "<< endl;
-	  return NULL;
-	}
+      return shift;
+    }
+  else
+    {
+      cout << " only " << shiftMatches << " matches found "<< endl;
+      return NULL;
     }
   return shift;
 }
@@ -636,21 +635,7 @@ static void FillAllStarsFile(const DbImage &dbImage, const Gtransfo &Pix2RaDec)
 /*************         USNO PROCESS STUFF                *************/
 /********************************************************************/
 
-#ifdef STORAGE
-// unused routine
-bool UsnoProcess(DbImage &dbimage)
-{
-  if (!dbimage.IsValid())
-    {
-      cerr << " Be careful ! " << dbimage.Name() << " must be an image name ! " << endl;
-    }
-  
 
-  string catalogName = dbimage.ImageCatalogName(SExtractor);
-  string fitsFileName = dbimage.FitsImageName(Calibrated);
-  return UsnoProcess(fitsFileName, catalogName, &dbimage);
-}
-#endif
 
 
 MatchCards::MatchCards()
@@ -729,93 +714,6 @@ static bool UsnoCollect(const Frame &usnoFrame, const TanPix2RaDec &Wcs, BaseSta
   UsnoCat.ApplyTransfo(UsnoToPix);
   return true;
 }
-
-#ifdef STORAGE
-static StarMatchList *RefineMatch(const SEStarList &sestarlist, const BaseStarList &usnoList, const Gtransfo &guess)
-{
-
-  // Recollect a better match with a controlled accuracy
-  StarMatchList *accurateMatch = ListMatchCollect(*SE2Base(&sestarlist), 
-						  usnoList, 
-						  &guess, 
-						  MatchPrefs.linMatchCut/3600.);
-
-  int nMatches = accurateMatch->size();
-
-  cout << " collected " << nMatches << " matches with tolerance " 
-       << MatchPrefs.linMatchCut << " arcsec " << endl;
-
-  int minMatchCount = int(min(0.2*usnoList.size(), ngoodImageObjects*0.5));
-
-  
-
-  if (nMatches < minMatchCount)
-    {
-      cout << " refined failed, giving up for " << fitsFileName << endl;
-      throw(MatchException("Matching transfo refined failed" ));
-      return false;
-    }
-
-  // fit a linear transfo 
-  accurateMatch->RefineTransfo(4.);
-  std::cout << " after fitting a linear transfo, we have " 
-	    << accurateMatch->size() << " pairs left, " 
-	    << "1d residual : " << FitResidual(accurateMatch->Dist2(), 
-					       *accurateMatch, 
-					       *accurateMatch->Transfo())*3600
-	    << "\""
-	    << std::endl;
-
-  int match_order = MatchPrefs.distortionDegree;
-  // check that the problem is enough constrained
-  while (((match_order+1)*(match_order+2))/2 > nMatches)
-    {
-      match_order--;
-      cout << " reducing match_order to " << match_order << endl;
-    }
-  accurateMatch->SetTransfoOrder(match_order);
-  match_clean(*accurateMatch);
-  cout << " Number of matches after clean " << accurateMatch->size() << endl;
-
-  // return if not enough stars to produce a linear transfo (oderwize: seg fault soon)
-  if (accurateMatch->size() < 5)
-    { cerr << " not enough matches. giving up " << endl;return false;}
-
-  // argument is number of sigmas for outlier rejection.
-  accurateMatch->RefineTransfo(3);
-  
-  // some printouts
-  std::cout << ' ' << accurateMatch->size() << " matches after refine," 
-	    << " (1d res= " 
-	    << accurateMatch->Residual()*3600. << "\"," 
-	    << "order = " << match_order << ')'	<< std::endl;
-
-
-  // recollect using the higher order tranfo we just refined:
-  StarMatchList *newMatch = ListMatchCollect(*SE2Base(&sestarlist), 
-					     usnoList, 
-					     accurateMatch->Transfo(), 
-					     MatchPrefs.secondMatchCut/3600.);
-
-
-  std::cout << " collected " << newMatch->size() 
-	    << " matches (cut = " << MatchPrefs.secondMatchCut 
-	    << "\", transfo order = "  << accurateMatch->TransfoOrder() 
-	    << ")" <<  std::endl;
-  
-  newMatch->SetTransfoOrder(match_order);
-  newMatch->RefineTransfo(3);
-
-  std::cout << " number of matches after refine "  << newMatch->size() 
-	    << ", " << "1d residual " 
-	    << FitResidual(newMatch->Dist2(), *newMatch, 
-			   *newMatch->Transfo())*3600 
-	    << std::endl;
-
-  delete accurateMatch;
-  return newMatch;
-}
-#endif
 
 
 
@@ -971,7 +869,9 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	}
 
       // Part 2.1 : guess
-      if (method == 1)   // try a shift
+
+      bool can_try_shift = (getenv("NO_SHIFT") == NULL);
+      if (method == 1 && can_try_shift)   // try a shift
 	{
 	  unsigned minShiftMatches = min(min(ngoodImageObjects*2/3, unsigned(25)),
 					 unsigned(usnoList.size()/3));
@@ -1006,7 +906,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	}	  
 
       if (!guessCorr)
-	throw(MatchException(" UsnoProcess : coud not guess an initial transformation "));
+	throw(MatchException(" UsnoProcess : could not guess an initial transformation "));
 
       // Part 2.2 : check that the initialy collected ref catalog roughly covers the whole image
       Frame newSkyRegion = ApplyTransfo(pixFrame,guessWcs*(*guessCorr),LargeFrame).Rescale(1.1);
@@ -1025,7 +925,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 					      usnoList, 
 					      guessCorr, 
 					      MatchPrefs.linMatchCut/pixSize);
-
+      // add here a clean, because it will be applied later and might kill the guess
+      match_clean(*match);
       // ... and check if it is acceptable
       int nMatches = match->size();
       cout << " collected " << nMatches << " matches with tolerance " 
@@ -1037,7 +938,8 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	  initialMatch->RefineTransfo(5.);
 	  break; // we have a guess which provides an adequate number of matches, we now build a WCS.
 	}
-      else delete match;
+      delete match;
+      if (method == 1) cout << " poor guess : trying something else " << endl;
 
     } // end loop on matching methods
 
@@ -1088,7 +990,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   
   int new_match_order = match_order;
   nMatches = initialMatch->size();
-  while (((new_match_order+1)*(new_match_order+2))/2 >= nMatches)
+  while (((new_match_order+1)*(new_match_order+2))/2 > nMatches)
     {
       new_match_order--;
       cout << " number of matches too short for the initially selected order " 
@@ -1121,7 +1023,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
   new_match_order = match_order;
   nMatches = accurateMatch->size();
-  while (((new_match_order+1)*(new_match_order+2))/2 >= nMatches)
+  while (((new_match_order+1)*(new_match_order+2))/2 > nMatches)
     {
       new_match_order--;
       cout << " number of matches too short for the initially selected order " 
