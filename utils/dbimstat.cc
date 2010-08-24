@@ -40,6 +40,11 @@ if (argc <=1)
     double im_w_stat = -1;
     if (im&&w)
       {
+	if (FileExists(dbimage.FitsSaturName()))
+	  {
+	    FitsImage s(dbimage.FitsSaturName());
+	    *w *=1-s;
+	  }
 	im_w_stat = ImageAndWeightError(*im,*w);
 	cout << args[i] << ' ' 
 	     << " im: ( " << mean_im << ","<< sigma_im << ")"
