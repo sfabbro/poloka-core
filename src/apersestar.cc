@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cmath> // asin, sqrt
-
+#include <assert.h>
 
 #include "apersestar.h"
 
@@ -103,9 +103,9 @@ void Aperture::computeflux(double x, double y, const Image& I,
   // store the result
   radius = Radius;
   flux = fflux;
-  double totalFlux = var+fflux/Gain;
-  if (totalFlux >0)
-    eflux = sqrt(var+fflux/Gain);
+  double totalVar = var+fflux/Gain;
+  if (totalVar >0)
+    eflux = sqrt(totalVar);
   else  eflux = 0;
   nbad = int(ceil(nnbad));
   ncos = int(ceil(nncos));
@@ -253,6 +253,7 @@ void AperSEStar::ComputePos(const Image& I, const Image& W)
   cout << "[ComputePos] Final position: x=" << x << " y=" << y << endl;
 }
 
+//#define DEBUG
 
 void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W, 
 				    const double &Gain)
@@ -260,17 +261,18 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
   gflag &= ~(BAD_GAUSS_MOMENTS);
   double det = Mxx()*Myy() - sq(Mxy());
   double wxx, wyy, wxy, radius;
-  if (det!=0)
+  if (Mxx() >=0 && Myy()>=0 && det >= 0)
     {
       wxx = Myy()/det;
       wyy = Mxx()/det;
       wxy = - Mxy()/det;
-      double half_trace = 0.5*(Mxx()+Myy());
-      /* half_trace + sqrt(sq(half_trace)-det) is the largest
+      /* 0.5*(mxx+myy) + sqrt(sq(0.5*(mxx-myy))+sq(mxy)) is the largest
 	 eigenvalue of the second moment matrix. This formula just
 	 says that we integrate up to 4 sigma, and at least up to 3
-	 pixels.  this formula is copied later in the same routine */
-      radius = max(4*sqrt(half_trace + sqrt(sq(half_trace) - det)),3.);
+	 pixels.  this formula is copied later in the same routine.
+      */
+      double largest_eigenval = 0.5*(Mxx()+Myy())+sqrt(sq(0.5*(Mxx()-Myy()))+sq(Mxy()));
+      radius = max(4*sqrt(largest_eigenval),3.);
       radius = min(radius,50.);    
     }
   else 
@@ -343,7 +345,8 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
 	    // ingredients for the pixel variance
 	    /* contrarily to the above computations, this is only useful
 	       at the last iteration */
-		double pixvar = 1/w+pix/Gain;
+		double pixvar = 1/w + pix/Gain;
+		if (pixvar<=0) continue;
 		double wv = wg*wg*pixvar;
 		sumxxw2 += dx*dx*wv;
 		sumyyw2 += dy*dy*wv;
@@ -356,6 +359,9 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
 	  gflag |= BAD_GAUSS_MOMENTS;
 	  wxx = wyy = 12;
 	  wxy = 0;
+#ifdef DEBUG
+	  cout << " sumw <= 0 " << endl;
+#endif
 	  break; // end of iterations
 	}
       sumx /= sumw;
@@ -369,6 +375,8 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
       sumxx -= sq(sumx);
       sumyy -= sq(sumy);
       sumxy -= sumx*sumy;
+
+      
 
       double det = sumxx*sumyy - sq(sumxy);
       // handle degenerate or almost degenerate matrices
@@ -395,35 +403,51 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
 	  gflag |= BAD_GAUSS_MOMENTS;
 	  wxx = wyy = 12.;
 	  wxy = 0.;
+#ifdef DEBUG
+	  cout << " drift2>4 || det < 0 || sumxx < 0 || sumyy < 0 " << endl;
+#endif
 	  break; 
 	}
-      double half_trace = 0.5*(sumxx + sumyy);
-      /* half_trace + sqrt(sq(half_trace)-det) is the largest
+      /* 0.5*(mxx+myy) + sqrt(sq(0.5*(mxx-myy))+sq(mxy)) is the largest
 	 eigenvalue of the second moment matrix. This formula just
 	 says that we integrate up to 4 sigma, and at least up to 3
-	 pixels. This formula is copied from above */
-      radius = max(4*sqrt(half_trace + sqrt(sq(half_trace) - det)),3.);
+	 pixels.  This formula is copied from above */ 
+      double oldradius = radius;
+      double largest_eigenval = 0.5*(sumxx+sumyy)+sqrt(sq(0.5*(sumxx-sumyy))+sq(sumxy));
+      radius = max(4*sqrt(largest_eigenval),3.);
       radius = min(radius,50.);
 
       double new_wxx = 0.5*sumyy/det;
       double new_wyy = 0.5*sumxx/det;
       double new_wxy = -0.5*sumxy/det;
-      double eps = 1e-7;
+      double eps = 1e-10;
       bool stop_iter = (fabs(wxx-new_wxx)< eps && fabs(wyy-new_wyy)<eps 
 			&& fabs(wxy-new_wxy)<eps);
-      wxx = new_wxx;
-      wyy = new_wyy;
-      wxy = new_wxy;
+#ifdef DEBUG
+      cout << " wxx wyy wxy " << wxx << ' ' << wyy << ' ' << wxy << endl;
+      cout << " delta " << new_wxx-wxx << ' ' << new_wyy-wyy << ' ' << new_wxy-wxy << endl;
+#endif
+      // convergence of the iterations : speed up if the thing is almost stabilized.
+      // we use the radius to decide upon that
+      double alpha = 1.8;
+      if (fabs(oldradius-radius)>0.1) alpha = 1;
+      wxx = alpha*new_wxx + (1.-alpha)*wxx;
+      wyy = alpha*new_wyy + (1.-alpha)*wyy;
+      wxy = alpha*new_wxy + (1.-alpha)*wxy;
       if (stop_iter) 
 	{
 	  // position variance is not needed to loop
 	  varxx = sumxxw2/sq(sumw);
 	  varyy = sumyyw2/sq(sumw);
 	  varxy = sumxyw2/sq(sumw);
+	  if (!(varxx>0 && varyy>0 && sq(varxy)<varxx*varyy))
+	    gflag |= BAD_GAUSS_POS_VARIANCE;
 	  break;
 	}
-    }// end of iteration.
-
+    }// end of iterations.
+#ifdef DEBUG
+  cout << " niter = " << iter << endl;
+#endif
   det = wxx*wyy-sq(wxy);
   // fill AperSestar scores :
   gmxx = wyy/det;
@@ -432,16 +456,14 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
   if (gmxx <0) abort(); // hopefully never happens
   if (nbad != 0) gflag |= (BAD_GAUSS_MOMENTS+BAD_GAUSS_POS_VARIANCE);
   if (varxx == -1) gflag |= BAD_GAUSS_POS_VARIANCE;
-  if ((gflag & BAD_GAUSS_MOMENTS) == 0)
-    { // can then use the "fitted" position
+  if ((gflag & (BAD_GAUSS_MOMENTS+BAD_GAUSS_POS_VARIANCE)) == 0)
+    { // can then use the "fitted" position, and its errors
       x = weightedX;
       y = weightedY;
-    }
-  if ((gflag & BAD_GAUSS_POS_VARIANCE) == 0)
-    {
       vx = varxx;
       vy = varyy;
       vxy = varxy;
+      assert(vx>0 && vy>0 && sq(vxy)<vx*vy);
     }
 }
   
