@@ -2,6 +2,7 @@
 // 
 // 
 #include <getopt.h>
+#include <assert.h>
 
 #include <iostream>
 #include <iomanip>
