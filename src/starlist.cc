@@ -297,6 +297,7 @@ template<class Star>void StarList<Star>::CutEdges(const Frame &aFrame, float min
 template<class Star>void StarList<Star>::CopyTo(StarList<Star> &Copy) const
 {
   Copy.ClearList();
+  Copy.GlobVal() = this->GlobVal();
   StarCIterator si;
   for (si = this->begin(); si != this->end(); ++si) Copy.push_back(new Star(*(*si)));
 }
