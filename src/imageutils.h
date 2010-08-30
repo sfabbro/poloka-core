@@ -1,10 +1,7 @@
 #ifndef IMAGEUTILS__H
 #define IMAGEUTILS__H
 
-
-
 class Image;
-class Frame;
 class Gtransfo;
 #include "frame.h" // for whichTransformed
 
@@ -13,6 +10,11 @@ Image GtransfoImage(const Image& inputimage, const Gtransfo & g, int nx, int ny,
 		    float DefaultVal, const int interpLevel=3, 
 		    const bool IsVarianceMap = false);
 
+
+//! Image resampling. Can handle Variance maps, and larger output frame
+Image ImageResample(const Image& InputImage, const Gtransfo* Transfo,
+		    const Frame& OutFrame, const float& DefaultVal,
+		    const bool IsVarianceMap = false);
 
 //! assumes that Transfo is a shift or involves a 'simple rotation'
 Frame ApplyTransfo(const Frame& inputframe, const Gtransfo &T, const WhichTransformed W = SmallFrame);

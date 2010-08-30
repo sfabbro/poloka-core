@@ -4,6 +4,29 @@
 #include "imageutils.h"
 #include "imageinterpolation.h"
 
+Image IntegerShiftImage(const Image& inputimage, const Gtransfo & g, int nx, int ny, float DefaultVal)
+{
+  double endXStart = double(inputimage.Nx()-1);
+  double endYStart = double(inputimage.Ny()-1);
+  
+  if (nx==0) nx=inputimage.Nx();
+  if (ny==0) ny=inputimage.Ny();  
+  Image result(nx,ny);
+
+  for (int j=0; j<ny; j++) 
+    for (int i=0; i<nx; i++)
+      {
+	double xout,yout;
+	g.apply(i, j, xout, yout);
+	if (xout >= 0.0 && xout < endXStart && yout >= 0.0 && yout < endYStart)
+	  result(i,j) = inputimage(int(floor(xout+0.5)), int(floor(yout+0.5)));
+	else
+	  result(i,j) = DefaultVal;
+
+      }
+  
+  return result;
+}
 
 Image GtransfoImage(const Image& inputimage, const Gtransfo & g, int nx, int ny, 
 			   float DefaultVal, const int interpLevel,
@@ -11,6 +34,11 @@ Image GtransfoImage(const Image& inputimage, const Gtransfo & g, int nx, int ny,
 {
   
   if (IsIdentity(&g)) return inputimage;
+  if (IsIntegerShift(&g)){
+    cout << " GtransfoImage: transfo is an integer shift, switching to no interpolation\n";
+    return IntegerShiftImage(inputimage, g, nx, ny, DefaultVal);
+  }
+
   double endXStart = double(inputimage.Nx()-1);
   double endYStart = double(inputimage.Ny()-1);
   
