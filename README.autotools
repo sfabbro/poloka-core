@@ -1,0 +1,51 @@
+Instructions for Poloka developers using autotools
+==================================================
+
+* All the Makefile.am/configure.ac/m4 macros have been refactored
+  following standard GNU rules for those files, sometimes taking
+  macros from the autoconf-archive on savannah.gnu.org
+
+* To build the autotools from scratch (Makefile, configure), use
+
+     $ autoreconf -fv
+
+* Do not force the optimization flags in the Makefile.am/configure.ac
+  (CFLAGS, CXXFLAGS, FFLAGS, LDFLAGS) unless you really know what your
+  are doing. These flags are reserved for the user (who could use
+  specific architecture flags). If you notice some bugs using
+  optimization flags (the default is -g -O2), fix the code instead of
+  forcing lower optimization, unless this is a gcc bug (gcc < 4.4 has
+  a few corner cases, but I doubt you will encounter them).
+
+  If you want to pass your flags (either optimization or debug), use
+  the environment variables during configure time. Below an example to
+  pass safe C++ optimization flags, standard C debug flags, and
+  linking flags using as-needed feature of ld (obviously use consistent
+  for all {C,F,FC,CXX}FLAGS, not like this example):
+      
+      $ ./configure CXXFLAGS="-O2 -march=native" CFLAGS="-Wall -g" LDFLAGS="-Wl,--as-needed"
+
+  This way "make" will pick up those flags on every call. You
+  can overwrite the flags on the make command:
+
+      $ make CPPFLAGS="-DDEBUG" CXXFLAGS="-O0 -ggdb"
+
+* One way to build your stuff in multiple architectures:
+
+      $ tar xf poloka-0.3.0.tar.gz
+      $ mkdir poloka-build-x86
+      $ cd poloka-build-x86
+      $ ../poloka-0.3.0/configure --libdir=$HOME/lib32 --bindir=$HOME/bin32
+      $ make -j <ncpu+1> && make -j <ncpu+1> install
+
+* Rolling a poloka release
+
+  0) choose a release number <x.y.z> in configure.ac
+  1) tag the commit (cvs tag or git tag)
+  2) autoreconf && ./configure && make dist
+  3) scp poloka-<x.y.z>.tar.gz <poloka-web-site>:
+  4) email friends
+
+* Cleaning up. To remove all automatically generated files:
+
+     $ make maintainer-clean
