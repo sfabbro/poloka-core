@@ -23,9 +23,9 @@ int main(int argc, char **argv)
   
   LightCurveList fids(lightfile);
   LightCurve &lc = *(fids.begin());
-  int radius = 20;
+  //int radius = 20;
   
-  PhotStar* star = lc.Ref;
+  //PhotStar* star = lc.Ref;
   //SimFitRefVignet *vignet = new SimFitRefVignet(star,lc.Ref->Image(),radius);
   SimFitRefVignet *vignet = new SimFitRefVignet(lc.Ref->Image());
 

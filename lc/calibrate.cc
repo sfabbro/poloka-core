@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
   DictFile catalog(catalogname);
   
-  int requiredlevel=2;
+  //int requiredlevel=2;
   // get keys for mag
   string band = header.KeyVal("TOADBAND");
   string mag_key=getkey("m"+band,catalog);

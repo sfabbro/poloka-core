@@ -45,10 +45,10 @@ int main(int argc, char **argv)
   double maxval=0;
 
   // galaxy
-  for(int j=0;j<nx;j++) {
+  for(unsigned j=0;j<nx;j++) {
     int jgal = j-hx;
     if(abs(jgal)>hx_gal-margin_to_remove) continue;
-    for(int i=0;i<nx;i++) {
+    for(unsigned i=0;i<nx;i++) {
       int igal = i-hx;
       if(abs(igal)>hx_gal-margin_to_remove) continue;
       val = galaxy(igal+hx_gal,jgal+hx_gal);
@@ -60,10 +60,10 @@ int main(int argc, char **argv)
     }
   }
   // add sn
-  for(int j=0;j<nx;j++) {
+  for(unsigned j=0;j<nx;j++) {
     int jpsf = j-hx;
     if(abs(jpsf)>hx_psf) continue;
-    for(int i=0;i<nx;i++) {
+    for(unsigned i=0;i<nx;i++) {
       int ipsf = i-hx;
       if(abs(ipsf)>hx_psf) continue;
       val = psf(ipsf+hx_psf,jpsf+hx_psf);
