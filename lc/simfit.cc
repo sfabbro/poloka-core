@@ -238,7 +238,7 @@ void SimFit::Resize(const double& ScaleFactor)
   
   //if(true) {
   if(fabs(ScaleFactor-1)>0.01) {
-    if ((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky) || (size()==0)) 
+    if (((!fit_flux) && (!fit_pos) && (!fit_gal) && (!fit_sky)) || (empty())) 
       {
 #ifdef DEBUG
 	cerr << " > SimFit::Resize() Warning : nothing to fit, not resizing. " << endl;
