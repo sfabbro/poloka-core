@@ -49,7 +49,7 @@ double    lonpole;
 
 };
 
-typedef enum Mem_Status{Auto =0, Min, Full};
+enum Mem_Status{Auto =0, Min, Full};
 
 class Lambert_Dust{
 

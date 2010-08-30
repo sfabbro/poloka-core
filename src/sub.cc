@@ -583,7 +583,7 @@ int Sub::DoIt()
 	{
 	  cerr << "Processing " << stack.Name() << endl ;
 	  stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
-	  FlagDiffractionSpikes(stack.newStack);
+	  //FlagDiffractionSpikes(stack.newStack);
 	}
       else
 	{

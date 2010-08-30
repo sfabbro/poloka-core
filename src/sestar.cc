@@ -761,7 +761,6 @@ void HistoStarFinder(SEStarList const & stlse,
 #include <cmath>
 #include "matvect.h"
 
-static double sq(const double &x) { return x*x;}
 
 
 

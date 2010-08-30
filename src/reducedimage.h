@@ -387,6 +387,9 @@ Usefull in case of artificially smoothed images
   string PhotomReference() const;
   bool SetPhotomReference(const string &Value, const string Comment = "");
 
+  //! photometric ratio with a reference (useful i.e. for transformed images in a different reference)
+  double PhotomRatio() const;
+  bool SetPhotomRatio(const double &Value, const string Comment = "");
 
 
   //! usable part defined by a frame keyword in the header 

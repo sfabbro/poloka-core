@@ -28,7 +28,7 @@ string ToadBand(const string &keyval)
   if (!called)
     {
       called = true;
-      string X = "UBVRIJHKLGZ";
+      string X = "UBVRIJHKLGYZ";
       char F;
       string sF;
       for (unsigned int i=0;i<X.length();i++)
@@ -98,6 +98,8 @@ string ToadBand(const string &keyval)
 	  ToadBandMap["r.MP9601"] = 'R';
 	  ToadBandMap["i.MP9701"] = 'I';
 	  ToadBandMap["z.MP9801"] = 'Z';
+	  ToadBandMap["macho_v"] = 'V';
+	  ToadBandMap["macho_r"] = 'R';
 	}  
     }
   StringCharMap::iterator match = ToadBandMap.find(keyval);

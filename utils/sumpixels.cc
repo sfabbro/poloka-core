@@ -65,8 +65,6 @@ int main(int argc, char** argv)
   
   if(imnames.size() == 1 && print) {
       FitsImage  im(imnames[0]);
-      double nx = im.Nx(), ny = im.Ny();
-      double npix = nx * ny;
       double sum = im.SumPixels();
       cout << sum << endl;
       return 0;

@@ -66,27 +66,27 @@ class FitsKey {
 
   private :
 /* this could become a pointer if cfitsio routines use const when applicable (e.g.fits_read_key) */
-      char keyName[32];
+      string keyName;
       fitsfile *fptr;
       double dval;
       string sval;
   bool warn;
   // useless to call directly:
-  FitsKey(const string &KeyName, fitsfile *Fptr, const bool Warn) : fptr(Fptr), warn(Warn){ strncpy(keyName,KeyName.c_str(),32);};
+  FitsKey(const string &KeyName, fitsfile *Fptr, const bool Warn) : keyName(KeyName), fptr(Fptr), warn(Warn) {}
 
 public :
   // constructors without a fits file
       FitsKey(const string &KeyName, const double& val) :  
-          fptr(0), dval(val) 
-         { strncpy(keyName, KeyName.c_str(), 32); char toto[30]; sprintf(toto,"%f",val); sval = toto;};
+	keyName(KeyName), fptr(0), dval(val)
+         { char toto[30]; sprintf(toto,"%f",val); sval = toto;};
 
       FitsKey(const string &KeyName, const int val) :  
-          fptr(0), dval(val) 
-         { strncpy(keyName, KeyName.c_str(), 32); char toto[30]; sprintf(toto,"%d",val); sval = toto;};
+	keyName(KeyName), fptr(0), dval(val) 
+         { char toto[30]; sprintf(toto,"%d",val); sval = toto;};
 
       FitsKey(const string &KeyName, const string &val) :   
-            fptr(0), sval(val) 
-         { strncpy(keyName, KeyName.c_str(), 32); dval = atof(sval.c_str());};
+	keyName(KeyName), fptr(0), sval(val) 
+         { dval = atof(sval.c_str());};
       
   // conversion operators
   // the 5 next ones enable {int,double,string} nx = image.KeyVal("NAXIS1");
@@ -95,7 +95,7 @@ public :
   operator double() ;
   operator string () ;
   operator bool() ;
-  string KeyName() const { return string(keyName);};
+  string KeyName() const { return keyName;}
   friend ostream& operator <<(ostream& stream, const FitsKey &Key);
 
 };
@@ -356,7 +356,6 @@ class FitsImage : public FitsHeader, public Image {
 
   //!  opens in (ReadOnly mode by default, use RW to modifiy or create) and loads the pixel data.
 FitsImage(const string &FileName, const FitsFileMode Mode = RO);
-
 
   //! constructor for a new FitsImage.
   /*! To be used to assemble a FitsImage from a header and an image

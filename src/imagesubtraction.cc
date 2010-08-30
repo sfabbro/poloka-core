@@ -20,7 +20,7 @@ des ref et new (pour pouvoir recharger aisement)
 
 string SubtractedName(const string &RefName, const string &NewName) {return NewName+'-'+RefName;}
 
-ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef RefImage,  const ReducedImageRef NewImage) : ReducedImage(Name), PsfMatch(RefImage, NewImage)
+ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef RefImage,  const ReducedImageRef NewImage) : ReducedImage(Name), PsfMatch(RefImage, NewImage, NULL, true)
 {
   if (!FileExists(Name))
     Create("here");
@@ -200,7 +200,7 @@ bool ImageSubtraction::MakeWeight()
 
   if (RefIsBest())
     {
-      weightImage *= sqr(PhotomRatio());
+      weightImage *= sqr(PsfMatch::PhotomRatio());
     }
 
 

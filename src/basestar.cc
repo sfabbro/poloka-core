@@ -25,7 +25,6 @@ longer use this trick of having different coordinate origins on disk and
 in memory.
 */
 
-static double sq(const double &x) { return x*x;}
 
 
 #include "fastifstream.h"
@@ -94,7 +93,7 @@ void BaseStar::WriteHeader(ostream & stream) const
 
 void BaseStar::writen(ostream &s) const 
 {
-  assert(vx>0 && vy>0 && sq(vxy)<vx*vy);
+  /*assert(vx>0 && vy>0 && sq(vxy)<vx*vy);*/
   /* write (sigx,sigy,rho) rather than (vx,vy,vxy). 
      This limits shortcomings of truncation, and is more useful 
      when reading or plotting.

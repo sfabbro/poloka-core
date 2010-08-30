@@ -345,8 +345,8 @@ double seseeing = atof(Sseseeing);
  FILE *in;
  FILE *out;
 
- char *vname;
- char **tags;
+ //char *vname;
+ //char **tags;
  int dim;
  dim=33;
  in = fopen(DetFilename.c_str(),"r");
@@ -396,9 +396,9 @@ while (fgets(line,8192,in))
   int xc = (int)xpix;
   int yc = (int)ypix;
 
-  double v1;
-  double v2;
-  double v3;
+  //double v1;
+  //double v2;
+  //double v3;
   //ComputeVars(ImgFilename,xc,yc,v1,v2,v3);
 
   ComputeShapecoef(xpix,ypix,xc,yc,vignetteImage,inImage,coef,nmax,seseeing);

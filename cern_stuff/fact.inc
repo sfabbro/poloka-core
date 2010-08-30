@@ -1,9 +1,12 @@
 *
-* $Id: fact.inc,v 1.1 2004/02/20 10:48:16 nrl Exp $
+* $Id: fact.inc,v 1.2 2010/08/30 21:50:06 seb Exp $
 *
 * $Log: fact.inc,v $
-* Revision 1.1  2004/02/20 10:48:16  nrl
-* Initial revision
+* Revision 1.2  2010/08/30 21:50:06  seb
+* Added a photometric ratio option utils/image_register.cc
+*
+* Revision 1.1.1.1  2004/02/20 10:48:16  nrl
+* First version.
 *
 * Revision 1.1.1.2  2002/10/03 11:35:46  seb
 *
@@ -27,7 +30,7 @@
           NXCH   =  0
           DET    =  ONE
           DO 144    J  =  1, N
- 120         K  =  J
+             K  =  J
              P  =  PIVOTF(A(J,J))
              IF(J .EQ. N)  GOTO 122
              JP1  =  J+1
@@ -75,6 +78,6 @@
                 A(K,J+1)  =  -DOTF(A(J,J+1),A(K,J),S12)
  143            CONTINUE
  144         CONTINUE
- 150      IF(MOD(NXCH,2) .NE. 0)  DET  =  -DET
+          IF(MOD(NXCH,2) .NE. 0)  DET  =  -DET
           IF(JFAIL .NE. JRANGE)   DET  =  ZERO
           IR(N)  =  NXCH

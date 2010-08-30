@@ -334,7 +334,7 @@ static void FrameList(const SEStarList &SList, const FitsHeader &Head,
 	BList.push_back(new BaseStar(**it));
     }
   BList.FluxSort();
-  BList.CutTail(300);
+  BList.CutTail(1000);
 }
 
 

@@ -203,7 +203,7 @@ int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
   assert(A.SizeX() == A.SizeY());
   
   int  info = 0;
-  char* jobz = "V";
+  //char* jobz = "V";
   int  n = A.SizeX();
   char uorl[6]; strncpy(uorl,UorL,6);
   double* a = A.NonConstData();
@@ -213,7 +213,7 @@ int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
   int     liwork = 3 + 5*n;
   int*    iwork = new int[liwork];
   
-  dsyevd_(jobz, uorl, &n,
+  dsyevd_("V", uorl, &n,
 	  a, &n, 
 	  eval, 
 	  work, &lwork, iwork, &liwork, 
@@ -665,11 +665,7 @@ int symetric_solve(Mat& A, Mat& B, const char* UorL)
 Mat::Mat(const unsigned int NX, const unsigned int NY) { 
  data=NULL;
  nx=ny=0;
- if(NX<0 || NY<0) {
-   cout << "Mat::Mat ERROR NX,NY =" << NX << "," << NY <<  endl;
- }else{
-   allocate(NX,NY);
- }
+ allocate(NX,NY);
 }
 
 Mat::Mat(const Mat& other) {
@@ -680,9 +676,6 @@ Mat::Mat(const Mat& other) {
 }
 
 void Mat::allocate(const unsigned int NX, const unsigned int NY) {
-  if(NX<0 || NY<0) {
-    cout << "Mat::allocate ERROR NX,NY =" << NX << "," << NY <<  endl;
-  }
   if(nx!=NX || ny!=NY) {
     nx=NX; 
     ny=NY; 
@@ -939,7 +932,7 @@ void Mat::ExtractSubMat(const unsigned IndexMapping[], const unsigned NewSize,
 
 Mat Mat::SubBlock
 (unsigned int x_min,unsigned int x_max,unsigned int y_min,unsigned int y_max) const {
-  if( x_min<0 || x_max >= nx || y_min <0 || y_max>= ny ) {
+  if(x_max >= nx || y_max>= ny ) {
     cout << "Mat::SubBlockFromIndexes ERROR, trying to get a sub-matrix with indices" << endl;
     cout << "x_min,x_max,y_min,y_max = "
 	 << x_min << ","
@@ -959,7 +952,7 @@ Mat Mat::SubBlock
 }
 
 Mat Mat::WithoutRows(unsigned int y_min,unsigned int y_max) const {
-  if( y_min <0 || y_max < y_min || y_max >= ny ) {
+  if( y_max < y_min || y_max >= ny ) {
     cout << "Mat::WithoutRows ERROR " << endl;
     abort();
   } 
@@ -975,7 +968,7 @@ Mat Mat::WithoutRows(unsigned int y_min,unsigned int y_max) const {
 }
 
 Mat Mat::WithoutColumns(unsigned int x_min,unsigned int x_max) const {
-  if( x_min <0 || x_max < x_min || x_max >= nx ) {
+  if( x_max < x_min || x_max >= nx ) {
     cout << "Mat::WithoutColumns ERROR " << endl;
     abort();
   } 
@@ -1181,11 +1174,7 @@ int Mat::CholeskyInvert(const char *UorL) {
 Vect::Vect(const unsigned int N) {
   data = NULL; 
   n=0;
-  if(N<0) {
-    cout << "Vect::Vect ERROR N = " << N <<  endl;
-  }else{
-    allocate(N);
-  }
+  allocate(N);
 }
 
 Vect::Vect(const Vect& other) {
@@ -1196,9 +1185,6 @@ Vect::Vect(const Vect& other) {
 }
 
 void Vect::allocate(const unsigned int N) {
-  if(N<0) {
-    cout << "Vect::allocate ERROR N = " << N <<  endl;
-  }
   if(n!=N) {
     n=N;
     if (data) 

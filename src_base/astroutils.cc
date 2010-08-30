@@ -19,7 +19,7 @@ bool IsLeapYear (const int year)
 
 double JulianDay(const int day, const int month, const int year) 
 {
-  long jy, jm, ja;
+  long jy, jm;
   if ( month > 2 )
     {
       jy = year;

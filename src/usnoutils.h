@@ -46,7 +46,7 @@ class FitsHeader;
     */
 
 
-typedef enum UsnoColor { RColor , BColor};
+enum UsnoColor { RColor , BColor};
 
 
 
@@ -82,7 +82,7 @@ StarMatchList* GuessedToGood(const Gtransfo *Guess, const SEStarList *OldImag, c
 int GetUsnoZeroPoint(const StarMatchList *List, UsnoColor Color,double& zeropoint, double& errzero);
 
 
-bool UsnoProcess(const string &fitsFileName, const string &catalogName, 
-		 DbImage *dbimage);
+bool UsnoProcess(FitsHeader& header, BaseStarList& starList);
+bool UsnoProcess(const string &fitsFileName, const string &catalogName, DbImage *dbimage);
 
 #endif /* USNOUTILS__H */
