@@ -5,6 +5,13 @@ Instructions for Poloka developers using autotools
   following standard GNU rules for those files, sometimes taking
   macros from the autoconf-archive on savannah.gnu.org
 
+* SExtractor library (now in http://gitorious.org/poloka/libsex),
+  cfitsio (repacked version:
+  http://gitorious.org/poloka/cfitsio/blobs/raw/master/cfitsio-repack.bash),
+  snfit (2.2.1 and above) and ImageMagick install a pkgconfig file to track their
+  dependencies. Do a man pkg-config if you don't know anything about
+  it.
+
 * To build the autotools from scratch (Makefile, configure), use
 
      $ autoreconf -fv
