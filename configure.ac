@@ -7,7 +7,6 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(autobuild)
 AM_INIT_AUTOMAKE
 
-## Compile only shared libs by default
 ## Keep this one before libtool check
 AM_DISABLE_STATIC
 
@@ -18,7 +17,10 @@ AC_PROG_F77
 AC_PROG_FC
 AC_PROG_LEX
 AC_PROG_LIBTOOL
-AC_PROG_SED
+# AC_PROG_SED is available only in autoconf 2.60 and later.
+# With older autoconf, assume that 'sed' is ok.
+ifdef([AC_PROG_SED], [AC_PROG_SED], [SED=sed AC_SUBST(SED)])
+ifdef([AC_PROG_GREP], [AC_PROG_GREP], [GREP=grep AC_SUBST(GREP)])
 AC_PROG_YACC
 
 ## Check for mandatory blas/lapack
@@ -28,16 +30,16 @@ AX_LAPACK(, [AC_MSG_ERROR([blas or lapack was not found.
 ])
 
 ## Check for mandatory cfitsio
-AX_CFITSIO(,, [AC_MSG_ERROR([cfitsio library could not be detected
-*** Please install cfitsio or use the options 
-*** --with-cfitsio, or --with-cfitsio-includedir and --with-cfitsio-libdir.])
-]) 
+AX_CFITSIO(, [AC_MSG_ERROR([cfitsio library could not be detected
+*** Please install cfitsio or use the options:
+*** --with-cfitsio-includedir and --with-cfitsio-libdir.])
+])
 
 ## Check for mandatory SExtractor repacked library
-AX_LIBSEX(,, [AC_MSG_ERROR([SExtractor library was not found. 
-*** Please install libsex or use the options 
-*** --with-libsex, or --with-libsex-includedir and --with-libsex-libdir.])
-]) 
+AX_LIBSEX(, [AC_MSG_ERROR([SExtractor library could not be detected 
+*** Please install libsex or use the options:
+*** --with-libsex-includedir and --with-libsex-libdir.])
+])
 
 ## Check for mandatory zlib (for gztream)
 AX_CHECK_ZLIB
@@ -46,10 +48,10 @@ AX_CHECK_ZLIB
 CERNLIB=false
 AC_MSG_CHECKING([whether to build cernlib tools])
 AC_ARG_ENABLE(cernlib,
-    AC_HELP_STRING([--enable-cernlib],
-                   [cernlib support (default=no)]), ,
-                   [enable_cernlib=no])
-if test x$enable_cernlib = "xyes"; then
+    AC_HELP_STRING([--enable-cernlib], [cernlib support (default=no)]),
+   [enable_cernlib=$enableval],
+   [enable_cernlib=no])
+if test x"$enable_cernlib" = x"yes"; then
     AC_MSG_RESULT([yes])
     AC_LIB_CERNLIB([packlib], [HROPEN],
     		   [CERNLIB=true],
@@ -64,16 +66,16 @@ AM_CONDITIONAL(CERNLIB, test x$CERNLIB = xtrue)
 
 ## Check for optional snfit to build mc module
 MC=false
-AC_MSG_CHECKING([whether to build the montecarlo module])
+AC_MSG_CHECKING([whether to build the Monte Carlo module])
 AC_ARG_ENABLE([mc],
-      AS_HELP_STRING([--enable-mc],
-                   [build montecarlo module (default=no)]), ,
-                   [enable_mc=no])
-if test x$enable_mc = "xyes"; then
+   AS_HELP_STRING([--enable-mc], [build montecarlo module (default=no)]),
+   [enable_mc=$enableval],
+   [enable_mc=no])
+if test x"$enable_mc" = "xyes"; then
     AC_MSG_RESULT([yes])
-    AX_SNFIT(,[MC=true], [AC_MSG_ERROR([snfit library was not found. 
-   *** Please install snfit or use the options 
-   *** --with-snfit, or --with-snfit-includedir and --with-snfit-libdir.])
+    AX_SNFIT([MC=true], [AC_MSG_ERROR([snfit library was not found. 
+   *** Please install snfit or use the options:
+   *** --with-snfit-includedir and --with-snfit-libdir.])
    ])
 else
     AC_MSG_RESULT([no])
@@ -84,17 +86,17 @@ AM_CONDITIONAL(MC, test x$MC = xtrue)
 IMAGEMAGICK=false
 AC_MSG_CHECKING([whether to build the imagemagick utilities])
 AC_ARG_ENABLE([imagemagick],
-      AS_HELP_STRING([--enable-imagemagick],
-                   [build imagemagick tools (default=no)]), ,
-                   [enable_imagemagick=no])
-if test x$enable_imagemagick = "xyes"; then
+      [AS_HELP_STRING([--enable-imagemagick], [build imagemagick tools (default=no)])],
+      [enable_imagemagick=$enableval], 		   	   
+      [enable_imagemagick=no])
+if test x"$enable_imagemagick" = x"yes"; then
     AC_MSG_RESULT([yes])
-    AX_IMAGEMAGICK([IMAGEMAGICK=true], [AC_MSG_ERROR([ImageMagick++ library was not found. 
-   *** Please install ImageMagick.]) ])
+    AX_IMAGEMAGICK([IMAGEMAGICK=true], 
+		   [AC_MSG_ERROR([ImageMagick++ library was not found. *** Please install ImageMagick.])])
 else
     AC_MSG_RESULT([no])
 fi
-AM_CONDITIONAL(IMAGEMAGICK, test x$IMAGEMAGICK = xtrue)
+AM_CONDITIONAL([IMAGEMAGICK], [test x$IMAGEMAGICK = xtrue])
 
 AC_CONFIG_FILES([Makefile
 		 poloka.pc
