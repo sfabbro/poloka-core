@@ -26,14 +26,14 @@ bin_PROGRAMS = \
 	joinlist \
 	lbl2toads \
 	maglimeval make_catalog make_cosmic make_dead make_weight makesub \
-	makvar mapfcangles mask2dead matchals \
-	matchusno matchwcs mergelists mkcat2 mosaique_int \
+	makvar mapfcangles mask2dead \
+	matchusno mergelists mkcat2 mosaique_int \
 	preptoads \
 	removeback rustine_for_fringe \
 	seeing simple_zpfitter skylev split_fits splitsubs \
 	sum_images sumpixels \
 	valid_fits vignet4gif \
-	wcsals wcs_for_vignets \
+	wcs_for_vignets \
 	wrapswarp \
 	zpfitter
 
@@ -85,9 +85,7 @@ make_weight_SOURCES = make_weight.cc
 makvar_SOURCES = makvar.cc
 mapfcangles_SOURCES = mapfcangles.cc
 mask2dead_SOURCES = mask2dead.cc
-matchals_SOURCES = matchals.cc
 matchusno_SOURCES = matchusno.cc
-matchwcs_SOURCES = matchwcs.cc
 mergelists_SOURCES = mergelists.cc
 mkcat2_SOURCES = mkcat2.cc
 mosaique_int_SOURCES = mosaique_int.cc
@@ -107,7 +105,6 @@ test_matvect_SOURCES = test_matvect.cc
 testphot_SOURCES = testphot.cc
 valid_fits_SOURCES = valid_fits.cc
 vignet4gif_SOURCES = vignet4gif.cc
-wcsals_SOURCES = wcsals.cc
 wcs_for_vignets_SOURCES = wcs_for_vignets.cc
 wrapswarp_SOURCES = wrapswarp.cc
 zpfitter_SOURCES = zpfitter.cc
