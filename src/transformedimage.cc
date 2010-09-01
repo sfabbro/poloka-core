@@ -218,9 +218,6 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
       seeing = sqrt(seeing*seeing*scale2 + scale2/12);
       cout << " Expected seeing " << seeing << endl;
       Result->SetSeeing(seeing,"seeing in pixel sigma after transformation");
-      double err;
-      ReducedImage geomRef(geomRefName);
-      Result->SetPhotomRatio(QuickPhotomRatio(*Source, geomRef, err, transfoToRef), "Quick photometric ratio with "+geomRefName);
     }
   clock_t tend = clock();
   cout << " CPU for resampling " 

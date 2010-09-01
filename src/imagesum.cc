@@ -214,11 +214,8 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
 	  cerr << " Building " << ri->CatalogName() << endl ;
 	}
       if (!ok) continue ;
-      double phRatio = ri->PhotomRatio();
-      if (phRatio < 0) {
-	double err;
-	phRatio = QuickPhotomRatio(*ri,*photomReference,err);
-      }
+      double err;
+      double phRatio = phRatio = QuickPhotomRatio(*ri,*photomReference,err);
       Component current(ri,phRatio, weightingMethod);
       current.dump();
       components.push_back(current);
