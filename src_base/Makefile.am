@@ -4,7 +4,7 @@ MAINTAINERCLEANFILES = \
 	stamp-* *.new
 
 EXTRA_DIST = virtualinstrument.cc virtualinstrument.h slasub.c
-
+BUILT_SOURCES = alltelinst.cc alltelinst.h
 include_HEADERS = \
 	alltelinst.h \
 	astroutils.h \
@@ -51,10 +51,10 @@ alltelinst.cc: Makefile $(telinst_sources)
 	@for telinst in $(telinst_sources); do echo "#include \"$$telinst\""; done >> $@.new
 	@echo "#ifndef USE_WCS" >> $@.new
 	@echo "static AcceptorType AcceptorsArray [] = {" >> $@.new
-	@grep TYPE_SELECTOR $(telinst_sources) | $(SED) -e 's/$(classname)/  \&\2::Acceptor,/' >> $@.new
+	@$(GREP) TYPE_SELECTOR $(telinst_sources) | $(SED) -e 's/$(classname)/  \&\2::Acceptor,/' >> $@.new
 	@echo "  &Unknown::Acceptor};" >> $@.new
 	@echo "// IsOfKind template instantiation" >> $@.new
-	@grep TYPE_TESTER $(telinst_sources) | $(SED) \
+	@$(GREP) TYPE_TESTER $(telinst_sources) | $(SED) \
 	 	-e 's/$(classname)/template bool IsOfKind< \2 >(const FitsHeader \&);/' \
 		-e 's/$(classname)/template bool IsOfKind< \2 >(const string \&);/' >> $@.new
 	@echo "#endif // USE_WCS" >> $@.new
@@ -65,9 +65,9 @@ alltelinst.h: alltelinst.cc
 	@echo "/* Source files were:" $(telinst_sources) "*/" >> $@.new
 	@echo "#ifndef ALLTELINST__H" >> $@.new
 	@echo "#define ALLTELINST__H" >> $@.new
-	@grep TYPE_TESTER $(telinst_sources) | $(SED) -e 's/$(classname)/class \2;/' >> $@.new
+	@$(GREP) TYPE_TESTER $(telinst_sources) | $(SED) -e 's/$(classname)/class \2;/' >> $@.new
 	@echo "#endif" >> $@.new
 	@diff $@.new $@ &> /dev/null || mv -f $@.new $@
 
 # hack to produce alltelinst.h before the rest. (fitstoad.h should be before any sources)
-fitsimage.cc: alltelinst.h
+fitsimage.h: alltelinst.h
