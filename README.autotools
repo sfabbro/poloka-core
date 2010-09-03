@@ -7,13 +7,13 @@ Quick setup instructions
   0. Select a directory $DIR to install all libraries and execs:
      $DIR/lib $DIR/share $DIR/bin etc...
 
-   $ export PKG_CONFIG_PATH="${DIR}/pkgconfig:${PKG_CONFIG_PATH}
-   $ export PATH="${DIR}/bin:${PATH}
-   $ export LD_LIBRARY_PATH="${DIR}/lib:${LD_LIBRARY_PATH}
+   $ export PKG_CONFIG_PATH="${DIR}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+   $ export PATH="${DIR}/bin:${PATH}"
+   $ export LD_LIBRARY_PATH="${DIR}/lib:${LD_LIBRARY_PATH}"
 
   1. Install libsex
 	
-   $ git git@gitorious.org:poloka/libsex.git
+   $ git clone git@gitorious.org:poloka/libsex.git
    $ cd libsex
    $ autoreconf -fvi
    $ ./configure --prefix=$DIR --disable-static CFLAGS="-O1"
@@ -26,7 +26,7 @@ Quick setup instructions
    $ sh make-cfitsio-tarball.sh
    $ sh install-cfistio.sh
 
-3. Install poloka
+ 3. Install poloka
 
    $ cvs co poloka
    $ autoreconf -fvi
