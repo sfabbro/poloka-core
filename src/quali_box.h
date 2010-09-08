@@ -9,6 +9,7 @@
 #include "image.h"
 #include "starmatch.h"
 #include "sestar.h"
+#include "align_box.h"
 #include "listmatch.h"
 
 

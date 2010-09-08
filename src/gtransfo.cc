@@ -12,25 +12,7 @@
 bool IsIdentity(const Gtransfo *a_transfo)
 { return (dynamic_cast<const GtransfoIdentity*>(a_transfo) != NULL);}
 
-bool IsIntegerShift(const Gtransfo *a_transfo)
-{
-  const GtransfoPoly* shift = dynamic_cast<const GtransfoPoly*>(a_transfo);
-  if (shift == NULL) return false;
 
-  static const double eps = 1e-5;
-
-  double dx = shift->Coeff(0,0,0);
-  double dy = shift->Coeff(0,0,1);
-  
-  static Point dumb(4000,4000);
-  if (fabs(dx - int(floor(dx+0.5))) < eps && 
-      fabs(dy - int(floor(dy+0.5))) < eps &&
-      fabs(dumb.x+dx - shift->apply(dumb).x) < eps &&
-      fabs(dumb.y+dy - shift->apply(dumb).y) < eps)    
-    return true;
-
-  return false;
-}
 
 /********* Gtransfo ***********************/
 
@@ -959,7 +941,7 @@ double  GtransfoPoly::fit(const StarMatchList &List)
 {
   if (List.size()< nterms)
     {
-      cerr << " GtransfoPoly::fit : trying to fit a polynomial transfo of degree " << deg << " with only " << List.size() << " matches " << endl;
+      cerr << " GtransfoPoly::fit : trying to fit a polynomial transfo of degree " << deg << "with only " << List.size() << " matches " << endl;
       return -1;
     }
 
@@ -1357,6 +1339,8 @@ TanPix2RaDec::TanPix2RaDec(const TanPix2RaDec &Original) : Gtransfo()
 
 void TanPix2RaDec::operator = (const TanPix2RaDec &Original)
 {
+  if (corr) delete corr;
+  corr = NULL;
   linPix2Tan = Original.linPix2Tan;
   ra0 = Original.ra0;
   dec0 = Original.dec0;

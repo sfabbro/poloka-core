@@ -1,0 +1,57 @@
+# $Id: repack.spec.in,v 1.3 2010/09/08 22:09:11 seb Exp $
+# 
+# rpm config file for repack 
+# 
+# @configure_input@
+# 
+%define name      @PACKAGE@
+%define version   @VERSION@
+%define release   1
+%define home_page http://supernovae.in2p3.fr
+
+
+#############################################################
+Summary: A repackaged version of the TOADS supernova software.
+Name: %{name}
+Version: %{version}
+Release: %{release}
+Copyright: SNLS (restricted)
+Group: Development/Libraries
+Source: %{name}-%{version}.tar.gz
+BuildRoot: %{_builddir}/%{name}-root
+Prefix: %{_prefix}
+
+
+%description
+repack is a collection of C++ classes used by the FROGS group
+and the SNLS Project to perform SNIa detection and photometric
+analysis. repack derives from the TOADS software written by
+P. Astier, S. Fabbro and others. repack is an attempt to repackage
+and (maybe) improve TOADS in order to make it easily usable within
+the SNLS project.
+
+
+%prep
+%setup -q
+
+%build
+./configure --prefix=%{_prefix}
+make
+
+%install
+rm -rf ${RPM_BUILD_ROOT}
+make DESTDIR=${RPM_BUILD_ROOT} install
+
+%clean
+rm -rf ${RPM_BUILD_ROOT}
+
+%files
+%{_prefix}/lib/lib*.so.*
+%{_prefix}/bin/*
+%{_prefix}/include/*.h
+%defattr(-,root,root)
+%doc README AUTHORS COPYING NEWS
+
+%changelog
+* Tue Dec 16 2003 Nicolas Regnault <nicolas.regnault@poly.in2p3.fr>
+- First release of RPM package

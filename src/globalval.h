@@ -2,7 +2,7 @@
 // 
 // \file globalval.h
 // 
-// Last modified: $Date: 2010/08/30 21:49:16 $
+// Last modified: $Date: 2010/09/08 22:09:11 $
 // By:            $Author: seb $
 // 
 
@@ -19,7 +19,6 @@
 using namespace std;
 
 //! to store in files things like "Key value(s)" things.
-// what exactly does this class bring except complicating a map?
 class GlobalVal : private  map<string, vector<string> > {
 public :
 
@@ -48,7 +47,7 @@ public :
   double         getDoubleValue(const string& Key) const;
   void           setDoubleValue(const string &Key, double val) ;
   vector<double> getDoubleValues(const string& Key) const;
-  void           setDoubleValues(const string &Key, const vector<double>& vals);
+
   vector<string> OutputLines() const;
 
   bool ProcessLine(const string &Line);

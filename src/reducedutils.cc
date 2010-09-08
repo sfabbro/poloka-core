@@ -58,6 +58,7 @@ double QuickPhotomRatio(const ReducedImage &CurImage, const ReducedImage &RefIma
 			double &error, const Gtransfo* cur2ref)
 {
   if (CurImage == RefImage) return 1.;
+
   SEStarList curList(CurImage.CatalogName());
   SEStarList refList(RefImage.CatalogName());
 

@@ -1,5 +1,4 @@
 #include "reducedimage.h"
-#include "sestar.h"
 #include "dictfile.h"
 #include "wcsutils.h"
 #include "gtransfo.h"

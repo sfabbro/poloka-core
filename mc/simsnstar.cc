@@ -2,6 +2,7 @@
 #include "image.h"
 #include "gtransfo.h"
 #include "agaussian.h"
+#include "daophotpsf.h"
 #include "myrdm.h"
 #include <fstream>
 
@@ -566,11 +567,9 @@ const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This)
 #include "starlist.cc" /* since starlist is a template class */
 //template class StarList<SimSNWModelStar>;  /* to force instanciation */
 
-#ifdef STORAGE
 /***************** Utilitaires Dao **************/
 //The place for this is to be discussed with Seb
 
-#include "daophotpsf.h"
 
 
 // a comparer a
@@ -640,7 +639,7 @@ void AddListWDaoPsfToImage(DaoPsf const & daopsf, BaseStarList *List,
       AddWDaoPsfToImage(daopsf, (*it)->x, (*it)->y,  (*it)->flux,img,psat,saturation);
     }
 }
-#endif
+
 #include "imagepsf.h"
 void AddWPsfToImage(ImagePSF &psf ,double xc, double yc, 
 		       double flux,Image & image,

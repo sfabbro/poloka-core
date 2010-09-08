@@ -18,8 +18,10 @@
 using namespace std;
 
 
-bool cmp_aperse_zp(string const& dbimname, map<string,string> const&);
-bool cmp_psf_zp(string const& dbimname, map<string,string> const&);
+bool cmp_aperse_zp(string const& dbimname, map<string,string> const&,
+		   double zp, double ezp);
+bool cmp_psf_zp(string const& dbimname, map<string,string> const&,
+		double zp, double ezp);
 
 
 void usage()
@@ -64,10 +66,13 @@ int main(int argc, char** argv)
   catalog_names["D3"] = "/sps/snls/CALIBRATION/secondarycatalogs_3/D3.list";
   catalog_names["D4"] = "/sps/snls/CALIBRATION/secondarycatalogs_3/D4.list";
   
+  double aper_zp, eaper_zp;
+  double psf_zp, epsf_zp;
+  
   vector<string>::iterator I;
   for(I=dbims.begin();I!=dbims.end();I++) {
-    cmp_aperse_zp(*I, catalog_names);
-    cmp_psf_zp(*I,    catalog_names);
+    cmp_aperse_zp(*I, catalog_names, aper_zp, eaper_zp);
+    cmp_psf_zp(*I,    catalog_names, psf_zp,  epsf_zp);
   }
 }
 
@@ -112,7 +117,8 @@ Measurement wmean(vector<Measurement>& vx, double& xi2, int& ndf, bool renorm=fa
 
 
 
-bool cmp_aperse_zp(string const& dbimname, map<string,string> const& catalogs)
+bool cmp_aperse_zp(string const& dbimname, map<string,string> const& catalogs,
+		   double zp, double ezp) 
 {
   ReducedImage redim(dbimname);
   if(!redim.IsValid()) {
@@ -186,7 +192,8 @@ bool cmp_aperse_zp(string const& dbimname, map<string,string> const& catalogs)
 
 
 
-bool cmp_psf_zp(string const& dbimname, map<string,string> const& catalogs)
+bool cmp_psf_zp(string const& dbimname, map<string,string> const& catalogs,
+		double zp, double ezp)
 {
   ReducedImage redim(dbimname);
   if(!redim.IsValid()) {

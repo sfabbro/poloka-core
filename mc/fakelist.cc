@@ -6,7 +6,6 @@
 #include <string>
 #include <cstdio>
 #include <cmath>
-#include <cstring>
 
 #include "fakelist.h"
 #include "frame.h"

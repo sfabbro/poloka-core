@@ -387,6 +387,8 @@ Usefull in case of artificially smoothed images
   string PhotomReference() const;
   bool SetPhotomReference(const string &Value, const string Comment = "");
 
+
+
   //! usable part defined by a frame keyword in the header 
   Frame UsablePart() const;
 

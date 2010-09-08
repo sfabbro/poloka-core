@@ -182,9 +182,6 @@ public:
 //! Shorthand test to tell if a transfo belongs to the GtransfoIdentity class. 
 bool IsIdentity(const Gtransfo *a_transfo);
 
-//! Shorthand test to tell if a transfo is a simple integer shift
-bool IsIntegerShift(const Gtransfo *a_transfo);
-
 /*====================   GtransfoPoly  =======================*/
 
 //! Polynomial transformation class.

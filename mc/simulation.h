@@ -3,7 +3,7 @@
 #ifndef SIMULATION__H
 #define SIMULATION__H
 
-//#include "persistence.h"
+#include "persistence.h"
 
 #include "datacards.h"
 #include "reducedimage.h"
@@ -12,7 +12,7 @@
 
 class ImageGtransfo ;
 
-enum MethodeSim{Random =0, Damier, InHost, AdaptedToHost};
+typedef enum MethodeSim{Random =0, Damier, InHost, AdaptedToHost};
 
 
 /*! \page effic Preparation of the fake supernova starlist.

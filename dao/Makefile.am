@@ -1,7 +1,7 @@
 EXTRA_DIST = daocommon.f
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/src_base -I$(top_srcdir)/src @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@
-AM_FFLAGS   = -Wall -pedantic -W  -O -funroll-loops -ffortran-bounds-check
+AM_FFLAGS   = -Wall -pedantic -W  -O3 -funroll-loops -ffortran-bounds-check
 #AM_FFLAGS   = -Wall -pedantic -W -ffortran-bounds-check
 AM_LDFLAGS  = -L$(top_builddir)/src_base -L$(top_builddir)/src -ltoadsbase -ltoads -L@libdir@ -lg2c @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ 
 

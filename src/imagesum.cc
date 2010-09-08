@@ -215,7 +215,7 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
 	}
       if (!ok) continue ;
       double err;
-      double phRatio = phRatio = QuickPhotomRatio(*ri,*photomReference,err);
+      double phRatio = QuickPhotomRatio(*ri,*photomReference,err);
       Component current(ri,phRatio, weightingMethod);
       current.dump();
       components.push_back(current);
@@ -707,7 +707,7 @@ void ImageSum::FitsHeaderFill()
       readnoise += sqr(component.averageWeight * redIm->ReadoutNoise());
   
       /* FLAT NOISE */
-      flatnoise += sqr(component.averageWeight * redIm->FlatFieldNoise()
+      flatnoise += sqr (component.averageWeight * redIm->FlatFieldNoise()
 			*redIm->OriginalSkyLevel());
   
       /* ORIGINAL SKY LEVEL */
@@ -750,6 +750,7 @@ void ImageSum::FitsHeaderFill()
 
   SetOriginalSkyLevel(originalskylevel);
   flatnoise = sqrt(flatnoise)/originalskylevel;
+  cerr << "Flatnoise " << flatnoise << endl ;
   SetFlatFieldNoise(flatnoise);
 
   SetOriginalSaturation(originalsatur);

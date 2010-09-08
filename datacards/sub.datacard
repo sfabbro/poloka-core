@@ -172,7 +172,7 @@
 #
 # maximum number of stamps (i.e. number of objects used to fit)
 #
-@KFIT_MAX_STAMPS 550
+@KFIT_MAX_STAMPS 150
 #
 #
 # size of the kernel in number of (guessed) kernel sigma
@@ -195,7 +195,7 @@
 
 ######### DatDet in detection.cc (detection on subtractions only)  #######
 # min distance to bad pixel (in sig seeing)
-@DATDET_NRADBAD 1.
+@DATDET_NRADBAD 2.
 #
 # integration radius for weighted flux (in sig seeing)
 @DATDET_NRADWEIGHT 4.0
@@ -205,13 +205,13 @@
 #
 # min distance between 2 detections (in sig seeing)
 #
-@DATDET_NMINDISTDOUBLE 0.
+@DATDET_NMINDISTDOUBLE 2.
 #
 # cut of detections on the convolved image (in S/N)
-@DATDET_NSIG_DET 1.5
+@DATDET_NSIG_DET 2.0
 #
 # final flux cut of detections in S/N (usually larger than NSIG_DET)
-@DATDET_NSIG 2.
+@DATDET_NSIG 2.5
 #
 # size of the inner radius removed from the square area used to estimate background (in sig seeing) (if < DATDET_NRADWEIGHT then = DATDET_NRADWEIGHT)
 @DATDET_BACKRINGMIN 5
@@ -243,7 +243,7 @@
 # 3 : NoGlobalWeighting
 # 4 : NoWeightsAtAll
 #
-@WEIGHTING_METHOD 1
+@WEIGHTING_METHOD 2 
 #
 #   Choice of the Stacking Method
 # 1 : WeightedAverage
@@ -266,7 +266,7 @@
 @PSF_SPATIAL_PIX_VAR_DEG 1
 ##
 #outlier rejection of training stars (sigmas from median)
-@PSF_NSIG_CHI2_CUT 3
+@PSF_NSIG_CHI2_CUT 4
 #
 ##
 # PSF half size in units of IQ sigma
@@ -293,7 +293,7 @@
 # 
 ##
 # same as above but only at last iteration:
-@PSF_LAST_RESIDUAL_FILENAME  psfpix
+#@PSF_LAST_RESIDUAL_FILENAME  psfpix
 #
 ##
 # A tuple that contains all the pixles used to fit the PSF, 
@@ -304,7 +304,7 @@
 #
 # an image of the filed with only the residuals at the location of training
 #stars
-@PSF_RESIDUALS_IMAGE_FILENAME training
+@PSF_RESIDUALS_IMAGE_FILENAME
 ############ end of PSF section ################
 
 ############ APERCATS section ############

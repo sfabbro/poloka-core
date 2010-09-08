@@ -16,10 +16,10 @@
 /* sextractor header files do not contain any provision for inclusion in C++ sources */
 
 extern "C" {
-#include <sex/define.h> /* from sextractor, mandatory for next one () */
-#include <sex/globals.h> /* from sextractor. nice name isn't it ? */
-#include <sex/types.h> 
-#include <sex/prefs.h> // a ajouter pour la version v244
+#include <define.h> /* from sextractor, mandatory for next one () */
+#include <globals.h> /* from sextractor. nice name isn't it ? */
+#include <types.h> 
+#include <prefs.h> // a ajouter pour la version v244
 	   }
 
 
@@ -770,7 +770,7 @@ SEStarListMake_2(const ForSExtractor & shortdata,
 
 
 extern "C" {
-#include <sex/back.h> 
+#include <back.h> 
 }
 /* back_meshx (or width according SExtractor)
 is coded in the mini back header as SEXBKGSX,

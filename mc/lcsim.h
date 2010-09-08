@@ -31,7 +31,7 @@ else {A=a;B=b;}
 };
 };
 
-enum HostMode{From_SE =0, From_photoz};
+typedef enum HostMode{From_SE =0, From_photoz};
 
 
 class lcsim_card {

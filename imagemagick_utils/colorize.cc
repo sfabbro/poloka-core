@@ -166,6 +166,7 @@ int main(int argc,char **argv) {
   if(argc<4)
     usage(argv[0]);
   
+  int i=0;
   string outputfilename="color.gif";
   vector<string> fitsfilenames;
   vector<Magick::ColorRGB> colors;

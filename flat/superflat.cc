@@ -602,7 +602,7 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
   // switched to true if we reach the end of the routine:
   outFits.EnableWrite(false);
 
-  BiasCorrect_and_trim(outFits,bias);
+  double overscan = BiasCorrect_and_trim(outFits,bias);
   if (bias) delete bias; bias = NULL;// saves memory and prevent accidental use.
   
   if (getenv("WRITE_BIAS_REMOVED")) 

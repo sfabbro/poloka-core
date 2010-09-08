@@ -1,12 +1,10 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@/poloka
+prefix=@PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include/poloka-@VERSION@
 
-Name: @PACKAGE_NAME@
-Description: Library for Supernova image reductions
-Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ltoads_base -ltoads_utils -ltoads
-Libs.private: @LIBS@
+Name: poloka
+Description: This is poloka
+Version: @VERSION@
+Libs: -L${libdir} -ltoadslib -ltoads_base -ltoads_utils -ltoadsmc
+Libs.private: -lm
 Cflags: -I${includedir}
-Requires: libsex cfitsio

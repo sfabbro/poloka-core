@@ -525,7 +525,7 @@ ForSim::Fill(ReducedImage const & RefImage)
     }
  
   // to generate in galaxies, we need a galaxy list
-  if ((datsim.Methode == InHost || datsim.Methode == AdaptedToHost) && (datsim.Islcsim== false)) {
+  if ((datsim.Methode == InHost || datsim.Methode == AdaptedToHost) && datsim.Islcsim== false)
     // if it was already set, don't overwrite it
     if (BellesGal.size() == 0)
       {
@@ -536,7 +536,6 @@ ForSim::Fill(ReducedImage const & RefImage)
 	SaveModel(BellesGal, RefImage, "galaxies" );
       }
     else cerr << " user already provided a galaxy list " << endl;
-  }
 }
 
 

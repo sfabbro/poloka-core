@@ -2,13 +2,12 @@
 #include <vector>
 
 #include "fitsimage.h"
-#include "transformedimage.h"
 #include "imagesum.h"
 
 static void usage(const char *progName)
 {
   cerr << "Usage: " << progName << " [OPTIONS] <DbImage(s)>\n"
-       << "  register, resample and stack images\n"
+       << "  register, resample and stack images with a given method into dbimage named sum. \n"
        << "   OPTIONS are \n"
        << "     -stack  <n> specify the stacking method among: (default is 1)\n"
        << "              1  Weighted average\n"
@@ -19,8 +18,7 @@ static void usage(const char *progName)
        << "              2  Extended source optimal (inverse sky variance)\n"
        << "              3  No global weighting  (just local weighting)\n"
        << "              4  No weights at all\n"
-       << "     -out <name> give a name to the stacked dbimage (default is sum)\n"
-       << "     -large: will make a frame containing all images\n"
+       << "     -sum <name> give a name to the stacked dbimage (default is sum)\n"
        << "     -geo <name> specify the geometric reference name (default is first image)\n"
        << "     -pho <name> specify the photometric reference name (default is first image)\n"
        << "     -j : just stack, do not register and resample\n";
@@ -30,15 +28,14 @@ static void usage(const char *progName)
 int main(int nargs, char **args)
 {
   // if nothing is given
-  if (nargs < 2) { usage(args[0]); }
-  if (nargs == 2) { cerr << " Sum at least 2 images \n\n"; usage(args[0]); }
+  if (nargs < 2){usage(args[0]);}
+  if (nargs == 2){cerr << " Sum at least 2 images !!\n\n"; usage(args[0]);}
 
   // take care of arguments
   bool justSum = false;
   StackingMethod stackMethod = WeightedAverage;
   WeightingMethod weightMethod = ExtendedSourceOptimal;
-  string sumName("sum"), geoName(""), phoName("");
-  bool dolarge = false;
+  string sumName("sum"), geoName("NOGEO"), phoName("NOPHO");
 
   ReducedImageList toSum;
   for (int i=1; i<nargs; ++i)
@@ -55,39 +52,21 @@ int main(int nargs, char **args)
       // options
       arg++;
       sscanf(arg, "%s", arg);
-      if (strcmp(arg,"stack")==0) { ++i; stackMethod =  (StackingMethod) atoi(args[i]); continue; }
-      if (strcmp(arg,"weight")==0)  { ++i; weightMethod = (WeightingMethod) atoi(args[i]); continue; }
-      if (strcmp(arg,"geo")==0) { ++i; geoName = args[i]; continue; }
-      if (strcmp(arg,"sum")==0) { ++i; sumName = args[i]; continue; }
-      if (strcmp(arg,"pho")==0) { ++i; phoName = args[i]; continue; }
-      if (strcmp(arg,"large")==0) { dolarge = true; continue; }
-      if (strcmp(arg,"j")==0) { justSum = true; continue; }
+      if (strcmp(arg,"stack")==0)   { ++i; stackMethod =  (StackingMethod) atoi(args[i]); continue;}
+      if (strcmp(arg,"weight")==0) { ++i; weightMethod = (WeightingMethod) atoi(args[i]); continue;}
+      if (strcmp(arg,"geo")==0) { ++i; geoName = args[i]; continue;}
+      if (strcmp(arg,"sum")==0) { ++i; sumName = args[i]; continue;}
+      if (strcmp(arg,"pho")==0) { ++i; phoName = args[i]; continue;}
+      if (strcmp(arg,"j")==0) { justSum = true; continue;}
 
       // unrecognized option
       usage(args[0]);      
     }
 
-  if (geoName.empty()) geoName = toSum.front()->Name();
-  if (phoName.empty()) phoName = toSum.front()->Name();
-
-  if (dolarge) 
-    {
-      cout << " Will produce an enlarged reference frame" << endl;
-      ReducedImage tmpgeo(geoName);
-      string unionName = geoName + "_enlarged";
-      MakeUnionRef(toSum, tmpgeo, unionName);
-      for (ReducedImageIterator it=toSum.begin(); it != toSum.end(); ) {
-	if ((*it)->Name() == geoName) {
-	  it = toSum.erase(it);
-	  toSum.push_back(new ReducedImage(unionName));
-	}	
-	else 
-	  ++it;
-      }
-      geoName = unionName;
-    }
-  
+  if (geoName == "NOGEO") geoName = toSum.front()->Name();
   ReducedImage geoRef(geoName);
+
+  if (phoName == "NOPHO") phoName = toSum.front()->Name();
   ReducedImage phoRef(phoName);
 
 
@@ -99,22 +78,15 @@ int main(int nargs, char **args)
        << "     - weight method   : " << name_of_weightingMethod(weightMethod) << endl;
 
 
-  if (justSum) 
+  if (!justSum) ImagesAlignAndSum(toSum, geoRef, sumName, 
+				  DoFits | DoCatalog | DoWeight | DoSatur, 
+				  &phoRef, weightMethod, stackMethod);
+  else
     {
       ImageSum sum(sumName, toSum, &phoRef, weightMethod, stackMethod);
       sum.Execute(DoFits | DoCatalog | DoWeight | DoSatur);
-    } 
-  else 
-    {
-      ImagesAlignAndSum(toSum, geoRef, sumName, 
-			DoFits | DoCatalog | DoWeight | DoSatur, 
-			&phoRef, weightMethod, stackMethod);
     }
-
-  //not so useful to do, just run matchusno
-  //UsnoProcess(DbImage(sumName).FitsImageName(Calibrated),
-  //	      DbImage(sumName).ImageCatalogName(Sextractor),
-  //	      NULL);
-
+  
   return EXIT_SUCCESS;
 }
+

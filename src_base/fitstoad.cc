@@ -453,7 +453,7 @@ VirtualInstrument  *SniffTelInst(const FitsHeader &Head)
 
 			     
 
-struct ToadsKeyRec {
+typedef struct ToadsKeyRec {
   string Name;
   string Comment;
   string DefaultKey;

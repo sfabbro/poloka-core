@@ -334,12 +334,12 @@ const BaseStarList* SimSNWModel2Base(const SimSNWModelStarList * This);
  
 
 
-#include "image.h"
-#include "imagepsf.h"
-
-#ifdef STORAGE
 // DaoPhot utilitaries
 // The place of this is to be discussed with Seb
+
+
+#include "image.h"
+#include "imagepsf.h"
 class DaoPsf;
 
 
@@ -349,7 +349,6 @@ void AddWDaoPsfToImage(DaoPsf const & daopsf, double xc, double yc,
 void AddListWDaoPsfToImage(DaoPsf const & daopsf, BaseStarList *List, 
 		       Image & img, 
 		       Image * psat=NULL, double saturation=-1);
-#endif
 		       
 void AddWPsfToImage(ImagePSF &psf ,double xc, double yc, 
 		       double flux,Image & image,

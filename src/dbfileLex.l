@@ -5,10 +5,11 @@
 
 #include  "dbfileParse.h"
 
-static char *StringNew(const char *Original)
+static char *StringNew(char *Original)
 {
-char *toto = malloc(strlen(Original)+2);
-return strcpy(toto, Original);
+char *toto = (char*) malloc(strlen(Original)+2);
+strcpy(toto,Original);
+return toto;
 }
 
 int yywrap ();

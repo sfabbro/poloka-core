@@ -1,12 +1,12 @@
 *
-* $Id: sfact.inc,v 1.2 2010/08/30 21:50:06 seb Exp $
+* $Id: sfact.inc,v 1.3 2010/09/08 22:09:11 seb Exp $
 *
 * $Log: sfact.inc,v $
-* Revision 1.2  2010/08/30 21:50:06  seb
-* Added a photometric ratio option utils/image_register.cc
+* Revision 1.3  2010/09/08 22:09:11  seb
+* Revert blindly all changes previous to Aug 29, 2010, which break for paris users
 *
-* Revision 1.1.1.1  2004/02/20 10:48:16  nrl
-* First version.
+* Revision 1.1  2004/02/20 10:48:16  nrl
+* Initial revision
 *
 * Revision 1.1.1.2  2002/10/03 11:35:46  seb
 *
@@ -27,7 +27,7 @@
              IF(PIVOTF(A(J,J)) .LE. 0.)  GOTO 150
              A(J,J)  =  ONE / A(J,J)
              IF(J .EQ. N)  GOTO 199
-             JP1  =  J+1
+ 140         JP1  =  J+1
              DO 143   L  =  JP1, N
                 A(J,L)  =  A(J,J)*A(L,J)
                 S1      =  -A(L,J+1)

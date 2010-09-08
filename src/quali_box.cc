@@ -7,7 +7,7 @@
 using namespace std;
 
 #include "image.h"
-#include "frame.h"
+
 #include "quali_box.h"
 #include "gtransfo.h"
 #include "sestar.h"

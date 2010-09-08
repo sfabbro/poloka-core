@@ -1,23 +1,23 @@
-noinst_LTLIBRARIES = libcernstuff.la
+EXTRA_DIST = kernnum/pilot.h
 
-noinst_HEADERS = \
-	kernnum/pilot.h \
-	fact.inc \
-	feqn.inc \
-	finv.inc \
-	sfactd.inc \
-	sfact.inc \
-	sfinv.inc
+lib_LTLIBRARIES = libcernstuff.la
+libcernstuff_la_SOURCES = \
+ dfact.F  dfinv.F  eisrs1d.F  feqn.inc  sfact.inc  tmprnt.F  tred2d.F \
+ dfeqn.F  dsinv.F  fact.inc  finv.inc  sfactd.inc   sfinv.inc  tql2d.F
 
-libcernstuff_la_SOURCES =
+######## auto symbolic link #########
+# if configure is set with option --enable-autoinstall
+# symbolic links to all binaries are set in the install directory
+# this prevents during developpement to install
+# systematically the package
 
-libcernstuff_la_SOURCES += \
-	$(noinst_HEADERS) \
-	dfact.F \
-	dfeqn.F \
-	dfinv.F \
-	dsinv.F \
-	eisrs1d.F \
-	tmprnt.F \
-	tql2d.F \
-	tred2d.F
+
+if AUTOINSTALL
+
+@prefix@/lib/% : .libs/%
+	ln -fs @abs_builddir@/.libs/$* @prefix@/lib/$*
+
+all :  $(patsubst %,@prefix@/bin/%,${bin_PROGRAMS}) $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libcernstuff.*)) $(patsubst %,@prefix@/include/%,${include_HEADERS})
+
+endif
+

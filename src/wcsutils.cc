@@ -250,7 +250,7 @@ bool TanLinWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
 {
   string ctype1 = Head.KeyVal("CTYPE1");
   string ctype2 = Head.KeyVal("CTYPE2");
-  if ((ctype1 != "RA---TAN" || ctype2 != "DEC--TAN") && (ctype1 != "RA---TNX" || ctype2 != "DEC--TNX"))
+  if (ctype1 != "RA---TAN" || ctype2 != "DEC--TAN")
     {
       if (Warn) cerr << " No TAN WCS in " << Head.FileName () << endl;
       return false;
@@ -426,7 +426,7 @@ static GtransfoPoly ReadWCSCorrection(const FitsHeader &Head,
     }
   // if the highest j is 6, then second degree is enough
   GtransfoPoly corr((maxj==6) ? 2 : 3);
-  const DistortionMapping * assoc = 0;
+  const DistortionMapping * assoc;
   if (corrTag == "DJ") assoc = DJNames;
   else if (corrTag == "DV" || corrTag == "PV") assoc = DVNames;
   else if (corrTag == "WCS3") assoc = WCS3Names;
@@ -973,8 +973,6 @@ static bool ComputeLinWCS(const FitsHeader &Head,
     *RotFlip
     *GtransfoLinShift(-CrPix.x, -CrPix.y);
   WCS = TanPix2RaDec(cd, Point(ra,dec));
-  cout << " Found that one: " << endl;
-  cout << WCS << endl;
   return true;
 }
 
@@ -1011,7 +1009,7 @@ bool GuessLinWCS(const FitsHeader &Header, TanPix2RaDec &Guess)
   // the tel/inst specific procedure failed. try the default one ...
   
   if (HasLinWCS(Header)) return TanLinWCSFromHeader(Header,Guess);
-  cout << " failed. now trying simple shift\n";
+  
   return ComputeLinWCS(Header, Header.ImageCenter(), GtransfoIdentity(), Guess);  
 }
 

@@ -37,8 +37,7 @@ if (fptr) /* genuine key to be read on a file */
   {
     int status=0;
     char value[256];
-    //const_cast to trick cfitsio which should really use const char* in these calls
-    fits_read_key(fptr, TSTRING, const_cast<char*>(keyName.c_str()), &value, NULL, &status);
+     fits_read_key(fptr, TSTRING, keyName, &value, NULL, &status);
     if (status == KEY_NO_EXIST)
       {
       if (warn) 
@@ -57,7 +56,7 @@ if (fptr)
   {
     int status=0;
     char value[256];
-    fits_read_key(fptr, TSTRING, const_cast<char*>(keyName.c_str()), &value, NULL, &status);
+    fits_read_key(fptr, TSTRING, keyName, &value, NULL, &status);
     if (status == KEY_NO_EXIST)
       {
       if (warn) 
@@ -76,7 +75,7 @@ if (fptr)
   {
     int status=0;
     char value[256];
-    fits_read_key(fptr, TSTRING, const_cast<char*>(keyName.c_str()), &value, NULL, &status);
+    fits_read_key(fptr, TSTRING, keyName, &value, NULL, &status);
     if (status == KEY_NO_EXIST)
       {
       if (warn) 
@@ -96,7 +95,7 @@ FitsKey::operator bool() /* const */
       int status=0;
       // have to go through an int because cfitsio uses int for "logicals"
       int value = 0; 
-      fits_read_key(fptr, TLOGICAL, const_cast<char*>(keyName.c_str()), &value, NULL, &status);
+      fits_read_key(fptr, TLOGICAL, keyName, &value, NULL, &status);
       if (status == KEY_NO_EXIST)
 	{
 	  if (warn) 
@@ -118,7 +117,7 @@ if (fptr)
   int status=0;
   char a_C_string[80];
   a_C_string[0] = '\0'; // default = empty string
-  fits_read_key(fptr, TSTRING, const_cast<char*>(keyName.c_str()), a_C_string, NULL, &status);
+  fits_read_key(fptr, TSTRING, keyName, a_C_string, NULL, &status);
   if (status == KEY_NO_EXIST)
     {
       if (warn) 
@@ -138,8 +137,10 @@ if (This.fptr)
   char a_string[80];
   char a_comment[80];
   int status = 0;
+  char s_key_name[80];
+  strcpy(s_key_name, This.keyName);
   /* read the data card in the FITS header as a string, and print out Key and key value */
-  fits_read_key(This.fptr, TSTRING, const_cast<char*>(This.KeyName().c_str()), a_string, a_comment, &status);
+  fits_read_key(This.fptr, TSTRING, s_key_name, a_string, a_comment, &status);
   //stream << This.keyName << ' ' << a_string;
   // If we want to print only the value to use it in a shell for exemple
   stream << a_string;
@@ -1625,7 +1626,7 @@ bool FitsImage::Trim(const Frame &Region)
   
  Frame wholeFrame(*this,WholeSizeFrame);
  // to be able to extract a subimage, Region should be inside the Image:
- if ((Nx() == Nx_Image && Ny() == Ny_Image) || (Region*wholeFrame != Region))
+ if (Nx() == Nx_Image && Ny() == Ny_Image || (Region*wholeFrame != Region))
    {
      cout << "Image " << FileName () << " already trimed : nothing done." << endl ;
      return false;

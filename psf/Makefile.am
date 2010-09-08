@@ -1,39 +1,52 @@
-CLEANFILES = *~
-MAINTAINERCLEANFILES = Makefile.in *.new stamp-*
 
-EXTRA_DIST = README.ls_biases README_HOWTO
+# MATVECT_CHECK_BOUNDS checks access to Mat and Vect for index over/underflow
 
-include_HEADERS = \
-	analyticpsf.h \
-	imagepsf.h \
-	nonlinmodel.h \
-	poly1.h \
-	poly2.h \
-	psfstar.h \
-	sparsevect.h
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/src_base -I$(top_srcdir)/src -I$(top_srcdir)/psf -I$(top_srcdir)/src_utils @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ -DMATVECT_CHECK_BOUNDS
+#AM_FFLAGS   = -Wall -pedantic -W  -O3 -funroll-loops
+AM_FFLAGS   = -Wall -pedantic -W -ffortran-bounds-check
+AM_LDFLAGS  = -L$(top_builddir)/src_base -L$(top_builddir)/src -ltoadsbase -ltoads -L@libdir@ -lg2c @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
+
+AM_CPPFLAGS += $($<_cppflags)
+optimize_it = -O3
+
 
 lib_LTLIBRARIES = libtoadspsf.la
 
 libtoadspsf_la_SOURCES = \
-	$(include_HEADERS) \
-	analyticpsf.cc \
-	imagepsf.cc \
-	nonlinmodel.cc \
-	poly2.cc \
-	poly1.cc \
-	psfstar.cc
+	analyticpsf.cc   analyticpsf.h nonlinmodel.h \
+	psfstar.cc       \
+	imagepsf.cc      \
+	poly2.cc         \
+	poly1.cc        \
+	nonlinmodel.cc  
+include_HEADERS = poly1.h imagepsf.h psfstar.h poly2.h sparsevect.h analyticpsf.h
 
-# MATVECT_CHECK_BOUNDS checks access to Mat and Vect for index over/underflow
-AM_CPPFLAGS = \
-	-I$(top_srcdir)/src_base \
-	-I$(top_srcdir)/src_utils \
-	-I$(top_srcdir)/src \
-	@CFITSIO_CFLAGS@ -DMATVECT_CHECK_BOUNDS
 
-libtoadspsf_la_LIBADD = $(top_builddir)/src/libtoads.la
 
-LDADD = libtoadspsf.la
+analyticpsf.cc_cppflags = $(optimize_it)
+psfstar.cc_cppflags = $(optimize_it)
+imagepsf.cc_cppflags = $(optimize_it)
+poly2.cc_cppflags = $(optimize_it)
 
-bin_PROGRAMS = makepsf
-makepsf_SOURCES = makepsf.cc
+
+######## auto symbolic link #########
+# if configure is set with option --enable-autoinstall
+# symbolic links to all binaries are set in the install directory
+# this prevents during developpement to install
+# systematically the package
+
+if AUTOINSTALL
+
+@prefix@/bin/% : .libs/%
+	ln -fs @abs_builddir@/.libs/$* $@
+
+@prefix@/lib/% : .libs/%
+	ln -fs @abs_builddir@/.libs/$* $@
+
+@prefix@/include/% : @abs_srcdir@/%
+	ln -fs @abs_srcdir@/$* $@
+
+all :  $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadspsf.*)) $(patsubst %,@prefix@/include/%,${include_HEADERS})
+
+endif
 

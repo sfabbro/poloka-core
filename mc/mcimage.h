@@ -6,7 +6,7 @@
 #include "basestar.h"
 #include "reducedimage.h"
 
-enum AddMethod{WModel =0, WGaussian, WDaoPsf};
+typedef enum AddMethod{WModel =0, WGaussian, WDaoPsf};
 
 
 class SimSNStarList;

@@ -68,7 +68,7 @@ int main(int argc,char **args)
     
     int i=0;
     int j=0;
-    float val1;
+    float val1,val2;
     
     while(true)
       {

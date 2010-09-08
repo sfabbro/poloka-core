@@ -261,7 +261,7 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
   gflag &= ~(BAD_GAUSS_MOMENTS);
   double det = Mxx()*Myy() - sq(Mxy());
   double wxx, wyy, wxy, radius;
-  if (Mxx() >0 && Myy()>0 && det >0)
+  if (Mxx() >=0 && Myy()>=0 && det >= 0)
     {
       wxx = Myy()/det;
       wyy = Mxx()/det;
@@ -398,7 +398,7 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
 	 SExtractor position.
       */
       double drift2 = sq(weightedX-x)+sq(weightedY-y);
-      if ( drift2>4 || det <= 0 || sumxx <= 0 || sumyy <= 0 )  
+      if ( drift2>4 || det < 0 || sumxx < 0 || sumyy < 0 )  
 	{
 	  gflag |= BAD_GAUSS_MOMENTS;
 	  wxx = wyy = 12.;

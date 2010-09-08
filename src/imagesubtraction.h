@@ -66,7 +66,7 @@ class ImageSubtraction : public ReducedImage, public PsfMatch {
     ReducedImage *Clone() const;
 
     string AllCandidateCatalogName() const { return AddSlash(Dir())+"allcand.list";}
-    double PhotomRatio() const { return PsfMatch::PhotomRatio(); }
+
     ~ImageSubtraction();
 
 

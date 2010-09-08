@@ -16,7 +16,7 @@ class ReducedImage;
 #include "imagesubtraction.h"
 
 
-enum StackType { RegularKind = 0, SwarpKind = 1};
+typedef enum StackType { RegularKind = 0, SwarpKind = 1};
 
 class NewStack : public StringList {
 public :

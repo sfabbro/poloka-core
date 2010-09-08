@@ -1397,7 +1397,7 @@ Sim::WriteShortList(const string &Name,const double  MJDate, const string &filte
 	if ( phase  > 69.0  || phase < -19.0 ) continue;
 	 double flux_at_dl,mag,dl;	
 	
-	 sn_model.SetParams("Redshift", (*it)->Redshift());	
+	sn_model.SetRedshift((*it)->Redshift());	
   	m_ext->val = (*it)->H_Extinction();
 	m_pday->val = (*it)->D0();
 	m_stretch->val = (*it)->Stretch();  

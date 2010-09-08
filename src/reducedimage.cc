@@ -405,7 +405,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
   ForSExtractor data ;
   FillSExtractorData(data,fond_deja_soustrait,sauver_fond, use_sigma_header);
   // assign the name of the "SEGMENTATION" image. Temporary name.
-  data.FitsSegmentationName = Dir()+"seg.fits";
+  data.FitsSegmentationName = data.UniqueName+"seg.fits";
   data.Print();
   double Fond = 0., SigmaFond = 0. ;
   FitsImage *pmasksat = NULL ;
@@ -437,8 +437,8 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
     pmasksat->EnableWrite(true);
     cout << "Writing Saturated stars pixels map in " 
 	 << FitsSaturName() << endl ;
-    cout << " we have " << pmasksat->SumPixels() / pmasksat->NPix()
-	 << "% pixels flagged as saturated" << endl;
+    cout << " we have " << pmasksat->SumPixels() 
+	 << " pixels flagged as saturated" << endl;
     delete pmasksat;
     pmasksat = NULL;
     }
@@ -1961,12 +1961,8 @@ double ReducedImage::OriginalSkyLevel() const
   FitsHeader head(FitsName());
   if (head.IsValid())
     {
-      if (head.HasKey("SKYLEV"))
-	return read_double_key("SKYLEV","OriginalSkyLevel");
-      else if (head.HasKey("SEXSKY"))
-	return read_double_key("SEXSKY","OriginalSkyLevel");
-      else
-	return BackLevel();
+      if (!head.HasKey("SKYLEV")) return BackLevel();
+      return read_double_key("SKYLEV","OriginalSkyLevel");
     }
   return 0;
 }

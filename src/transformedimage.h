@@ -3,7 +3,7 @@
 #define TRANSFORMEDIMAGE__H 
 
 #include "gtransfo.h"
-#include "apersestar.h"
+#include "sestar.h"
 #include "reducedimage.h"
 #include "frame.h"
 #include "countedref.h"
@@ -96,7 +96,6 @@ public:
   //! transforms a bool Image
   void TransformBoolImage(const FitsImage &Source, FitsImage& Transformed) const ;
   void TransformCatalog(const SEStarList &Catalog, SEStarList &Transformed) const;
-  void TransformAperCatalog(const AperSEStarList &Catalog, AperSEStarList &Transformed) const;
   bool IsValid() const;
   double ScaleFactor() const {return scaleFactor;}
   ImageTransfo* Clone() const;
@@ -191,6 +190,6 @@ string TransformedName(const string &ToTransform, const string &Ref);
 
 int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, ReducedImageList &Aligned, const int ToDo,bool use_wcs=false,float min_match_ratio=0);
 
-void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName);
+
 
 #endif /*  TRANSFORMEDIMAGE__H */

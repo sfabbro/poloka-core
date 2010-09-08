@@ -14,6 +14,7 @@ int main(int nargs, char **args)
   if (nargs <= 1){usage(args[0]); exit(1);}
   cout << endl << " Checking images " << endl;
   int old = cout.precision();
+  long f = cout.flags() ;
   cout << resetiosflags(ios::scientific);
   cout << setiosflags(ios::fixed);
   ReducedImageList alls;

@@ -1,0 +1,230 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/fastfinder.cc)
+AC_CONFIG_AUX_DIR(config)
+
+dnl ##############################
+dnl #####   TOADS  VERSION   #####
+dnl ##############################
+TOADS_MAJOR_VERSION=0
+TOADS_MINOR_VERSION=1
+TOADS_MICRO_VERSION=0
+TOADS_VERSION=${TOADS_MAJOR_VERSION}.${TOADS_MINOR_VERSION}.${TOADS_MICRO_VERSION}
+
+AM_INIT_AUTOMAKE(toads,$TOADS_VERSION)
+AM_CONFIG_HEADER(config.h)
+AC_CANONICAL_HOST
+AM_DISABLE_STATIC
+
+
+dnl ##############################
+dnl ##### OPTIONAL  FEATURES #####
+dnl ##############################
+CFITSIO_SUPPORT=yes
+LIBXML2_SUPPORT=yes
+LAPACK_SUPPORT=no
+CERNLIB_SUPPORT=yes
+
+AC_ARG_ENABLE(cfitsio,
+[  --enable-cfitsio        compile with cfitsio support default=on],
+[  if test $enableval = "no"; then CFITSIO_SUPPORT=no; fi ])
+
+AC_ARG_ENABLE(libxml2,
+[  --enable-libxml2        compile with XML support default=on],
+[  if test $enableval = "no"; then LIBXML2_SUPPORT=no; fi])
+
+AC_ARG_ENABLE(lapack,
+[  --enable-lapack         compile with LAPACK support default=off],
+[  if test $enableval = "yes"; then LAPACK_SUPPORT=yes; fi])
+
+AC_ARG_ENABLE(cernlib,
+[  --enable-cernlib        compile with CERNLIB support default=on],
+[  if test $enableval = "no"; then CERNLIB_SUPPORT=no; fi])
+
+
+
+dnl Checks for programs.
+AC_PROG_F77
+AC_PROG_CXX
+AC_PROG_AWK
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AM_PROG_LIBTOOL
+AC_PROG_YACC
+AM_PROG_LEX
+AC_PROG_MAKE_SET
+AC_PATH_PROG(DOXYGEN,doxygen)
+
+dnl Checks for libraries.
+AC_ARG_WITH(cfitsio,
+[  --with-cfitsio=<cfitsio> cfitsio library and header location],
+[  CFITSIOINCLUDEDIR=$withval/include
+   CFITSIOLIBDIR=$withval/lib
+   CPPFLAGS="-I$CFITSIOINCLUDEDIR $CPPFLAGS"
+   LDFLAGS="-L$CFITSIOLIBDIR -lcfitsio $LDFLAGS"
+   AC_CHECK_HEADER(fitsio.h, ,
+                   AC_MSG_ERROR("not found. Aborting."))
+   AC_CHECK_LIB(cfitsio, main,,
+                AC_MSG_ERROR("not found. Aborting."))
+   LIBCFITSIO_CPPFLAGS="-I$CFITSIOINCLUDEDIR"
+   LIBCFITSIO_LDFLAGS="-L$CFITSIOLIBDIR -lcfitsio"
+   AC_SUBST(LIBCFITSIO_CPPFLAGS)
+   AC_SUBST(LIBCFITSIO_LDFLAGS)
+],
+[
+if [test x$CFITSIO_SUPPORT = xyes]; then
+   CPPFLAGS_sav="$CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS -I$prefix/include"
+   LDFLAGS_sav="$LDFLAGS"
+   LDFLAGS="$LDFLAGS -L$prefix/lib"
+   if [test -n "$TOADLIBS"]; then
+      CPPFLAGS="$CPPFLAGS -I$TOADLIBS/include"
+      LDFLAGS="$LDFLAGS -L$TOADLIBS/lib"
+   fi
+   AC_CHECK_HEADER(fitsio.h,,
+                   AC_MSG_ERROR("fitsio.h not found. Aborting."))
+   AC_CHECK_LIB(cfitsio, main,,
+                AC_MSG_ERROR("libcfitsio not found. Aborting."))
+dnl   CPPFLAGS="$CPPFLAGS_sav"
+dnl   LDFLAGS="$LDFLAGS_sav"
+fi
+]
+)
+
+dnl --- libxml2
+AC_ARG_WITH(libxml2,
+[  --with-libxml2=<libxml2> libxml2 library and header location],
+[  LIBXML2INCLUDEDIR=$withval/include/libxml2
+   LIBXML2LIBDIR=$withval/lib
+   LIBXML2_SUPPORT=yes
+   CPPFLAGS="-I$LIBXML2INCLUDEDIR $CPPFLAGS"
+   LDFLAGS="-L$LIBXML2LIBDIR -lxml2 $LDFLAGS"
+   AC_CHECK_HEADER(libxml/xmlreader.h, ,
+                   AC_MSG_ERROR("not found. Aborting."))
+   AC_CHECK_LIB(xml2, xmlTextReaderRead,,
+                AC_MSG_ERROR("not found. Aborting."))
+   LIBXML2_CPPFLAGS="-I$LIBXML2INCLUDEDIR"
+   LIBXML2_LDFLAGS="-L$LIBXML2LIBDIR -lxml2"
+   AC_SUBST(LIBXML2_CPPFLAGS)
+   AC_SUBST(LIBXML2_LDFLAGS)
+],
+[
+if test x$LIBXML2_SUPPORT = xyes; then
+    CPPFLAGS_sav="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS -I$prefix/include/libxml2"
+    LDFLAGS_sav="$LDFLAGS"
+    LDFLAGS="$LDFLAGS -L$prefix/lib"
+    if [test -n "$TOADLIBS"]; then
+      CPPFLAGS="$CPPFLAGS -I$TOADLIBS/include/libxml2"
+      LDFLAGS="$LDFLAGS -L$TOADLIBS/lib"
+    fi
+    AC_CHECK_HEADER(libxml/xmlreader.h,,
+                    AC_MSG_ERROR("xmlreader.h not found. Aborting."))
+    AC_CHECK_LIB(xml2, xmlTextReaderRead,,
+                 AC_MSG_ERROR("libxml2 not found. Aborting."))
+dnl   CPPFLAGS="$CPPFLAGS_sav"
+dnl   LDFLAGS="$LDFLAGS_sav"   
+fi
+]
+)
+
+dnl --- lapack 
+
+dnl --- cernlib 
+AC_ARG_WITH(cernlib,
+[  --with-cernlib=<cernlib> cernlib location],
+[  CERNLIBDIR=$withval/lib
+   CERNLIB_SUPPORT=yes
+   CERN_LDFLAGS="-L$CERNLIBDIR -lpacklib -lmathlib -lnsl -lcrypt -ldl -lg2c"
+   AC_SUBST(CERN_LDFLAGS)
+],
+[
+  if test x$CERNLIB_SUPPORT = xyes; then
+    if [test -n "$CERN"] ; then 
+    CERNLIBDIR="$CERN/pro/lib"
+    CERN_LDFLAGS="-L$CERNLIBDIR -lpacklib -lmathlib -lnsl -lcrypt -ldl -lg2c"
+    AC_SUBST(CERN_LDFLAGS)
+    else
+    AC_MSG_ERROR("CERNLIB could not be found. Aborting")
+    fi
+  fi
+]
+)
+
+AC_ARG_WITH(sex,
+[  --with-sex=<sex> sextractor library and header location],
+[  SEXINCLUDEDIR=$withval/src
+   SEXLIBDIR=$withval/Linux-i686
+   CPPFLAGS="-I$SEXINCLUDEDIR $CPPFLAGS"
+   LDFLAGS="-L$SEXLIBDIR -lsex -lwcs $LDFLAGS"
+   AC_CHECK_HEADER(som.h, ,
+                   AC_MSG_ERROR("not found. Aborting."))
+   AC_CHECK_LIB(sex, main,,
+                AC_MSG_ERROR("not found. Aborting."))
+   SEX_CPPFLAGS="-I$SEXINCLUDEDIR"
+   SEX_LDFLAGS="-L$SEXLIBDIR -lsex -lwcs"
+   AC_SUBST(SEX_CPPFLAGS)
+   AC_SUBST(SEX_LDFLAGS)
+],
+[
+if [test x$SEX_SUPPORT = xyes]; then
+   CPPFLAGS_sav="$CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS -I$prefix/include"
+   LDFLAGS_sav="$LDFLAGS"
+   LDFLAGS="$LDFLAGS -L$prefix/lib"
+   if [test -n "$TOADLIBS"]; then
+      CPPFLAGS="$CPPFLAGS -I$TOADLIBS/include"
+      LDFLAGS="$LDFLAGS -L$TOADLIBS/lib"
+   fi
+   AC_CHECK_HEADER(som.h,,
+                   AC_MSG_ERROR("sextractor not found. Aborting."))
+   AC_CHECK_LIB(sex, main,,
+                AC_MSG_ERROR("libsex not found. Aborting."))
+dnl   CPPFLAGS="$CPPFLAGS_sav"
+dnl   LDFLAGS="$LDFLAGS_sav"
+fi
+]
+)
+
+
+AM_CONDITIONAL(BUILD_LIBXML2, test x$LIBXML2_SUPPORT = xyes)
+AM_CONDITIONAL(BUILD_CFITSIO, test x$CFITSIO_SUPPORT = xyes)
+
+
+
+
+dnl Checks for header files.
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_CHECK_HEADERS(limits.h malloc.h unistd.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_SIZE_T
+AC_STRUCT_TM
+AC_CHECK_SIZEOF(char,1)
+AC_CHECK_SIZEOF(short,2)
+AC_CHECK_SIZEOF(int,4)
+AC_CHECK_SIZEOF(long,4)
+AC_CHECK_SIZEOF(long long,8)
+AC_CHECK_SIZEOF(float,4)
+AC_CHECK_SIZEOF(double,8)
+
+
+dnl Checks for library functions.
+AC_CHECK_FUNCS(getcwd strspn strstr strtod)
+
+AC_OUTPUT(Makefile
+src/Makefile
+cern_stuff/Makefile
+dao_stuff/Makefile
+telinst/Makefile
+datacards/Makefile
+utils/Makefile
+objio/Makefile
+bindings/Makefile
+doc/Makefile
+doc/Doxyfile
+)

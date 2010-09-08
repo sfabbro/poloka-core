@@ -8,7 +8,6 @@
 #include "wcsutils.h"
 #include "fileutils.h"
 #include "imageutils.h"
-#include "reducedutils.h"
 
 string TransformedName(const string &ToTransform, const string &Ref)
 {
@@ -187,7 +186,7 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   //  Transformed.AddOrModKey("TOADRASC",ra.c_str(),"Modified RA after transformation");
   // Transformed.AddOrModKey("TOADDECL",dec.c_str(),"Modified DEC after transformation");
   // Transformed.AddOrModKey("TOADEQUI",epoch,"Modified epoch after transformation");
-
+  
   if (Source && Result) 
     {
       // update pixel size *scale
@@ -333,19 +332,6 @@ void ImageGtransfo::TransformBoolImage(const FitsImage &Original, FitsImage& Tra
   Transformed.ModKey("BITPIX",8);
 }
 
-static const double eps = 1e-5;
-static void scale_sestar(SEStar *star, const double& scale, const double& scale2) {
-  star->Fluxmax() /= scale2;
-  star->Fond() /= scale2;
-  star->Fwhm() *= scale;
-  star->Kronradius() *= scale;
-  star->Isoarea() *= scale;
-  star->Mxx() *= scale;
-  star->Myy() *= scale;
-  star->Mxy() *= scale;
-  star->A() *= scale;
-  star->B() *= scale;
-}
 
 void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Transformed) const
 {
@@ -361,52 +347,26 @@ void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Tran
 	  it = Transformed.erase(it);
 	  continue;
 	}
-      if (fabs(scale2-1.) > eps) 
-	scale_sestar(star, scaleFactor, scale2);
+      star->Fluxmax() /= scale2;
+      star->Fond() /= scale2;
+      star->Fwhm() *= scaleFactor;
+      star->Kronradius() *= scaleFactor;
+      star->Isoarea() *= scaleFactor;
+      star->Mxx() *= scaleFactor;
+      star->Myy() *= scaleFactor;
+      star->Mxy() *= scaleFactor;
+      star->A() *= scaleFactor;
+      star->B() *= scaleFactor;
       ++it;
     }
 }
 
-void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSEStarList &Transformed) const
+
+
+ImageGtransfo::~ImageGtransfo()
 {
-  Transformed.clear();
-  Catalog.CopyTo(Transformed);
-  Transformed.ApplyTransfo(*transfoToRef);
-  double scale2 = scaleFactor*scaleFactor;  
-  for (AperSEStarIterator it=Transformed.begin(); it!=Transformed.end(); )
-    {
-      AperSEStar *star = *it;
-      if (!outputImageSize.InFrame(*star)) 
-	{
-	  it = Transformed.erase(it);
-	  continue;
-	}
-      if (fabs(scale2-1.) < eps) { ++it; continue; }
-      scale_sestar(star, scaleFactor, scale2);
-      star->neighborDist *= scaleFactor;
-      star->gmxx *= scaleFactor;
-      star->gmyy *= scaleFactor;
-      star->gmxy *= scaleFactor;
-      for (vector<Aperture>::iterator sit=star->apers.begin(); sit != star->apers.end(); ++sit) {
-	sit->radius *= scaleFactor;
-	sit->ncos = int(ceil(sit->ncos*scale2));
-      }
-      ++it;
-    }
-  GlobalVal glob = Transformed.GlobVal();
-  double seeing = glob.getDoubleValue("SEEING");
-  double ndist  = glob.getDoubleValue("MAXNEIGHBOR_DIST");
-  vector<double> rads = glob.getDoubleValues("RADIUS");
-  vector<double> shapes = glob.getDoubleValues("STARSHAPE");
-  glob.setDoubleValue("SEEING", seeing*scaleFactor);
-  glob.setDoubleValue("MAXNEIGHBOR_DIST", ndist*scaleFactor);
-  for (size_t i=0;i<rads.size(); ++i) rads[i] *= scaleFactor;
-  for (size_t i=0;i<shapes.size(); ++i) shapes[i] *= scaleFactor;
-  glob.setDoubleValues("RADIUS", rads);
-  glob.setDoubleValues("STARSHAPE", shapes);
-}
 
-ImageGtransfo::~ImageGtransfo() {}
+}
 
 
 
@@ -620,59 +580,6 @@ TransformedImage::~TransformedImage()
 
 /******************* utilities ***********************/
 
-void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName) {
-  Frame unionFrame(Reference.UsablePart());
-  // enlarge frame to secure resampling extra width
-  double hwidth = 5;
-  unionFrame.CutMargin(-hwidth);
-  cout << " MakeUnionRef: initial frame is: " << unionFrame << endl;
-  for (ReducedImageCIterator it = ToAlign.begin(); it != ToAlign.end(); ++it) {
-    CountedRef<Gtransfo> reftoim, imtoref;
-    ImageListMatch(Reference, **it, reftoim, imtoref);
-    Frame frameInRef = ApplyTransfo((*it)->UsablePart(), *imtoref, LargeFrame);
-    frameInRef.CutMargin(-hwidth);
-    unionFrame += frameInRef;
-  } 
-
-  // make an integer frame to avoid resampling
-  unionFrame.xMin = floor(unionFrame.xMin);
-  unionFrame.yMin = floor(unionFrame.yMin);
-  unionFrame.xMax = ceil(unionFrame.xMax);
-  unionFrame.yMax = ceil(unionFrame.yMax);
-
-  cout << " MakeUnionRef: final frame is " << unionFrame << endl;
-
-  double dx = unionFrame.xMin;
-  double dy = unionFrame.yMin;
-  CountedRef<Gtransfo> TransfoFromRef = new GtransfoLinShift(dx, dy);
-  CountedRef<Gtransfo> TransfoToRef   = new GtransfoLinShift(-dx, -dy);
-
-  ImageGtransfo transfo(TransfoFromRef, TransfoToRef, unionFrame, Reference.Name());
-  
-  // now transform image
-  TransformedImage transformed(unionName, Reference, &transfo);
-  transformed.Execute(DoFits | DoCatalog | DoSatur | DoWeight | DoCosmic);
-
-  // apercat are not handled by the DoCrap 
-  string filename = Reference.AperCatalogName();
-  if (FileExists(filename)) {
-    AperSEStarList inList(filename);
-    AperSEStarList outList;
-    cout << " Transforming list from " << filename << endl;
-    transfo.TransformAperCatalog(inList, outList);
-    outList.write(transformed.AperCatalogName());
-  }
-  filename = Reference.StarCatalogName();
-  if (FileExists(filename)) {
-    AperSEStarList inList(filename);
-    AperSEStarList outList;
-    cout << " Transforming list from " << filename << endl;
-    transfo.TransformAperCatalog(inList, outList);
-    outList.write(transformed.StarCatalogName());
-  }
-}
-
-
 int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, 
 		ReducedImageList &Aligned, const int ToDo, bool use_wcs, float min_match_ratio)
 {
@@ -681,7 +588,6 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 #endif
 
   Aligned.clear();
-
   for (ReducedImageCIterator ri = ToAlign.begin(); ri != ToAlign.end(); ++ri)
     {
       const ReducedImage *current = *ri;
@@ -691,15 +597,10 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 	  cerr << "ImagesAlign: was " << currentName << " actually produced ?? " << endl;
 	  continue;
         }
-      if (*current == Reference) {
-	Aligned.push_back(current);
-	continue;
-      }
-
       string transformedName = TransformedName(currentName, Reference.Name());
-      ImageGtransfo *imTransfo = 0;
-
-      if (use_wcs) {
+      
+      ImageGtransfo *imTransfo;
+      if(use_wcs) {
 	Gtransfo* wcs_reference;
 	WCSFromHeader(Reference.FitsName(),wcs_reference);
 	Gtransfo* wcs_current;
@@ -709,13 +610,13 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 	
 	Gtransfo *direct = GtransfoCompose(wcs_reference->InverseTransfo(0.01,frame_reference),wcs_current);
 	Gtransfo *invert = GtransfoCompose(wcs_current->InverseTransfo(0.01,frame_current),wcs_reference);
-	imTransfo = new ImageGtransfo(invert,direct,frame_reference, Reference.Name());
+	imTransfo = new ImageGtransfo(invert,direct,frame_reference,"");
 	delete wcs_reference;
 	delete wcs_current;
 	delete direct;
 	delete invert;
-      } else {
-	imTransfo = new ImageGtransfo(Reference, *current, min_match_ratio);
+      }else{
+	imTransfo = new ImageGtransfo(Reference,*current,min_match_ratio);
       }
       
       TransformedImage *alignedCurrent =

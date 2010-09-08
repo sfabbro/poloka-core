@@ -436,23 +436,23 @@ static bool check_guess(const GtransfoLin &Guess)
 }
   
 
-static GtransfoLin *FindShift(const BaseStarList &ImageList, 
+static GtransfoLin *FindShift(const SEStarList &ImageList, 
 			      const BaseStarList &UsnoCat, 
 			      const unsigned &MinMatches)
 {
   GtransfoLin *shift = NULL;
   // try to guess a simple shift, in case the guessed WCS is good:
   cout << " trying to guess a shift" << endl;
-  shift = ListMatchupShift(ImageList, UsnoCat, 
+  shift = ListMatchupShift(*SE2Base(&ImageList), UsnoCat, 
 			   GtransfoIdentity(), 200.,10.);
-  StarMatchList *match = ListMatchCollect(ImageList,
+  StarMatchList *match = ListMatchCollect(*SE2Base(&ImageList),
 					  UsnoCat, shift, 10.);
   unsigned shiftMatches = match->size();
   delete match;
   if (shiftMatches >= MinMatches)
     {
       // considered as good :
-      cout << " found " << shiftMatches << " matches with a simple shift and tolerance of 10" 
+      cout << " found " << shiftMatches << " matches with a simple shift" 
 	   << endl;
       return shift;
     }
@@ -475,12 +475,12 @@ static GtransfoLin *FindShift(const BaseStarList &ImageList,
   returned StarMatchList, to be deleted by the caller.*/
 
 
-static GtransfoLin *FindCombiMatch(BaseStarList &ImageList, BaseStarList &UsnoCat,const MatchConditions &conditions)
+static GtransfoLin *FindCombiMatch(SEStarList &ImageList, BaseStarList &UsnoCat,const MatchConditions &conditions)
 {
 
   cout << " combinatorial search with lists of " << conditions.NStarsL1 << ' ' <<  conditions.NStarsL2 << " stars " << endl;
   
-  StarMatchList *match = MatchSearchRotShiftFlip(ImageList, UsnoCat, conditions);
+  StarMatchList *match = MatchSearchRotShiftFlip(*SE2Base(&ImageList), UsnoCat, conditions);
   if (!match) return NULL;
 
   GtransfoLin guessCorr = *dynamic_cast<const GtransfoLin *>(match->Transfo());
@@ -756,7 +756,6 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       pixFrame= Frame(header);
       skyRegion = ApplyTransfo(pixFrame, guessWcs, LargeFrame).Rescale(1.2); // add 20% , i.e, 10 % on all sides
       pixSize = header.KeyVal("TOADPIXS");
-      cout << " GUESSED 1: " << guessWcs << endl;
     }
 
   // Part 1.2 load image catalog
@@ -859,7 +858,6 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   // Part 2 : find an initial match.
   StarMatchList *initialMatch = NULL;
   BaseStarList usnoListCopy(usnoList);
-  BaseStarList *basestarlist = SE2Base(&sestarlist);
 
   // 2 methods for finding initial match
   for (int method = 1; method <=2; ++method)
@@ -877,7 +875,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	{
 	  unsigned minShiftMatches = min(min(ngoodImageObjects*2/3, unsigned(25)),
 					 unsigned(usnoList.size()/3));
-	  guessCorr = FindShift(*basestarlist, usnoList, minShiftMatches);
+	  guessCorr = FindShift(sestarlist, usnoList, minShiftMatches);
 	}
     
 
@@ -893,7 +891,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	  conditions.NStarsL2 = int (conditions.NStarsL1 * (usnoWindowSizeInPix/imageSize));
 	  //	  conditions.PrintLevel = 1;
 	  conditions.MaxTrialCount = 16;
-	  guessCorr = FindCombiMatch(*basestarlist, usnoList, conditions);
+	  guessCorr = FindCombiMatch(sestarlist, usnoList, conditions);
 
 	}
       if (guessCorr)
@@ -923,7 +921,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	}
 
       // Part 2.3 : Recollect a better match with a controlled accuracy ...
-      StarMatchList *match = ListMatchCollect(*basestarlist, 
+      StarMatchList *match = ListMatchCollect(*SE2Base(&sestarlist), 
 					      usnoList, 
 					      guessCorr, 
 					      MatchPrefs.linMatchCut/pixSize);
@@ -933,7 +931,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       int nMatches = match->size();
       cout << " collected " << nMatches << " matches with tolerance " 
 	   << MatchPrefs.linMatchCut << " arcsec " << endl;
-      int minMatchCount = min(100, int(min(0.2*usnoList.size(), ngoodImageObjects*0.5)));
+      int minMatchCount = int(min(0.2*usnoList.size(), ngoodImageObjects*0.5));
       if (nMatches > minMatchCount)
 	{
 	  initialMatch = match;
@@ -965,7 +963,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
   Point tangentPoint = guessWcs.TangentPoint();
   // we have changed coordinate system, rather than hacking the StarMatchList, we just recollect:
   delete initialMatch;
-  initialMatch = ListMatchCollect(*basestarlist, 
+  initialMatch = ListMatchCollect(*SE2Base(&sestarlist), 
 				  usnoList, 
 				  &pix2TP, 
 				  MatchPrefs.linMatchCut/3600.); // linMatchCut (& co)  are provided in arcsec in TP 
@@ -1010,7 +1008,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	    << "order = " << match_order << ')'	<< std::endl;
 
   // Part 3.2 : recollect matches using this better transformation
-  StarMatchList *accurateMatch = ListMatchCollect(*basestarlist, 
+  StarMatchList *accurateMatch = ListMatchCollect(*SE2Base(&sestarlist), 
 					     usnoList, 
 					     initialMatch->Transfo(), 
 					     MatchPrefs.secondMatchCut/3600.);
@@ -1257,6 +1255,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
       }
   return true;
 }
+
 
 
 #ifdef COMMENT
