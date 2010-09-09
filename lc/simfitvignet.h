@@ -5,10 +5,10 @@
 #include <countedref.h>
 //#include <daophotpsf.h>
 #include <reducedimage.h>
-#include <psfmatch.h>
 #include "photstar.h"
 #include "vignet.h"
 #include "imagepsf.h"
+#include "kernelfit.h"
 
 //
 //! \file simfitvignet.h
@@ -192,7 +192,7 @@ public:
   CountedRef<DaoPsf> daopsf;
 #endif
 
-  PsfMatch* psfmatch;
+  KernelFit* kernelFit;
 
   //! empty constructor allocate nothing
   SimFitVignet();
@@ -203,7 +203,7 @@ public:
   //! loads the Kern with the Reference, and also builds the proper Psf.
   SimFitVignet( const PhotStar *Star, const ReducedImage *Rim,  SimFitRefVignet* Ref);
   
-  virtual ~SimFitVignet() {if(psfmatch) delete psfmatch;};
+  virtual ~SimFitVignet() {delete kernelFit;};
 
   void ResetFlags();
   void ModifiedResid() {resid_updated = false;};

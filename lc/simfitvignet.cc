@@ -1,12 +1,8 @@
-#include <psfmatch.h>
 #include <fstream> 
 #include "simfitvignet.h"
 #include "vignetserver.h"
+#include "kernelfitter.h"
 
-// for kernel persistence
-//#include "kernelfit_dict.h"
-//#include "objio.h"
-//#include "typemgr.h"
 
 #define DEBUG_KERNEL
 
@@ -645,7 +641,7 @@ void SimFitVignet::SetStar(const PhotStar *RefStar) {
 
 SimFitVignet::SimFitVignet() {
   ResetFlags();
-  psfmatch = 0;
+  kernelFit = 0;
 }
 
 SimFitVignet::SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref)
@@ -658,7 +654,7 @@ SimFitVignet::SimFitVignet(const ReducedImage *Rim,  SimFitRefVignet* Ref)
   inverse_gain = gain>0 ? 1./gain : 1.;
   ronoise = Rim->ReadoutNoise();
   skysub = Rim->OriginalSkyLevel();
-  psfmatch = 0;
+  kernelFit = 0;
 }
 
 SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimFitRefVignet* Ref)
@@ -670,7 +666,7 @@ SimFitVignet::SimFitVignet(const PhotStar *Star, const ReducedImage *Rim,   SimF
   VignetRef = Ref;
   ResetFlags();
   inverse_gain = 1./Rim->Gain();
-  psfmatch = 0;
+  kernelFit = 0;
 }
 
 
@@ -893,35 +889,24 @@ void SimFitVignet::BuildKernel()
 #endif
   if (!Star) return;
   
-  if(! psfmatch ) {
+  if(! kernelFit ) {
 
 #ifdef DEBUG_KERNEL
     cout << "KERNEL: no psfmatch in memory" << endl;
 #endif
-
-    psfmatch = new PsfMatch(VignetRef->Image(), rim,NULL,true);
-    
     const string kernelpath = rim->Dir()+"kernel_from_"+VignetRef->Image()->Name()+".dat";
+
     if(FileExists(kernelpath)) {
       
 #ifdef DEBUG_KERNEL
       cout << "KERNEL: load from file" << endl;
 #endif
 
-      KernelFit * kernel_fit = new KernelFit();
       cout << "   Reading kernel " << kernelpath << " ..." << endl;
-      {
-	ifstream kstream(kernelpath.c_str());
-	kernel_fit->read(kstream);
-      }
-      // OOO NEW PERSISTER HERE OOO
-      //      obj_input<xmlstream> oi(kernelpath);
-      //      oi >> *kernel_fit;
-      //      oi.close();
+      kernelFit = new KernelFit();
+      kernelFit->read(kernelpath);
       cout << "   done" << endl;
       
-      psfmatch->SetKernelFit(kernel_fit);
-    
     } else
       {
 	
@@ -931,18 +916,13 @@ void SimFitVignet::BuildKernel()
 	
 	cout << " SimFitVignet::BuildKernelPsf() : cannot find kernel " 
 	     << kernelpath << ", so we do it" << endl;
-	
-	psfmatch->FitKernel(false);
-	
-	// write kernel
-	// OOO NEW PERSISTER HERE OOO
-	//	obj_output<xmlstream> oo(kernelpath);
-	//	oo << *(psfmatch->GetKernelFit());
-	//	oo.close();
+	KernelFitter fitter(VignetRef->Image(), rim,true);
+	fitter.DoTheFit();	  
+	kernelFit = new KernelFit(fitter);
       }
   }
   
-  psfmatch->KernelToWorst(Kern, Star->x, Star->y);
+  kernelFit->KernAllocateAndCompute(Kern, Star->x, Star->y);
   Star->photomratio = Kern.sum();
   kernel_updated = true;
 }

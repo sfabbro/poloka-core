@@ -2,10 +2,11 @@
 #include <fstream>
 #include <vector>
 
-#include "psfmatch.h"
 #include "fitsimage.h"
 #include "imagesubtraction.h"
 #include "polokaexception.h"
+#include "toadscards.h"
+#include "kernelfit.h"
 
 // for io
 //#include "kernelfit_dict.h"
@@ -16,7 +17,9 @@
 static void usage(const char *progName)
 {
   cerr << "Usage: " << progName << " best worst  " << endl;
-  cerr << "options (to put after best worst) : -s  do the subtraction" << endl;
+  cerr << "options (to put after best worst) : [-s]  do the subtraction" << endl;
+  cerr << "[-c <datacardsName>] : use these datacards " << endl;
+
   cerr << "  match PSF of <DbImage(s)> with a reference image (assumed of best seeing) \n" 
        << "   Note:both images have to be on the same pixel grid ! \n";
 
@@ -27,6 +30,7 @@ int main(int nargs, char **args)
 {
   // if nothing is given
   if (nargs < 3){usage(args[0]);}
+  string dataCardsName;
   
   bool makesub = false;
   
@@ -40,17 +44,17 @@ int main(int nargs, char **args)
     switch (arg[1])
       {
       case 's' : makesub = true; break;
+      case 'c' : ++i; dataCardsName = args[i]; break;
       default : usage(args[0]);
       }
   }
 
   try {
 
+    if (dataCardsName != "") SetDatacardsFileName(dataCardsName);
     // write kernel in xml file
     string outputfilename = newimage->Dir()+"/kernel_from_"+refimage->Name()+".dat";
-    cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl;
     //  obj_output<xmlstream> oo(outputfilename);
-    ofstream oo(outputfilename.c_str());
     double phoratio = 1;
     double chi2 = 0.;
     int nstars = 0;
@@ -60,21 +64,21 @@ int main(int nargs, char **args)
     
     if(makesub) {
       cout << "image_sub : creating sub " << refimage->Name() << " " << newimage->Name() << endl;
-      ImageSubtraction sub("sub",refimage,newimage);
+      ImageSubtraction sub("sub",refimage,newimage, /*noswap = */  true );
       sub.MakeFits();
       cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl; 
-      sub.GetKernelFit()->write(oo);
-      //    oo <<*(sub.GetKernelFit());
+      const KernelFit& kernelFit = sub;
+      kernelFit.write(outputfilename);
 
-      phoratio = sub.PhotomRatio();
+      phoratio = sub.KernAtCenterSum();
       chi2 = sub.Chi2();
-      nstars = sub.Nstars();
-      nparams = sub.Nparams();
+      nstars = sub.NStampsUsed();
+      nparams = sub.NParams();
       
     }else{
       cout << "image_sub : psfmatch "  << refimage->Name() << " " << newimage->Name() << endl;
-      PsfMatch psfmatch(refimage,newimage,NULL,true);
-      if( ! psfmatch.FitKernel(true) ) {
+      KernelFitter psfmatch(refimage,newimage,true);
+      if( ! psfmatch.DoTheFit()){
 	cout << "psfmatch failed" << endl;
 	
 	// dump something for log
@@ -82,15 +86,14 @@ int main(int nargs, char **args)
       }
       cout << "image_sub : writing kernel in " << outputfilename << " ..." << endl; 
       //    obj_output<xmlstream> oo(outputfilename);
-      psfmatch.GetKernelFit()->write(oo);
+      psfmatch.write(outputfilename);
       //    oo << *(psfmatch.GetKernelFit());
       
       phoratio = psfmatch.PhotomRatio();
       chi2 = psfmatch.Chi2();
-      nstars = psfmatch.Nstars();
-      nparams = psfmatch.Nparams();
+      nstars = psfmatch.NStampsUsed();
+      nparams = psfmatch.NParams();
     }
-    oo.close();
     
     FitsHeader head(newimage->FitsName(), RW);
     head.AddOrModKey("PMRATIO", phoratio);
