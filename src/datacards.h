@@ -1,6 +1,6 @@
 // This may look like C code, but it is really -*- C++ -*-
 //
-// $Id: datacards.h,v 1.1 2004/02/20 10:48:36 nrl Exp $
+// $Id: datacards.h,v 1.2 2010/09/09 13:25:50 astier Exp $
 //
 // Datacards, acquisition EROS II
 //
@@ -28,11 +28,6 @@ class DataCards  {
 public:
    DataCards();                  
    DataCards(string const& fn);
-
-           // nom dans variable d'environnement PEIDA_DATACARDS
-           // par defaut, peida.datacards                        
-           // Si pas chemin complet, on tente dans repertoire 
-           // en cours, puis dans PEIDA_WORK
 
    virtual ~DataCards() {}
 
