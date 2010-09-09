@@ -1,11 +1,12 @@
 
-#include <string.h>
-#include <stdlib.h> // for the setenv stuff
+#include <string>
+#include <cstdlib> // for the setenv stuff
 #include <fstream>
+#include <cstring>
 
 #include "imagematch.h"
 #include "gtransfo.h"
-#include "reducedimage.h"
+#include "reducedutils.h"
 
 static void usage(char *progName)
 {
@@ -13,6 +14,7 @@ static void usage(char *progName)
   cerr << "   register images relatively to a given geometric reference image \n" 
        << "   OPTIONS:\n"
        << "     -geo <name> : indicate the reference image <name>. Default is first one\n"
+       << "     -p : print a quick photometric ratio\n"
        << "     -d : dump the following:\n"
        << "            - the matched star list in <name>.<DbImage>.match.list\n "
        << "            - the transfos (direct and reverse) in <name>.<DbImage>.transfo\n";
@@ -24,9 +26,9 @@ int main(int nargs, char **args)
 
   //default options
   // if nothing is given
-  if (nargs < 2){usage(args[0]);}
-  if (nargs == 2){cerr << " Register at least 2 images !!\n\n"; usage(args[0]);}
-  bool dump = false;
+  if (nargs < 2)  { usage(args[0]); }
+  if (nargs == 2) { cerr << " error: register at least 2 images"; usage(args[0]); }
+  bool dump = false, phoratio = false;
   string geoName("NOGEO");
   ReducedImageList toRegister;
 
@@ -45,6 +47,7 @@ int main(int nargs, char **args)
       arg++;
       if (strcmp(arg,"geo")==0) {++i; geoName = args[i]; continue;}
       if (strcmp(arg,"d")==0) { dump = true; continue;}
+      if (strcmp(arg,"p")==0) { phoratio = true; continue;}
 
       // unrecognized option
       usage(args[0]);
@@ -61,6 +64,13 @@ int main(int nargs, char **args)
       if (dump) setenv("DUMP_MATCH","YES",1);
       //naming of the list dump is taken care in imagematch.cc
       ImageListMatch(geoRef, *current, direct, reverse);
+      if (phoratio)
+	{
+	  double error;
+	  cout << " Photometric ratio: "
+	       << QuickPhotomRatio(geoRef, *current, error, direct)
+	       << " +/- " << error << endl;
+	}
       if (dump)
 	{
 	  ofstream gout((geoName+"."+current->Name()+".transfo").c_str());
