@@ -8,6 +8,7 @@
 #include "wcsutils.h"
 #include "fileutils.h"
 #include "imageutils.h"
+#include "reducedutils.h"
 
 string TransformedName(const string &ToTransform, const string &Ref)
 {
@@ -378,12 +379,22 @@ void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSESt
       star->gmxx *= scale2;
       star->gmyy *= scale2;
       star->gmxy *= scale2;
-      vector<Aperture> &apers = star->apers;
-      for (unsigned k=0; k < apers.size(); ++k)
-	{
-	  apers[k].radius *= scaleFactor;
-	}
+      for (vector<Aperture>::iterator sit=star->apers.begin(); sit != star->apers.end(); ++sit) {
+	sit->radius *= scaleFactor;
+	sit->ncos = int(ceil(sit->ncos*scale2));
+      }
     }
+  GlobalVal glob = Transformed.GlobVal();
+  double seeing = glob.getDoubleValue("SEEING");
+  double ndist  = glob.getDoubleValue("MAXNEIGHBOR_DIST");
+  vector<double> rads = glob.getDoubleValues("RADIUS");
+  vector<double> shapes = glob.getDoubleValues("STARSHAPE");
+  glob.setDoubleValue("SEEING", seeing*scaleFactor);
+  glob.setDoubleValue("MAXNEIGHBOR_DIST", ndist*scaleFactor);
+  for (size_t i=0; i<rads.size(); ++i) rads[i] *= scaleFactor;
+  for (size_t i=0; i<shapes.size(); ++i) shapes[i] *= scaleFactor;
+  glob.setDoubleValues("RADIUS", rads);
+  glob.setDoubleValues("STARSHAPE", shapes);
 }
 
 
@@ -622,6 +633,59 @@ TransformedImage::~TransformedImage()
 
 /******************* utilities ***********************/
 
+void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName) {
+  Frame unionFrame(Reference.UsablePart());
+  // enlarge frame to secure resampling extra width
+  double hwidth = 5;
+  unionFrame.CutMargin(-hwidth);
+  cout << " MakeUnionRef: initial frame is: " << unionFrame << endl;
+  for (ReducedImageCIterator it = ToAlign.begin(); it != ToAlign.end(); ++it) {
+    CountedRef<Gtransfo> reftoim, imtoref;
+    ImageListMatch(Reference, **it, reftoim, imtoref);
+    Frame frameInRef = ApplyTransfo((*it)->UsablePart(), *imtoref, LargeFrame);
+    frameInRef.CutMargin(-hwidth);
+    unionFrame += frameInRef;
+  } 
+
+  // make an integer frame to avoid resampling
+  unionFrame.xMin = floor(unionFrame.xMin);
+  unionFrame.yMin = floor(unionFrame.yMin);
+  unionFrame.xMax = ceil(unionFrame.xMax);
+  unionFrame.yMax = ceil(unionFrame.yMax);
+
+  cout << " MakeUnionRef: final frame is " << unionFrame << endl;
+
+  double dx = unionFrame.xMin;
+  double dy = unionFrame.yMin;
+  CountedRef<Gtransfo> TransfoFromRef = new GtransfoLinShift(dx, dy);
+  CountedRef<Gtransfo> TransfoToRef   = new GtransfoLinShift(-dx, -dy);
+
+  ImageGtransfo transfo(TransfoFromRef, TransfoToRef, unionFrame, Reference.Name());
+  
+  // now transform image
+  TransformedImage transformed(unionName, Reference, &transfo);
+  transformed.Execute(DoFits | DoCatalog | DoSatur | DoWeight | DoCosmic);
+
+  // apercat are not handled by the DoCrap 
+  string filename = Reference.AperCatalogName();
+  if (FileExists(filename)) {
+    AperSEStarList inList(filename);
+    AperSEStarList outList;
+    cout << " Transforming list from " << filename << endl;
+    transfo.TransformAperCatalog(inList, outList);
+    outList.write(transformed.AperCatalogName());
+  }
+  filename = Reference.StarCatalogName();
+  if (FileExists(filename)) {
+    AperSEStarList inList(filename);
+    AperSEStarList outList;
+    cout << " Transforming list from " << filename << endl;
+    transfo.TransformAperCatalog(inList, outList);
+    outList.write(transformed.StarCatalogName());
+  }
+}
+
+
 int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, 
 		ReducedImageList &Aligned, const int ToDo, bool use_wcs, float min_match_ratio)
 {
@@ -639,10 +703,15 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 	  cerr << "ImagesAlign: was " << currentName << " actually produced ?? " << endl;
 	  continue;
         }
+      if (*current == Reference) {
+	Aligned.push_back(current);
+	continue;
+      }
+
       string transformedName = TransformedName(currentName, Reference.Name());
-      
-      ImageGtransfo *imTransfo;
-      if(use_wcs) {
+      ImageGtransfo *imTransfo = 0;
+
+      if (use_wcs) {
 	Gtransfo* wcs_reference;
 	WCSFromHeader(Reference.FitsName(),wcs_reference);
 	Gtransfo* wcs_current;
@@ -652,7 +721,7 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 	
 	Gtransfo *direct = GtransfoCompose(wcs_reference->InverseTransfo(0.01,frame_reference),wcs_current);
 	Gtransfo *invert = GtransfoCompose(wcs_current->InverseTransfo(0.01,frame_current),wcs_reference);
-	imTransfo = new ImageGtransfo(invert,direct,frame_reference,"");
+	imTransfo = new ImageGtransfo(invert,direct,frame_reference, Reference.Name());
 	delete wcs_reference;
 	delete wcs_current;
 	delete direct;
