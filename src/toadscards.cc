@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <string>
+#include <iostream>
 
 
 #include "fileutils.h" // for FileExists()
-
 #include "toadscards.h"
-
+#include "polokaexception.h"
 
 using namespace std;
 
@@ -15,6 +15,10 @@ static string FileName;
 
 void SetDatacardsFileName(const string &NewFileName)
 {
+  if (!FileExists(NewFileName))
+    throw(PolokaException("SetDatacardsFileName : cannot find "+NewFileName));
+  cout << " INFO : Setting the default DataCards file name to '" 
+       << NewFileName << "'" << endl;
   FileName = NewFileName;
 }
 
