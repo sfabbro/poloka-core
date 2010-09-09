@@ -8,11 +8,11 @@
 
 using namespace std;
 
-#include "basestar.h"
-#include "image.h"
-#include "dimage.h"
-#include "frame.h"
-#include "countedref.h"
+#include "dimage.h" // needed for vector<Kernel>
+
+class StarMatchList;
+class ImagePair;
+class Image;
 
 /*! \class KernelFit
     \brief Kernel fitting by least squares. 
@@ -48,7 +48,6 @@ convolution kernels. see astro-ph 9903111 & astro-ph 9712287
 
 #endif
 
-#include <vector>
 
 
 struct XYPower  /* to handle and compute things like x**n*y**m */
@@ -58,10 +57,14 @@ struct XYPower  /* to handle and compute things like x**n*y**m */
   int Degree;
   vector<int> Xdeg; // values of x exponant of monomials
   vector<int> Ydeg; // values of exponant for x and y of monomials
-  size_t Nterms() const {return Xdeg.size();};
+  unsigned nterms;
+  unsigned Nterms() const {return nterms;};
 
   /* the value of monomial of rank q (where q < Nterms) */
-  double Value(const double X, const double Y, const size_t q) const;
+  double Value(const double X, const double Y, const unsigned q) const;
+
+  //!
+  void ApplyToImage(Image &I, double Factor, const vector<double> &ParamVal) const;
 
   /* default constructor: Value(x,y,0) will return 1. */
   XYPower() { SetDegree(0);};
@@ -114,6 +117,9 @@ public :
 
   int MaxStamps;
   bool UniformPhotomRatio;
+  bool OrthogonalBasis;
+  bool SubtractNoise;
+
   OptParams(); /* default values */
   void OptimizeSizes(double BestSeeing, double WorstSeeing);
   void OptimizeSpatialVariations(const int NumberOfStars);
@@ -143,137 +149,83 @@ public :
 #endif 
 };
 
-
+class Stamp;
+class StampList;
 class Mat;
 class Vect;
 
 /* The actual hanger for kernel fit data */
 
 //! A class to fit a convolution kernel between 2 images by least squares.
-class KernelFit  :  public RefCount 
+class KernelFit 
 {
-  public :
-//! pointer to 'best' image (smaller seeing).
-  const Image *BestImage; //!
-//! pointer to 'worst' image (larger seeing).
-  const Image *WorstImage; //!
-  //!
-  const Image *BestImageWeight;
-  const Image *WorstImageWeight;
 
-//! data frame
-  Frame DataFrame; //!
-//! the value of the sky of the best image.
-  double BestImageBack;
-//! the value of the sky of the worst image.
-  double WorstImageBack;
-//! the value of the sky variance of WorstImage.
-  double SkyVarianceWorstImage;
-  //! the gain of WorstImage
-  double WorstImageGain;
-
-//! the kernel integral at the image center (photometric ratio)
-  double KernAtCenterSum; 
-  vector<Kernel> Kernels; //! /* the base used to build the 'best' kernel */
+  vector<Kernel> Basis; //! /* the base used to build the 'best' kernel */
 //! the list of stamps in the 'best' image
 
-  StampList  *BestImageStamps;
-
-  //! a pointer to the 'best' image convolved with the solution
-  Image *ConvolvedBest; //!
-  DImage* convolutions;  //!
-  DImage* backStamps;  //!
   OptParams optParams;
-  //! a pointer to the differential background image
-  Image *WorstDiffBkgrdSubtracted;
+  vector<double> diffbackground; //! /* the differential background coefficient when fitted separately */
 
+  unsigned mSize; /* the size of the matrix m */
+  int nstamps;
+  double kernAtCenterSum;
+  bool fitDone;
+
+  friend class FitWorkSpace;
+
+public :
+  vector<double> solution; // the coefficients of the linear combination
+
+  public :
+
+  KernelFit() {mSize=0; nstamps=0; kernAtCenterSum=0; fitDone = false;  }
 
   int HKernelSizeX() const { return optParams.HKernelSize;}
   int HKernelSizeY() const { return optParams.HKernelSize;}
 
-  size_t mSize; /* the size of the matrix m */
-#if 0
-  Mat m;  /* the least-squares matrix (the second derivative of chi2 w.r.t fitted parameters */ // we don't save it  
-  Vect b;  /* the normal equations (i.e. grad(chi2) = 0) right hand side */ // we don't save it 
-#endif
+  //! is it useful ? 
+  const OptParams & KernelOptParams() const { return optParams;}
 
-  vector<double> solution; //[mSize]/* the weights of various kernels */
-  vector<double> diffbackground; //! /* the differential background coefficient when fitted separately */
-
-/* routines to compute an index in the solution array ... internal cooking */
-
-  int KernIndex(int iKernel, int iSpatial) const { return optParams.KernVar.Nterms()*iKernel + iSpatial;};
-  int BackIndex(int ib) const { return ib+Kernels.size()*optParams.KernVar.Nterms();}
-
-
-/* Fit the differential background separately from the kernel */
-  int FitDifferentialBackground(const double NSig);
-
-/* fitted differential background value */
-  double BackValue(const double&x, const double &y) const ; 
-
-  void DeleteConvolvedBest() { if (ConvolvedBest) delete ConvolvedBest; ConvolvedBest = NULL;}
-  void DeleteWorstDiffBkgrdSubtracted() { if (WorstDiffBkgrdSubtracted) delete WorstDiffBkgrdSubtracted; WorstDiffBkgrdSubtracted = NULL;}
-
-  KernelFit() { 
-    BestImage = NULL;
-    WorstImage = NULL; 
-    BestImageWeight = NULL;
-    WorstImageWeight = NULL; 
-    BestImageStamps = NULL; 
-    ConvolvedBest = NULL; 
-    WorstDiffBkgrdSubtracted = NULL;
-    convolutions = NULL;
-    BestImageBack = 0;
-    WorstImageBack = 0;
-    nstamps=0;
-  }
-  
-  ~KernelFit() {
-    if (convolutions) delete [] convolutions;
-    if (BestImageStamps) delete BestImageStamps;
-    if (ConvolvedBest) delete ConvolvedBest;
-    if (WorstDiffBkgrdSubtracted) delete WorstDiffBkgrdSubtracted;
-  }
-
-  
-/* fitting routines */
-void KernelsFill(); /* compute the kernels constituting the basis */
-void AllocateConvolvedStamps(); /* trick to avoid allocation and deallocation of a big memory chunk. 
-                                 triggered when needed */
-void DeallocateConvolvedStamps();
-
-//! computes least square matrix and vector for one stamp
-  //void OneStampMAndB(const Stamp &Astamp, vector<double> &StampM, vector<double> &StampB);
-  void OneStampMAndB(const Stamp &Astamp, Mat &StampM, Vect &StampB);
-
-//! actually solves the system by calling linear algebra efficient routines
-  bool Solve(const Mat &M, const Vect &B);
-
-  double StampChi2(Stamp &stamp, double VSky, double InvGain); /* involves a kernel computation and a stamp convolution */
-  double chi2;
   int NStampsUsed() const {return nstamps;}
 
-/* computes chi2 contributions of stamps and applies median filtering for outliers removal. iterates until
-the number of stamps involved stabilizes. */
-  void FilterStamps(Mat &M, Vect &B); 
+  unsigned NParams() const { return mSize;}
+
+  bool FitDone() const { return fitDone;}
+
+  //! Photometric Ratio
+  double KernAtCenterSum() const { return kernAtCenterSum;}
+
+  //! the same
+  //! Photometric Ratio
+  double PhotomRatio() const { return kernAtCenterSum;}
+
+
+  double Chi2() const { return chi2;}
+
   //! final wrapper that calls various routines to fill matrix and vector, and then solve.
-int DoTheFit(const BaseStarList &List, double &BestSeeing, double &WorstSeeing);
-int DoIt(const BaseStarList &List, double &BestSeeing, double &WorstSeeing);
+  int DoTheFit(ImagePair &ImPair);
 
-/* computes the kernel at the given location according to the present solution */
-void KernCompute(Kernel &Result, const double X, const double Y) const; 
+  /*! Computes the kernel at the given location according to the present solution */
+  void KernCompute(Kernel &Result, const double X, const double Y) const; 
+
+  /*! Same as above, but allocates it beforehand */
+  void KernAllocateAndCompute(Kernel &Result, const double X, const double Y) const; 
 
 
-void BestImageConvolve(int UpdateKernStep = 100);
+  void ImageConvolve(const Image &In, Image &Out,int UpdateKernStep = 100);
 
-Image *VarianceConvolve(const Image &Source, int UpdateKern = 100);
+  void VarianceConvolve(const Image &Source, Image &Out, int UpdateKern = 100);
 
+  //!
+  void read(const std::string &FileName);
   
   //! read object contents from a stream
   void read(std::istream& stream);
-  
-  //! read object contents to a stream
+
+  //! write object contents to a file
+  void write(const std::string& FileName) const;
+
+  //! write object contents to a stream
   void write(std::ostream& stream) const;
   
   void dump(std::ostream &stream = std::cout) const{
@@ -288,7 +240,48 @@ Image *VarianceConvolve(const Image &Source, int UpdateKern = 100);
       stream << diffbackground[i] << " ";
     stream << endl;
   }
+
+
+
+private :
+
+/* routines to compute an index in the solution array ... internal cooking */
+
+  int KernIndex(int iKernel, int iSpatial) const { return optParams.KernVar.Nterms()*iKernel + iSpatial;};
+  int BackIndex(int ib) const { return ib+Basis.size()*optParams.KernVar.Nterms();}
+
+
+/* Fit the differential background separately from the kernel */
+  int FitDifferentialBackground(ImagePair &ImPair, const double NSig);
+
+/* simultaneously fitted differential background value */
+  double BackValue(const double&x, const double &y) const; 
+/* separatly fitted differential background value */
+  double SepBackValue(const double&x, const double &y) const; 
   
+/* fitting routines */
+  void BasisFill(Mat *BasisTransfo); /* compute the kernels constituting the basis */
+
+
+  //! computes least square matrix and vector for one stamp
+  //void OneStampMAndB(const Stamp &Astamp, vector<double> &StampM, vector<double> &StampB);
+  void OneStampMAndB(const Stamp &Astamp, const Image &WorstImage, Mat &StampM, Vect &StampB);
+
+  void OneStampNoiseMatrix(const Stamp &AStamp, const Image &WorstImage, Mat &M) const;
+
+//! actually solves the system by calling linear algebra efficient routines. Center provided for printing purposes
+  bool Solve(const Mat &M, const Vect &B, const Point &Center);
+
+  double StampChi2(Stamp &stamp, const Image &WorstImage); /* involves a kernel computation and a stamp convolution */
+  double chi2;
+
+  //! for fit studies
+  void ParameterGroups(Mat &Groups) const;
+
+
+
+public :
+
 #ifndef SWIG
   //  friend ostream& operator << (ostream &stream, const KernelFit &s)
   //  { s.dump(stream); return stream;}
@@ -298,13 +291,9 @@ Image *VarianceConvolve(const Image &Source, int UpdateKern = 100);
   { s.read(stream); return stream;}
 #endif
 
-private:
-  int nstamps;
-
+  
 };
 
-
-typedef CountedRef<KernelFit> KernelFitRef;
 
 
 #endif /* KERNELFIT__H */

@@ -2,8 +2,8 @@
 #define IMAGESUBTRACTION__H
 
 #include "reducedimage.h"
-#include "psfmatch.h"
 #include "fileutils.h"
+#include "kernelfitter.h"
 #include "detection.h" /* for DetectionList */
 /*! \file */
  
@@ -13,20 +13,16 @@ string SubtractedName(const string &RefName, const string &NewName);
 //! For subtracting images using the Alard kernel fit technique. A basic assumption: Ref and New are already geometrically aligned.
 
 
-class ImageSubtraction : public ReducedImage, public PsfMatch {
-  public :
+class ImageSubtraction : public ReducedImage, public KernelFitter {
+ private:
+  ReducedImageRef Ref, New;
+
+ public :
     //! the constructor takes a copy of both ReducedImage.
-    ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage);
+  ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage, const bool NoSwap = false);
 
     //! as above but uses kernel found by other means. used for fakes SN
-    ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage, const PsfMatch *AMatch);
-
-#ifdef STORAGE
-    ImageSubtraction(const string &Name);
-#endif
-
-    //! Carry out the kernel fit, convolve, and outputs the subtraction image.
-    ImageSubtraction(); // necessary for persistence.
+    ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage, const KernelFitter &);
 
     virtual const string  TypeName() const { return "ImageSubtraction";}
 
@@ -66,8 +62,6 @@ class ImageSubtraction : public ReducedImage, public PsfMatch {
     ReducedImage *Clone() const;
 
     string AllCandidateCatalogName() const { return AddSlash(Dir())+"allcand.list";}
-
-    ~ImageSubtraction();
 
 
 };

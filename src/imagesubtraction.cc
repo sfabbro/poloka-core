@@ -7,12 +7,6 @@
 #include "imageback.h"
 #include "gtransfo.h"
 
-#ifdef AFAIRE
-
-ecrire dans un fichier local les infos du genre nom
-des ref et new (pour pouvoir recharger aisement)
-
-#endif
 
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
@@ -20,91 +14,173 @@ des ref et new (pour pouvoir recharger aisement)
 
 string SubtractedName(const string &RefName, const string &NewName) {return NewName+'-'+RefName;}
 
-ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef RefImage,  const ReducedImageRef NewImage) : ReducedImage(Name), PsfMatch(RefImage, NewImage)
+ImageSubtraction::ImageSubtraction(const string &Name,  
+				   const ReducedImageRef RefImage,  const ReducedImageRef NewImage,
+				   const bool NoSwap ) : 
+  ReducedImage(Name), KernelFitter(RefImage, NewImage, NoSwap) , Ref(RefImage), New(NewImage)
 {
   if (!FileExists(Name))
     Create("here");
 }
 
-ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef  RefImage,  const ReducedImageRef NewImage, const PsfMatch *AMatch) :
-  ReducedImage(Name), PsfMatch(RefImage,NewImage,AMatch)
+ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef  RefImage,  const ReducedImageRef NewImage, 
+				   const KernelFitter &APreviousFit) :
+  ReducedImage(Name), KernelFitter(APreviousFit), Ref(RefImage), New(NewImage)
 {
   Create("here");
 }
 
-ImageSubtraction::ImageSubtraction()
-{
-} 
-
-
-// this is the constructor for an already existing image
-#ifdef STORAGE
-ImageSubtraction::ImageSubtraction(const string &Name)
-{
-  ReducedImageRef ref = new  ReducedImage(Name.substr(Name.find('-')+1,Name.length()));
-  ReducedImageRef nouv = new  	ReducedImage(Name.substr(0,Name.find('-'))) ;
-  ImageSubtraction(Name,ref,nouv);
-}
-#endif
-
-
 ReducedImage *ImageSubtraction::Clone() const
 {
+  /* this routine should be useless. I don't know why it is here ... */
+  /* 
   ReducedImage *clone = new ImageSubtraction(*this);
   return clone;
+  */
+  return NULL;
 }
 
-ImageSubtraction::~ImageSubtraction()
+
+#ifdef STORAGE
+// Code to generate Delphine's plots (subtraction quality checking) , as they are called.
+
+#include "quali_box.h"
+
+// this routine creates a kind of ntuple that allows to study 
+// the subtraction quality  (the famous Delphine's plot)
+static void  quali_plots(const ReducedImage *Ref, const ReducedImage *New, 
+	    const FitsImage *subImage, const string LogName)
 {
-}
+  const Image *imArray[3];
+  FitsImage refImage(Ref->FitsName());
+  FitsImage newImage(New->FitsName());
+  imArray[0] = &refImage;
+  imArray[1] = &newImage;
+  imArray[2] = subImage;
+  double fond[3] = {Ref->BackLevel(), New->BackLevel(), 0};  /* the last one is zero because the kernelfit is supposed to achieve that ... */
+  double sigmaFond[3] = {Ref->SigmaBack(), New->SigmaBack(),
+			 sqrt(sqr(Ref->SigmaBack())+sqr(New->SigmaBack()))} ;
+  /* bon d'accord, le dernier est ``faux'' mais chez Delphine aussi. 
+     alors comme c'est pour faire des comparaisons... */
+
+  SEStarList refList(Ref->CatalogName());
+  SEStarList newList(New->CatalogName());
+  ofstream qual_log(LogName.c_str());
+  GtransfoIdentity ident;
+
+  Test_Qual_N_same(3, *subImage, refList, newList,
+		   &ident, imArray, fond, sigmaFond, 10, qual_log);
+  qual_log.close();
+}                 
+#endif /* STORAGE */
+
+
+static double sqr(double x) { return x*x;}
+
 
 bool ImageSubtraction::MakeFits()
 {
   string fileName = FitsName();
   if (FileExists(fileName)) return true;
-  if (Ref()->MakeFits() &&  New()->MakeFits())
+  if (!Ref->MakeFits() ||  !New->MakeFits())
     {
-      if (!Ref()->SamePhysicalSize(*New()))
-	{
-	  cerr << " ERROR : Cannot subtract images of different sizes : " 
-	       << Ref()->Name() << " and " << New()->Name() << endl;
-	  return false;
-	}
-      if (!Subtraction(*this)) return false; // in PsfMatch
-      // subtract an ImageBack
-      FitsImage sub(fileName,RW);
-      cout << "Removing background from " << fileName << endl ; 
-      FitsImage *pweight = NULL;
-      if (MakeWeight())
-	{
-	  pweight = new FitsImage(FitsWeightName());
-	  cout << " using weights : " << FitsWeightName() << endl;
-	}
-      int backMesh = 32;
-      ImageBack b(sub, backMesh, pweight);
-      Image *back = b.BackgroundImage();
-      sub -= *back ;
-      delete back;
-      sub.AddOrModKey("BACK_SUB", true, 
-		      pweight? " subtracted weighed background" :
-		      " subtracted unweighted background");
-      sub.AddOrModKey("BACKMESH", backMesh, 
-		      " mesh size used for back computation " );
-      if (pweight) delete pweight;
-      return true;
+      cerr << " ERROR : for ImageSubtraction " << Name() << endl
+	   << " Could not make images of (both) subtraction terms :" << endl
+	   << Ref->Name() << " and " << New->Name() << endl;
+      return false;
     }
-  cerr << " ERROR : for ImageSubtraction " << Name() << endl
-       << " Could not make images of (both) subtraction terms :" << endl
-       << Ref()->Name() << " and " << New()->Name() << endl;
-  return false;
+  // fit the convolution kernel
+  DoTheFit();
+  // build the subtracted image
+  FitsHeader href(Ref->FitsName());
+  FitsImage subImage(fileName, href);
+  Image &theSubtraction = subImage;
+  /* by convention the subtraction photometric scale is the same as the ref.
+     - photomRatio is New/Ref
+     - Important point : the same trick has to be applied to the variance computation. 
+     use subblocks in the following code to get rid ASAP of temporary images
+  */
+  cout << " Subtracting " << New->Name() << " - " << Ref->Name() << endl;
+  double photomRatio = KernAtCenterSum();
+  if (RefIsBest())
+    {
+      {
+	FitsImage worst(New->FitsName());
+	theSubtraction = worst;
+      }
+      {
+	FitsImage best(Ref->FitsName());
+	Image convBest(best.Nx(), best.Ny());
+	ImageConvolve(best,convBest);
+	theSubtraction -= convBest;
+      }
+      double factor = 1./photomRatio; // "*" is far faster than "/"
+      theSubtraction *=factor;
+    }
+  else 
+    {
+      {
+	FitsImage best(New->FitsName());
+	ImageConvolve(best,theSubtraction);
+      }
+      {
+	FitsImage worst(New->FitsName());
+	theSubtraction -= worst;
+      }
+    }
+  // force floating point values (not sure it is useful)
+  subImage.SetWriteAsFloat();
+  // update Frame limits
+  CommonFrame().WriteInHeader(subImage);
+  // link PSF if any
+  string worstpsfname = Worst()->ImagePsfName();
+  if (FileExists(worstpsfname)) MakeRelativeLink(worstpsfname.c_str(), ImagePsfName().c_str());
+  // set some score values
+  SetSeeing(LargestSeeing());
+  SetBackLevel(0.0); // by construction
+  SetSaturation(Worst()->Saturation()," worst image saturation");
+  double sigmaBack = sqrt(sqr(Best()->SigmaBack()*photomRatio) + sqr(Worst()->SigmaBack()));
+  SetSigmaBack(sigmaBack);
+  double readnoise = sqrt(sqr(Worst()->ReadoutNoise())+sqr(photomRatio*Best()->ReadoutNoise()));
+  SetReadoutNoise(readnoise);
+  /* originaly , we added some info on the origin of this image. Not sure it is useful */
+  /*
+  AddOrModKey("KERNREF",Best()->Name().c_str(), " name of the seeing reference image");
+  AddOrModKey("KERNCHI2",Chi2(), " chi2/dof of the kernel fit");
+  AddOrModKey("PHORATIO",photomRatio, " photometric ratio with KERNREF"); 
+  */
+
+  //  quali_plots(Ref, New, &subImage, Dir()+"/qual.log");
+
+  double zero_point = Ref->AnyZeroPoint();
+  cerr << "Zero Point as taken from reference stack:" 
+       << zero_point << " propagated to sub. " << endl ;
+  SetZZZeroP(zero_point, "as taken from reference stack");  
+
+  // subtract an ImageBack
+  FitsImage *pweight = NULL;
+  
+  if (MakeWeight())
+    {
+      pweight = new FitsImage(FitsWeightName());
+      cout << " using weights : " << FitsWeightName() << endl;
+    }
+  int backMesh = 32;
+  ImageBack b(theSubtraction, backMesh, pweight);
+  if (pweight) delete pweight;
+
+  Image *back = b.BackgroundImage();
+  theSubtraction -= *back ;
+  delete back;
+  subImage.AddOrModKey("BACK_SUB", true, 
+		       pweight? " subtracted weighed background" :
+		      " subtracted unweighted background");
+  subImage.AddOrModKey("BACKMESH", backMesh, 
+		       " mesh size used for back computation " );
+  return true;
 }
 
 #include "convolution.h"
-
-static double sqr(double x) { return x*x;}
-
-
-
 
 
 
@@ -162,7 +238,10 @@ bool ImageSubtraction::MakeWeight()
 
   /* convolve with squared image kernel */
   cout << " convolving variance " << endl;
-  PsfMatch::VarianceConvolve(weights);
+  {
+    Image weightsCopy(weights);
+    VarianceConvolve(weightsCopy, weights);
+  }
 
   // load the other weight map
   FitsImage weights_worst(Worst()->FitsWeightName());
@@ -200,7 +279,7 @@ bool ImageSubtraction::MakeWeight()
 
   if (RefIsBest())
     {
-      weightImage *= sqr(PhotomRatio());
+      weightImage *= sqr(KernAtCenterSum());
     }
 
 
@@ -211,7 +290,7 @@ bool ImageSubtraction::MakeWeight()
 
   // size of the dead band due to variance convolution 
   Kernel kern_at_center; // get a kernel to grab its size.
-  KernelToWorst(kern_at_center, weights.Nx()/2., weights.Ny()/2);
+  KernAllocateAndCompute(kern_at_center, weights.Nx()/2., weights.Ny()/2);
 
   int bandx = kern_at_center.Nx()/2 -1;
   int bandy = kern_at_center.Ny()/2 -1;
@@ -232,8 +311,8 @@ bool ImageSubtraction::MakeDead()
 {
   if (FileExists(FitsDeadName())) return true;
   ReducedImageList list(false);
-  list.push_back(Ref());
-  list.push_back(New());
+  list.push_back(Ref);
+  list.push_back(New);
   bool return_value = BoolImageOr(list, 
 				  &ReducedImage::FitsDeadName, 
 				  &ReducedImage::MakeDead, FitsDeadName());
@@ -249,8 +328,8 @@ bool ImageSubtraction::MakeSatur()
 {
   if (FileExists(FitsSaturName())) return true;
   ReducedImageList list(false);
-  list.push_back(Ref());
-  list.push_back(New());
+  list.push_back(Ref);
+  list.push_back(New);
   return BoolImageOr(list, &ReducedImage::FitsSaturName, &ReducedImage::MakeSatur, FitsSaturName());
 }
 
@@ -345,13 +424,12 @@ bool ImageSubtraction::RunDetection(DetectionList &Detections,
 	/* fill in the Detection's block that concerns the ref:
 	   - flux on the ref under the SN (measured in the same conditions
 	   as the SN (this is why we use the sub Seeing() 
-	   rather tha ref.Seeing())
+	   rather the ref.Seeing())
 	   - nearest object
 	*/
-	ReducedImage &ref = *Ref();
-	DetectionProcess refDet(ref.FitsName(), ref.FitsWeightName(), 
+	DetectionProcess refDet(Ref->FitsName(), Ref->FitsWeightName(), 
 				Seeing(), Seeing());
-	refDet.SetScoresFromRef(Detections, *Ref());
+	refDet.SetScoresFromRef(Detections, *Ref);
       }
       Detections.write(name);
     }
@@ -369,10 +447,9 @@ bool ImageSubtraction::RunDetection(DetectionList &Detections,
 	   rather tha ref.Seeing())
 	   - nearest object
 	*/
-	ReducedImage &ref = *Ref();
-	DetectionProcess refDet(ref.FitsName(), ref.FitsWeightName(), 
+	DetectionProcess refDet(Ref->FitsName(), Ref->FitsWeightName(), 
 				Seeing(), Seeing());
-	refDet.SetScoresFromRef(Detections, *Ref());
+	refDet.SetScoresFromRef(Detections, *Ref);
        
       }
       Detections.write(name);

@@ -88,10 +88,16 @@ public:
   void MinMaxValue(DPixel &Min, DPixel &Max) const;
   DImage(const DImage &Other);
   void dump();
+
   //! sum of all pixels
   DPixel sum() const;
+
+  //! sum of pixel squares
+  DPixel sum2() const;
+
   //! normalize the full DImage
   void Normalize();
+
 
 #ifndef SWIG
   //! handy operators
@@ -145,53 +151,6 @@ inline DImage operator / (const DImage &a, const double &s)
   return c;
 }
 
-
-//! an odd size DImage extracted from an Image, centered on (xc,yc)
-class Stamp {  
-private:
-  int hsize;
-public :
-
-  //! center in the source Image
-  int xc,yc ;  
-
-  //! pixels (in double precision until one changes DPixel definition )
-  DImage source;
-
-  //! cookup for weights used when fitting the kernel
-  DImage weight;
-
-  int nActivePix;
-
-  //! will be filled and used to discard outliers from the fit 
-  double chi2; 
-  int HSize () const {return hsize;}  
-  //! we should not assume that there is a BaseStar corresponding to this stamp, but if any, put its pointer here
-  BaseStarRef star; 
-  Stamp(const double Xc, const double Yc, const Image& image, int HStampSize, const BaseStar *Star);
-
-  int AssignWeight(const Image &BestWeight, const Image &WorstWeight, const Kernel &GuessedKernel);
-
-  Stamp() :hsize(0) {};
-
-  // need a virtual routine for Root
-  virtual ~Stamp() {};
-};
-
-//! Nothing but a list of Stamps
-class StampList : public list<Stamp>
-{
-public :
-  StampList(const Image &image, const Image &BestImageWeight, const Image &WorstImageWeight, 
-	    const BaseStarList &starList, const int hStampSize, const Kernel &GuessedKernel, const int MaxStamps);
-
-  // need a virtual routine for ROOT
-  //  virtual ~StampList() {}
-};
-
-typedef list<Stamp>::iterator StampIterator;
-typedef list<Stamp>::const_iterator StampCIterator;
-
 //! An odd size DImage addressed with (0,0) at center 
 //! allows quick computation of convolution like operations.
 class Kernel : public DImage {
@@ -209,6 +168,8 @@ public:
   Kernel(const Kernel& K, int BandX, int BandY);
   Kernel(const Kernel& Other);
   Kernel();
+
+
   Kernel& operator = (const Kernel &Right); 
   void readFits(const string &FitsName);
   void readFromImage(const string& FitsFileName, const Window &Rect,DPixel value_when_outside_fits);
@@ -217,12 +178,6 @@ public:
   int HSizeX() const { return hSizeX;}
   //! half the size in y direction
   int HSizeY() const { return hSizeY;}
-  //! zero out outside a given radius
-  void KeepCircleOnly(const double &radius);
-  //! fills the kernel array with a 2d normalized gaussian (xc and yc are in kernel coordinates)
-  void FillWithGaussian(const double &xc, const double &yc, 
-			const double &sigmax, const double &sigmay, 
-			const double &rho=0);
   //! prints all kernel values
   void dump() const ;
   //! computes mean of the kernel on (x,y)
@@ -231,18 +186,21 @@ public:
   void dump_info(ostream &stream = cout) const;
   //! computes x and y first order moments of the kernel (\sigma_x, \sigma_y, \rho_{xy})
   void moments(double &vx, double &vy, double &vxy) const;
+
   bool IsEmpty() const {return (hSizeX+hSizeY == 0);}
-  void MaxPixel(double &xmax, double &ymax) const;
-  void MinPixel(double &xmin, double &ymin) const;
   
   void Allocate(const int Nx, const int Ny, int Init=1);
+  void allocate(const int HSizeX, const int HSizeY);
    
 
   friend ostream& operator << (ostream& stream, const Kernel& k);
 };
 
-
-void Convolve(DImage& Result, const DImage& Source, const Kernel &Kern);
+//! flip the image along both axes. Does not work in place (i.e Out shout not be In).
+void Mirror(const DImage &In, DImage &Out);
+//! 
+void Convolve(DImage& Result, const DImage& Source, const DImage &Kern);
+//!
 void ConvolveKernels(Kernel &Result, const Kernel &Psf, const Kernel &Kern);
 
 #endif // DIMAGE__H

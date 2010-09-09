@@ -35,7 +35,7 @@ double QuickPhotomRatio(const SEStarList &CurList, const SEStarList &RefList,
 			double &error, const Gtransfo *transfo);
 
 //! quick and robust photometric ratio given a StarMatchList (s1->flux/s2->flux).
-double MedianPhotomRatio(const StarMatchList *matchlist);
+double MedianPhotomRatio(const StarMatchList &MatchList);
 
 //! quick and robust photometric ratio between two BaseStarList's. (Cur/Ref)
 double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefList,  const Gtransfo *Transfo=NULL);

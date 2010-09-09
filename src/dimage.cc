@@ -9,7 +9,7 @@
 #include "frame.h"
 #include "fileutils.h"
 #include "image.h"
-
+#include "assert.h"
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
 #endif
@@ -128,6 +128,16 @@ DPixel DImage::sum() const
   for (int i=ny*nx; i ; --i) {sum += *p ; ++p;}
   return sum;
 }
+
+DPixel DImage::sum2() const
+{
+  double sum =0;
+  DPixel *p = data;
+  for (int i=ny*nx; i ; --i) {sum += (*p)*(*p) ; ++p;}
+  return sum;
+}
+
+
 void DImage::Normalize()
 {
   double norm = sum();
@@ -331,120 +341,6 @@ void DImage::writeInImage(const string& FitsFileName, const Window &Rect) const
 }
 
 
-
-//***********************  Stamp ***************************
-
-static void extract_pixels(DImage &Target, const Image &image, const int HStampSize, 
-			   const int xc, const int yc)
-{
-  int xoff = xc - HStampSize; 
-  int yoff = yc - HStampSize;
-  int xstart = max(0,xc - HStampSize);
-  int ystart = max(0,yc - HStampSize);
-  int width = Target.Nx();
-  int height = Target.Ny();
-  int xend = min(xstart+width,image.Nx());
-  int yend = min(ystart+height, image.Ny());
-  if (width*height != (xstart-xend)*(ystart-yend)) 
-    cerr << " we miss pixels for (" << xc << "," << yc << ")" << endl;
-  for (int j=ystart; j <yend; ++j)
-    {
-      for (int i= xstart; i< xend; i++)
-	{
-	  Target(i-xoff,j-yoff) = image(i,j);
-	}
-    }
-}
-
-
-Stamp::Stamp(const double Xc, const double Yc, const Image& image, int HStampSize, const BaseStar *Star ) 
-  : hsize(HStampSize), xc(int(Xc)), yc(int(Yc)), source(0,0), nActivePix(0), star(Star)
-{
-  // cout << " debug xc yc " << xc << ' ' << yc << endl;
-  int width = 2*HStampSize+1;
-  int height = 2*HStampSize+1;
-  source.Allocate(width, height);
-  extract_pixels(source, image, HStampSize, xc,yc);
-  //  cout << " debug extraction " <<  image(xc,yc) << ' ' << source(HStampSize,HStampSize) << " xstart y " << xstart << ' ' << ystart << endl;
-}
-
-//! returns the number of non zero pixels
-int Stamp::AssignWeight(const Image &BestWeight, const Image &WorstWeight, const Kernel &GuessedKernel)
-{
-  DImage tmpweight(source.Nx(),source.Ny()); // also sets everything to zero
-  extract_pixels(tmpweight, BestWeight, hsize, xc, yc);
-  nActivePix = 0;
-  // compute the average weight 
-  double waverage = 0;
-  int count = 0;
-  const DPixel *pend = tmpweight.end();
-  for (DPixel* p = tmpweight.begin(); p < pend; ++p)
-    if (*p) { waverage += (*p); count++;}
-  if (!count) return 0; // we are done: the stamp is dead
-  double vaverage = count/waverage; // average variance
-  // transform to variance
-  for (DPixel* p = tmpweight.begin(); p < pend; ++p) 
-    if (*p) (*p) = 1./(*p); else (*p) = 1E15*vaverage;
-
-  // use a convolution to propagate location of zero-weight pixels
-  weight.Allocate(source.Nx()-2*GuessedKernel.HSizeX(), source.Ny()-2*GuessedKernel.HSizeY());
-  Kernel varKernel(GuessedKernel);
-  varKernel *= GuessedKernel; // reminder: Var(a*x) = a**2 Var(x)
-  Convolve(weight, tmpweight, varKernel); // weight and tmpweight are variances. 
-
-  DImage worst_weight(weight.Nx(),weight.Ny());
-  extract_pixels(worst_weight, WorstWeight, hsize-GuessedKernel.HSizeX(), xc, yc);
-  double cut = 1e8*vaverage;
-
-#ifdef STORAGE // untested
-  DPixel *pb = weight.begin(); // it is in fact a variance;
-  pend = weight.end();
-  DPixel *pw = worst_weight.begin();
-  for ( ; *pb < pend; ++pb, ++pw)
-    {
-      if (*pb > cut || *pw==0) *pb =0;
-      else 
-	{
-	  *pb = 1./(*pb + 1./(*pw)); // weight is in fact a variance.
-	  nActivePix++;
-	}
-    }
-#endif
-  for (int j=0; j<weight.Ny();  ++j)
-    for (int i=0; i<weight.Nx(); ++i)
-    {
-      double &val = weight(i,j);
-      if (val > cut || worst_weight(i,j) ==0) val = 0;
-      else
-	{
-	  val = 1./(val + 1/(worst_weight(i,j)));
-	  nActivePix++;
-	}    
-    }
-  return nActivePix;
-}
-
-
-StampList::StampList(const Image &image, const Image &BestImageWeight, const Image &WorstImageWeight, 
-		     const BaseStarList &starList, const int hStampSize, const Kernel& GuessedKernel, const int MaxStamps)
-{
-  int count = 0;
-  Frame imageFrame(Point(0,0),Point(image.Nx(), image.Ny()));
-  for (BaseStarCIterator si = starList.begin(); si != starList.end() && count < MaxStamps; ++si)
-    {
-      const BaseStar *s = *si;
-      if (imageFrame.MinDistToEdges(*s) < hStampSize+2) continue;
-      Stamp stamp(s->x, s->y, image, hStampSize, s);
-      // compute a plausible weight image for this stamp
-     if (stamp.AssignWeight(BestImageWeight,WorstImageWeight, GuessedKernel) != 0)
-       {
-	 push_back(stamp); 
-	 ++count;
-       }
-    }
-}
-
-
 //*********************** Kernel ***************************
 
 Kernel::Kernel(const int HSizeX, const int HSizeY) :  
@@ -509,6 +405,12 @@ void  Kernel::Allocate(const int Nx, const int Ny,int Init) {
    minindex = begin()-data00; 
    maxindex = minindex + Nx*Ny-1;
 }
+
+void Kernel::allocate(const int HSizeX, const int HSizeY)
+{
+  Allocate(2*HSizeX+1, 2*HSizeY+1);
+}
+
 
 void Kernel::readFits(const string &FitsName)
 {
@@ -608,8 +510,10 @@ void Kernel::dump_info(ostream &stream) const
   moments(varx,vary,varxy);
   int oldprec = stream.precision();
   stream << setprecision(10);
-  stream << " bias ( " << dx << ',' << dy << 
-    ") sx,sy,rho, sum " << sqrt(varx) << ',' << sqrt(vary) << ',' << varxy/sqrt(varx*vary) << ',' << sum () << endl;
+  stream << " bias ( " << dx << ',' << dy << ")"
+	 << " sx,sy,rho,sum " << sqrt(varx) << ',' << sqrt(vary) << ',' << varxy/sqrt(varx*vary) << ',' << sum () 
+	 << " vx,vy,vxy,sum2 " << varx << ',' << vary << ',' << varxy << ',' << sum2()
+	 << endl;
   stream <<setprecision(oldprec);
 }
 
@@ -631,28 +535,8 @@ Kernel::Kernel(const Kernel& K, int BandX, int BandY)
       (*this)(i,j) = K(i,j);
 
 }
-void Kernel::MaxPixel(double &xmax, double &ymax) const
-{
-  double maxval = -1e30;
-  for (int j=-hSizeY; j <= hSizeY ; ++j)
-    for (int i=-hSizeX; i <= hSizeX  ;++i)
-      {
-	double value = (*this)(i,j);
-	if (value > maxval) {maxval=value;xmax=i;ymax=j;}
-      }
-}
 
-void Kernel::MinPixel(double &xmin, double &ymin) const
-{
-  double minval = 1e30;
-  for (int j=-hSizeY; j <= hSizeY ; ++j)
-    for (int i=-hSizeX; i <= hSizeX  ;++i)
-      {
-	double value = (*this)(i,j);
-	if (value < minval) {minval=value;xmin=i;ymin=j;}
-      }
-}
-
+#ifdef STORAGE
 void Kernel::KeepCircleOnly(const double &radius)
 {
   if (maxindex <= minindex) return;
@@ -679,6 +563,7 @@ void Kernel::FillWithGaussian(const double &xc, const double &yc,
 	(*this)(i,j) = exp(x*x*alphax + y*y*alphay + x*y*alphaxy)*norm;
       }
 }
+#endif 
 
 ostream& operator << (ostream& stream, const Kernel& k)
 {
@@ -687,27 +572,102 @@ ostream& operator << (ostream& stream, const Kernel& k)
 }
 
 
+void Mirror(const DImage &In, DImage &Out)
+{
+  assert(&Out != &In);
+  Out.Allocate(In.Nx(), In.Ny());
+  const DPixel *pin = In.begin();
+  const DPixel *pend = In.end();;
+  DPixel *pout = Out.end()-1; 
+  for ( ; pin<pend; ++pin, --pout) *pout= *pin;
+}
+  
+
+
 #define OPTIMIZED
 #ifndef OPTIMIZED
 #warning "Le code de Convolve() n'est pas optimise pour permettre de verifier que tout va bien dans kernelfit et autres..."
 #endif
 
-void Convolve(DImage& Result, const DImage& Source, const Kernel &Kern)
+
+#define DO8(A) A;A;A;A;A;A;A;A
+#define BLOCK_SIZE 8
+
+
+
+void Convolve(DImage& Result, const DImage& Source, const DImage &Kern)
 {
+  // This code does not work if Result or Source are Kernels. This is a shame.
  /* assumes that Result is already allocated and properly sized, and different from Source! */
 #ifdef OPTIMIZED
   int nstepx = Kern.Nx();
 #endif
   int endrx = Result.Nx();
   int endry = Result.Ny();
-  int ksx = Kern.HSizeX();
-  int ksy = Kern.HSizeY();
+  int ksx = Kern.Nx()/2;
+  int ksy = Kern.Ny()/2;
+
+  DImage mirror;
+  Mirror(Kern, mirror);
+
+  int nblock = nstepx/BLOCK_SIZE;
+  int remainder = nstepx - nblock*BLOCK_SIZE;
  
   for (int j=0; j< endry; ++j)
     for (int i=0; i < endrx; ++i)
     {
       double sum = 0;
 #ifndef OPTIMIZED  
+#error Je ne suis pas SUR que ce code fonctionne
+      for (int jk = -ksy; jk <= ksy; ++jk)
+	for (int ik = -ksx; ik <= ksx; ++ik)
+	  sum += Kern(ik,jk)*Source(i+ksx-ik,j+ksy-jk);
+#else
+      DPixel *pk = mirror.begin();
+      for (int jk = -ksy; jk <= ksy; ++jk)
+	{
+	  DPixel *ps = &Source(i,j+ksy+jk);
+	  for (int k=0; k<nblock; k++)
+	    { DO8(sum += (*pk) * (*ps); ++pk; ++ps;) }
+	  for (int k=0; k<remainder; ++k) {sum += (*pk) * (*ps); ++pk; ++ps;}
+	}
+
+#ifdef STORAGE
+      DPixel *pk = Kern.begin();
+      for (int jk = -ksy; jk <=ksy; ++jk)
+	{
+	  DPixel *ps = &Source(i+2*ksx,j+ksy-jk);
+	  //DO23(sum += (*pk) * (*ps); ++pk; --ps;)
+	  for (int toto = nstepx; toto; --toto) {sum += (*pk) * (*ps); ++pk; --ps;}
+	}
+#endif
+#endif
+      Result(i,j) = sum;
+    }
+}
+
+
+
+#ifdef STORAGE
+
+void Convolve(DImage& Result, const DImage& Source, const DImage &Kern)
+{
+  // This code does not work if Result or Source are Kernels. This is a shame.
+ /* assumes that Result is already allocated and properly sized, and different from Source! */
+#ifdef OPTIMIZED
+  int nstepx = Kern.Nx();
+#endif
+  int endrx = Result.Nx();
+  int endry = Result.Ny();
+  int ksx = Kern.Nx()/2;
+  int ksy = Kern.Ny()/2;
+
+  for (int j=0; j< endry; ++j)
+    for (int i=0; i < endrx; ++i)
+    {
+      double sum = 0;
+#ifndef OPTIMIZED  
+#error Je ne suis pas SUR que ce code fonctionne
       for (int jk = -ksy; jk <= ksy; ++jk)
 	for (int ik = -ksx; ik <= ksx; ++ik)
 	  sum += Kern(ik,jk)*Source(i+ksx-ik,j+ksy-jk);
@@ -716,12 +676,16 @@ void Convolve(DImage& Result, const DImage& Source, const Kernel &Kern)
       for (int jk = -ksy; jk <=ksy; ++jk)
 	{
 	  DPixel *ps = &Source(i+2*ksx,j+ksy-jk);
+	  //DO23(sum += (*pk) * (*ps); ++pk; --ps;)
 	  for (int toto = nstepx; toto; --toto) {sum += (*pk) * (*ps); ++pk; --ps;}
 	}
 #endif
       Result(i,j) = sum;
     }
 }
+#endif
+
+
 
 void ConvolveKernels(Kernel &Result, const Kernel &Psf, const Kernel &Kern)
 {

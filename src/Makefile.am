@@ -73,7 +73,9 @@ libtoads_la_SOURCES =  \
   convolution.cc              convolution.h \
                               convtemplate.h \
   kernelfit.cc                kernelfit.h iohelpers.h \
-  psfmatch.cc                 psfmatch.h  \
+  kernelfitter.cc             kernelfitter.h  \
+  imagepair.cc	              imagepair.h \
+  scorescollection.cc         scorescollection.h \
   swarpstack.cc		      swarpstack.h \
   dicstar.cc                  dicstar.h \
   histopeakfinder.cc          histopeakfinder.h \

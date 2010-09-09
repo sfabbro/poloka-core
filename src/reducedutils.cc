@@ -109,18 +109,19 @@ double QuickPhotomRatio(const SEStarList &CurList, const SEStarList &RefList,
 
 
 
-double MedianPhotomRatio(const StarMatchList *matchlist)
+double MedianPhotomRatio(const StarMatchList &MatchList)
 {
-  if (matchlist->empty()) 
+  if (MatchList.empty()) 
     {
       cerr << " MedianPhotomRatio() : Error: matchlist empty, returning ratio=-99" << endl;
       return -99.;
     }
-
-
-  double *ratios = new double[matchlist->size()];
+  /* This is unweighted. If we weight it, we might consider 
+     averaging between the direct and reversed photom ratio 
+  */
+  double *ratios = new double[MatchList.size()];
   int count = 0;
-  for (StarMatchCIterator i = matchlist->begin(); i != matchlist->end(); ++i)
+  for (StarMatchCIterator i = MatchList.begin(); i != MatchList.end(); ++i)
     if(i->s2->flux>0.)
       ratios[count++] = i->s1->flux/i->s2->flux;
   double med = DArrayMedian(ratios,count);
@@ -133,11 +134,18 @@ double MedianPhotomRatio(const BaseStarList &CurList, const BaseStarList &RefLis
   StarMatchList *matchlist;
   if (!Transfo) matchlist = ListMatchCollect(CurList, RefList, 1.);
   else matchlist = ListMatchCollect(CurList, RefList, Transfo, 1.);
-  double pr1 = MedianPhotomRatio(matchlist);
+  /* it is useless to compute both since one is exactly the 
+     inverse of the other : */
+#ifdef STORAGE
+  double pr1 = MedianPhotomRatio(*matchlist);
   matchlist->Swap();
-  double pr2 = MedianPhotomRatio(matchlist);
+  double pr2 = MedianPhotomRatio(*matchlist);
   delete matchlist;
   return sqrt(pr1/pr2);
+#endif
+  double pr = MedianPhotomRatio(*matchlist);;
+  delete matchlist;
+  return pr;
 }
 
 
