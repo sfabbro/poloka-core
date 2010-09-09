@@ -137,7 +137,6 @@ cluster.h  \
 convolution.h exceptions.h\
 convtemplate.h \
 kernelfit.h \
-psfmatch.h  \
 swarpstack.h    \
 nightelement.h  \
 histopeakfinder.h \
