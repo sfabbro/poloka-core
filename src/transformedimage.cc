@@ -112,7 +112,9 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   int ny_aligned = int(outputImageSize.Ny());
   
   transformedImage = GtransfoImage(Original,*transfoFromRef, int(nx_aligned),
-				   int(ny_aligned), DefaultVal, 3); 
+				   int(ny_aligned), DefaultVal, 3);
+
+  transformedImage *= (1/(scaleFactor*scaleFactor)); // account for the average Jacobian.
   
   /* write in the header the frame coordinates */
   Frame frame(dynamic_cast<const FitsHeader&> (Original));
@@ -249,6 +251,8 @@ void ImageGtransfo::TransformWeightImage(const FitsImage &Original,
   transformedVariance = 
     GtransfoImage(inputWeights,*transfoFromRef, int(nx_aligned),
 			       int(ny_aligned), 0, 3, true);
+  transformedVariance *= 1./(scaleFactor*scaleFactor);
+  
   {
     Pixel min,max;
     transformedVariance.MinMaxValue(&min,&max);
@@ -293,18 +297,12 @@ void ImageGtransfo::TransformWeightImage(const FitsImage &Original,
   cout << " After scaling  " << frame;
 
   Transformed.AddOrModKey("SCALFACT",scaleFactor,"Scaling factor when transforming");
+
   // Whould in fact update the WCS with a linear approximation 
   // if (HasWCS(Transformed)) RemoveWCS(Transformed)
+
   // update usable part
   frame.WriteInHeader(Transformed);
-
-  // update RA and DEC
-  //  string ra = Original.KeyVal("TOADRASC");
-  // string dec = Original.KeyVal("TOADDECL");
-  // double epoch = Original.KeyVal("TOADEQUI");
-  // Transformed.AddOrModKey("TOADRASC",ra.c_str(),"Modified RA after transformation");
-  // Transformed.AddOrModKey("TOADDECL",dec.c_str(),"Modified DEC after transformation");
-  // Transformed.AddOrModKey("TOADEQUI",epoch,"Modified epoch after transformation");
 
   /* The update of the WCS consists in copying the WCS of the geomRef
      in the Transformed image, provided the first one is accurate.
@@ -332,7 +330,12 @@ void ImageGtransfo::TransformBoolImage(const FitsImage &Original, FitsImage& Tra
   Transformed.ModKey("BITPIX",8);
 }
 
-
+/* this routine could be integrated into SEStar code.
+   It does however 3 different things :
+   - transform coordinates (and there are untransformed coordinates) .....
+   - crop the list to the transformed frame
+   - scale a few scores
+*/
 void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Transformed) const
 {
   Transformed.clear();
@@ -351,15 +354,38 @@ void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Tran
       star->Fond() /= scale2;
       star->Fwhm() *= scaleFactor;
       star->Kronradius() *= scaleFactor;
-      star->Isoarea() *= scaleFactor;
-      star->Mxx() *= scaleFactor;
-      star->Myy() *= scaleFactor;
-      star->Mxy() *= scaleFactor;
+      star->Isoarea() *= scale2;
+      star->Mxx() *= scale2;
+      star->Myy() *= scale2;
+      star->Mxy() *= scale2;
       star->A() *= scaleFactor;
       star->B() *= scaleFactor;
       ++it;
     }
 }
+
+
+void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSEStarList &Transformed) const
+{
+  // I think the active part of the routine should be in apersestar.cc
+  /* should transform also the global values ...... */
+  TransformCatalog((const SEStarList &) Catalog, (SEStarList &) Transformed);
+  double scale2 = scaleFactor*scaleFactor;
+  for (AperSEStarIterator it=Transformed.begin(); it!=Transformed.end(); )
+    {
+      AperSEStar *star = *it;
+      star->neighborDist *= scaleFactor;
+      star->gmxx *= scale2;
+      star->gmyy *= scale2;
+      star->gmxy *= scale2;
+      vector<Aperture> &apers = star->apers;
+      for (unsigned k=0; k < apers.size(); ++k)
+	{
+	  apers[k].radius *= scaleFactor;
+	}
+    }
+}
+
 
 
 
@@ -458,6 +484,22 @@ bool  TransformedImage::MakeCatalog()
   outList.write(fileName);
   return true;
 }
+
+
+#include <apersestar.h>
+bool  TransformedImage::MakeAperCat() 
+{
+  string fileName = ReducedImage::AperCatalogName();
+  if (FileExists(fileName)) return true;
+
+  AperSEStarList inList(source->AperCatalogName());
+  AperSEStarList outList;
+  cout << " Transforming list from "<< source->Name() << endl;
+  transfo->TransformAperCatalog(inList,outList);
+  outList.write(fileName);
+  return true;
+}
+
 
 
 

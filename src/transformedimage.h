@@ -4,13 +4,13 @@
 
 #include "gtransfo.h"
 #include "sestar.h"
+#include "apersestar.h"
 #include "reducedimage.h"
 #include "frame.h"
 #include "countedref.h"
 
 class Image;
 class FitsImage;
-
 
 /* a (virtual) class for generic image transformation */
 
@@ -41,6 +41,11 @@ class ImageTransfo : public RefCount
 //! applies the transfo to the list
   virtual void TransformCatalog(const SEStarList &Catalog, 
 				SEStarList &Transformed) const = 0;
+
+  //! applies the transfo to the list
+  virtual void TransformAperCatalog(const AperSEStarList &Catalog, 
+				    AperSEStarList &Transformed) const = 0;
+
     
   //!  
   virtual ImageTransfo* Clone() const = 0;
@@ -96,6 +101,10 @@ public:
   //! transforms a bool Image
   void TransformBoolImage(const FitsImage &Source, FitsImage& Transformed) const ;
   void TransformCatalog(const SEStarList &Catalog, SEStarList &Transformed) const;
+  void TransformAperCatalog(const AperSEStarList &Catalog, AperSEStarList &Transformed) const;
+
+
+
   bool IsValid() const;
   double ScaleFactor() const {return scaleFactor;}
   ImageTransfo* Clone() const;
@@ -157,6 +166,7 @@ private:
 
   virtual bool MakeFits() ;
   virtual bool MakeCatalog();
+  bool MakeAperCat();
   virtual bool MakeDead();
   virtual bool MakeSatur();
   virtual bool MakeCosmic();
