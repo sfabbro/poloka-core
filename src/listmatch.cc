@@ -30,16 +30,18 @@ static void read_card(DataCards &Cards, const std::string &Key, int &I)
   if (Cards.HasKey(Key)) I = Cards.IParam(Key);
 }
 
+static double sqr(const double& x) { return x*x; }
 
 #include "fileutils.h"
 
 MatchConditions::MatchConditions(const std::string &DatacardsName)
 {  /* default values */
-  NStarsL1 = 60; NStarsL2=60;
+  NStarsL1 = 70; NStarsL2=70;
   MaxTrialCount = 4;
   NSigmas = 3.;
   MaxShiftX = 50; MaxShiftY = 50; 
-  SizeRatio = 1; DeltaSizeRatio = 0.1;
+  SizeRatio = 1; DeltaSizeRatio = 0.1*SizeRatio;
+  MinMatchRatio = 1./3.;
   PrintLevel = 0;
   Algorithm = 2;
   if (DatacardsName != "")
@@ -58,6 +60,7 @@ MatchConditions::MatchConditions(const std::string &DatacardsName)
       read_card(cards,"DATMATCH_MAXSHIFTY", MaxShiftY);
       read_card(cards,"DATMATCH_SIZERATIO", SizeRatio);
       read_card(cards,"DATMATCH_DELTA_SIZERATIO", DeltaSizeRatio);
+      read_card(cards,"DATMATCH_MINMATCHRATIO", MinMatchRatio);
       read_card(cards,"DATMATCH_PRINTLEVEL", PrintLevel);
       read_card(cards,"DATMATCH_ALGO", Algorithm);
     }
@@ -789,8 +792,145 @@ StarMatchList *ListMatchCollectWU(const BaseStarList &L1, const BaseStarList &L2
 #endif
 
 
+static bool is_transfo_ok(const StarMatchList* match, const double& pixSizeRatio2, const size_t nmin) {
+
+  if ((fabs(fabs(dynamic_cast<const GtransfoLin*>(match->Transfo())->Determinant())-pixSizeRatio2)/pixSizeRatio2 < 0.2) && (match->size() > nmin))
+    return true;
+  cout << " is_transfo_ok: no\n";
+  match->DumpTransfo();  
+  return false;
+}
+
+// utility to check current transfo difference
+static double transfo_diff(const BaseStarList &List, const Gtransfo *T1, const Gtransfo*T2) {
+  double diff2 = 0;
+  FatPoint tf1;
+  Point tf2;
+  int count = 0;
+  for (BaseStarCIterator it = List.begin(); it != List.end(); ++it) {
+    const BaseStar *s = *it;
+    T1->TransformPosAndErrors(*s, tf1);
+    T2->apply(*s, tf2);
+    double dx = tf1.x - tf2.x;
+    double dy = tf1.y - tf2.y;
+    diff2 += (tf1.vy*dx*dx + tf1.vx*dy*dy - 2*tf1.vxy*dx*dy) / (tf1.vx*tf1.vy-tf1.vxy*tf1.vxy);
+    count++;
+  }
+  if (count) 
+    return diff2 / double(count);
+  return 0;
+}
+
+static double median_distance(const StarMatchList* match, const Gtransfo* transfo) {
+  size_t nstars = match->size();
+  vector<double> resid(nstars);
+  vector<double>::iterator ir = resid.begin();
+  for (StarMatchCIterator it = match->begin(); it != match->end(); ++it, ++ir)
+    *ir = sqrt(transfo->apply(it->point1).Dist2(it->point2));
+  sort(resid.begin(), resid.end());
+  return (nstars & 1) ? resid[nstars/2] : (resid[nstars/2-1] + resid[nstars/2])*0.5;
+}
 
 
+Gtransfo* ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2, const MatchConditions& Conditions) {
+
+  const size_t nStars = 500; // max number of bright stars to match
+  BaseStarList L1, L2;
+  List1.CopyTo(L1); L1.FluxSort(); L1.CutTail(nStars);
+  List2.CopyTo(L2); L2.FluxSort(); L2.CutTail(nStars);
+
+  cout << " ListMatchCombinatorial: find match between " << L1.size() << " and " << L2.size() << " stars\n";
+  StarMatchList *match = MatchSearchRotShiftFlip(L1, L2, Conditions);
+  Gtransfo *transfo = 0;
+  double pixSizeRatio2 = sqr(Conditions.SizeRatio);
+  size_t nmin = min(size_t(10), size_t(min(L1.size(), L2.size())*Conditions.MinMatchRatio));
+
+  if (is_transfo_ok(match, pixSizeRatio2, nmin))
+    transfo = match->Transfo()->Clone();
+  else {
+    delete match;
+    cout << " ListMatchCombinatorial: direct transfo failed, trying reverse\n";
+    match = MatchSearchRotShiftFlip(L2, L1, Conditions);
+    if (is_transfo_ok(match, pixSizeRatio2, nmin))
+      transfo = match->InverseTransfo();
+    else {
+      cout << " ListMatchCombinatorial: reverse transfo failed\n";
+      if (transfo) delete transfo;
+    }
+  }
+  delete match;
+
+  if (Conditions.PrintLevel >= 1) {
+    if (transfo) {
+      cout << " ListMatchCombinatorial: found a transfo\n"
+	   << *transfo << endl;
+    } else
+      cerr << " ListMatchCombinatorial: failed to find a transfo\n";
+  }
+  return transfo;
+}
+
+Gtransfo* ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2, Gtransfo* transfo, const int maxOrder) {
+
+  if (!transfo) { return 0; }
+
+  // some hard-coded constants that could go in a param file
+  const double brightDist = 2.;  // distance in pixels in a match
+  const double fullDist = 4.;    // distance in pixels in a match between entire lists
+  const double nSigmas = 3.;     // k-sigma clipping on residuals
+  const size_t nStars  = 500;    // max number of bright stars to fit
+
+  int order = 1;
+  size_t nstarmin = 3;
+
+  BaseStarList L1, L2;
+  List1.CopyTo(L1); L1.FluxSort(); L1.CutTail(nStars);
+  List2.CopyTo(L2); L2.FluxSort(); L2.CutTail(nStars);
+
+  StarMatchList *fullMatch = ListMatchCollect(List1, List2, transfo, fullDist);
+  StarMatchList *brightMatch = ListMatchCollect(L1, L2, transfo, brightDist);
+  double curChi2 = ComputeChi2(*brightMatch, *transfo) / brightMatch->size();
+
+  cout << " ListMatchRefine: start  "
+       << " med.resid "  << median_distance(fullMatch, transfo) 
+       << " #match " << fullMatch->size() 
+       << endl;
+
+  do { // loop on transfo order on full list of stars
+    Gtransfo* curTransfo = brightMatch->Transfo()->Clone();
+    unsigned iter = 0;
+    double transDiff;
+    do { // loop on transfo diff only on bright stars
+      brightMatch->SetTransfoOrder(order);
+      brightMatch->RefineTransfo(nSigmas);
+      transDiff = transfo_diff(L1, brightMatch->Transfo(), curTransfo);
+      curTransfo = brightMatch->Transfo()->Clone();
+      delete brightMatch;
+      brightMatch = ListMatchCollect(L1, L2, curTransfo, brightDist);
+    } while (brightMatch->size() > nstarmin && transDiff > 0.05 && ++iter < 5);
+    
+    double prevChi2 = curChi2;
+    curChi2 = ComputeChi2(*brightMatch, *curTransfo) / brightMatch->size();
+
+    delete fullMatch;
+    fullMatch = ListMatchCollect(List1, List2, curTransfo, fullDist);
+    cout << " ListMatchRefine: order " << order
+	 << " med.resid "  << median_distance(fullMatch, curTransfo) 
+	 << " #match " << fullMatch->size()
+	 << endl;
+    if (((prevChi2 - curChi2) > 0.01*curChi2) && curChi2 > 0) {
+      cout << " ListMatchRefine: order " << order << " was a better guess\n";
+      delete transfo;
+      transfo = brightMatch->Transfo()->Clone();
+    }
+    nstarmin = brightMatch->Transfo()->Npar();
+  } while (++order <= maxOrder);
+
+  delete brightMatch;
+  delete fullMatch;
+
+  return transfo;
+}
 
 /*
 RUN_ROOTCINT

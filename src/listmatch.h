@@ -14,7 +14,7 @@ struct MatchConditions
   int MaxTrialCount;
   double NSigmas;
   double MaxShiftX, MaxShiftY;
-  double SizeRatio, DeltaSizeRatio;
+  double SizeRatio, DeltaSizeRatio, MinMatchRatio;
   int PrintLevel;
   int Algorithm;
 
@@ -24,7 +24,6 @@ struct MatchConditions
   double MaxSizeRatio() const { return SizeRatio + DeltaSizeRatio;}  
 
 } ;
-
 
 
 /*! \file
@@ -70,4 +69,16 @@ GtransfoLin *ListMatchupShift(const BaseStarList &L1,
 			      const BaseStarList &L2, 
 			      const Gtransfo &Tin, 
 			      double MaxShift, double BinSize = 0);
+
+
+Gtransfo* ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2,
+				 const MatchConditions& Conditions=MatchConditions());
+Gtransfo* ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2, Gtransfo* transfo, const int maxOrder=3);
+
+inline Gtransfo* ListMatch(const BaseStarList& List1, const BaseStarList& List2, const int maxOrder=3) {
+  Gtransfo* transfo = ListMatchCombinatorial(List1, List2);
+  transfo = ListMatchRefine(List1, List2, transfo, maxOrder);
+  return transfo;
+}
+
 #endif /* LISTMATCH__H */
