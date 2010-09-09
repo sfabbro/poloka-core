@@ -277,8 +277,9 @@ sex_proc(const AllForSExtractor & data,
 
   prefs.satur_level = data.saturation ;
   FitsHeader head(filename, RO);
-  //prefs.pixel_scale = head.KeyVal("TOADPIXS");
-  prefs.pixel_scale = 0.1850 ;
+  // if you have a problem with next line, try to fix it in
+  // the relevant virtual instrument rather than hardcoding a value
+  prefs.pixel_scale = head.KeyVal("TOADPIXS");
   prefs.gain = head.KeyVal("TOADGAIN");
 
   cout << "saturation provided to sextractor : " << prefs.satur_level  << std::endl;
@@ -686,10 +687,9 @@ prefs.weight_thresh[1]: 0
   // le pixelscale n'est pas forcement la meme mais on s'en fiche
   // par contre il faut le gain de l'image de photometrie
 
-  // pour test
-
-  // prefs.pixel_scale = head.KeyVal("TOADPIXS");
-  prefs.pixel_scale = 0.185 ;
+  // if you have a problem with next line, try to fix it in
+  // the relevant virtual instrument rather than hardcoding a value
+  prefs.pixel_scale = head.KeyVal("TOADPIXS");
   prefs.gain = head.KeyVal("TOADGAIN");  
   prefs.satur_level = data.saturation ;
   
