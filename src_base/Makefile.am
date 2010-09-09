@@ -17,7 +17,7 @@ alltelinst.cc alltelinst.h : $(top_srcdir)/telinst/*.cc $(top_srcdir)/telinst $(
 	@ awk '{if (switch) print $$0}/FOR_MAKE/{switch=1}/^#endif/{if (switch) switch=0}' fitstoad.cc | $(MAKE) -f - `basename $@`
 
 
-
+fitsimage.cc : alltelinst.h alltelinst.cc
 
 vutils.cc_cppflags = $(optimize_it)
 image.cc_cppflags  = $(optimize_it)
