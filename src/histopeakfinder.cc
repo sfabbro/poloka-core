@@ -43,7 +43,7 @@ static double sq(const double &x) { return x*x;}
    The Ellipse parameters can be retreived in the returned Ellipse
 */
 
-
+//#define DEBUG
 
 bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 		     const double &XGuess, const double &YGuess,
@@ -120,7 +120,7 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 
 
 
-      if (cholesky_solve(A,B))
+      if (cholesky_solve(A,B)==0)
 	{
 	  cout << " we finally got into this never tested code...." << endl;
 	  double deno = sq(B(2))-4.*B(1)*B(0);
@@ -140,11 +140,13 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
   cout << "HistoPeakFinder :  starting iterations with xc = " << xc 
        << " yc = " << yc << endl;
 
-
   int count = 0;
   while (count < 10)
     {
       count ++;
+#ifdef DEBUG
+      cout << " iter  wxx,wyy,wxy " << count << ' ' << wxx << ' ' << wyy << ' ' << wxy << endl;
+#endif
       double sumx = 0;
       double sumy = 0;
       double sumxx = 0;
@@ -191,14 +193,27 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
       double det = sumxx*sumyy - sq(sumxy);
       if (det <=0 || sumxx < 0 || sumyy < 0)
 	{
+#ifdef DEBUG
+	  cout << " det, sumxx, sumyy " << det << ' ' << sumxx << ' ' << sumyy << endl;
+#endif
 	  cout << " HistoPeakFinder cannot figure out a peak " << endl;
 	  ok = false;
 	  Ell = Ellipse(XGuess, YGuess, 12.*xBin, 12.*yBin, 0.);
 	  break;
 	}
+      // new weights
       wxx = 0.5*sumyy/det;
       wyy = 0.5*sumxx/det;
       wxy = -0.5*sumxy/det;
+      // handle here the case where all values are almost equal
+      double spot_size=sqrt(sqrt(det));
+#ifdef DEBUG
+      cout << " det, sumxx, sumyy " << det << ' ' << sumxx << ' ' << sumyy << endl;
+      cout << " spot_size " << spot_size << endl;
+#endif
+      if (spot_size<0.0005*(xc+yc)) break;
+
+
     }
 
   if (ok)
