@@ -97,6 +97,8 @@ std::string StringToLower(const std::string Source);
 //! removes a given pattern
 int RemovePattern(std::string &Source, const std::string &aPattern);
 
+//! strip blanks
+std::string DeleteWhiteSpaces(const std::string& Source);
 
 //! Decompose string into substring separated by a char token
 void DecomposeString(std::vector<std::string> &SubStrings, const string &Source, const char *tokens=" \t");

@@ -12,6 +12,8 @@
 #include <string>
 #include <cctype>
 #include <iostream>
+#include <algorithm>
+#include <iterator>
 #include "polokaexception.h"
 
 
@@ -598,6 +600,15 @@ int RemovePattern(string &Source, const string &aPattern)
       pos = Source.find(aPattern);
     }
   return iter;
+}
+
+static bool is_space(char c) { return isspace(c) ; }
+
+string DeleteWhiteSpaces(const string &Source)
+{
+  string dest;
+  remove_copy_if(Source.begin(), Source.end(), back_inserter(dest), is_space);
+  return dest;
 }
 
 void DecomposeString(vector<string> &SubStrings, const string &Source, 
