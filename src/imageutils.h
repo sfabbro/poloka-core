@@ -4,9 +4,12 @@
 
 
 class Image;
-class Frame;
 class Gtransfo;
 #include "frame.h" // for whichTransformed
+
+//! No resampling, only shift an image within a larger frame
+Image IntegerShiftImage(const Image& inputimage, const Gtransfo &g,
+			int nx, int ny, float DefaultVal);
 
 //! Image resampling. Can handle Variance maps
 Image GtransfoImage(const Image& inputimage, const Gtransfo & g, int nx, int ny, 
