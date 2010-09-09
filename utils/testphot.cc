@@ -3,6 +3,7 @@
 #include <stdio.h> 
 #include <getopt.h>
 
+#include <sstream>
 #include <iostream>
 #include <cmath> // for PI
 
