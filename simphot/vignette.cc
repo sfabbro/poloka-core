@@ -242,7 +242,7 @@ int Vignette::CanDo() const
     for (int i = sumFrame.xmin; i < sumFrame.xmax; ++i)
       sumw += weightPix(i,j);
   int toDo = FIT_GALAXY + FIT_SKY;
-  if (sumw > 0 & couldFitFlux) toDo += (FIT_FLUX + FIT_POS);
+  if (sumw > 0 && couldFitFlux) toDo += (FIT_FLUX + FIT_POS);
   return toDo;
 }
 
