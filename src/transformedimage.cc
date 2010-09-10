@@ -370,11 +370,30 @@ void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSESt
 {
   // I think the active part of the routine should be in apersestar.cc
   /* should transform also the global values ...... */
-  TransformCatalog((const SEStarList &) Catalog, (SEStarList &) Transformed);
+  // can't do this, buggy
+  // TransformCatalog((const SEStarList &) Catalog, (SEStarList &) Transformed);
+  Transformed.clear();
+  Catalog.CopyTo(Transformed);
+  Transformed.ApplyTransfo(*transfoToRef);
   double scale2 = scaleFactor*scaleFactor;
-  for (AperSEStarIterator it=Transformed.begin(); it!=Transformed.end(); )
+  for (AperSEStarIterator it=Transformed.begin(); it != Transformed.end(); )
     {
       AperSEStar *star = *it;
+      if (!outputImageSize.InFrame(*star)) 
+	{
+	  it = Transformed.erase(it);
+	  continue;
+	}
+      star->Fluxmax() /= scale2;
+      star->Fond() /= scale2;
+      star->Fwhm() *= scaleFactor;
+      star->Kronradius() *= scaleFactor;
+      star->Isoarea() *= scale2;
+      star->Mxx() *= scale2;
+      star->Myy() *= scale2;
+      star->Mxy() *= scale2;
+      star->A() *= scaleFactor;
+      star->B() *= scaleFactor;
       star->neighborDist *= scaleFactor;
       star->gmxx *= scale2;
       star->gmyy *= scale2;
@@ -383,6 +402,7 @@ void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSESt
 	sit->radius *= scaleFactor;
 	sit->ncos = int(ceil(sit->ncos*scale2));
       }
+      ++it;
     }
   GlobalVal glob = Transformed.GlobVal();
   double seeing = glob.getDoubleValue("SEEING");
