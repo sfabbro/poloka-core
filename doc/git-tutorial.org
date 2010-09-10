@@ -1,7 +1,11 @@
-Poloka and git
+#+TITLE:       Poloka and =git=
+#+AUTHOR:      Marc Betoule
+#+DATE:        <2010-09-10 Fri>
+#+EMAIL:       <marc.betoule@lpnhe.in2p3.fr>
+#+DESCRIPTION: a short git survival kit.
 
-To ease the project of slicing Poloka in several modules we are trying to
-switch to git to manage the poloka repository.
+To ease the project of slicing Poloka in several modules we are trying
+to switch to git to manage the poloka repository.
 
 Here is all you need to know to use the new poloka git tree. Skip
 comments at first reading.
@@ -14,15 +18,15 @@ http://code.google.com/p/git-osx-installer/downloads/list?can=3&q=&sort=-uploade
 
 ** Get a copy of the central repository (previously export CVSROOT=...;cvs checkout poloka)
 
-git clone "login"@lpnp204.in2p3.fr:/home/frogshome/git/poloka [ optional destination-path if not ./poloka ]
+  =$ git clone "login"@lpnp204.in2p3.fr:/home/frogshome/git/poloka [ optional destination-path if not ./poloka ]=
 
 ** make changes, commit them, push them to the central repository
 
-git commit -a
+  =$ git commit -a=
 
-git push
+  =$ git push=
 
-3 comments :
+*3 comments:*
 - The reason why you need two commands instead of one is that you are
   now able to stay with local modifications (You have a complete copy
   of the tree and history which is the main difference with CVS). You
@@ -31,29 +35,31 @@ git push
   local tree, push all your modifications and modification history in
   one go.
 
-- The meaning of the -a option is commit all the modifications since
-  last commit. You may omit it to perform partial commit.
+- The =-a= option tells =git= to commit *all* the modifications since
+  the last commit. If you omit it nothing will be commited, but the
+  files explicitely added with =git add=.
 
-- As CVS, git will complain if the status of the distant repository
-  has changed since your last update and ask you to update first.
+- As =cvs=, =git= will complain if the status of the distant
+  repository has changed since your last update. It will ask you to
+  perform a =pull= first.
 
 
 ** Merge the central repository in the local repository (previously cvs update)
 
-git pull
+ =$ git pull=
 
-2 comments:
-- git will attempt automatic merge of the distant tree with your local
-  tree. As in CVS this step may fail and require manual
+*2 comments:*
+- =git= will attempt to automatically merge the distant tree with your local
+  tree. As in =cvs= this step may fail and require manual
   intervention. If this is the case:
   - Edit manually the conflicting files
-  - Commit your solution (git commit -a)
-  - (Optionally push the solution to the central repository)
+  - Commit your solution (=git commit -a=)
+  - Optionally, push the solution to the central repository
 
-- git will complain if you attempt to pull the distant tree with
+- =git= will complain if you attempt to pull the distant tree with
   uncommitted local changes. 2 solutions:
-  - commit first : git commit -a
-  - revert the uncommitted modifications : git reset --hard
+  - commit first : =git commit -a=
+  - revert the uncommitted modifications : =git reset --hard= (*WARNING* these modifications will be lost if you do that. This is what you wanted, right ?)
 
 * Comfortable use
 
@@ -61,99 +67,106 @@ git pull
 
 - Adding a file
 
-git add path
+ =$ git add path=
 
 - Removing a file
 
-git rm path
+ =$ git rm path=
 
 - Moving (renaming) a file
 
-git mv path newpath
+ =$ git mv path newpath=
 
-** What about ?
+** How to ...
 
 - show commit logs:
 
-git log 
+ =$ git log=
 
 - what did happen while I sleep ?
 
-git log --since="2 weeks ago""
+ =$ git log --since=="2 weeks ago"
 
 - what did happen to this file toto.c since the beginning, even before he was renamed toto.c ?
 
-git --follow toto.c
+ =$ git --follow toto.c=
 
 - What did I change since my last commit
 
-git diff
+ =$ git diff=
 
 - What changes in a file since between commit1 and commit2
 
-git diff commit1..commit2 -- path/to/file
+ =$ git diff commit1..commit2 -- path/to/file=
+
+  *Note:* commit1 and commit2 are (usually) the hash keys identifying
+  each commit. You may retrieve them with the command =git log=.
+  
 
 ** Branches
 
 - Switching between branches:
 
-git checkout branchname
+ =$ git checkout branchname=
 
 - Where am i (among other answers) ?
 
-git status
+ =$ git status=
 
 - Creating branches :
 
-git branch branchname
-git checkout branchname
+ =$ git branch branchname=
+
+ =$ git checkout branchname=
 
 - Pushing all branches to the central repository (as for other
   modifications this may remain local):
 
-git push --all
+ =$ git push --all=
 
-- merging branch "test" into "master"
+- merging branch =test= into =master=
 
-git checkout master
-git merge test
+ =$ git checkout master=
+
+ =$ git merge test=
 
 - kill branch test
 
-git branch -d test
+ =$ git branch -D test=
 
 - Setting up a local branch test to track the distant branch test
 
-git checkout -b test origin/test
+ =$ git checkout -b test origin/test=
 
 ** Tags
 
 - Tagging the current state:
 
-git tag tagname
+ =$ git tag tagname=
 
 - Going back to a tagged state: 
 
-git checkout tagname
+ =$ git checkout tagname=
 
 - Pushing local tags to the central tree (as for other
   modifications this may remain local):
 
-git push --tags
+ =$ git push --tags=
 
 
 * I need help...
 
 - on a specific command
 
-man git-command
+ =$ man git-command=
 
 - I want to learn
 
-man gittutorial 
-man gitcvs-migration
+ =$ man gittutorial=
 
-man gitglossary (answer to questions like what is HEAD or what does push mean ?)
+ =$ man gitcvs-migration=
 
-man gitcore-tutorial
+ =$ man gitglossary= (answer to questions like what is HEAD or what does push mean ?)
+
+ =$ man gitcore-tutorial=
 
