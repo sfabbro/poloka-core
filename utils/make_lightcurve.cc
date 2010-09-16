@@ -2,6 +2,7 @@
 #include <fstream>
 #include <lightcurve.h>
 #include <simfitphot.h>
+#include <algorithm>
 
 using namespace std;
 
