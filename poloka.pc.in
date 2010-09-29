@@ -7,4 +7,5 @@ Description: This is poloka
 Version: @VERSION@
 Libs: -L${libdir} -ltoadslib -ltoads_base -ltoads_utils -ltoadsmc
 Libs.private: -lm
+Requires: cfitsio-3.0.0 sex-2.2.2
 Cflags: -I${includedir}
