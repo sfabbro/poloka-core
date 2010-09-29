@@ -32,6 +32,9 @@ def build( bld ):
                                         'toads_utils', 'toadsflat' ] )
         prog.rpath = bld.env['PREFIX'] + '/lib'
 
+    # install the headers 
+    headers = bld.path.ant_glob( '*.h' )
+    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
     
     
 #     correlation = bld( features = 'cxx cprogram', 

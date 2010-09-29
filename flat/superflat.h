@@ -15,8 +15,10 @@ Image *DeadPixelImageAndFlatSmoothing(Image &Flat, double FlatMin, double FlatMa
 double ImageMaxCut   (const Image &Current, const Image &Flat);
 
 Image *MakeRawAverage(const FitsSet &FitsFileSet);
+Image *MakeRawAverageAndSigma(const FitsSet &FitsFileSet, Image *Sigma, const int normalize = 0, const int normTime = 0);
 
-Image *MakeRawMedian(const FitsSet &FitsFileSet);
+Image *MakeRawMedian(const FitsSet &FitsFileSet, const int normTime = 0);
+Image *MakeRawMaskedMedian(const FitsSet &FitsFileSet, const FitsSet &MaskFitsFileSet, const int normTime = 0);
 
 void MakeRawAverageAndSigma(const FitsSet &FitsFileSet, const Image &Bias, const Image &SkyFlat, const vector<double> &norm, Image &Mean, Image &Sigma);
 
@@ -34,9 +36,9 @@ void ImageAlreadyFlatFielded(const string &InFileName, const Image &Flat,
 			     const string &OutFileName);
 double ImageNormalisation(FitsImage &Current);
 
-double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias=0);
+double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias=NULL);
 
-
+double SurfaceFit(const Image &Im, const int BackDegree);
 
 #ifdef STORAGE
 void FilterFringes(Image &FringePattern, const int GridSize, const int NInc);
