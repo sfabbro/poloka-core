@@ -13,34 +13,6 @@ class Mat;
 #define MATVECT_CHECK_BOUNDS
 #endif
 
-// old interface (was in vutils)
-//==================================================================
-/*! Diagonalize Real Symmetric Matrix matrix(n*n) 
- * memory for eigenvectors of size n*n must be allocated by the user
- * memory for eigenvalues of size  n must be allocated by the user
- * \return 0 if ok
- */
-//int DiagonalizeRealSymmetricMatrix(int n,double * matrix, double * eigenvectors , double * eigenvalues);
- 
-//! inverts and solve using various CERNLIB routines
-int MatSolve(double *A, int N, double *B);
-
-//! solve (does not invert) using lapack routine
-int MatSolveLapack(double *A, int N, double *B);
-
-//! inverts a symetric posdef matrix using DSINV  CERNLIB's routine
-int SymMatInv(double *A, const int N);
-
-//!
-double ScalProd(const double A[], const double B[], const int N);
-
-//!
-void MatVec(const double *M, const int N1, const int N2, const double *V, double *R);
-
-//!
-double VecMatVec(const double*V1, const double *M, const int N1, const int N2, const double *V2);
-
-
 // Routines for solving linear systems + inversion 
 //==================================================================
 
@@ -57,13 +29,16 @@ double VecMatVec(const double*V1, const double *M, const int N1, const int N2, c
 // Matrix A is modified in this routine (also B which is at the end the solution X)
 int cholesky_solve(Mat &A, Vect &B, const char* UorL = "L");
 
-// Inverts matrix A using the factorization done in cholesky_solve
-// Uses lapack dpotri_
-// Matrix A is assumed to be symmetric (you'll get a core dump if it is not
-// (actually this is not compulsory (see 'man dptri') but we do it
-// for consistency).
-// This routine must be called after cholesky_solve, make sure the value of UorL
-// is the same as that used with dposv
+/* Inverts matrix A using the factorization done in cholesky_solve
+ Uses lapack dpotri_
+ Matrix A is assumed to be symmetric (you'll get a core dump if it is not
+ (actually this is not compulsory (see 'man dptri') but we do it
+ for consistency).
+ This routine must be called after cholesky_solve, make sure the value of UorL
+ is the same as that used with dposv.
+ The MATRIX IS SYMMETRIZED on exit 
+*/
+
 int cholesky_invert(Mat &A, const char* UorL = "L"); // when cholesky_solve is called first
 
 
@@ -103,22 +78,36 @@ int cholesky_solve_quasi_posdef(Mat &A, Vect &B,
 int cholesky_solve_quasi_posdef(Mat &A, Mat &B, 
 				const unsigned &NCut, const char* UorL);
 
-
+//! solve a symetric system (if posdef, use cholesky_solve)
 int general_solve(Mat& A, Vect& B, bool invert_A, const char* UorL);
+
+
+//! solve a general system
+int really_general_solve(Mat &A, Vect &B);
+
+
+//! invert a general matrix
+int really_general_invert(Mat &A);
+
 
 
 //! Symetric general system. return 0 when  OK. Undocumented invertion routine
 int symetric_solve(Mat& A, Vect& B, const char* UorL);
 
-
-int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL);
-
 //! same when there are several RHS (i.e. we have several B's)
 int symetric_solve(Mat& A, Mat& B, const char* UorL);
 
+//! eigenvalues using dsyevd. A is destroyed
+int symetric_eigenvalues(Mat& A, Vect& EigenVals, const char* UorL);
+
+//! eigenvectors and eigenvalues using dsyevd. A contains eigenvectors on output.
+/* the eigenvector corresponding to the lowest eigenvalues reads v(i) = A(i,0) */
+int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL);
 
 
-// Diagonalization
+
+
+// Diagonalization cernlib routine
 //====================================================================
 int DiagonalizeRealSymmetricMatrix(const Mat &matrix, Mat &eigenvectors , Vect &eigenvalues);
 
@@ -206,9 +195,6 @@ class Mat {
   //! call it with the same argument as cholesky_sove or cholesky_invert
   void Symmetrize(const char* UorL = "L");
   
-  // inverts a symetric posdef matrix using DSINV  CERNLIB's routine
-  int SymMatInvert();
-
   // inverts a posdef matrix using Cholesky factorization from lapack.
   int CholeskyInvert(const char *UorL);
 
@@ -311,7 +297,7 @@ class Vect {
 
   Mat transposed() const;
   operator Mat() const;
-  operator double() const;
+  //  operator double() const;
 };
 
 #endif /*MATVECT__H */

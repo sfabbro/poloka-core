@@ -8,7 +8,6 @@
 
 using namespace std;
 
-#define dsinv dsinv_
 #define dfact dfact_
 #define dfinv dfinv_
 #define dfeqn dfeqn_
@@ -17,7 +16,6 @@ using namespace std;
 // using cernstuff (from cernlib)
 extern "C" 
 {
-  void dsinv(int *N, double *A, int *IDIM, int *IFAIL);
   void dfact(int *N, double *A, int *idim, double *r, int *ifail, double *Det, int *jfail);
   void dfinv(int *n, double *A, int *idim, double *r);
   void dfeqn(int *n, double *a, int *idim, double *r, int *k, double *b);
@@ -43,71 +41,21 @@ extern "C" {
 	       double* WORK, int* LWORK, int* IWORK, int* LIWORK,
 	       int* INFO);
   void dsytri_(const char*, int* n, double* a , int* lda, int* ipiv, double* work, int* info);
+
+  void dgetri_(int *n, double *A, int * lda, int *ipiv, double *work, int *lwork, int *info);
+  void dgetrf_(int *n, int* m, double *A, int *lda, int *ipiv, int *info);
+
+
+#ifdef STORAGE
+  void dgees_(char *jobvs, char *, void *select , 
+	      int *n, double *a, int *lda, int * sdim, 
+	      double *wr, double *wi, double *vs, int *ldvs, 
+	      double * work, int *lwork, bool *bwork, int *info);
+
+#endif
+	      
+
 };
-
-//==========================================================================
-// old interface (from vutils)
-
-
-
-int MatSolve(double *A, const int N, double *B)
-{
-  double *r = new double [N];
-  int n = N;
-  int ifail, jfail;
-  double det;
-  dfact(&n, A, &n, r, &ifail, &det, &jfail);
-  if (ifail == 0)
-    {
-      int k=1;
-      //  dfinv(&n, A, &n,r);
-      dfeqn(&n, A, &n, r, &k, B);
-    }
-  delete [] r;
-  return (!ifail);
-}
-
-int MatSolveLapack(double *A, int N, double *B)
-{
-  int nhrs = 1, info = 0;
-  int *ipiv = new int[N];
-  dgesv_(&N, &nhrs, A, &N, ipiv, B, &N, &info);
-  delete [] ipiv;
-  return info == 0;
-}
-
-int SymMatInv(double *A, const int N)
-{
-  int n = N;
-  int ierr;
-  dsinv(&n,A,&n,&ierr);
-  return (!ierr);
-}
-
-double ScalProd(const double A[], const double B[], const int N)
-{
-  double res = 0;
-  for (int i = 0; i< N; i++) res += A[i]*B[i];
-  return res;
-}
-
-void MatVec(const double *M, const int N1, const int N2, const double *V, double *R)
-{ /* M is N1 x N2  V is N2, R is N1. 
-     M(i,j) = M[i*N2+j]*/
-  for (int i=0; i<N1; ++i)
-    {
-      R[i] = ScalProd( M+(i*N2), V, N2);
-    }
-}
-
-double VecMatVec(const double*V1, const double *M, const int N1, const int N2, const double *V2)
-{
-  /* M is N1xN2, V1 is N1, V2 is N2 */
-  double sum =0;
-  for (int i=0;i<N1; ++i)
-    sum += V1[i]*ScalProd(M+(i*N2),V2,N2);
-  return sum;
-}
 
 //==========================================================================
 int DiagonalizeRealSymmetricMatrix(const Mat &matrix, Mat &eigenvectors , Vect &eigenvalues) {
@@ -130,7 +78,6 @@ int DiagonalizeRealSymmetricMatrix(const Mat &matrix, Mat &eigenvectors , Vect &
   delete [] work;
   return ierr;
 }
-
 
 
 //==========================================================================
@@ -194,14 +141,50 @@ int cholesky_invert(Mat &A, const char* UorL)
 	 << ") : Warning: inversion failure . info =" 
 	 << info <<  " (>0 is not pos.def)" << endl;
 
+  else A.Symmetrize(UorL);
   return info;
 }
 
 
+int symetric_eigenvalues(Mat& A, Vect& EigenVals, const char* UorL)
+{
+  assert(A.SizeX() == A.SizeY());
+  if (EigenVals.Size() < A.SizeX()) EigenVals.allocate(A.SizeX());
+  
+  int  info = 0;
+  char* jobz = "N";
+  int  n = A.SizeX();
+  char uorl[6]; strncpy(uorl,UorL,6);
+  double* a = A.NonConstData();
+  double* eval  = EigenVals.NonConstData();
+  int     lwork = 1 + 6*n + 2*n*n;
+  double* work = new double[lwork];
+  int     liwork = 3 + 5*n;
+  int*    iwork = new int[liwork];
+  
+  dsyevd_(jobz, uorl, &n,
+	  a, &n, 
+	  eval, 
+	  work, &lwork, iwork, &liwork, 
+	  &info);
+
+  delete[] work;
+  delete[] iwork;
+
+  
+  if(info != 0)
+    {
+      cout << "[symetric_diagonalize] ERROR in dsysevd, info=" << info
+	   << endl;
+    }
+  
+  return info;
+}
+
 int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
 {
   assert(A.SizeX() == A.SizeY());
-  
+
   int  info = 0;
   char* jobz = "V";
   int  n = A.SizeX();
@@ -231,6 +214,7 @@ int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
   
   return info;
 }
+
 
 
 int posdef_invert(Mat &A, const char* UorL)
@@ -576,6 +560,7 @@ int cholesky_invert_quasi_posdef(Mat& A, const unsigned& NCut, const char* UorL)
 
 
 // calls dsytri after the use of dsysv
+/* this is indeed almost the same routine as symetric_solve !!!! */
 int general_solve(Mat& A, Vect& B, bool invert_A, const char* UorL)
 {
   int nrhs=1;
@@ -654,6 +639,91 @@ int symetric_solve(Mat& A, Mat& B, const char* UorL)
 
     return info;
 }
+
+
+int really_general_solve(Mat &A, Vect &B)
+{
+  int n = B.Size();
+  int nrhs = 1;
+  int lda = A.SizeX();
+  int *ipiv = new int[n];
+  int ldb = n;
+  int info;
+
+  dgesv_(&n, &nrhs, A.NonConstData(), &lda, ipiv, B.NonConstData(), &ldb, &info);
+  delete [] ipiv;
+
+  if (info != 0)
+    std::cout << " really_general_solve (dgesv) Problem factorizing the matrix: info="
+	      << info << std::endl;
+
+  return info;
+}
+
+int really_general_invert(Mat &A)
+{
+  int m = A.SizeX();
+  int n = A.SizeY();
+  int lda = A.SizeX();
+  int *ipiv= new int[n];
+  auto_ptr<int> pipiv(ipiv);
+
+  int info;
+
+  dgetrf_(&m, &n, A.NonConstData(), &lda, ipiv, &info);
+  if (info != 0)
+    {
+      std::cout << " really_general_invert (dgetrf) Problem factorizing the matrix: info="
+		<< info << std::endl;
+      
+      return info;
+    }
+  double tmpwork; // for workspace query
+  int lwork = -1;
+  dgetri_( &n, A.NonConstData() , &lda, ipiv, &tmpwork, &lwork, &info);  
+  int nb= int(tmpwork);
+  lwork = n*nb;
+  double* work = new double[lwork];
+  auto_ptr<double> pwork(work);
+  dgetri_(&n,  A.NonConstData(), &lda, ipiv, work, &lwork, &info);  
+  if (info != 0)
+    {
+      std::cout << " problem in dgetri : info = " << info << endl;
+    }
+  return info;
+}
+
+#ifdef STORAGE
+/* eigenvalues of a general (i.e. non-symetric) matrix */
+int general_eigenvalues(Mat &A, Vect &ER, Vect &EI)
+{
+  char *jobvs="N";
+  char *sort="N";
+  void * select = NULL;
+  int n = A.SizeX();
+  assert(A.SizeY() == n );
+  int lda = n;
+  int sdim; // 0 on output
+  ER.allocate(n);
+  EI.allocate(n);
+  double *vs = NULL;
+  int ldvs = 0;
+  double work[4*n];
+  int lwork = 4*n;
+  bool *bwork = NULL;
+  int info;
+  dgees_(jobvs, sort, select, &n, A.NonConstData(),
+	 &lda, &sdim, ER.NonConstData(), EI.NonConstData(),
+	 vs, &ldvs, work, &lwork, bwork, &info);
+  if (info != 0)
+    std:: cout <<  "general_eigenvalues : something went wrong " << endl;
+  return info;
+}
+#endif
+  
+  
+
+  
 
 
 
@@ -1134,17 +1204,6 @@ void Mat::Symmetrize(const char* UorL) {
       }
 } 
 
-int Mat::SymMatInvert() {
-  if(nx!=ny) {
-    cout << "Mat::SymMatInvert ERROR nx!=ny nx,ny = " << nx << "," << ny << endl;
-    abort();
-  }
-  double *A = data;
-  int n = nx;
-   int ierr;
-  dsinv(&n,A,&n,&ierr);
-  return (!ierr);
-}
 
 int Mat::CholeskyInvert(const char *UorL) {
   if(nx!=ny) {
@@ -1333,6 +1392,7 @@ Mat Vect::transposed() const {
   return trans;
 }
 
+#ifdef STORAGE /* causes troubles */
 Vect::operator double() const
 {
   if(n!=1) {
@@ -1342,6 +1402,8 @@ Vect::operator double() const
   }
   return (*this)(0);
 }
+#endif
+
 
 Vect::operator Mat() const {
 //Mat Vect::asMat() const {
