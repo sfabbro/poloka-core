@@ -25,7 +25,7 @@ string all_names;
  public :
     //! constructor from a file that contains file names (one per line). 
    /*! Those can be actual filenames or DbImage names. */
-    FitsSet(const string &FileName, const bool CheckFilter = true);
+ FitsSet(const string &FileName, const bool CheckFilter = true, const bool CheckCCD = true);
 
 #ifndef SWIG
     string operator [] (const unsigned int i) const { return fitsNames[i];}

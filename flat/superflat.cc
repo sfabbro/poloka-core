@@ -80,22 +80,26 @@ double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias)
   if (Current.HasKey("TOADNAMP")) Namp = Current.KeyVal("TOADNAMP");
   else Namp = 1;
 
+  if (Current.HasKey("AMPNAME")) Namp = 1;
+
   int UseOnlyOverscan = ( !Bias );
  
   for (int i=1; i<= Namp; ++i)
     {
-      Frame overscanRegion =  OverscanRegion(Current, i);
+      int iamp = i;
+
+      Frame overscanRegion =  OverscanRegion(Current, iamp);
       Pixel SigmaOverscan;
       Pixel MedianOverscan = Current.MedianInFrame(overscanRegion, 
 						   SigmaOverscan);
       
-      cout <<"Overscan region "<< i << " in image :   Median = " 
+      cout <<"Overscan region "<< iamp << " in image :   Median = " 
 	   << MedianOverscan << "  Sigma = " 
 	   << SigmaOverscan << endl;
 
       finalvalue += MedianOverscan;
 
-      Frame illuRegion = IlluRegion(Current,i);
+      Frame illuRegion = IlluRegion(Current,iamp);
       int x0 = int(illuRegion.xMin); // belongs to image
       int y0 = int(illuRegion.yMin);
       int x1 = int(illuRegion.xMax);// beyond last
@@ -110,7 +114,7 @@ double BiasCorrect_and_trim(FitsImage &Current, const Image *Bias)
 	  //correct image overscan with overscan in bias frame 
 	  Pixel MedianBiasOverscan = Bias->MedianInFrame(overscanRegion, 
 							 SigmaBiasOverscan);
-	  cout <<"Overscan region "<< i << " in bias  :   Median = "
+	  cout <<"Overscan region "<< iamp << " in bias  :   Median = "
 	       << MedianBiasOverscan << "  Sigma = " 
 	       << SigmaBiasOverscan << endl;
 
@@ -362,9 +366,90 @@ if (nImages != 0)
 return Average;
 }
 
+
+Image *MakeRawAverageAndSigma(const FitsSet &FitsFileSet, Image *Sigma, const int normalize, const int normTime)
+{
+  //added the substraction of the mean overscan
+
+  Image *Average = new Image(FitsFileSet.NxTot(), FitsFileSet.NyTot());
+  int nImages = FitsFileSet.size();
+  
+  if (nImages <2) 
+    {
+      cout <<" you requested to make a master from " << nImages << " images : we give up"  << endl;
+      return NULL;
+    }
+  
+  int nx_image = FitsFileSet.NxTot();
+  int sliceSize = 100;
+  if (FitsFileSet.NyTot()<sliceSize) sliceSize = FitsFileSet.NyTot();
+
+  int overlap = 0;
+  FitsParallelSlices slices(sliceSize,overlap);
+  double *norm = new double[nImages];
+  Pixel *meanOS = new Pixel[nImages];
+  Pixel *sigmaOS = new Pixel[nImages];
+
+  for (int i=0; i<nImages; ++i)
+    {
+      slices.AddFile(FitsFileSet[i]);
+      FitsImage Im(FitsFileSet[i]);
+      int Namp=1;
+
+      if (!Im.HasKey("WRITEDAT"))
+	{
+	  const Frame overscan= OverscanRegion(Im,Namp);   
+	  meanOS[i] = Im.MedianInFrame(overscan, sigmaOS[i]);
+	  cout <<" Will subtract mean overscan region for image "<< i <<" = "<< meanOS[i]<<endl;
+	}
+      else meanOS[i] = 0;
+
+      if (normalize)
+	{
+	  if (normTime==1)
+	    norm[i] = Im.KeyVal("TOADEXPO");
+	  else 
+	    {
+	      float mean,sig;
+	      Im.SkyLevel(&mean,&sig);
+	      norm[i] = mean-meanOS[i];
+	    }
+	}
+    }
+
+  Pixel *pixelValues = new Pixel[nImages];
+  
+  cout << "Building a mean master frame from " << nImages <<" images" << endl;;
+  do
+    {
+      for (int j=0; j<slices.SliceSize(); j++) for (int i=0; i<nx_image; i++) 
+	{
+	  for (int k=0; k<nImages; k++)
+	    {
+	      pixelValues[k] = (*slices[k])(i,j)-meanOS[k];
+	      //	      if (normalize) pixelValues[k] *= norm[0]/norm[k];
+	      if (normalize) pixelValues[k] /= norm[k];
+	    }
+	  int j_true = slices.ImageJ(j);
+	  float mean;
+	  float median;
+	  float sigma;
+	  Fmean_median_sigma(pixelValues, nImages, mean, median, sigma);
+	  (*Average)(i,j_true) = mean;
+	  (*Sigma)(i,j_true) = sigma;
+	}
+    }  
+  while (slices.LoadNextSlice());
+  
+  delete [] pixelValues;
+  delete [] norm;
+  
+  return Average;
+}
+
 //*******************************
 //! makes a raw median starting from an image list. The final image still has overscan (usefull for MasterBias making).
-Image *MakeRawMedian(const FitsSet &FitsFileSet)
+Image *MakeRawMedian(const FitsSet &FitsFileSet, const int normTime)
 {
 
   Image *Median = new Image(FitsFileSet.NxTot(), FitsFileSet.NyTot());
@@ -377,9 +462,21 @@ Image *MakeRawMedian(const FitsSet &FitsFileSet)
   
   int nx_image = FitsFileSet.NxTot();
   int sliceSize = 100;
+  if (FitsFileSet.NyTot()<sliceSize) sliceSize = FitsFileSet.NyTot();
+
   int overlap = 0;
   FitsParallelSlices slices(sliceSize,overlap);
-  for (int i=0; i<nImages; ++i) slices.AddFile(FitsFileSet[i]);
+  double *timeExp = new double[nImages];
+  for (int i=0; i<nImages; ++i)
+    {
+      slices.AddFile(FitsFileSet[i]);
+      if (normTime)
+	{
+	  FitsHeader head(FitsFileSet[i]);
+	  timeExp[i] = head.KeyVal("TOADEXPO");
+	}
+    }
+
   Pixel *pixelValues = new Pixel[nImages];
   
   cout << "Building a median master frame from " << nImages <<" images" << endl;;
@@ -387,7 +484,11 @@ Image *MakeRawMedian(const FitsSet &FitsFileSet)
     {
       for (int j=0; j<slices.SliceSize(); j++) for (int i=0; i<nx_image; i++) 
 	{
-	  for (int k=0; k<nImages; k++) pixelValues[k] = (*slices[k])(i,j);
+	  for (int k=0; k<nImages; k++)
+	    {
+	      pixelValues[k] = (*slices[k])(i,j);
+	      if (normTime) pixelValues[k] /= timeExp[k];
+	    }
 	  int j_true = slices.ImageJ(j);
 	  float mean;
 	  mean = FArrayMedian(pixelValues, nImages);
@@ -397,7 +498,77 @@ Image *MakeRawMedian(const FitsSet &FitsFileSet)
   while (slices.LoadNextSlice());
   
   delete [] pixelValues;
+  delete [] timeExp;
   
+  return Median;
+}
+
+//*******************************
+//! makes a raw masked median starting from an image list and an mask image list. The final image still has overscan (usefull for MasterBias making).
+Image *MakeRawMaskedMedian(const FitsSet &FitsFileSet, const FitsSet &MaskFitsFileSet, const int normTime)
+{
+  int useMask=1;
+
+  Image *Median = new Image(FitsFileSet.NxTot(), FitsFileSet.NyTot());
+  int nImages = FitsFileSet.size();
+  if (nImages <2)
+    {
+      cout <<" you requested to make a master from " << nImages << " images : we give up"  << endl;
+      return NULL;
+    }
+
+  if (MaskFitsFileSet.size()!= FitsFileSet.size())
+    {
+      cout <<" not the same number of images and masks !!!"<<endl;
+      return NULL;
+    }
+
+  int nx_image = FitsFileSet.NxTot();
+  int sliceSize = 100;
+  if (FitsFileSet.NyTot()<sliceSize) sliceSize = FitsFileSet.NyTot();
+
+  int overlap = 0;
+  FitsParallelSlices slices(sliceSize,overlap);
+  FitsParallelSlices maskslices(sliceSize,overlap);
+  double *timeExp = new double[nImages];
+  for (int i=0; i<nImages; ++i)
+    {
+      slices.AddFile(FitsFileSet[i]);
+      maskslices.AddFile(MaskFitsFileSet[i]);
+      if (normTime)
+	{
+	  FitsHeader head(FitsFileSet[i]);
+	  timeExp[i] = head.KeyVal("TOADEXPO");
+	}
+    }
+
+  Pixel *pixelValues = new Pixel[nImages];
+  
+  cout << "Building a median master frame from " << nImages <<" images USING Mask Images "<< endl;;
+  do
+    {
+      for (int j=0; j<slices.SliceSize(); j++) for (int i=0; i<nx_image; i++) 
+	{
+	  int npix = 0;
+	  for (int k=0; k<nImages; k++)
+	    {
+	      if ((*maskslices[k])(i,j)>0)
+		{
+		  pixelValues[k] = (*slices[k])(i,j);
+		  if (normTime) pixelValues[k] /= timeExp[k];
+		  npix++;
+		}
+	    }
+	  int j_true = slices.ImageJ(j);
+	  float mean;
+	  mean = FArrayMedian(pixelValues, npix);
+	  (*Median)(i,j_true) = mean;
+	}
+    }  
+  while (slices.LoadNextSlice());
+  
+  delete [] pixelValues;
+  delete [] timeExp;
   
   return Median;
 }
@@ -587,7 +758,7 @@ int FlatFieldImage(const string &InFileName, const string &FlatName,
 	 cerr << " FlatFieldImage : " << InFileName << " is not the same chip as " << BiasName << endl;
 	 delete in; delete bias; return 0;
      }
-     if (!in->SameSize(*bias)) 
+     if (!in->SameSize(*bias))
 	{
 	  cout << "Bias frame "<< BiasName << " ain't got same size as " << InFileName << endl;
 	  cout << "Will try with overscan " << endl;
@@ -1003,6 +1174,46 @@ const int BackDegree)
   if (!MatSolve(&A(0,0),msize,&B(0)))
     {
       cerr << " could not compute fringes normalization: no fringe subtraction" << endl;
+      return 0;
+    }
+  return B(nterms);
+}
+
+double SurfaceFit(const Image &Im, const int BackDegree)
+{
+  XYPower backModel(BackDegree);
+  int nterms = backModel.Nterms();
+  int msize = nterms;
+  //  int msize = nterms+1;
+  Mat A(msize,msize);
+  Vect B(msize);
+  Vect monom(nterms);
+
+  Pixel imMean,imSig;
+  Im.SkyLevel(&imMean, &imSig);
+  
+  for (int j=0 ; j< Im.Ny() ; j++)
+    for (int i=0 ; i< Im.Nx() ; i++)
+      {
+	Pixel p1 = Im(i,j);
+	for (int q1=0; q1<nterms; ++q1)
+	  {
+	    monom(q1) = backModel.Value(double(i), double(j),q1);
+	    
+	    for (int q2 = q1; q2<nterms; ++q2)
+	      A(q1,q2) += monom(q1)*monom(q2);
+	    B(q1) += monom(q1)*p1;
+	    //	    A(q1,nterms) += monom(q1)*p2;
+	  }
+	//	B(nterms) += p1*p2;
+	//	A(nterms,nterms)  += p2*p2;
+      }
+  /* symetrize */
+  for (int q1=0; q1<nterms; ++q1) 
+    for (int q2 = q1+1; q2<nterms; ++q2) A(q2,q1) = A(q1,q2); 
+  if (!MatSolve(&A(0,0),msize,&B(0)))
+    {
+      cerr << " could not compute image surface fit !!!!" << endl;
       return 0;
     }
   return B(nterms);

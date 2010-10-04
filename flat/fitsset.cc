@@ -7,7 +7,7 @@
 #include "fitsimage.h"
 #include "fitstoad.h"
 #include "frame.h"
-FitsSet::FitsSet(const string &ListName, const bool CheckFilter)
+FitsSet::FitsSet(const string &ListName, const bool CheckFilter, const bool CheckCCD)
 {
 vector<string> names;
 
@@ -83,7 +83,7 @@ while (!list.eof())
 	continue;
       }
 
-    if (ccd_cur != ccdRef)
+    if (CheckCCD && (ccd_cur != ccdRef))
       {
 	cout << "FitsSet : Image " << fileName << " doesn't refer to the same CCD as Ref Image "<< firstFileName << endl; 
 	continue;

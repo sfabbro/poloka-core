@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <iterator>
 #include <ctime>
-
+#include <algorithm>
 #include "simfitvignet.h"
 #include "simfit.h"
  
