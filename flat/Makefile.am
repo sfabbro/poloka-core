@@ -3,7 +3,7 @@ EXTRA_DIST =
 bin_PROGRAMS = fringefinder defringe medianstack trim correlation
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/src_base -I$(top_srcdir)/src_utils -I$(top_srcdir)/cern_stuff  @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
-AM_LDFLAGS = -L$(top_builddir)/src_base -L$(top_builddir)/src_utils  -L$(top_builddir)/cern_stuff -L$(top_builddir)/lapack_stuff -L$(top_builddir)/flat -R @libdir@ -L@libdir@   -ltoadsutils -llapackstuff -lcernstuff -ltoadsbase  @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
+AM_LDFLAGS = -L$(top_builddir)/src_base -L$(top_builddir)/src_utils  -L$(top_builddir)/cern_stuff -L$(top_builddir)/lapack_stuff -L$(top_builddir)/flat -R @libdir@ -L@libdir@   -ltoadsutils -llapack -lcernstuff -ltoadsbase  @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
 
 
 AM_CPPFLAGS += $($<_cppflags)

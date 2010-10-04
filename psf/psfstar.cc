@@ -254,7 +254,7 @@ bool PSFStar::FitPSFParams(const Image &I, const Image &W, const ImagePSF &PSF)
 	psfParamsWeight(j,i) = fitWeight(i,j);
       }
   // turn it back into a weight matrix
-  psfParamsWeight.SymMatInvert(); // should never fail
+  psfParamsWeight.CholeskyInvert("L"); // should never fail
 
 
 #if (DEBUG>=1)

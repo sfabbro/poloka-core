@@ -99,12 +99,12 @@ int main(int argc, char **argv)
   while(true) {
   
     FluxWeightMat = FluxCovarianceMat;
-    FluxWeightMat.SymMatInvert();
+    FluxWeightMat.CholeskyInvert("L");
     //cout << "FluxWeightMat" << endl;
     //cout << FluxWeightMat << endl;
     AtWA = A.transposed()*FluxWeightMat*A;
     FluxPerNightCovMat= AtWA; 
-    FluxPerNightCovMat.SymMatInvert();
+    FluxPerNightCovMat.CholeskyInvert("L");
     flux_per_night = (FluxPerNightCovMat*(A.transposed()*FluxWeightMat))*FluxVec;
 #ifdef DEBUG
     cout << "Mean flux per night" << endl;
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
     // now compute chi2
     Vect B = FluxVec - A*flux_per_night;
 
-    double chi2 = B.transposed()*FluxWeightMat*B;     
+    double chi2 = B*(FluxWeightMat*B);     
     int ndf = A.SizeY()-A.SizeX();
 
 #ifdef DEBUG
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
   
   // compute chi2
   Vect B = FluxVec - A*flux_per_night;
-  double chi2 = B.transposed()*FluxWeightMat*B;     
+  double chi2 = B*(FluxWeightMat*B);     
   int ndf = A.SizeY()-A.SizeX();
   
   cout << "SUMMARY " 

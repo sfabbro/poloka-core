@@ -8,7 +8,7 @@ libtag=simphot
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/src_base -I$(top_srcdir)/src -I$(top_srcdir)/simphot -I$(top_srcdir)/psf -I$(top_srcdir)/src_utils @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ -DMATVECT_CHECK_BOUNDS
 #AM_FFLAGS   = -Wall -pedantic -W  -O3 -funroll-loops
 
-AM_LDFLAGS  = -L$(top_builddir)/src_base -L$(top_builddir)/src -ltoadsbase -ltoads   -L$(top_builddir)/simphot  -R @libdir@ -L@libdir@ -lg2c @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ 
+AM_LDFLAGS  = -L$(top_builddir)/src_base -L$(top_builddir)/src -ltoadsbase -ltoads   -L$(top_builddir)/simphot  -R @libdir@ -L@libdir@ -lgfortran @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@ 
 
 
 
