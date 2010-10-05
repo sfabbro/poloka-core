@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip> // for setprecision()
+#include <memory> // for auto_ptr 
 #include <fstream>
 #include <matvect.h>
 #include <fitsio.h>
