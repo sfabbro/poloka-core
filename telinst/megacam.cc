@@ -215,7 +215,14 @@ Frame Megacam::OverscanRegion(const FitsHeader &Head, const int Iamp) const
 {
   if(IsTrimmed(Head)) // if trimmed no more OverscanRegion
     return Frame();
-  if (Head.HasKey("BIASSEC")) return extract_frame(Head,"BIASSEC",Iamp);
+  
+  if (Head.HasKey("BIASSEC")) 
+    {
+      Frame ret = extract_frame(Head,"BIASSEC",Iamp);
+      if(ret.xMin >= 0 && ret.yMin >= 0 && ret.Area() > 0)
+	return ret;
+    }
+  
   return extract_frame(Head,"BSEC",Iamp);
 }
 

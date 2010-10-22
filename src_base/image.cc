@@ -5,7 +5,7 @@
 #include <math.h>
 
 #define CHECK_BOUNDS
-
+#include "polokaexception.h"
 #include "image.h"
 #include "frame.h"
 #include "vutils.h"
@@ -695,6 +695,11 @@ Pixel Image::MedianInFrame(const Frame &Region, Pixel &Sigma) const
 	regionArray[npix] = (*this)(i,j);
 	npix++;
       }
+  if(npix == 0)
+    {
+      throw(PolokaException("Image::MedianInFrame ERROR npix=0"));
+    }
+  
   Pixel median = Fmedian_sigma(regionArray,npix,Sigma);
   delete [] regionArray;
 
