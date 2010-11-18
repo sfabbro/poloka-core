@@ -127,8 +127,7 @@ def build( bld ):
                uselib = ['CFITSIO'],
                vnum     = '0.1.0', 
                after    = 'alltelinst' )    
-    lib.rpath =  bld.env.LIBPATH_CFITSIO \
-                + [bld.env['PREFIX'] + '/lib']
+    lib.rpath =  [bld.env['PREFIX'] + '/lib']
     
     # install the headers 
     headers = bld.path.ant_glob( '*.h' )

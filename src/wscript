@@ -47,8 +47,7 @@ def build( bld ):
                vnum     = '0.1.0' )
     
     cdir = os.path.join(bld.bdir,bld.env.NAME)
-    lib.rpath = bld.env.LIBPATH_CFITSIO + bld.env.LIBPATH_SEX \
-        + [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]    
+    lib.rpath = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]    
     
     # install the headers 
     headers = bld.path.ant_glob( '*.h' ) + " starlist.cc"
