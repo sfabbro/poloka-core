@@ -93,6 +93,10 @@ def configure( conf ):
     else:
         ret = os.uname()
         targ = 'build.'+ ret[0]+'-'+ret[-1]
+        try:
+            os.remove('core')
+        except OSError :
+            pass
     
     
     conf.env.NAME=targ
@@ -105,11 +109,11 @@ def configure( conf ):
     conf.check_tool( 'compiler_cc' )
     # TODO: why is -fPIC -DPIC not specified by default for gcc ? 
     #       is there a SharedObject() method like in scons ? 
-    conf.env['CCFLAGS'] = [ '-fPIC', '-DPIC', '-g' ]
+    conf.env['CCFLAGS'] = [ '-fPIC', '-DPIC', '-g', '-O3' ]
     
     # c++ compiler 
     conf.check_tool( 'compiler_cxx' )
-    conf.env.append_value( 'CXXFLAGS', ['-g'] );
+    conf.env.append_value( 'CXXFLAGS', ['-g','-O3'] );
     
     # flex and bison
     conf.check_tool( 'flex' )
@@ -137,7 +141,8 @@ def configure( conf ):
     try:
         
         conf.find_program( 'cernlib', mandatory = True )
-        ret = commands.getstatusoutput('cernlib mathlib pawlib')
+#        ret = commands.getstatusoutput('cernlib mathlib pawlib')
+        ret = commands.getstatusoutput('cernlib packlib')
         
         if ret[0] != 0:
             raise Configure.ConfigurationError
@@ -169,21 +174,23 @@ def configure( conf ):
     # sextractor 
     try:
         conf.check_cfg( args = '--cflags --libs', 
-                        package = 'sex-2.2.2', 
+                        package = 'sex-2.4.4', 
                         mandatory = True, 
                         uselib_store = 'SEX' )
+        conf.env.LINKFLAGS_SEX += ['-Wl,-rpath']+conf.env.LIBPATH_SEX
     except Configure.ConfigurationError:
         conf.fatal('unable to locate sextractor.')
         
     # cfitsio 
     try:
         conf.check_cfg( args = '--cflags --libs', 
-                        package = 'cfitsio-3.0.0', 
+                        package = 'cfitsio-3.006', 
                         mandatory = True, 
                         uselib_store = 'CFITSIO' )
+        conf.env.LINKFLAGS_CFITSIO += ['-Wl,-rpath']+conf.env.LIBPATH_CFITSIO
     except Configure.ConfigurationError:
         conf.fatal('unable to locate cfitsio')
-        
+
     
     conf.env['POLOKA_VERSION'] = VERSION
     conf.write_config_header("config.h")
