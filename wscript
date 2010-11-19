@@ -177,7 +177,7 @@ def configure( conf ):
                         package = 'sex-2.4.4', 
                         mandatory = True, 
                         uselib_store = 'SEX' )
-        conf.env.LINKFLAGS_SEX += ['-Wl,-rpath']+conf.env.LIBPATH_SEX
+        conf.env.RPATH_SEX = conf.env.LIBPATH_SEX
     except Configure.ConfigurationError:
         conf.fatal('unable to locate sextractor.')
         
@@ -187,7 +187,7 @@ def configure( conf ):
                         package = 'cfitsio-3.006', 
                         mandatory = True, 
                         uselib_store = 'CFITSIO' )
-        conf.env.LINKFLAGS_CFITSIO += ['-Wl,-rpath']+conf.env.LIBPATH_CFITSIO
+        conf.env.RPATH_CFITSIO = conf.env.LIBPATH_CFITSIO
     except Configure.ConfigurationError:
         conf.fatal('unable to locate cfitsio')
 
