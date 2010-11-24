@@ -5,6 +5,7 @@
 
 #include "fileutils.h"  // StringTo{Lower,Upper}
 #include "fitsimage.h"
+#include "polokaexception.h"
 #include "astroutils.h" /* for conversion routines */
 //#include "../src/gtransfo.h"
 
@@ -210,7 +211,7 @@ static bool fits_imregion_to_frame(const string &FitsStuff, Frame &ToadsStuff)
     }
   else
     {
-      cerr << " cannot decode 4 integers in " << FitsStuff << endl;
+      cout << " ERROR : cannot decode 4 integers in " << FitsStuff << endl;
       ToadsStuff = Frame();
       return false;
     }
