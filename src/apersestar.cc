@@ -412,7 +412,7 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
 	 eigenvalue of the second moment matrix. This formula just
 	 says that we integrate up to 4 sigma, and at least up to 3
 	 pixels.  This formula is copied from above */ 
-      double oldradius = radius;
+      //      double oldradius = radius;
       double largest_eigenval = 0.5*(sumxx+sumyy)+sqrt(sq(0.5*(sumxx-sumyy))+sq(sumxy));
       radius = max(4*sqrt(largest_eigenval),3.);
       radius = min(radius,50.);
@@ -420,20 +420,27 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
       double new_wxx = 0.5*sumyy/det;
       double new_wyy = 0.5*sumxx/det;
       double new_wxy = -0.5*sumxy/det;
+      double diff_weights = fabs(wxx-new_wxx)+fabs(wyy-new_wyy)+fabs(wxy-new_wxy);
       double eps = 1e-10;
-      bool stop_iter = (fabs(wxx-new_wxx)< eps && fabs(wyy-new_wyy)<eps 
-			&& fabs(wxy-new_wxy)<eps);
+      bool stop_iter = (diff_weights<eps);
+
 #ifdef DEBUG
       cout << " wxx wyy wxy " << wxx << ' ' << wyy << ' ' << wxy << endl;
       cout << " delta " << new_wxx-wxx << ' ' << new_wyy-wyy << ' ' << new_wxy-wxy << endl;
 #endif
       // convergence of the iterations : speed up if the thing is almost stabilized.
       // we use the radius to decide upon that
-      double alpha = 1.8;
-      if (fabs(oldradius-radius)>0.1) alpha = 1;
+      double alpha = 1;
+      if (diff_weights<0.1) alpha = 1.8;
       wxx = alpha*new_wxx + (1.-alpha)*wxx;
       wyy = alpha*new_wyy + (1.-alpha)*wyy;
       wxy = alpha*new_wxy + (1.-alpha)*wxy;
+      if (wxx<0 || wyy <0 || wxx*wyy<sq(wxy))
+	{
+	  wxx = new_wxx;
+	  wyy = new_wyy;
+	  wxy = new_wxy;
+	}
       if (stop_iter) 
 	{
 	  // position variance is not needed to loop
@@ -453,7 +460,14 @@ void AperSEStar::ComputeShapeAndPos(const Image&I, const Image &W,
   gmxx = wyy/det;
   gmyy = wxx/det;
   gmxy = -wxy/det;
-  if (gmxx <0) abort(); // hopefully never happens
+  if (gmxx<0 || gmyy<0) // should never happen
+    {
+      cout << " something went wrong in ComputeShapeAndPos : negative second moment" << endl;
+      abort();
+      // If you feel like removing this test, please consider finding
+      // what causes negative second moments.
+
+  }
   if (nbad != 0) gflag |= (BAD_GAUSS_MOMENTS+BAD_GAUSS_POS_VARIANCE);
   if (varxx == -1) gflag |= BAD_GAUSS_POS_VARIANCE;
   if ((gflag & (BAD_GAUSS_MOMENTS+BAD_GAUSS_POS_VARIANCE)) == 0)
@@ -545,7 +559,7 @@ void AperSEStar::read_it(fastifstream& r, const char* Format)
   SEStar::read_it(r, Format);
   int format = DecodeFormat(Format, "AperSEStar");
   if(format != 2 && format != 3) {
-    cerr << "AperSEstar::read_it() version mismatch. The current version is 2 or 3!" << endl;
+    cerr << "AperSEstar::read_it() format: " << format << ". The current version is 2 or 3!" << endl;
     abort();
   }
   r >> neighborDist 
@@ -678,14 +692,26 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
       return false;
     }
 
-  double xMax, yMax;
-  histo.MaxBin(xMax, yMax);
   Ellipse ellipse;
-  bool ok = HistoPeakFinder(scores, histo, xMax, yMax, ellipse);
+  bool ok;
+  for (unsigned k=0;k<3; ++k)
+    {
+      if (k>=1) cout << " INFO : FindStarShape trying histo max # " << k << endl;
+      double xMax, yMax;
+      histo.MaxBin(xMax, yMax);
+      ok = HistoPeakFinder(scores, histo, xMax, yMax, ellipse);
+      if (!ok)
+	{
+	  cout << " FindStarShape could not parametrize a peak using HistoPeakFinder with histo max" << endl;
+      /* we could do that, if it is useful, but we then have to remove the 
+	 XSize = 0 upstream... */
+      //      if (XSize != 0) ok =  HistoPeakFinder(scores, histo, XSize, YSize, ellipse);
+	}
+      else break;
+      histo.ZeroBin(xMax,yMax);
+    }
   cout << " shape ellipse " << ellipse << endl;
   ellipse.GetCenter(XSize, YSize);
-  
-
   if (!ok)
     {
       cout << " could not parametrize a peak using HistoPeakFinder" << endl
