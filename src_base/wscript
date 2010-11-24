@@ -26,7 +26,6 @@ def scan_for_types( filename ):
         if ret != None:
             ret_tselector.append( ret.group(1) )
     f.close()
-    
     return ret_ttester, ret_tselector
 
 
@@ -58,7 +57,7 @@ def gen_alltelinst(task):
             declaration_list = declaration_list + "\nclass %s;" % t 
             is_of_kind_list = is_of_kind_list + "\ntemplate bool IsOfKind<%s>(const FitsHeader &);" % t
             is_of_kind_list = is_of_kind_list + "\ntemplate bool IsOfKind<%s>(const string &);" % t
-        for t in ttype:
+        for t in acctype:
             acceptor_list = acceptor_list + "&%s::Acceptor,\n" % t 
 
     
@@ -78,7 +77,7 @@ def gen_alltelinst(task):
     f.write("%s\n\n" % include_list)
     f.write("""#ifndef USE_WCS
 static AcceptorType AcceptorsArray [] = {
-%s};
+%s &Unknown::Acceptor};
 %s
 #endif
 """ % (acceptor_list, is_of_kind_list) )
