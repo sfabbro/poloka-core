@@ -74,14 +74,13 @@ public:
 
   static VirtualInstrument *Acceptor(const FitsHeader &Head)
   { 
-    cout << " on y rentre" << endl;
     if (Head.HasKey("CONTROLR")) return new SkyMapper();
   else return NULL;
   }
   
   
   // translators
-  FitsKey TOADPIXS(const FitsHeader &Head)
+  FitsKey TOADPIXS(const FitsHeader &Head, const bool Warn) const
   {
     string ccdsum = Head.KeyVal("CCDSUM");
     if (ccdsum == "1 1") return FitsKey("TOADPIXS",0.5);
@@ -89,14 +88,22 @@ public:
     cout << " SkyMapper::TOADPIXS : bizarre CCDSUM=" << ccdsum << " dont know what to do " << endl;
 }
     
-  FitsKey TOADRDON(const FitsHeader &Head)
+  FitsKey TOADRDON(const FitsHeader &Head, const bool Warn) const
   {
     double rdnoise = Head.KeyVal("RDNOISE");
     if (rdnoise <= 0) return FitsKey("TOADRDON",5);// To Be checked
   }
+
+  SIMPLE_TRANSLATOR(TOADFILT,"FILTNAME");
+  SIMPLE_TRANSLATOR(TOADBAND,"FILTNAME");
+
+  RETURN_A_VALUE(TOADEQUI,2000);
+
+  SIMPLE_TRANSLATOR(TOADTYPE,"IMAGETYP");
+
 #ifdef STORAGE
   SIMPLE_TRANSLATOR(TOADUTIM,"UTC-OBS");
-  SIMPLE_TRANSLATOR(TOADTYPE,"OBSTYPE");
+
   SIMPLE_TRANSLATOR(TOADMJD,"MJD-OBS");
 
   FitsKey TOADMMJD(const FitsHeader &Head, const bool Warn) const
@@ -114,16 +121,6 @@ public:
   if (chip_value<10) chip = "0"+chip;
   return FitsKey("TOADCHIP",chip);
   };
-
-  FitsKey TOADBAND(const FitsHeader &Head, const bool Warn) const
-  { 
-    string name = Head.KeyVal("FILTER",Warn);
-    // extract the first character of .e.g :  'i.MP9701'
-    // not exact after the filter break...
-    if (name == "i.MP9701") return FitsKey("TOADBAND","i");
-    if (name == "i.MP9702") return FitsKey("TOADBAND","y");
-    return FitsKey("TOADBAND",name.substr(0,1));
-  }
 
   FitsKey TOADNAMP( const FitsHeader &Head, const bool Warn) const
   {
@@ -145,7 +142,6 @@ public:
   Frame IlluRegion(const FitsHeader &Head, const int Iamp) const;
   Frame AmpRegion(const FitsHeader &Head, const int Iamp) const;
   bool   IsTrimmed (const FitsHeader &Head) const;
-  Frame  extract_frame(const FitsHeader &Head, const char *KeyGenName,int Iamp) const;
 };
 
 
@@ -153,9 +149,7 @@ bool SkyMapper::IsTrimmed(const FitsHeader &Head) const {
   
   int nx = Head.KeyVal("NAXIS1");
   int ny = Head.KeyVal("NAXIS2");
-  if((nx>2048) || (ny>4612)) 
-    return false;
-  return true; 
+  return (nx==1024 || nx == 2048);
 }
 
 double SkyMapper::AmpGain(const FitsHeader &Head, int Iamp) const
@@ -167,108 +161,59 @@ double SkyMapper::AmpGain(const FitsHeader &Head, int Iamp) const
   return gain;
 }
 
-Frame SkyMapper::extract_frame(const FitsHeader &Head, const char *KeyGenName, int Iamp) const
-{
-  char keyname[16];
-
-  int namp = TOADNAMP(Head, false);
-  if(namp == 2)
-    {
-      char ampChar = 'A'+(Iamp-1);
-      sprintf(keyname,"%s%c",KeyGenName,ampChar);
-      if (!Head.HasKey(keyname)) sprintf(keyname,"%s",KeyGenName);
-    }
-  else
-    {
-      sprintf(keyname, "%s", KeyGenName);
-    }
-
-  string keyval = Head.KeyVal(keyname, true);
-  Frame result;
-  fits_imregion_to_frame(keyval, result);
-  
-  //! SkyMapper conventions : xMax and YMax are included in the frame
-  result.yMax++;
-  result.xMax++;
-  return result;
-}
-  
 
 Frame SkyMapper::OverscanRegion(const FitsHeader &Head, const int Iamp) const
 {
   if(IsTrimmed(Head)) // if trimmed no more OverscanRegion
     return Frame();
   
+  int nx = Head.KeyVal("NAXIS1");
+  if (nx>=2048)
+    throw(PolokaException(" ERROR : SkyMapper::OverscanRegion not implemented for full CCDs"));
+
   if (Head.HasKey("BIASSEC")) 
     {
-      Frame ret = extract_frame(Head,"BIASSEC",Iamp);
-      if(ret.xMin >= 0 && ret.yMin >= 0 && ret.Area() > 0)
-	return ret;
+      string bias= Head.KeyVal("BIASSEC");
+      Frame biasFrame;
+      if (!fits_imregion_to_frame(bias,biasFrame))
+	throw(PolokaException("SkyMapper::OverscanRegion cannot decode a frame in "+bias));
+      return biasFrame;
     }
-  
-  return extract_frame(Head,"BSEC",Iamp);
-}
+  throw(PolokaException("SkyMapper::OverscanRegion finds no BIASSEC in "+Head.FileName()));
 
-Frame SkyMapper::IlluRegion(const FitsHeader &Head, const int Iamp) const
-{
-  if(!IsTrimmed(Head))
-    {
-      if (Head.HasKey("DATASEC")) return extract_frame(Head,"DATASEC",Iamp);
-      else return extract_frame(Head,"DSEC",Iamp);
-    }
-
-  // if trimmed we do something rather manual
-  
-  // first check if the geometry is what we expect
-  string DSECA = Head.KeyVal("DSECA");
-  if(DSECA!="[33:1056,1:4612]") {
-    cerr << "warning in SkyMapper::IlluRegion, DSECA is not as expected [33:1056,1:4612]!=" << DSECA<< endl;
-  }
-  string DSECB = Head.KeyVal("DSECB");
-  if(DSECB!="[1057:2080,1:4612]") {
-    cerr << "warning in SkyMapper::IlluRegion, DSECB is not as expected [1057:2080,1:4612]!=" << DSECB << endl;
-  }
-  Frame result;
-  if(Iamp==1)
-    fits_imregion_to_frame("[1:1024,1:4612]", result);
-  if(Iamp==2)
-    fits_imregion_to_frame("[1025:2048,1:4612]", result);
-  //! SkyMapper conventions : xMax and YMax are included in the frame
-  result.yMax++;
-  result.xMax++;
-  return result;
 }
 
 Frame SkyMapper::TotalIlluRegion(const FitsHeader &Head) const
 {
-  if(IsTrimmed(Head))
-    return Frame(Head,WholeSizeFrame);
-  
-  Frame result;
-  if (Head.HasKey("DATASEC")) {
-    string datasec = Head.KeyVal("DATASEC");
-    if(datasec=="[0:0,0:0]") {
-      datasec="[33:2080,1:4612]";
-      cout << "SkyMapper::TotalIlluRegion warning: DATASEC=[0:0,0:0], use instead " << datasec << endl;     
-    }
-    fits_imregion_to_frame(datasec, result);
-  }else{
-    result = Frame(Head,WholeSizeFrame);
-  }
-  return result;
+  // to be fixed if we have full CCDs images
+  return IlluRegion(Head,1);
 }
 
+
+Frame SkyMapper::IlluRegion(const FitsHeader &Head, const int Iamp) const
+{
+  int nx = Head.KeyVal("NAXIS1");
+  if (nx>=2048)
+    throw(PolokaException(" ERROR : SkyMapper::IlluRegion not implemented for full CCDs"));
+
+
+  if (IsTrimmed(Head)) return Frame(Head);
+  else
+    {
+      // wrong DATASEC (nov 2010)
+      Frame illu;
+	fits_imregion_to_frame("[51:1074,1:4096]", illu);
+      return illu;
+    }
+}
 
 
 Frame SkyMapper::AmpRegion(const FitsHeader &Head, const int Iamp) const
 {
-  int namp = TOADNAMP(Head, false);
-  if( namp == 2)
-    return extract_frame(Head,"CSEC",Iamp);
-  else
-    {
-      return extract_frame(Head,"DATASEC",Iamp);
-    }
+  int nx=Head.KeyVal("NAXIS1");
+  if (nx>=2048)
+    throw(PolokaException(" ERROR : SkyMapper::AmpRegion not implemented for full CCDs"));
+  return Frame(Head);
 }
 #endif
 
