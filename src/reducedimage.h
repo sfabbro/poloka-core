@@ -15,6 +15,7 @@ using namespace std;
 #define DoWeight 16
 #define DoCosmic 32
 #define DoSatellite 64
+#define DoAperCatalog 128
 
 #define PutVar 1
 #define PutCosmic 2
@@ -226,7 +227,12 @@ Usefull in case of artificially smoothed images
 
   //! the (average) sky level as it should appear on the image.
   void RemoveBackLevel();
+
+  //! the current back level
   double BackLevel() const;
+
+  //! the back level before it was subtracted
+  double BackLevelNoSub() const;
 
   bool SetBackLevel(const double &Value, const string Comment= "");
   bool SetSESky(const double &Value,  const string Comment = "");
