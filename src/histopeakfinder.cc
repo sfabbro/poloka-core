@@ -49,9 +49,7 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 		     const double &XGuess, const double &YGuess,
 		     Ellipse &Ell)
 {
-
   bool ok = true;
-
   double xBin, yBin;
   H.BinWidth(xBin,yBin);
 
@@ -62,14 +60,22 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
   double wxx = 3/xBin;
   double wyy = 3/yBin;
   double wxy = 0;
-
-  // try to guess the span of the peak
-  double bins[3][3];
-  double xx[3][3];
-  double yy[3][3];
+#ifdef USE_FIT_TO_GUESS
+  /*  This code was actually tested (using NBINS=3)
+      and debugged but turns out to be useless.
+      The fit with the default values seems to behave properly.
+      If you think you should try to guess the span of the peak,
+      you can try to use it. However, for the CFHTLS deep field
+      images, there is not a signle one that has the 9 requested bins
+      positive. I never found any that has 25 bins positive.
+  */
+#define NBINS 5
+  double bins[NBINS][NBINS];
+  double xx[NBINS][NBINS];
+  double yy[NBINS][NBINS];
   bool allpos = true;
-  for (int i=0; i <3; ++i)
-    for (int j=0; j<3; ++j)
+  for (int i=0; i <NBINS; ++i)
+    for (int j=0; j<NBINS; ++j)
       {
 	xx[i][j] = xc +(i-1)*xBin;
 	yy[i][j] = yc +(j-1)*yBin;
@@ -85,8 +91,8 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
       Mat A(6,6);
       Vect B(6);
       Vect h(6);
-      for (int i=0; i <3; ++i)
-	for (int j=0; j<3; ++j)
+      for (int i=0; i <NBINS; ++i)
+	for (int j=0; j<NBINS; ++j)
 	  {
 	    double x = xx[i][j];
 	    double y = yy[i][j];
@@ -96,7 +102,7 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 	    h(3) = x;
 	    h(4) = y;
 	    h(5) = 1;
-	    double data = -2*log(bins[i][j]);
+	    double data = 2*log(bins[i][j]);
 	    for (int ii=0; ii <6; ii++)
 	      {
 		for (int jj=0; jj<6; ++jj)
@@ -124,24 +130,21 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 	{
 	  cout << " we finally got into this never tested code...." << endl;
 	  double deno = sq(B(2))-4.*B(1)*B(0);
-	  xc = (B(2)*B(4)-2*B(1)*B(3))/deno;
-	  yc = (B(3)*B(2) - 2*B(0)*B(4))/deno;
-	  double vxx = B(0);
-	  double vyy = B(1);
-	  double vxy = 0.5*B(2);
-	  deno = vxx+vyy-sq(vxy);
-	  wxx = vxx/deno;
-	  wyy = vyy/deno;
-	  wxy = -vxy/deno;	  
+	  xc = -(B(2)*B(4)-2*B(1)*B(3))/deno;
+	  yc = -(B(3)*B(2) - 2*B(0)*B(4))/deno;
+	  wxx = -B(0);
+	  wyy = -B(1);
+	  wxy = -0.5*B(2);
 	}
-    }
-
+    } // end if (allpos)
+#endif /* USE_FIT_TO_GUESS */
 
   cout << "HistoPeakFinder :  starting iterations with xc = " << xc 
-       << " yc = " << yc << endl;
+       << " yc = " << yc 
+       << " w = " << wxx << ' ' << wyy << ' ' << wxy << endl;
 
   int count = 0;
-  while (count < 10)
+  while (count < 20)
     {
       count ++;
 #ifdef DEBUG
