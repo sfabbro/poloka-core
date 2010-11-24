@@ -30,7 +30,9 @@ static void KeepGoodForMatch(SEStarList &List)
   for (SEStarIterator it= List.begin(); it!=List.end(); )
     {
       SEStar *pstar =  *it ;
-      if (pstar->FlagBad() == 0 && pstar->Flag()<8 ) ++it; // not in bad zone, keep satur
+      if (pstar->FlagBad() == 0 && pstar->Flag()<8   // not in bad zone, keep satur
+	  && pstar->flux/pstar->EFlux() >10
+	  ) ++it ;
       else it = List.erase(it); // with counted references no need to delete;
     }  
 }
@@ -163,6 +165,7 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
   }
   cout << "MatchGuess, minimum allowed number of matches = " << nmin << endl;
   
+
   bool debug_match = true;
   
   
@@ -281,10 +284,16 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 	  refinedMatch->RefineTransfo(3.);
 	  change = transfo_diff(List1, refinedMatch->Transfo(), usedToCollect);
 	  ++loops;
-	  curChi2Red = refinedMatch->Chi2() / refinedMatch->Dof();
+	  int dof = refinedMatch->Dof();
+	  if (dof == 0)
+	    {
+	      curChi2Red = -1;
+	      break;
+	    }
+	  curChi2Red = refinedMatch->Chi2() / dof;
 	  cout << " RefineGuess : Order " << order 
 	       << " Resid " << refinedMatch->Residual() 
-	       << " Nused " << refinedMatch->Nused() 
+	       << " Npair " << refinedMatch->size() 
 	       << " Chi2/DOF " << curChi2Red << endl;
 	  usedToCollect = refinedMatch->Transfo()->Clone(); 
 	} 
@@ -298,7 +307,7 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 	  Two2One = refinedMatch->InverseTransfo();
 	  bestorder = order;
 	  bestChi2PDF = curChi2Red;
-	  bestNused = refinedMatch->Nused();
+	  bestNused = refinedMatch->size();
 	  bestResid = refinedMatch->Residual();
 	}
       //else break;
