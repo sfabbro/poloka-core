@@ -44,11 +44,15 @@ class AnalyticPSF {
 
   virtual void InitParamsFromSeeing(const double &Seeing, Vect &Params) const = 0;
 
+  // check if parameter values are within bounds
   virtual bool CheckParams(const Vect &Params) const = 0;
 
   virtual ~AnalyticPSF() {};
 };
 
+/* if you add an analytic  psf to the list , analiticpsf.cc 
+   contains at the end a main program sample that helps 
+   testing your code. */
 
 void AddAnalyticPSF(const AnalyticPSF *PSF);
 const AnalyticPSF *ChooseAnalyticPSF(const string &Name);  
