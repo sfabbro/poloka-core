@@ -10,6 +10,8 @@
 #include "poly2.h"
 #include "poly1.h" // used for non linearity of response fitting.
 
+#include "polokaexception.h"
+
 #include <cmath> //for floor(double)
 
 /*! Overall structure of the PSF modelling:
@@ -621,9 +623,12 @@ ImagePSF::ImagePSF(const ReducedImage &RI, bool RefitPSF)
       s.close();
       return;
     }
-  refitPSF = true;
   seeing = reducedImage->GFSeeing();
+  if (seeing <= 0) 
+    seeing = reducedImage->Seeing();
   gain = reducedImage->Gain();
+  if (gain <= 0)
+    throw (PolokaException(" for image "+reducedImage->Name()+", ImagePsf cannot work with negative or null gain"));
   nx = reducedImage->XSize();
   ny = reducedImage->YSize();
   hSizeX = int(Cards().nSigPSFHalfSize*seeing)+1;
@@ -1945,7 +1950,7 @@ bool MakePSF(const string &ImageName, const bool RefitPSF,
     {
       if (!reducedImage->MakeStarCat())
 	{
-	  cout << " *** MakePSF: No PSF for " << reducedImage->Name() 
+	  cout << " ERROR : MakePSF: No PSF for " << reducedImage->Name() 
 	       << "( missing star catalog) " << endl;
 	  return false;
 	}
