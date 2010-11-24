@@ -172,7 +172,7 @@ return matchList;
 
 static bool DecreasingQuality(const StarMatchList* first, const StarMatchList *second)
 {
-int idiff = first->Nused() - second->Nused();
+int idiff = first->size() - second->size();
 if   (idiff != 0) return ( idiff > 0); else return(first->Dist2() < second->Dist2());
 }
 
@@ -304,9 +304,9 @@ for (int i = 0; i<Conditions.MaxTrialCount; ++i)
   Solutions.pop_front();
   if (Conditions.PrintLevel >=1) 
     {
-    cout << " best solution " << best->Residual() << " npairs " << best->Nused() << endl << *(best->Transfo());
-    cout << " Chi2 " << best->Chi2() << " Nused " << best->Nused() << endl;
-    cout << " Number of solutions " << Solutions.size() << endl;
+      cout << " best solution " << best->Residual() << " npairs " << best->size() << endl << *(best->Transfo());
+      cout << " Chi2 " << best->Chi2() << ','
+	   << " Number of solutions " << Solutions.size() << endl;
     }
   return best;
 }
@@ -477,9 +477,9 @@ SolList Solutions;
   Solutions.pop_front();
   if (Conditions.PrintLevel >=1) 
     {
-    cout << " best solution " << best->Residual() << " npairs " << best->Nused() << endl << *(best->Transfo());
-    cout << " Chi2 " << best->Chi2() << " Nused " << best->Nused() << endl;
-    cout << " Number of solutions " << Solutions.size() << endl;
+      cout << " best solution " << best->Residual() << " npairs " << best->size() << endl << *(best->Transfo());
+      cout << " Chi2 " << best->Chi2() << ','
+	   << " Number of solutions " << Solutions.size() << endl;
     }
   return best;
 }
@@ -513,8 +513,8 @@ StarMatchList *unflipped =  ListMatchupRotShift(L1,L2, GtransfoIdentity(), Condi
  if (! flipped  || !unflipped) return NULL;
 if (Conditions.PrintLevel >=1)
   {
-  cout << " unflipped  Residual " << unflipped->Residual() << " nused " << unflipped->Nused() << endl;
-  cout << "   flipped  Residual " << flipped->Residual() << " nused " << flipped->Nused() << endl;
+  cout << " unflipped  Residual " << unflipped->Residual() << " nused " << unflipped->size() << endl;
+  cout << "   flipped  Residual " << flipped->Residual() << " nused " << flipped->size() << endl;
   }
 if (DecreasingQuality(flipped,unflipped))
   {
@@ -833,40 +833,38 @@ static double median_distance(const StarMatchList* match, const Gtransfo* transf
 
 
 Gtransfo* ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2, const MatchConditions& Conditions) {
-
-  const size_t nStars = 500; // max number of bright stars to match
   BaseStarList L1, L2;
-  List1.CopyTo(L1); L1.FluxSort(); L1.CutTail(nStars);
-  List2.CopyTo(L2); L2.FluxSort(); L2.CutTail(nStars);
+  List1.CopyTo(L1); L1.FluxSort();
+  List2.CopyTo(L2); L2.FluxSort();
 
-  cout << " ListMatchCombinatorial: find match between " << L1.size() << " and " << L2.size() << " stars\n";
+  cout << " ListMatchCombinatorial: find match between " << L1.size() << " and " << L2.size() << " stars...";
   StarMatchList *match = MatchSearchRotShiftFlip(L1, L2, Conditions);
   Gtransfo *transfo = 0;
   double pixSizeRatio2 = sqr(Conditions.SizeRatio);
-  size_t nmin = min(size_t(10), size_t(min(L1.size(), L2.size())*Conditions.MinMatchRatio));
+  size_t nmin = min(size_t(10), size_t(min(List1.size(), List2.size())*Conditions.MinMatchRatio));
 
   if (is_transfo_ok(match, pixSizeRatio2, nmin))
     transfo = match->Transfo()->Clone();
   else {
     delete match;
-    cout << " ListMatchCombinatorial: direct transfo failed, trying reverse\n";
+    cout << "FAILED\n ListMatchCombinatorial: direct transfo failed, trying reverse";
     match = MatchSearchRotShiftFlip(L2, L1, Conditions);
     if (is_transfo_ok(match, pixSizeRatio2, nmin))
       transfo = match->InverseTransfo();
     else {
-      cout << " ListMatchCombinatorial: reverse transfo failed\n";
+      cout << "FAILED\n";
       if (transfo) delete transfo;
     }
   }
   delete match;
 
-  if (Conditions.PrintLevel >= 1) {
-    if (transfo) {
-      cout << " ListMatchCombinatorial: found a transfo\n"
+  if (transfo) {
+    cout << "FOUND\n";
+    if (Conditions.PrintLevel >= 1)
+      cout << " ListMatchCombinatorial: found the following transfo\n"
 	   << *transfo << endl;
-    } else
-      cerr << " ListMatchCombinatorial: failed to find a transfo\n";
-  }
+  } else
+    cerr << "FAILED\n. Error: ListMatchCombinatorial: failed to find a transfo\n";  
   return transfo;
 }
 

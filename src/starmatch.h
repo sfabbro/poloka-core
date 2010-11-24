@@ -164,7 +164,6 @@ ostream& operator << (ostream &stream, const StarMatchList &List);
 class StarMatchList : public list<StarMatch> {
 
   private :
-  int nused;
   int order;
   double chi2;
   double dist2;
@@ -183,7 +182,7 @@ class StarMatchList : public list<StarMatch> {
 		    const Gtransfo *PosteriorTransfo = NULL) const;
 
   /* constructor */
-  StarMatchList() : nused(0), order(0), chi2(0){};
+  StarMatchList() : order(0), chi2(0){};
 
   //!carries out a fit with outlier rejection 
 
@@ -199,12 +198,9 @@ class StarMatchList : public list<StarMatch> {
   //! access to the chi2 of the last call to RefineTransfo. 
   double Chi2() const { return chi2;}
 
-  //! returns the number of pairs from the last call to RefineTransfo
-  int Nused() const { return nused;}
-  
 
   //! returns the degree of freedom for the fit in x and y
-  int Dof() const {return (2*nused > transfo->Npar())? (2 *nused-transfo->Npar()): 0;}
+  int Dof(const Gtransfo *T=NULL) const;
 
   //! returns the order of the used transfo 
   int TransfoOrder() const {return order;}
@@ -244,7 +240,7 @@ class StarMatchList : public list<StarMatch> {
   //! count the number of elements for which distance is < mindist
   int RecoveredNumber(double mindist) const;
 
-  //! print the matching transformation quality (transfo, chi2, residual, nused) 
+  //! print the matching transformation quality (transfo, chi2, residual) 
   void DumpTransfo(ostream &stream = cout) const;
 
   ~StarMatchList() {};

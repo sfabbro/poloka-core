@@ -87,6 +87,15 @@ static double *get_dist2_array(const StarMatchList &L, const Gtransfo &T)
   return dist;
 }
 
+int StarMatchList::Dof(const Gtransfo* T) const
+{
+  if (!T) T=transfo;
+  int dof = 2*size() - T->Npar();
+  return (dof>0) ? dof : 0;
+}
+
+
+
 
   /*! removes pairs beyond NSigmas in distance (where the sigma scale is
      set by the fit) and iterates until stabilization of the number of pairs. 
@@ -99,7 +108,7 @@ void StarMatchList::RefineTransfo(const double &NSigmas)
   if (!transfo) transfo = new GtransfoLin;
   do 
     {
-      nused = size();
+      int nused = size();
       if (nused <= 2) { chi2 = -1; break;}
       chi2 = transfo->fit(*this);
       /* convention of the fitted routines : 
@@ -116,12 +125,12 @@ void StarMatchList::RefineTransfo(const double &NSigmas)
       if (npair == 0) break; // should never happen
 
       // compute some chi2 statistics
-      double *chi2 = new double[npair];
+      double *chi2_array = new double[npair];
       unsigned count = 0;
       for (StarMatchIterator it= begin(); it!= end(); ++it)
-	chi2[count++] = it->chi2 = it->Chi2(*transfo);
-      double median = DArrayMedian(chi2,npair);
-      delete [] chi2;
+	chi2_array[count++] = it->chi2 = it->Chi2(*transfo);
+      double median = DArrayMedian(chi2_array,npair);
+      delete [] chi2_array;
 
       // discard outliers : the cut is understood as a "distance" cut
       cut = sq(NSigmas)*median;
@@ -135,7 +144,7 @@ void StarMatchList::RefineTransfo(const double &NSigmas)
 /* not very robust : assumes that we went through Refine just before... */
 double StarMatchList::Residual() const
 {
-  int deno = (2.*nused - transfo->Npar());
+  int deno = (2.*size() - transfo->Npar());
   return (deno>0) ? sqrt(dist2/deno) : -1; // is -1 a good idea?
 }
 
@@ -198,13 +207,15 @@ void StarMatchList::SetTransfoOrder(const int Order)
 }
 
 
+
+/* This routine should operate on a copy : RefineTransfo 
+   might shorten the list */
 Gtransfo* StarMatchList::InverseTransfo() /* it is not const although it tries not to change anything  */
 {
   if (!transfo) return NULL;
 
   Gtransfo *old_transfo = transfo->Clone();  
   double old_chi2 = chi2;
-  int old_nused = nused;
 
   Swap();
   SetTransfoOrder(order);
@@ -214,7 +225,6 @@ Gtransfo* StarMatchList::InverseTransfo() /* it is not const although it tries n
   delete old_transfo;
   Swap();
   chi2 = old_chi2;
-  nused = old_nused;
 
   return inverted_transfo;
 }
@@ -366,7 +376,7 @@ void StarMatchList::DumpTransfo(ostream &stream) const
 	 << " Transformation between lists of order " << TransfoOrder() << endl
 	 << *transfo //<< endl
 	 << " Chi2 = " << Chi2() << "  Residual = " << Residual() << endl
-	 << " Nused = " << Nused() <<  "  Number in the list = " << size() <<endl
+	 << "  Number in the list = " << size() <<endl
 	 << " ================================================================" << endl;
 }
 
