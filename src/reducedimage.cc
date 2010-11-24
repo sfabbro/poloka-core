@@ -60,7 +60,7 @@ bool ReducedImage::MakeFits()
 #include "seeing_box.h" /*pour le calcul du seeing lors du catalogue */
 
 
-#define SATUR_COEFF 0.95
+#define SATUR_COEFF 0.98
 
 
 /* Pour remplir le carnet d'ordres de SExtractor */
@@ -437,7 +437,7 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
     pmasksat->EnableWrite(true);
     cout << "Writing Saturated stars pixels map in " 
 	 << FitsSaturName() << endl ;
-    cout << " we have " << pmasksat->SumPixels() / pmasksat->NPix()
+    cout << " we have " << pmasksat->SumPixels() / pmasksat->NPix()*100
 	 << "% pixels flagged as saturated" << endl;
     delete pmasksat;
     pmasksat = NULL;
@@ -753,7 +753,10 @@ bool ReducedImage::MakeAperCat()
      sky of input images (probably with good reasons)
   */     
   string inst = I.KeyVal("TOADINST");
-  if (inst != "Swarp" && I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
+  bool useGain = I.HasKey("USEGAIN") && bool(I.KeyVal("USEGAIN"));
+  if (useGain)
+    cout << " INFO : found the USEGAIN key and using TOADGAIN " << endl;
+  else if (inst != "Swarp" && I.HasKey("SEXSKY") && I.HasKey("SEXSIGMA"))
     {
       double sexsky = I.KeyVal("SEXSKY");
       double sexsigma = I.KeyVal("SEXSIGMA");
@@ -814,7 +817,7 @@ bool ReducedImage::MakeAperCat()
 
   // compute the "seeing" from the star cluster locus in object shape space
   double seeing = Seeing();
-  double xSize, ySize, corr;
+  double xSize=0, ySize=0, corr = 0;
   StarScoresList scores;
   if (FindStarShapes(apercat, 20, xSize, ySize, corr, scores))
     {
@@ -826,6 +829,7 @@ bool ReducedImage::MakeAperCat()
   else
     {
       cout << " MakeAperCatcould not figure out a seeing " << endl;
+      apercat.write(Dir()+"/aperse_head.list");
       throw(PolokaException("MakeAperCat could not figure out a seeing "));
       return false;
     }
@@ -1547,6 +1551,7 @@ bool  ReducedImage::Execute(const int ToDo)
   if (ToDo & DoCosmic) status &= MakeCosmic();
   if (ToDo & DoSatellite) status &= MakeSatellite();
   if (ToDo & DoWeight) status &= MakeWeight();
+  if (ToDo & DoAperCatalog) status &= MakeAperCat() && MakeStarCat();
   return status;
 }
 
@@ -1901,6 +1906,15 @@ double ReducedImage::BackLevel() const
     }
 }
 
+double ReducedImage::BackLevelNoSub() const
+{
+  FitsHeader head(FitsName());
+  if (head.HasKey("BACKLEV")) return double(head.KeyVal("BACKLEV")); // set by transformedimage and such
+  if (head.HasKey("SEXSKY")) return double(head.KeyVal("SEXSKY"));   // set when making the catalog.
+  if (head.HasKey("SKYLEV")) return double(head.KeyVal("SKYLEV"));   // set when flatfielding
+  cout << " ERROR : no way to figure out BackLevel in " << Name() << endl;  return 0;
+}
+
 bool ReducedImage::IsSkySub() const
 {
   FitsHeader head(FitsName());
@@ -1997,8 +2011,7 @@ double ReducedImage::Saturation() const
       if (head.HasKey("WELLDEPT")) return double(head.KeyVal("WELLDEPT"));// LBL already flatfielded style
       if (head.HasKey("SATURATE") )return double(head.KeyVal("SATURATE"));//
     }
-  double gain = head.KeyVal("TOADGAIN");
-  return 60000*gain;
+  throw(PolokaException("ReducedImage::Saturation() : cannot find any saturation indication in fits header " ));
 }
 
 SET_ROUTINE(Saturation, double, "SATURLEV");
