@@ -403,6 +403,7 @@ void PSFStarList::WriteTuple(const string &FileName, const Gtransfo* Wcs, const 
   if (PSF) for (int k = 0 ; k < npar; k++)
     file << "# pg" << k << " : psf param from global fit " << k << endl;     
   file << "#end" << endl;
+  file << "# format BaseStar 2"<< endl;
   file << setprecision(8);
   for (PSFStarCIterator it = begin(); it != end(); ++it)
     {
