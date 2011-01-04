@@ -9,6 +9,29 @@ public :
   static VirtualInstrument *Acceptor(const FitsHeader &Head)
   { if  (string(Head.KeyVal("SOFTNAME")) == "SWarp") return new Swarp; 
   else return NULL;}
+
+
+  TRANSLATOR_DEC(TOADMJD)
+  {
+    if (Head.HasKey("MJDDATE",false))
+      {
+	double mjd = Head.KeyVal("MJDDATE");
+	return FitsKey("MJDDATE",mjd);
+      }
+    if (Head.HasKey("MJD_OBS",false))
+      {
+	double mjd = Head.KeyVal("MJD_OBS");
+	return FitsKey("MJD_OBS",mjd);
+      }
+    if (Head.HasKey("MJD-OBS",false))
+      {
+	double mjd = Head.KeyVal("MJD-OBS");
+	return FitsKey("MJD-OBS",mjd);
+      }
+    return VirtualInstrument::TOADMJD(Head,Warn);
+  }
+    
+
   
   // translators
   TRANSLATOR_DEC(TOADPIXS)
