@@ -205,6 +205,7 @@ def build( bld ):
                        "flat", 
                        "lc",
                        "mc",
+                       "simphot",
                        "utils" ] )
     
     if not bld.env.global_lapack:
