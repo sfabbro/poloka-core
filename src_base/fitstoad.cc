@@ -477,7 +477,7 @@ static ToadsKeyRec ToadsKeys[] = {
   {"TOADAIRM", " AIRMass number for this exposure(double)" , "AIRMASS", &VirtualInstrument::TOADAIRM},
   {"TOADUTIM", " Universal TIMe at start of observation (double)", "UT", &VirtualInstrument::TOADUTIM},
   {"TOADDATE", " DATE of observation in day/month/year (string)", "DATE-OBS & DATE", &VirtualInstrument::TOADDATE},
-  {"TOADMJD", " Mod julian date of obs (double)", "TOADMJD", &VirtualInstrument::TOADMJD},
+  {"TOADMJD", " Mod julian date of obs (double)", "MJD-OBS", &VirtualInstrument::TOADMJD},
   {"TOADMMJD", " DATE of observation in days since January first 2003 (double)", "TOADDATE", &VirtualInstrument::TOADMMJD},
   //{"TOADSCAN", " over/under SCAN region of the ccd [Xstart,Nx;Ystart,Ny](string)","OVERSCAN", &VirtualInstrument::TOADSCAN},
   //{"TOADILLU", " ILLUminated region of the ccd  [Xstart,Nx;Ystart,Ny](string)","NOVAL", &VirtualInstrument::TOADILLU},
