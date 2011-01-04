@@ -29,14 +29,15 @@ def build( bld ):
     
     lib.rpath = bld.env['PREFIX'] + '/lib'
     
-    bld( features = "cxx cprogram", 
-         source   = "mklc.cc",
-         target   = "mklc",
-         includes = [ '.',
-                      '../src_base',
-                      '../src_utils',
-                      '../src' ],
-         uselib_local = [ 'toads_base', 
-                          'toads_utils', 
-                          'simphot' ])
+    prog = bld( features = "cxx cprogram", 
+                source   = "mklc.cc",
+                target   = "mklc",
+                includes = [ '.',
+                             '../src_base',
+                             '../src_utils',
+                             '../src' ],
+                uselib_local = [ 'toads_base', 
+                                 'toads_utils', 
+                                 'simphot' ])
+    prog.rpath = bld.env['PREFIX'] + '/lib'
          
