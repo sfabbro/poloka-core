@@ -132,6 +132,14 @@ bool SimPhotFit::OneMinimization(const int CurrentToDo, const int MaxIter,
   while (niter<MaxIter)
     {
       AssignIndicesAndToDo(CurrentToDo);
+      if (posIndex != -1 && fluxMap.size() == 0)
+	{
+	  cout << "SimPhotFit::OneMinimization : you are trying to fit " << endl
+	       << "an object position and all epochs are assumed to have a null flux ..." << endl
+	       << " The fit aborts here. It could be that MJD are messed up " << endl;
+	  cout << " try header -k TOADMJD <fitsfile> on a sample of input images" << endl;
+	  return false;
+	}
       if (!OneIteration(CurrentToDo))  return false;
       CumulateChi2(chi2, ndof, true );
       niter++;
