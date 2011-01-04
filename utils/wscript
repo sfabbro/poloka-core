@@ -26,7 +26,8 @@ def build( bld ):
                  compute_zp.cc splitsubs.cc test_dust.cc makvar.cc
                  getvalueatpoint.cc catalog_images_match.cc
                  deadprop.cc checkmask.cc sumpixels.cc wcs_for_vignets.cc
-                 apercorr.cc simple_zpfitter.cc satellite_trajectory.cc""".split()
+                 apercorr.cc simple_zpfitter.cc satellite_trajectory.cc
+                 merge_headers.cc """.split()
 
     
     for src in sources:
