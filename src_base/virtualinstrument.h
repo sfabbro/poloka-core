@@ -80,7 +80,7 @@ public :
   virtual  FitsKey   TOADMJD(const FitsHeader &Head, const bool Warn) const
   {
     double val = ModJulianDay(Head);
-    return FitsKey("TOADMJD", val);
+    return FitsKey("MJD-OBS", val);
   }
 
   virtual FitsKey   TOADMMJD(const FitsHeader &Head, const bool Warn) const
