@@ -46,6 +46,8 @@ public:
     CHIP4  2.110
 
     */
+    if (Head.HasKey("GAIN")) return FitsKey("GAIN",double(Head.KeyVal("GAIN")));
+
     static double gains[4] = {1.705,1.87,1.73,2.11};
     int chip = Head.KeyVal("ESO DET CHIP NO");
     if (chip<1 || chip >4)
