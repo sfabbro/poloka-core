@@ -76,6 +76,8 @@ def gen_alltelinst(task):
     f.write("/* automatically generated from %s */\n\n" % src_list)
     f.write("%s\n\n" % include_list)
     f.write("""#ifndef USE_WCS
+/* This array is scanned backwards (in SniffTelInst), so that
+derived classes are tried before base classes */
 static AcceptorType AcceptorsArray [] = {
 %s &Unknown::Acceptor};
 %s
@@ -105,7 +107,8 @@ def build( bld ):
     ll = []
     for s in telinst_sources:
         ll.append((str(s), s))
-    ll.sort()
+# Reverse the sort because the SniffTelInst scans backwards
+    ll.sort(reverse=True)
     for s in ll:
         src = src + " " + s[1].srcpath(bld.env)
         #        src = src + " " + s.srcpath(bld.env)
