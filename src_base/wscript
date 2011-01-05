@@ -101,8 +101,14 @@ def build( bld ):
     #    bld.path.find_dir('../telinst').abspath()
     telinst_sources = bld.path.find_dir('../telinst').ant_glob('*.cc', flat=False)
     src = ""
+    
+    ll = []
     for s in telinst_sources:
-        src = src + " " + s.srcpath(bld.env)
+        ll.append((str(s), s))
+    ll.sort()
+    for s in ll:
+        src = src + " " + s[1].srcpath(bld.env)
+        #        src = src + " " + s.srcpath(bld.env)
         
     bld ( name   = 'alltelinst', 
           rule = gen_alltelinst, 
