@@ -4,10 +4,12 @@
 
 
 #include "imagepsf.h"
+#include "toadscards.h"
+#include "polokaexception.h"
 
 static void usage(const string &prog)
 {
-  cerr << prog << " [-f (force)] <dbimage ...> " << endl;
+  cerr << prog << " [-f (force)] [-d <datacards>] <dbimage ...> " << endl;
   exit(EXIT_FAILURE);
 }
  
@@ -30,12 +32,23 @@ int main( int nargs, char **args)
 	{
 	case 'h' : usage(args[0]); break;
 	case 'f' : force = true; break;
+	case 'd' : SetDatacardsFileName(args[++i]); break;
 	default : usage(args[0]); break;
 	}
     }
+  try
+    {
   for (unsigned k=0; k<names.size(); ++k)
     {
       success &= MakePSF(names[k], force);
     }
+    }
+  catch(PolokaException p)
+    {
+      p.PrintMessage(cout);
+      success = false;
+    };
+
+ 
   if (success) return EXIT_SUCCESS; else return EXIT_FAILURE;
 }
