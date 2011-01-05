@@ -31,7 +31,9 @@ def set_options( ctx ):
                    default=True, dest='global_lapack',
                    help='use/no do use system lapack library')
     
-
+    ctx.add_option("--no-cernlib", action='store_false', 
+                   default=True, dest='cernlib', 
+                   help='do not try to link with cernlib')
 
 def parse_cernlib_flags(line,uselib,env,at_sys_name):
     """
@@ -86,17 +88,17 @@ def configure( conf ):
 
     at_sys_name = None
     
-    if conf.find_program('fs') and os.system('fs sys') == 0:
-        ret = commands.getstatusoutput('fs sys')[1]
-        at_sys_name = ret.split("'")[-2]
-        targ = 'build.'+ at_sys_name
-    else:
-        ret = os.uname()
-        targ = 'build.'+ ret[0]+'-'+ret[-1]
-        try:
-            os.remove('core')
-        except OSError :
-            pass
+#    if conf.find_program('fs') and os.system('fs sys') == 0:
+#       ret = commands.getstatusoutput('fs sys')[1]
+#       at_sys_name = ret.split("'")[-2]
+#       targ = 'build.'+ at_sys_name
+#   else:
+    ret = os.uname()
+    targ = 'build.'+ ret[0]+'-'+ret[-1]
+    try:
+        os.remove('core')
+    except OSError :
+        pass
     
     
     conf.env.NAME=targ
@@ -138,27 +140,27 @@ def configure( conf ):
     #    conf.env.global_lapack = False
     
     # cernlib 
-    try:
-        
-        conf.find_program( 'cernlib', mandatory = True )
-#        ret = commands.getstatusoutput('cernlib mathlib pawlib')
-        ret = commands.getstatusoutput('cernlib packlib')
-        
-        if ret[0] != 0:
-            raise Configure.ConfigurationError
-        
-        line = ret[1]
+    if Options.options.cernlib:
         try:
-            parse_cernlib_flags(line, 'cern', conf.env, at_sys_name)
-        except:
-            print sys.exc_info()
+            conf.find_program( 'cernlib', mandatory = True )
+            #        ret = commands.getstatusoutput('cernlib mathlib pawlib')
+            ret = commands.getstatusoutput('cernlib packlib')
+            
+            if ret[0] != 0:
+                raise Configure.ConfigurationError
         
-        conf.env.HAVE_CERN = 1
-    except Configure.ConfigurationError:
-        #        print 'CERNLIB not found.'        
-        conf.env.HAVE_CERN = 0
-        # for the moment, this is still a fatal error
-        conf.fatal('cernlib not found. please install it first.')
+            line = ret[1]
+            try:
+                parse_cernlib_flags(line, 'cern', conf.env, at_sys_name)
+            except:
+                print sys.exc_info()
+
+            conf.env.HAVE_CERN = 1
+        except Configure.ConfigurationError:
+            #        print 'CERNLIB not found.'        
+            conf.env.HAVE_CERN = 0
+            # for the moment, this is still a fatal error
+            conf.fatal('cernlib not found. please install it first.')
         
     # pkg config 
     try:
@@ -211,9 +213,9 @@ def build( bld ):
     if not bld.env.global_lapack:
         bld.add_subdirs(["lapack_stuff"])
 
-    if bld.env.HAVE_CERN:
+    if Options.options.cernlib and bld.env.HAVE_CERN:
         bld.add_subdirs("cern_utils")
-        bld.add_subdirs("cern_stuff")
+    bld.add_subdirs("cern_stuff")
 
 
     obj = bld( 'subst', 
