@@ -347,7 +347,11 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
      cerr << ", with mode " << FileModeName(Mode) <<  ',' << endl;
      cerr << " we got these successive errors:" << endl;
      fits_report_error(stderr, first_status);
-     fits_report_error(stderr, second_status);
+     // now throw instaed of going on.
+     throw(FitsException(one_line_error_message(second_status, *this)));
+     // the alternative : report error (and possibly abort).
+     // fits_report_error(stderr, second_status);
+     // abort();
    }
 }
 
@@ -1111,7 +1115,7 @@ int FitsHeader::read_image(const int xmin, const int ymin,
   int nxread = xmax - xmin;
   double bscale = HasKey("BSCALE")? KeyVal("BSCALE") : 1.0;
   double bzero = HasKey("BZERO")? KeyVal("BZERO") : 0.0;
-    if (!compressedImg || bitpix == -32 || (bscale == 1.0 && bzero == 0.0) )
+  if (!compressedImg || bitpix == -32 || (bscale == 1.0 && bzero == 0.0) )
     {
       if (nxread == nx) // pixels to read are all in a big chunk
 	{
@@ -1274,7 +1278,12 @@ int FitsHeader::write_image(int FirstPix, int NPix, Pixel *Data,
 int FitsHeader::create_image(int bitpix, int nx, int ny)
 {
   int status = 0;
-  if (compressedImg)  
+  /* if bitpix < 0 (floating point), then the file might have been created 
+     for a compressed image (i.e header + bin table extension), and we
+     might be giving up the compression just now. The easy way is to delete
+     the file and recreate it from scratch. This is not very expensive
+     since we only get here when we write the full pixel stack. */
+  if (compressedImg || bitpix < 0)  
     /* 
        what we do here almost reproduces what imcopy (from cfitsio
        sources) does. imcopy only works if the output file does not
@@ -1298,9 +1307,6 @@ int FitsHeader::create_image(int bitpix, int nx, int ny)
 	   cards.push_back(card);
        }
 
-     // we need to store bitpix, needed by fits_create_img
-     int bitpix = KeyVal("BITPIX");
-
      // delete file
      fits_delete_file(fptr, &status);
      /* structural header keys may be inconsistent, and fits_delete_file
@@ -1308,9 +1314,11 @@ int FitsHeader::create_image(int bitpix, int nx, int ny)
      */
      //CHECK_STATUS(status," fits_delete_file(compress) in FitsImage::Write",);
      status = 0;
-
-     fits_create_file(&fptr, (fileName+"[compress]").c_str(), &status);
-     CHECK_STATUS(status," fits_create_file (compress) in FitsImage::Write",);
+     if (bitpix>0)
+       fits_create_file(&fptr, (fileName+"[compress]").c_str(), &status);
+     else
+       fits_create_file(&fptr, (fileName).c_str(), &status);
+     CHECK_STATUS(status," fits_create_file (compress or not) in FitsImage::Write",);
      /* noise bits only matter for floting point images (bitpix = -32 or -64)
 	the default value of cfitsio is 4 which really alters images */
      fits_set_noise_bits(fptr,16, &status);
@@ -1502,20 +1510,23 @@ int FitsImage::Write(bool force_bscale)
   if (FileMode() != RW) return 0;
   int bitpix = KeyVal("BITPIX");
   if (bitpix == 0) bitpix = 16;
-  create_image(bitpix,nx,ny);
 
   cout << " Writing " << nx << "x" << ny << " " << fileName << endl;
+  if (compressedImg && bitpix <0)
+    {
+      cout << " Rice compression for floating point images is messy : " << fileName << " will not be compressed " << endl;
+      compressedImg=false;
+    }
 
-  if (compressedImg && !(bitpix == 16 || bitpix == 8 || bitpix ==-32))
+  if (compressedImg && !(bitpix == 16 || bitpix == 8 ))
     {
       std::cerr << " for image " << FileName() << " bitpix = " << bitpix 
 		<< std::endl;
-      std::cerr <<" only know how to write compressed image with BITPIX==[8,16,-32] for now, setting bitpix = -32" << std::endl;
-      ModKey("BITPIX",-32);
-      bitpix = -32;
+      std::cerr <<" only know how to write compressed image with BITPIX==[8,16] for now, no compression ... " << std::endl;
+      compressedImg=false;
     }
 
-
+  create_image(bitpix,nx,ny);
   double bscale = 1. ;
   double bzero = 0. ;
   Pixel mini,maxi;
@@ -1669,7 +1680,8 @@ bool FitsImage::Trim(const Frame &Region)
 
 //! copy an image, with possible (de)compression. No bitpix change enabled, because it requires some thinking.
 
-/* This routine is the main of imcopy from cfitsio sources */
+/* This routine is the main of imcopy from cfitsio sources, however with 
+   a key modification : no compression of fp images: Rice can be a disaster there */
 
 
 int ImageCopy(const std::string &InFileName, std::string OutFileName,
@@ -1684,11 +1696,23 @@ int ImageCopy(const std::string &InFileName, std::string OutFileName,
     long first, totpix = 0, npix;
     double *array, bscale = 1.0, bzero = 0.0, nulval = 0.;
     char card[81];
+    // addition to imcopy
+    {
+      //capture the bitpix for first image
+      FitsHeader head(InFileName);
+      bitpix = head.KeyVal("BITPIX");
+    }
 
     /* Open the input file and create output file */
     fits_open_file(&infptr, InFileName.c_str(), READONLY, &status);
-    if (FileExtension(OutFileName) == "fz" && !NoCompressionOnOutput) 
-      OutFileName = OutFileName+"[compress R; 16]";
+    if (FileExtension(OutFileName) == "fz" && !NoCompressionOnOutput)     // addition to imcopy
+      {
+	if (bitpix>=0) // means integer  encoding
+	  OutFileName = OutFileName+"[compress]";
+	else
+	  cout << " ImageCopy : the file " << OutFileName  << " will not be compressed because input file is not integer" << endl;
+      }
+    
     fits_create_file(&outfptr, OutFileName.c_str(), &status);
 
     if (status != 0) {    
@@ -1721,7 +1745,7 @@ int ImageCopy(const std::string &InFileName, std::string OutFileName,
       if (hdutype != IMAGE_HDU || naxis == 0 || totpix == 0) { 
 
           /* just copy tables and null images */
-	if (! (hdutype == IMAGE_HDU && naxis == 0)) // no .. not NULL Images
+	if (! (hdutype == IMAGE_HDU && naxis == 0)) // no .. not NULL Images (addition to imcopy)
 	      fits_copy_hdu(infptr, outfptr, 0, &status);
 
       } else {
@@ -1954,7 +1978,7 @@ straighforward way:
 For compressed images, this scheme does not work, for various reasons,
 not all understood:
   fits_resize_img does not accept compressed images.
-  fits_create_image does the whole job of creating all the needed data
+  fits_create_img does the whole job of creating all the needed data
 for compression. It actually creates a new image extension,
 and header keys will go into this extension. But to be able to
 alter a given image, we have to be able to write a compressed image
@@ -2013,6 +2037,16 @@ images, we have to use our own wrapping of fits_read_img.
 
 
 P.A 24/06/04
+
+Note from  March 2010:
+
+I tried again with cfitsio v3r006, and the fact that type conversion, rescaling, and 
+compression do not work all at once when writing is still true. So 
+FitsHeader::read_image and FitsHeader::write_image are still needed.
+
+I tried with version 3.24 (from jan 2010) and the bug seems to be gone.
+Might be worth to upgrade and simplify our code here.
+
 */
 
 
