@@ -92,13 +92,11 @@ bool Vignette::SetGeomTransfos()
   model2Vignette = GtransfoCompose(&reverseShift, trFromRef);
 
   //TODO : put "4" into the datacards : put in size_n_seeing now
-  cerr << "#SetGeomTransfo : size_n_seeing= " << size_n_seeing << endl ;
   int radius = nearest_integer(size_n_seeing * seeing+1);
   IntFrame frame; // NULL Frame
   frame.CutMargin(-radius); // right size
   stampLimits = frame;
   convolvedStampLimits = stampLimits; // until SetKernel eventually updates
-  cerr << " #SetGeomTransfo :  seeing = " << seeing << " convolvedStampLimits = " << convolvedStampLimits << endl ;
   //DEBUG
   cout << ri->Name() << " stampLimits " << stampLimits << endl;
 
