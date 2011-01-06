@@ -181,7 +181,9 @@ bool  LightCurveFile::SimPhotFitAll(double vignette_size_n_seeing) const
 	      string dir = "./";
 	      if (subDirPerObject)
 		{
-		  dir = object.Name()+"/";
+		  dir = object.Name();
+		  if (object.Band() != "") dir +="_"+object.Band();
+		  dir +="/";
 		  MKDir(dir.c_str());
 
 		}
