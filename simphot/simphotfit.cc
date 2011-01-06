@@ -540,8 +540,6 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
       const Vignette *v = *i;
 
       string dbim_name= v->Name();
-      size_t pos = dbim_name.find("p");
-      if(pos!=string::npos) {dbim_name.replace(pos,1,"");}
 
       int fluxIndex = FluxIndex(v);
       if (fluxIndex <0 )  continue;
@@ -653,8 +651,6 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
       const Vignette *v = *i;
 
       string dbim_name= v->Name();
-      size_t pos = dbim_name.find("p");
-      if(pos!=string::npos) {dbim_name.replace(pos,1,"");}
 
       int flag = 0; 
       if (toDoMap.find(v) != toDoMap.end()) flag = toDoMap[v];
@@ -825,8 +821,6 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
       const Vignette *v = *i;
 
       string dbim_name= v->Name();
-      size_t pos = dbim_name.find("p");
-      if(pos!=string::npos) {dbim_name.replace(pos,1,"");}
 
       double sigPosX = 0, sigPosY = 0;
       int posIndex = PosIndex();
