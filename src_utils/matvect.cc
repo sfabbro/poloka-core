@@ -175,7 +175,7 @@ int symetric_eigenvalues(Mat& A, Vect& EigenVals, const char* UorL)
   
   if(info != 0)
     {
-      cout << "[symetric_diagonalize] ERROR in dsysevd, info=" << info
+      cout << "[symetric_eigenvalues] ERROR in dsysevd, info=" << info
 	   << endl;
     }
   
@@ -205,17 +205,13 @@ int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
   
   if(info != 0)
     {
-      cout << "[lapack_diagonalize_sym] ERROR in dsysevd, info=" << info
+      cout << "[symetric_diagonalize] ERROR in dsysevd, info=" << info
 	   << endl;
-      delete[] work;
-      delete[] iwork;
-      return info;
     }
-  
   delete[] work;
   delete[] iwork;
-  
   return info;
+  
 }
 
 
