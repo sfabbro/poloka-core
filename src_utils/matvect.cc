@@ -202,16 +202,18 @@ int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
 	  eval, 
 	  work, &lwork, iwork, &liwork, 
 	  &info);
-
-  delete[] work;
-  delete[] iwork;
-
   
   if(info != 0)
     {
-      cout << "[symetric_diagonalize] ERROR in dsysevd, info=" << info
+      cout << "[lapack_diagonalize_sym] ERROR in dsysevd, info=" << info
 	   << endl;
+      delete[] work;
+      delete[] iwork;
+      return info;
     }
+  
+  delete[] work;
+  delete[] iwork;
   
   return info;
 }
@@ -1032,6 +1034,7 @@ Mat Mat::SubBlock
 Mat Mat::WithoutRows(unsigned int y_min,unsigned int y_max) const {
   if( y_min <0 || y_max < y_min || y_max >= ny ) {
     cout << "Mat::WithoutRows ERROR " << endl;
+    cout <<  y_min << " " <<  y_max << " " <<  ny << endl;
     abort();
   } 
   unsigned int nrows = y_max-y_min+1;

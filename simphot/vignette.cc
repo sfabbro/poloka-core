@@ -45,10 +45,14 @@ Vignette::Vignette(SimPhotFit &SPF, const ReducedImage &Current):
   ri(&Current), simPhotFit(SPF), photomRatio(1.), 
   flux(0), sky(0)
 {
-  mjd = ri->ModifiedJulianDate();
   mmjd = ri->ModifiedModifiedJulianDate();
+  mjd = ri->ModifiedJulianDate();
   seeing = ri->Seeing();
-  expTime = ri->Exposure();
+  exptime = ri->Exposure();
+  seeing = ri->GFSeeing();
+  sesky = ri->BackLevelNoSub();
+  sigsky = ri->SigmaBack();
+  size_n_seeing = SPF.vignette_size_n_seeing;
   const ObjectToFit &obj =  SPF.ObjToFit();
   couldFitFlux = (mjd >=obj.JdMin() && mjd <= obj.JdMax());
   imagePSF = FindImagePSF(&Current);
@@ -87,13 +91,14 @@ bool Vignette::SetGeomTransfos()
   GtransfoLin reverseShift(shiftHere.invert());
   model2Vignette = GtransfoCompose(&reverseShift, trFromRef);
 
-  //TODO : put "4" into the datacards
-  int radius = nearest_integer(4 * seeing+1);
+  //TODO : put "4" into the datacards : put in size_n_seeing now
+  cerr << "#SetGeomTransfo : size_n_seeing= " << size_n_seeing << endl ;
+  int radius = nearest_integer(size_n_seeing * seeing+1);
   IntFrame frame; // NULL Frame
   frame.CutMargin(-radius); // right size
   stampLimits = frame;
   convolvedStampLimits = stampLimits; // until SetKernel eventually updates
-
+  cerr << " #SetGeomTransfo :  seeing = " << seeing << " convolvedStampLimits = " << convolvedStampLimits << endl ;
   //DEBUG
   cout << ri->Name() << " stampLimits " << stampLimits << endl;
 
@@ -116,10 +121,10 @@ static Frame FloatFrame(const IntFrame &IF)
 void Vignette::ComputeModelLimits(Frame &ModelFrame) const
 {
   Frame currentFrame= FloatFrame(convolvedStampLimits);
-
   // TODO : if oversampling, we have to do something here: enlarge a little bit
   // current frame.
   ModelFrame = ApplyTransfo(currentFrame, *vignette2Model, LargeFrame);
+  cerr << " #ComputeModelLimits : convolvedStampLimits=" << convolvedStampLimits << " apres transfo : " << ModelFrame.Nx() << " ResamplerBoundarySize = " << ResamplerBoundarySize() << endl ;
   // now add the resampling overhead:
   // Frame::CutMargin increases the frame size if argument is <0
   ModelFrame.CutMargin(-ResamplerBoundarySize());
@@ -402,10 +407,16 @@ void Vignette::FillAAndB(Mat &A, Vect &B, const int ToDo)
     {
       // Sky-Sky
       A(skyIndex,skyIndex) += weightPix.Sum();
-      B(skyIndex) += ScalProd(weightPix,residuals); // B term - Sky
+      B(skyIndex) += ScalProd(weightPix,residuals);
+      //cout << "ScalProd(weightPix,residuals) weightPix residuals " << ScalProd(weightPix,residuals) << " " << weightPix << " " << residuals << endl ; 
+ // B term - Sky
       // DEBUG
-      if (isnan(B(skyIndex))) { cout << "WARNING" << B(skyIndex) << endl ; cout << weightPix <<  " " << residuals << " " << ScalProd(weightPix,residuals)<< endl; abort();}
-      // Sky - Flux
+      if (isnan(B(skyIndex))) 
+	{
+	  cout << "B(skyIndex)=" << B(skyIndex)	<< " " << skyIndex << endl;   
+	  abort();
+	}
+     // Sky - Flux
       if (ToDo & FIT_FLUX)
 	A(skyIndex, fluxIndex) += ScalProd(psf,weightPix);
       // Sky - Pos
@@ -487,7 +498,9 @@ bool Vignette::SetKernel()
   //DEBUG
 
   convolvedStampLimits = stampLimits;
-  convolvedStampLimits.CutMargin(-HalfKernelSize());
+  convolvedStampLimits.CutMargin(-HalfKernelSize());  
+  cerr << " #SetKernel : convolvedStampLimits = " << convolvedStampLimits << endl ;
+
   return true;
 }
 
@@ -504,6 +517,34 @@ bool Vignette::ReadPixels()
   if (!weightPix.ReadFromFits(ri->FitsWeightName(), int (intPos.x), int (intPos.y))) return false;
   weightPix *= photomRatio*photomRatio;
 
+  PixelBlock saturPix ;
+  saturPix.Allocate(stampLimits);
+  if (saturPix.ReadFromFits(ri->FitsSaturName(), int (intPos.x), int (intPos.y))) // il y a une carte de satur
+    {
+      PixelType *pw = weightPix.begin();
+      PixelType *ps = saturPix.begin();
+      double sum = 0 ;
+      for( ; pw < weightPix.end() && ps < saturPix.end() ; pw++, ps++)
+	{
+	  *pw *= (1-*ps) ;
+	  sum += *ps ;
+	}
+
+      has_saturated_pixels=(sum>0);   
+      n_saturated_pixels=sum;    
+    }
+  else
+    {
+      // on dit rien ???
+      //return false ;
+    }
+
+
+
+  // print de DEBUG des vignettes
+  //weightPix.WriteFits(Name()+"_weightpix.fits");
+  //imagePix.WriteFits(Name()+"_imagepix.fits");
+  
   return true;
 
 }
@@ -513,6 +554,7 @@ void Vignette::Write(const string &Directory) const
 {
   string genericName = Directory+ri->Name();
   imagePix.WriteFits(genericName+".fits");  
+  //imagePSF.WriteFits(genericName+".psf.fits");
   weightPix.WriteFits(genericName+".weight.fits");
   residuals.WriteFits(genericName+".res.fits");
   kernel.WriteFits(genericName+".kernel.fits");
@@ -525,6 +567,7 @@ void Vignette::Write(const string &Directory) const
   ConvolveImage(resampRefPSF, kernel, conv);
   PixelBlock thisPSF(conv); // borrow the Frame
   GetPSF(thisPSF);
+  thisPSF.WriteFits(genericName+".psfconv.fits");
   PixelBlock diff = thisPSF-conv;
   diff.WriteFits(genericName+".psfconvres.fits");
 }

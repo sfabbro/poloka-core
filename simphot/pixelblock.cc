@@ -147,11 +147,16 @@ double ScalProd(const PixelBlock &B1, const PixelBlock &B2)
   double sum = 0;
   int size = B1.Ntot();
   for (int i=size ; i ; i--)
-    {
+    { 
       sum += (*a) * (*b);
+      //if (i==1 or i==size) {cout << "sum *a *b " << sum << " " << *a << " " << *b << endl;}
+
       ++a;
       ++b;
     }
+
+  // if ( isnan(sum) ){   B1.Write("B1.fits") ;   B2.Write("B2.fits") ; }
+
   return sum;
 }
 

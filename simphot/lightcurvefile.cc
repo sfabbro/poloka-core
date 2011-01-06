@@ -30,8 +30,9 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
 {
   geomRef = (ReducedImage *)NULL;
   writeVignettes = false;
+  writeMatrices = false ; 
   subDirPerObject = false;
-  tupleFileName = "calibration.list";
+
 
   ifstream stream(LCFileName.c_str());
   if (!stream)
@@ -99,49 +100,47 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
 }
 
 
-#include "fitsimage.h"
-#include "wcsutils.h"
+
 #include "calibratedstar.h"
-#include "imageutils.h" // for ApplyTransfo(Frame....)
 #include <fstream>
 
-bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName) const
+bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName, const string &OutputCatalog, int itype, int Nmax, double vignette_size_n_seeing) const
 {
   bool status = true;
-  FitsHeader geomHead(geomRef->FitsName());
-  Gtransfo *wcs = NULL;
-  if (!WCSFromHeader(geomHead, wcs))
-    {
-      cout << "LightCurveFile::SimPhotFitForCalib : could not get wcs from image " << geomHead.FileName() << endl;
-      exit(-1);
-    }
-  Frame imageFrame(geomHead);
-  string band = string(geomHead.KeyVal("TOADBAND"));
-  imageFrame.CutMargin(-100); //actually enlarges the frame
-  CalibratedStarList cls(CalibCatalogName, wcs, imageFrame);
+  string band = geomRef->Band();
+  CalibratedStarList cls(CalibCatalogName, geomRef);
   ofstream tuple;
   int star_count = 0;
   for (CalibratedStarCIterator i = cls.begin(); i != cls.end(); ++i, star_count++)
     {
+
+      if (Nmax > 0 && star_count > Nmax) break ;
+
       const CalibratedStar &cs = **i;
       char line[128];
-      sprintf(line," %f %f DATE_MIN=-1e30 DATE_MAX=1e30 NAME=calib_%d TYPE=1 BAND=%s", cs.x,cs.y,cs.id, band.c_str());
+      sprintf(line," %f %f DATE_MIN=-1e30 DATE_MAX=1e30 NAME=calib_%d TYPE=%d BAND=%s", cs.x,cs.y,cs.id, itype, band.c_str());
       
       ObjectToFit object(line);
       try
 	{
 	  SimPhotFit simPhotFit(object, *this);
+
+	  if(vignette_size_n_seeing>0) 
+	    simPhotFit.vignette_size_n_seeing = vignette_size_n_seeing ;
+
 	  bool thisStatus = simPhotFit.DoTheFit();
+	  cout << "Fit Done for star " << star_count << endl ;
 	  status &= thisStatus;
 	  if (thisStatus)
 	    {
 	      if (i == cls.begin())// first of the list
 		{
-		  tuple.open(tupleFileName.c_str());
+		  tuple.open(OutputCatalog.c_str());
 		  tuple <<"@CALIBCATALOG " << CalibCatalogName << endl;
 		  simPhotFit.WriteTupleHeader(tuple, cls.size());
 		}
 	      simPhotFit.WriteTupleEntries(tuple, cs);
+
 	    }
 	  else
 	    {
@@ -162,7 +161,7 @@ bool  LightCurveFile::SimPhotFitAllCalib(const string &CalibCatalogName) const
 }
 
 
-bool  LightCurveFile::SimPhotFitAll() const
+bool  LightCurveFile::SimPhotFitAll(double vignette_size_n_seeing) const
 {
   bool status = true;
   for (ObjectToFitCIterator i = objects.begin(); i != objects.end(); ++i)
@@ -171,6 +170,10 @@ bool  LightCurveFile::SimPhotFitAll() const
       try
 	{
 	  SimPhotFit simPhotFit(object, *this);
+
+	  if(vignette_size_n_seeing>0) 
+	  simPhotFit.vignette_size_n_seeing = vignette_size_n_seeing ;
+
 	  bool thisStatus = simPhotFit.DoTheFit();
 	  status &= thisStatus;
 	  if (thisStatus) // output results
@@ -180,8 +183,9 @@ bool  LightCurveFile::SimPhotFitAll() const
 		{
 		  dir = object.Name()+"/";
 		  MKDir(dir.c_str());
+
 		}
-	      simPhotFit.Write(dir,writeVignettes);
+	      simPhotFit.Write(dir,writeVignettes,writeMatrices);
 	    }
 	  else // the fit went wrong:
 	    {

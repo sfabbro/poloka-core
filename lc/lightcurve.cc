@@ -63,7 +63,15 @@ void LightCurve::write_lc2fit(ostream& Stream) const
   if (front()->Image()) Stream << "#Date : (MJD)\n";
   Stream << "#Flux : in units of ADU in reference image\n"  
          << "#Fluxerr : \n"
-	 << "#ZP : elixir zp\n";
+	 << "#ZP : elixir zp\n"
+	 << "#seeing: SEseeing\n"
+	 << "#exptime : exposure time\n"
+	 << "#phratio : photom ratio\n"
+	 << "#gseeing : GFseeing\n"
+	 << "#sesky : SEsky\n"
+	 << "#sigsky : SIGsky\n"
+	 << "#sigscale : sigma scale factor\n";
+  
   if (front()->Image()) Stream << "#Image : \n";
   Stream << "@INSTRUMENT MEGACAM\n";
   Stream << "@BAND " << Ref->band << "\n";
@@ -74,16 +82,33 @@ void LightCurve::write_lc2fit(ostream& Stream) const
   for (LightCurve::const_iterator it = begin(); it != end(); ++it)
     {      
       const Fiducial<PhotStar> *fs = *it;
-      if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
+
+      // can generate problems if fitted flux is by chance in this range
+      if(fabs(fs->flux)<1.e-30) // do not print unfitted fluxes
 	continue;
-      lcp.julianday = fs->ModifiedJulianDate();
+      lcp.modifiedjulianday = fs->ModifiedJulianDate();
       lcp.flux = fs->flux;
       lcp.eflux = sqrt(fs->varflux);
       //lcp.computemag(elixir_zp);
       lcp.zeropoint = elixir_zp;
       Stream << lcp;
+      Stream << " " << fs->Seeing();
+      Stream << " " << fs->ExposureTime();
+      Stream << " " << fs->photomratio;
+      Stream << " " << fs->GFSeeing();
+      Stream << " " << fs->SESky();
+      Stream << " " << fs->SIGSky();
+      Stream << " " << fs->sigscale_varflux; 
       if (fs->Image()) 
-	Stream << "  " << fs->Image()->Name();
+	{
+	  string aligned_name = fs->Name() ; 
+	  size_t align_pos = aligned_name.find("enlarged");
+	  string dbim_name;
+	  if(align_pos!=string::npos) dbim_name = aligned_name.erase(0,align_pos+8); 
+	  size_t pos = dbim_name.find("p");
+	  if(pos!=string::npos) dbim_name.replace(pos,1,"");
+	  Stream << "  " << dbim_name;
+	}
       else 
 	if(front()->Image())
 	  Stream << " none ";

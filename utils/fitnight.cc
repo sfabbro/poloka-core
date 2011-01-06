@@ -2,9 +2,14 @@
 #include <iostream>
 #include <fstream>
 #include <matvect.h>
+#include <polokaexception.h>
+#include "fileutils.h"
+
 
 #include "lightcurvepoint.h"
 #include "dictfile.h"
+
+//#define DEBUG 
 
 using namespace std;
 
@@ -12,7 +17,7 @@ static double sq(const double x) { return x*x;}
 
 
 int main(int argc, char **argv)
-{
+ {
   bool fitsingleflux=false;
   if(argc>1) {
     if(strcmp(argv[1],"-single")==0) {
@@ -21,7 +26,8 @@ int main(int argc, char **argv)
     }
   }
 
- 
+ try {
+   
   // vecteur de flux
   Vect FluxVec;
   {
@@ -34,14 +40,30 @@ int main(int argc, char **argv)
   //cout << FluxVec << endl;
   
   // matrice de covariance
-  Mat CovarianceMat;  
-  if(CovarianceMat.readFits("pmat_sn.fits")!=0)
-    return -1;
-  //cout << "CovarianceMat" << endl;
-  //cout << CovarianceMat << endl;
-
-  Mat FluxCovarianceMat = CovarianceMat.SubBlock(0,nflux-1,0,nflux-1);
-  FluxCovarianceMat.Symmetrize("L");
+  Mat CovarianceMat; 
+  Mat fluxCovarianceMat;
+  Mat FluxCovarianceMat;
+  if(FileExists("flux_pmat_sn.fits"))
+    {      
+      cout << "Get Flux covariance matrix from mklc" << endl; 
+      fluxCovarianceMat.readFits("flux_pmat_sn.fits");
+      fluxCovarianceMat.Symmetrize("R");
+      FluxCovarianceMat = fluxCovarianceMat;
+    }
+  
+  else
+    {
+      if(!FileExists("pmat_sn.fits"))
+	  {
+	    return -1; 
+	  }
+      cout << "Get Flux covariance matrix from make_lightcurve" << endl; 
+      CovarianceMat.readFits("pmat_sn.fits");
+      // cout << "CovarianceMat" << endl;
+      // cout << CovarianceMat << endl;
+      FluxCovarianceMat = CovarianceMat.SubBlock(0,nflux-1,0,nflux-1);
+      FluxCovarianceMat.Symmetrize("L");
+    }
   
 
   Mat A;
@@ -52,7 +74,6 @@ int main(int argc, char **argv)
     for(int i=0;i<nflux;++i)
       A(0,i)=1;
   }
-  Mat Abis = A; // we save a copy for output 
 
 #ifdef DEBUG
   cout << "A before cleaning:"  << endl;
@@ -68,17 +89,20 @@ int main(int argc, char **argv)
   // ==== remove points without data ====
   for(unsigned int i=0; i< FluxVec.Size(); i++) {
     if(fabs(FluxVec(i))<1.e-30) {
-      //cout << "removing " << i << " : ";
-      //cout << FluxCovarianceMat.SizeX() << " => ";
+      cout << "removing " << i << " : ";
+      cout << FluxCovarianceMat.SizeX() << " => ";
       FluxCovarianceMat = FluxCovarianceMat.WithoutRows(i,i);
       FluxCovarianceMat = FluxCovarianceMat.WithoutColumns(i,i);
-      //cout << FluxCovarianceMat.SizeX() << endl;
+      cout << FluxCovarianceMat.SizeX() << endl;
       Mat mFluxVec = FluxVec;
       FluxVec = mFluxVec.WithoutRows(i,i);
       A = A.WithoutRows(i,i);
       i--;
     }
   }
+
+  Mat Abis = A; // we save a copy for output 
+
 #ifdef DEBUG
   cout << "FluxVec after cleaning:"  << endl;
   cout << FluxVec << endl;
@@ -124,8 +148,12 @@ int main(int argc, char **argv)
     cout << "chi2/ndf = " << chi2/ndf << endl;
 #endif
    
-    if(chi2/ndf<1.5 || suppressedfluxes.size()>=6)
+    if(ndf==0 || chi2/ndf<1.5 || suppressedfluxes.size()>=6) {
+      if(ndf == 0) {
+	cout << "WARNING NDF=0 " << endl;
+      }
       break;
+    }
 
     int outlier = -1;
     double flux_chi2;
@@ -163,15 +191,19 @@ int main(int argc, char **argv)
   Vect B = FluxVec - A*flux_per_night;
   double chi2 = B*(FluxWeightMat*B);     
   int ndf = A.SizeY()-A.SizeX();
-  
+  double chi2ndf = 0;  
+  if(ndf>0) chi2ndf=chi2/ndf;
+
   cout << "SUMMARY " 
        << FluxVec.Size() << " " 
        << flux_per_night.Size() << " "
        << noutliers << " " 
-       << chi2/ndf << endl;
+       << chi2ndf << endl;
   
-  // if chi2dof>0 scale all errors
-  double chi2ndf = chi2/ndf;
+  // if chi2dof>1 scale all errors
+  
+  
+
   if(chi2ndf>1) {
     for(unsigned int j= 0; j<FluxPerNightCovMat.SizeY();j++)
       for(unsigned int i= 0; i<FluxPerNightCovMat.SizeX();i++) {
@@ -254,16 +286,17 @@ int main(int argc, char **argv)
   for (DictFileCIterator line = lcdata.begin(); line != lcdata.end(); 
        ++line) {
     CountedRef<LightCurvePoint> lcp = new LightCurvePoint();
-    lcp->julianday = line->Value("Date");
+    lcp->modifiedjulianday = line->Value("Date");
     lcp->flux = line->Value("Flux");
     lcpoints.push_back(lcp);
   }
 
   ofstream outputlc("lc2fit_per_night.dat");
-  outputlc << "#Date : (days since January 1st, 2003)\n"
+  outputlc << "#Date : (Modified julian date! days since January 1st, 2003)\n"
 	   << "#Flux : \n"  
 	   << "#Fluxerr : \n"
-	   << "#ZP : elixir zp\n";
+	   << "#ZP : elixir zp\n"
+	   << "#chi2ndf : \n";
   outputlc << "@INSTRUMENT " << instrumentName << endl;
   outputlc << "@BAND " << bandName << endl;
   outputlc << "@MAGSYS " << magSystem << endl;
@@ -271,7 +304,7 @@ int main(int argc, char **argv)
   
   
   vector< CountedRef<LightCurvePoint> > newlcpoints;
-  double jd;
+  double mjd;
   int nexpo;
   for(unsigned int night = 0; night < flux_per_night.Size(); ++ night) {
     CountedRef<LightCurvePoint> newpoint = new LightCurvePoint();
@@ -279,24 +312,38 @@ int main(int argc, char **argv)
     newpoint->eflux = sqrt(FluxPerNightCovMat(night,night));
     newpoint->computemag(zp);
     // now get julian day (mean of all exposures)
-    jd=0;
+    mjd=0;
     nexpo=0;
+
+    if(Abis.SizeY() != lcpoints.size()) {
+      char message[1000];
+      sprintf(message,"NOT SAME NUMBER OF EXPOSURES in fitnight nightmat=%d lc=%d",int(Abis.SizeY()),int(lcpoints.size()));
+      throw(PolokaException(message));
+    }
+
+
     for(unsigned int expo=0;expo<Abis.SizeY();++expo) {
       if(Abis(night,expo)>0.5) {
-	jd += lcpoints[expo]->julianday;
+	// VERIFIER QUE ABIS.SIZEY est = LC.POINTS.SIZE
+	//cout << "A.sizeY:" << A.SizeY() << "  Abis.sizeY:" << Abis.SizeY() << "   lcpoints.size:" << lcpoints.size() << "   newlcpoints.size:" << newlcpoints.size() << endl;
+	mjd += lcpoints[expo]->modifiedjulianday;
 	//cout << night << " " 
 	//     << expo << " " 
 	//     << lcpoints[expo]->julianday-2452854.0 << endl;
 	nexpo++;
       }
     }
-    newpoint->julianday = jd/nexpo;
+    newpoint->modifiedjulianday = mjd/nexpo;
     
-    outputlc << (*newpoint) << endl;
+    outputlc << (*newpoint) << " " << chi2ndf << endl;
     newlcpoints.push_back(newpoint);
   }
   outputlc.close();
-  
+  }catch(PolokaException p)
+    {
+      p.PrintMessage(cout);
+      return EXIT_FAILURE;	      
+    }
   return 0;
 }
 

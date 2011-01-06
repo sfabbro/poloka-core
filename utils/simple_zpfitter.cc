@@ -73,6 +73,10 @@ int main(int argc, char **argv)
 
   string zpstarlist_filename = argv[1];
   string key = argv[2];
+
+  // leger hack : si band = y -> key = 1 dans zpstarslist
+  if (key == "y") {key = "i" ;} 
+  
   
   double mag_min = 10; // just to remove dummy stuff
   int  nmeas_min = 10;  // min. number of measurements
@@ -90,6 +94,9 @@ int main(int argc, char **argv)
     mag_max = 20.;
     break;
   case 'i' :
+    mag_max = 20.;
+    break;
+  case 'y' :
     mag_max = 20.;
     break;
   case 'z' :

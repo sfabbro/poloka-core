@@ -66,6 +66,8 @@ class DictFileEntry
   void ModKey(const string &Key, const string &Val);
   void ModKey(const string &Key, const double &Val);
 
+  void writen(ofstream & pr) const;
+
 };
 
   

@@ -38,10 +38,12 @@ resampler.cc_cppflags = $(optimize_it)
 vignette.cc_cppflags = $(optimize_it)
 array4d.cc_cppflags = $(optimize_it)
 
-bin_PROGRAMS =  testlc testpsf mklc
+bin_PROGRAMS =  testlc testpsf mklc mklc_test
 
 mklc_SOURCES = mklc.cc
 mklc_LDFLAGS = -ltoadssimphot -R @libdir@ -L@libdir@ -ltoadspsf
+mklc_test_SOURCES = mklc_test.cc
+mklc_test_LDFLAGS = -ltoadssimphot -R @libdir@ -L@libdir@ -ltoadspsf
 testlc_SOURCES = testlc.cc
 testlc_LDFLAGS = -ltoadssimphot -ltoadspsf
 testpsf_SOURCES = testpsf.cc

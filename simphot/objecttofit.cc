@@ -5,6 +5,7 @@
 
 ObjectToFit::ObjectToFit(const string& Line)
 {  
+  jdmin = -1.e+30 ; jdmax= 1.e+30 ;
   vector<string> words;
   DecomposeString(words, Line);
   if (words.size() < 2)

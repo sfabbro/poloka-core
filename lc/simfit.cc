@@ -1418,7 +1418,7 @@ void SimFit::FatalError(const char* comment)
       const SimFitVignet *vi = *it;
       cerr << " > SimFit::FatalError() : " << fixed << right
 	   << setw(10) << vi->Image()->Name() 
-	   << " mmjd " << setprecision(2) << setw(7) << vi->ModifiedJulianDate()
+	   << " mjd " << setprecision(2) << setw(7) << vi->ModifiedJulianDate()
 	   << " [flux=" << setprecision(1) << setw(7) << vi->Star->flux << " fit=" << boolalpha << vi->CanFitFlux
 	   << "] [pos=(" << setprecision(1) << setw(6) << vi->Star->x 
 	   << ", " << setprecision(1) << setw(6) << vi->Star->y << ") fit=" << boolalpha << vi->CanFitPos
@@ -1616,6 +1616,7 @@ bool SimFit::GetCovariance()
       if ((fit_flux) && (*it)->FitFlux) {
 	// (*it)->Star->varflux = sigscale * PMat(fluxind,fluxind++); // DO NOT USE THIS
 	(*it)->Star->varflux = sigscale * PMat(fluxind,fluxind);
+	(*it)->Star->sigscale_varflux = sigscale ;
 	fluxind++;
       }
       if (fit_sky && (*it)->FitSky) {  
@@ -1736,7 +1737,7 @@ void SimFit::write(const string& StarName,const string &DirName, unsigned int wh
   
 
   // write residuals
-  if(whattowrite & WriteResid) {
+  if(whattowrite & WriteResid){
     cout << " resids ";
     for (SimFitVignetIterator it=begin(); it != end() ; ++it){      
       (*it)->ClearResidZeroWeight();
@@ -1745,47 +1746,49 @@ void SimFit::write(const string& StarName,const string &DirName, unsigned int wh
   }
   
   // write Data
-  if(whattowrite & WriteData)
+  if(whattowrite & WriteData){
     for (SimFitVignetIterator it=begin(); it != end() ; ++it)
       (*it)->Data.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_data.fits");
+  }
   
   // write Psf
-  if(whattowrite & WritePsf)
+  if(whattowrite & WritePsf){
     for (SimFitVignetIterator it=begin(); it != end() ; ++it) {
       (*it)->Psf.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_psf.fits");
       //(*it)->Psf.writeGaussian(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_gaus.fits");
     }
+  }
+  // write Kernel
+  if(whattowrite & WriteKernel){
+    for (SimFitVignetIterator it=begin(); it != end() ; ++it) {
+      (*it)->Kern.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_kern.fits");
+    }
+  }
   // write weights
-  if(whattowrite & WriteWeight)
+  if(whattowrite & WriteWeight){
     for (SimFitVignetIterator it=begin(); it != end() ; ++it)
       (*it)->OptWeight.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_weight.fits");
-  
-  // write kernels
-  if(whattowrite & WriteKernel)
-    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
-      (*it)->Kern.writeFits(DirName+"/"+(*it)->Image()->Name()+"_"+StarName+"_kern.fits");
-
+  }
   //write matrices
   if(whattowrite & WriteMatrices) {
     PMat.writeFits(DirName+"/pmat_"+StarName+".fits");
+  }  
+  int i=0;
+  for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+    if((*it)->FitFlux)
+      i++;
+  Mat vm(1,i);
+  i=0;
+  for (SimFitVignetIterator it=begin(); it != end() ; ++it)
+    if((*it)->FitFlux) {
+      vm(0,i)= (*it)->Star->flux;
+      i++;
+    }
+  vm.writeFits(DirName+"/vec_"+StarName+".fits");
     
-    int i=0;
-    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
-      if((*it)->FitFlux)
-	i++;
-    Mat vm(1,i);
-    i=0;
-    for (SimFitVignetIterator it=begin(); it != end() ; ++it)
-      if((*it)->FitFlux) {
-	vm(0,i)= (*it)->Star->flux;
-	i++;
-      }
-    vm.writeFits(DirName+"/vec_"+StarName+".fits");
-    
-    // create matrix of Nights and Images
-    fillNightMat();
-    NightMat.writeFits(DirName+"/nightmat_"+StarName +".fits");
-  }
+  // create matrix of Nights and Images
+  fillNightMat();
+  NightMat.writeFits(DirName+"/nightmat_"+StarName +".fits");
 
   cout << endl;
 }

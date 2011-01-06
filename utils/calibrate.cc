@@ -15,7 +15,7 @@
 #include <imageutils.h>
 #include <apersestar.h>
 #include <fastfinder.h>
-
+#include <string>
 #include <map>
 #include <iomanip>
 
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
   DictFile catalog(catalogname);
   
-  int requiredlevel=2;
+  //int requiredlevel=2;
   // get keys for mag
   string band = header.KeyVal("TOADBAND");
   string mag_key=getkey("m"+band,catalog);
@@ -335,7 +335,9 @@ int main(int argc, char **argv)
     assocs[(RefStar*)rstar] = cstar;
     //if(count_ok>0)
     //break;
-  }
+
+  } // FIN BOUCLE FOR
+
   
   cout << count_total << " objects in the catalog" << endl;
   cout << count_total_stars << " correct stars (with mag in band " << band << ") in the catalog" << endl;
@@ -353,6 +355,7 @@ int main(int argc, char **argv)
   
   // now we want to write many many things, let's make a list
   ofstream stream(matchedcatalogname.c_str());
+  stream << "@CALIBCATALOG " << catalogname << endl;
   stream << "@NSTARS " << count_ok << endl;
   stream << "@NIMAGES " << lclist.Images.size() << endl;
   stream << "#x :" << endl;
@@ -361,8 +364,17 @@ int main(int argc, char **argv)
   stream << "#error :" << endl;
   stream << "#sky :" << endl;
   stream << "#skyerror :" << endl;
+  stream << "#xerror :" << endl;
+  stream << "#yerror :" << endl;
+  stream << "#name :" << endl;
   stream << "#mjd :" << endl;
-  stream << "#seeing :" << endl; 
+  stream << "#seeing :" << endl;
+  stream << "#exptime :" << endl;
+  stream << "#phratio :" << endl;
+  stream << "#gseeing :" << endl;
+  stream << "#sesky :" << endl;
+  stream << "#sigsky :" << endl;
+  stream << "#sigscale :" << endl; 
   stream << "#mag :" << endl;
   stream << "#mage :" << endl;
   stream << "#ra : initial " << endl;
@@ -383,6 +395,7 @@ int main(int argc, char **argv)
   stream << "#star : start number in the catalog" << endl;
   stream << "#chi2pdf : chi2 pdf of total PSF photometry" << endl;
   stream << "#satur : 1 if some pixels are saturated" << endl;
+  stream << "#nsatur : number of pixels  saturated" << endl;
   stream << "#neid : distance to nearest neighbor" << endl;
   stream << "#neif : flux of nearest neighbor" << endl;
   stream << "#neic : flux contamination due to nearest neighbor" << endl;
@@ -418,13 +431,26 @@ int main(int argc, char **argv)
     for (LightCurve::const_iterator it = ilc->begin(); it != ilc->end(); ++it) { // loop on points
       count_img++;
       const Fiducial<PhotStar> *fs = *it;
-      if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
-	continue;
-      
+
+      // ###########"" WWWWWWWWARNING
+      // on l'enleve pour test 15/02/2010
+      //if(fabs(fs->flux)<0.001) // do not print unfitted fluxes
+      //continue;
+
+      double sigposX = 0;
+      double sigposY=0;
+
+      string aligned_name = fs->Name() ; 
+      size_t align_pos = aligned_name.find("enlarged");
+      string dbim_name;
+      if(align_pos!=string::npos) dbim_name = aligned_name.erase(0,align_pos+8); 
+      size_t pos = dbim_name.find("p");
+
+      if(pos!=string::npos) dbim_name.replace(pos,1,"");
+
       stream << fs->x << " ";
       stream << fs->y << " ";
       stream << fs->flux << " ";
-
       if(fs->varflux>0)
 	stream << sqrt(fs->varflux) << " ";
       else
@@ -434,8 +460,23 @@ int main(int argc, char **argv)
 	stream << sqrt(fs->varsky) << " ";
       else
 	stream << 0 << " ";
-      stream << fs->MJD << " ";
-      stream << fs->image_seeing << " ";
+      if(fs->varx>0)
+	stream << sqrt(fs->varx) << " ";
+      else
+	stream << 0 << " ";
+      if(fs->vary>0)
+	stream << sqrt(fs->vary) << " ";
+      else
+	stream << 0 << " ";
+      stream << dbim_name << " ";
+      stream << fs->ModifiedJulianDate() << " ";
+      stream << fs->Seeing() << " ";
+      stream << fs->ExposureTime() << " ";
+      stream << fs->photomratio << " ";
+      stream << fs->GFSeeing() << " ";
+      stream << fs->SESky() << " ";
+      stream << fs->SIGSky() << " ";
+      stream << fs->sigscale_varflux << " ";
       
       // mag
       if (band=="u") stream << cstar.u << " " << cstar.ue << " ";
@@ -466,6 +507,7 @@ int main(int argc, char **argv)
 	stream << 1 << " ";  
       else
 	stream << 0 << " ";  
+      stream << fs->n_saturated_pixels << " ";
       stream << cstar.neighborDist << " "; 
       stream << cstar.neighborFlux << " "; 
       stream << cstar.neighborFluxContamination << " ";  

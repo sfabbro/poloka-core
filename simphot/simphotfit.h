@@ -28,6 +28,7 @@ class CalibratedStar;
 class SimPhotFit : public Model
 {
  private:
+
   ObjectToFit objToFit; // could perhaps be a reference...
   const LightCurveFile &lcFile;
   VignetteList vignetteList;
@@ -38,6 +39,8 @@ class SimPhotFit : public Model
 
 
  public :
+
+  double vignette_size_n_seeing ;
   SimPhotFit(const ObjectToFit &O, const LightCurveFile &LCFile);
 
   const ObjectToFit &ObjToFit() const { return objToFit;}
@@ -50,7 +53,7 @@ class SimPhotFit : public Model
 
   void FindModelBoundaries();
   
-  bool Write(const string &Directory, const bool WriteVignettes);
+  bool Write(const string &Directory, const bool WriteVignettes, const bool WriteMatrices);
 
   void WriteTupleHeader(ostream &Stream, const int NStars) const;
   
@@ -67,11 +70,12 @@ class SimPhotFit : public Model
   void DispatchOffsets(const Vect& Offsets, const double Fact=1., 
 		       const bool Verbose=true);
 
+  //! finds the matrix that will merge the image fluxes into epoch fluxes.
+  Mat FillNightMat() const;
+
+
   
   // what concerns the handling of fitted parameters
-
- private:
-
   // cannot be "const Vignette*" because we use these map to update sky and flux
   typedef map<const Vignette*,int> VignetteMap;
   VignetteMap skyMap;

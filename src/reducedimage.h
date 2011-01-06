@@ -234,6 +234,7 @@ Usefull in case of artificially smoothed images
   //! the back level before it was subtracted
   double BackLevelNoSub() const;
 
+  double SESky() const;
   bool SetBackLevel(const double &Value, const string Comment= "");
   bool SetSESky(const double &Value,  const string Comment = "");
   void RemoveSESky();

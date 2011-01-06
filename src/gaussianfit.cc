@@ -64,6 +64,11 @@ double gaussianfit(const double *values, int nval, double &mean, double &sigma, 
   
   
   // now fit this histo with a parabola  y=a*x*x+b*x+c
+  if (sigma < 1.e-30 ){
+    mean =-1;
+    sigma =-1 ;
+    return(-1) ;
+  }
   double a = -1./(2*sqr(sigma));
   double b = -2.*a*mean;
   
@@ -148,6 +153,11 @@ double gaussianfit(const double *values, int nval, double &mean, double &sigma, 
 
 
     chi2=nchi2;
+    if ( (-2*a) < 1.e-30 ){
+      mean =-1;
+      sigma =-1 ;
+      return(-1) ; 
+    }
     nsigma=1./sqrt(-2*a);
     nmean=-b/2./a;
 #ifdef DEBUG

@@ -24,19 +24,18 @@ class ImagePSF;
 
 class Vignette : public RefCount {
  private :
-  ReducedImageRef ri;
-  double mmjd, mjd, seeing, expTime;
-  bool couldFitFlux;
+  double mmjd, mjd, seeing, exptime;
+  double gfseeing, sesky, sigsky;
+  double size_n_seeing ;
   SimPhotFit &simPhotFit;
   GtransfoRef vignette2Model; // image to model transfo (stamp coordinates)
   GtransfoRef model2Vignette; // image to model transfo (stamp coordinates)
 
   Point posInStamp; // coordinates of the SN in the local coordinates
   IntPoint intPos;  // nearest pixel
-
   
   double photomRatio; // definition : ref*photomRatio = this
-  double flux,sky;
+  double flux,sky; 
   double chi2;
   int nterms;
 
@@ -53,6 +52,12 @@ class Vignette : public RefCount {
 
 
  public:
+
+  ReducedImageRef ri;
+
+  bool couldFitFlux;
+  bool has_saturated_pixels;
+  int n_saturated_pixels;
 
   Vignette(SimPhotFit &SPF,const ReducedImage &Current);
 
@@ -84,11 +89,15 @@ class Vignette : public RefCount {
   void SetFlux(const double &Val) { flux = Val;}
 
 
-  double MJD() const { return mjd;}
-  double MMJD() const { return mmjd;}
-  double Seeing() const {return seeing;}
-  double ExpTime() const { return expTime;}
 
+  double MMJD() const { return mmjd;}
+  double MJD() const { return mjd;}
+  double Seeing() const {return seeing;}
+  double PhotomRatio() const {return photomRatio ;}
+  double ExpTime() const { return exptime;}
+  double GFSeeing() const {return gfseeing;}
+  double SESky() const {return sesky ;}
+  double SIGSky() const { return sigsky;}
  private :
 
   void ComputeGalaxyDerivatives(Array4D &);
@@ -111,7 +120,8 @@ typedef CountedRef<Vignette> VignetteRef;
 
 inline bool IncreasingDate(const VignetteRef &V1, const VignetteRef &V2)
 {
-  return (V1->MMJD() < V2->MMJD());
+  //return (V1->MMJD() < V2->MMJD());
+  return (V1->MJD() < V2->MJD());
 }
 
 

@@ -13,7 +13,7 @@
 class LightCurvePoint: public RefCount {
 public:
   LightCurvePoint();
-  double julianday;
+  double modifiedjulianday;
   double flux;
   double eflux;
   double mag;
@@ -38,7 +38,8 @@ public:
 
   friend std::ostream& operator << (std::ostream &Stream, const LightCurvePoint &lcp) { 
     Stream << std::setiosflags(std::ios::fixed);
-    Stream << std::setw(14) << std::setprecision(2) << lcp.julianday
+    //Stream << std::setw(14) << std::setprecision(2) << lcp.julianday
+    Stream << std::setw(14) << std::setprecision(2) << lcp.modifiedjulianday
 	   << std::setw(15) << std::setprecision(3) << lcp.flux
 	   << std::setw(15) << std::setprecision(3) << lcp.eflux
       //   << std::setw(15) << std::setprecision(3) << lcp.mag

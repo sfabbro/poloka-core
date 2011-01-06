@@ -925,6 +925,16 @@ void SimFitVignet::BuildKernel()
   kernelFit->KernAllocateAndCompute(Kern, Star->x, Star->y);
   Star->photomratio = Kern.sum();
   kernel_updated = true;
+
+  double photom_ratio_threshold = 0.1;
+  if(Kern.sum()<photom_ratio_threshold) {
+    cout << "WARNING SimFitVignet::Buildkernel : photom_ratio too low :" << Kern.sum() 
+	 << "; Set CanFitFlux,CanFitSky,CanFitPos,CanFitGal to 0." << endl;
+    CanFitFlux=false;
+    CanFitSky=false;
+    CanFitPos=false;
+    CanFitGal=false;
+  }
 }
 
 void SimFitVignet::UpdateResid_psf_gal()

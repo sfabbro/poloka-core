@@ -26,12 +26,15 @@ bin_PROGRAMS = \
  fitnight invertdeadmap install_image vignet4gif modelvignet wrapswarp \
  compute enlargeimage calibrate coordfromimage enlargedead mask2dead \
  mkcat2 seeing mergelists \
- modelpsf zpfitter calibrationhacker basicaperture calibratefixedpos flatfield\
+ modelpsf zpfitter gridcorrection calibrationhacker basicaperture calibratefixedpos flatfield\
  makepsf compute_zp  splitsubs test_dust makvar getvalueatpoint\
  catalog_images_match \
  deadprop checkmask sumpixels \
  wcs_for_vignets \
-apercorr simple_zpfitter 
+ apercorr simple_zpfitter compute_zp_phot \
+ phot_cmp phot_cmp_snlc phot_cmp_snlc_fitnight
+ #list_sne_cmp 
+
 
 if ENABLE_MC
 bin_PROGRAMS += make_mc_cat makesub  make_dualsub  mc_addsn make_lcsim
@@ -205,7 +208,13 @@ mask2dead_SOURCES = mask2dead.cc
 seeing_SOURCES = seeing.cc
 mergelists_SOURCES = mergelists.cc
 zpfitter_SOURCES = zpfitter.cc
+gridcorrection_SOURCES = gridcorrection.cc
 simple_zpfitter_SOURCES = simple_zpfitter.cc
+compute_zp_phot_SOURCES = compute_zp_phot.cc
+phot_cmp_SOURCES = phot_cmp.cc
+phot_cmp_snlc_SOURCES = phot_cmp_snlc.cc
+phot_cmp_snlc_fitnight_SOURCES = phot_cmp_snlc_fitnight.cc
+#list_sne_cmp_SOURCES = list_sne_cmp.cc
 
 #calibsummary_SOURCES = calibsummary.cc
 calibrationhacker_SOURCES = calibrationhacker.cc

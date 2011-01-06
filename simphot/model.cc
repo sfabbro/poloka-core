@@ -262,12 +262,12 @@ bool Model::Solve(Mat &A, Vect &B, const string &U_or_L,
     {
       //unsmoothed area:
       IntFrame unsmoothed((const IntFrame &) galaxyPixels);
+
       // because we have convolution AND resampling, we need to add 1      
       int smoothingLength = HalfKernelSize+1;
       cout << " Model::Solve : smoothing galaxy edges over " 
 	   << smoothingLength << endl; 
-      unsmoothed.CutMargin(smoothingLength); 
-      
+      unsmoothed.CutMargin(smoothingLength);
       int central_index = galaxyPixels.PixelIndex(1,1);
       double weight = A(central_index, central_index)*0.01;
       
