@@ -623,6 +623,9 @@ ImagePSF::ImagePSF(const ReducedImage &RI, bool RefitPSF)
       s.close();
       return;
     }
+  // if we get here, either there is no PSF around or refitPSF = true
+  // if there is not PSF around, we'd better fit the psf, so
+  refitPSF = true; 
   seeing = reducedImage->GFSeeing();
   if (seeing <= 0) 
     seeing = reducedImage->Seeing();
