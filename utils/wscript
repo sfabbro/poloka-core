@@ -52,7 +52,7 @@ def build( bld ):
                                  '../psf', '../lc' ], 
                     libs     = [ 'm', 'z'], 
 #                    uselib = [ 'CFITSIO', 'SEX' ],
-                    uselib_local = local_libs,
+                    use = local_libs,
                     vnum     = '0.1.0' )
                   
         

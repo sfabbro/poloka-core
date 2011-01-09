@@ -11,27 +11,27 @@ import shlex
 
 APPNAME  = 'poloka'
 VERSION  = '0.1.0'
-srcdir   = '.'
-
-blddir   = 'build'
-
+top   = '.'
+out   = 'build'
 
 
-def set_options( ctx ):
+
+def options(opt):
     
-    ctx.tool_options('compiler_cc')
-    ctx.tool_options('compiler_cxx')
-    ctx.tool_options('compiler_fortran', tooldir='./wtools')
-    ctx.tool_options('flex')
-    ctx.tool_options('bison')
-    ctx.add_option('--with-cfitsio', action='store', help='Path to the cfitsio root dir')
-    ctx.add_option('--with-sex', action='store', help='Path to the cfitsio root dir')
+    opt.load('compiler_cc')
+    opt.load('compiler_cxx')
+    opt.load('compiler_fc')
+    opt.load('flex')
+    opt.load('bison')
+        
+    opt.add_option('--with-cfitsio', action='store', help='Path to the cfitsio root dir')
+    opt.add_option('--with-sex', action='store', help='Path to the cfitsio root dir')
     
-    ctx.add_option('--no-global-lapack', action='store_false',
+    opt.add_option('--no-global-lapack', action='store_false',
                    default=True, dest='global_lapack',
                    help='use/no do use system lapack library')
     
-    ctx.add_option("--no-cernlib", action='store_false', 
+    opt.add_option("--no-cernlib", action='store_false', 
                    default=True, dest='cernlib', 
                    help='do not try to link with cernlib')
 
@@ -104,9 +104,6 @@ def configure( conf ):
     conf.env.NAME=targ
     conf.env.set_variant(targ)
         
-    # fortran compilers (not included by default in waf-1.5)
-    conf.check_tool( 'compiler_fortran', tooldir='./wtools' )
-    
     # c compiler 
     conf.check_tool( 'compiler_cc' )
     # TODO: why is -fPIC -DPIC not specified by default for gcc ? 
@@ -115,16 +112,21 @@ def configure( conf ):
     
     # c++ compiler 
     conf.check_tool( 'compiler_cxx' )
-    conf.env.append_value( 'CXXFLAGS', ['-g','-O3'] );
+    conf.env.append_value( 'CXXFLAGS', [ '-fPIC', '-DPIC', '-g','-O3'] );
     
+    # fortran compilers (check it after you have checked the 'c' compiler)
+    conf.load( 'compiler_fc')
+    conf.check_fortran()
+    conf.check_fortran_verbose_flag()
+    conf.check_fortran_clib()
+    conf.check_fortran_dummy_main()
+    conf.check_fortran_mangling()
+
     # flex and bison
     conf.check_tool( 'flex' )
     conf.env['FLEXFLAGS'] = '' 
     conf.check_tool( 'bison' )
     conf.env['BISONFLAGS'] = ['-y', '-l', '-d']
-    
-    # file substitutions
-    conf.check_tool( 'misc' )
     
     # various headers & libraries 
     conf.check_cc( header_name='math.h' )
@@ -218,13 +220,15 @@ def build( bld ):
     bld.add_subdirs("cern_stuff")
 
 
-    obj = bld( 'subst', 
-               target = 'poloka.pc', 
-               source = 'poloka.pc.in' )
+    obj = bld(features = 'subst', 
+              target = 'poloka-%s.pc' % bld.env['POLOKA_VERSION'], 
+              source = 'poloka.pc.in', 
+              install_path =  '${PREFIX}/lib/pkgconfig/',
+              PREFIX = bld.env['PREFIX'], 
+              VERSION = bld.env['POLOKA_VERSION'])
     
-    obj.dict = { 'PREFIX': bld.env['PREFIX'], 
-                 'VERSION': bld.env['POLOKA_VERSION'] }
-    
-    bld.install_as( '${PREFIX}/lib/pkgconfig/poloka-${POLOKA_VERSION}.pc', 
-                    'poloka.pc' )
+    #    obj.dict = { 'PREFIX': bld.env['PREFIX'], 
+    #                 'VERSION': bld.env['POLOKA_VERSION'] }
+    #    bld.install_as( '${PREFIX}/lib/pkgconfig/poloka-${POLOKA_VERSION}.pc', 
+    #                    'poloka.pc' )
     

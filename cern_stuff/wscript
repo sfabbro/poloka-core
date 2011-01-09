@@ -7,10 +7,10 @@ def build( bld ):
     
     sources = bld.path.ant_glob('*.F')
         
-    lib = bld( features = 'fortran cshlib', 
-               source = sources,
-               target = 'cern_stuff', 
-               libs   = 'gfortran',
-#               libs   = 'g2c',
-               vnum     = '0.1.0' )
+    lib = bld(features = 'fc fcshlib', 
+              source = sources,
+              target = 'cern_stuff', 
+              #        libs   = 'gfortran',
+              #               libs   = 'g2c',
+              vnum     = '0.1.0' )
     

@@ -9,12 +9,13 @@ def build( bld ):
     
     sources = bld.path.ant_glob('*.cc')
     
-    lib = bld( features = 'cxx cshlib', 
-               source = sources,
-               target = 'toadspsf', 
-               includes = [ '.', '../src_utils', '../src_base', '../src' ], 
-               libs     = [ 'm' ], 
-               uselib_local = [ 'toadslib', 'toads_base', 'toads_utils' ],
-               vnum     = '0.1.0' )
+    lib = bld.shlib(# features = 'cxx cshlib', 
+        source = sources,
+        target = 'toadspsf', 
+        includes = [ '.', '../src_utils', '../src_base', '../src' ], 
+        libs     = [ 'm' ], 
+        use = [ 'toadslib', 'toads_base', 'toads_utils' ],
+        vnum     = '0.1.0',
+        rpath    = bld.env['PREFIX'] + '/lib')
     
-    lib.rpath = bld.env['PREFIX'] + '/lib'
+    #    lib.rpath = bld.env['PREFIX'] + '/lib'

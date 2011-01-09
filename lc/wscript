@@ -5,29 +5,35 @@
 
 def build( bld ):
     
-    sources = bld.path.ant_glob('*.cc').split()
+    sources = bld.path.ant_glob('*.cc', 
+                                excl=['lightcurveguru.cc', 
+                                      'psfphot.cc', 
+                                      'daopsfphot.cc', 
+                                      'daopsffitphot.cc'])
     
-    sources.remove('lightcurveguru.cc')
-    sources.remove('psfphot.cc')
-    sources.remove('daopsfphot.cc')
-    sources.remove('daopsffitphot.cc')
+    #    sources.remove('lightcurveguru.cc')
+    #    sources.remove('psfphot.cc')
+    #    sources.remove('daopsfphot.cc')
+    #    sources.remove('daopsffitphot.cc')
     
-    lib = bld( features = "cxx cshlib", 
-               source   = sources,
-               target   = 'toadslc', 
-               includes = [ '.', 
-                            '../src_base', 
-                            '../src_utils', 
-                            '../src',
-                            '../psf' ], 
-               libs     = [ 'm' ], 
-               uselib_local = [ 'toads_base', 
-                                'toads_utils', 
-                                'toadspsf', 
-                                'toadslib' ],
-               vnum     = '0.1.0' )
+    lib = bld.shlib(
+        source   = sources,
+        target   = 'toadslc', 
+        includes = [ '.', 
+                     '../src_base', 
+                     '../src_utils', 
+                     '../src',
+                     '../psf' ], 
+        lib      = [ 'm' ], 
+        use      = [ 'toads_base', 
+                     'toads_utils', 
+                     'toadspsf', 
+                     'toadslib' ],
+        vnum     = '0.1.0', 
+        rpath    = bld.env['PREFIX'] + '/lib'
+        )
     
-    lib.rpath = bld.env['PREFIX'] + '/lib'
+#    lib.rpath = bld.env['PREFIX'] + '/lib'
 
 
 #     bld( features = "cxx cprogram", 

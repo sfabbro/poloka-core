@@ -9,29 +9,28 @@ def build( bld ):
     
     sources = "fitsimagearray.cc fitsset.cc fringeutils.cc superflat.cc"
         
-    lib = bld( features = 'cxx cshlib', 
-               source = sources,
-               target = 'toadsflat', 
-               includes = [ '.', '../src_utils', '../src_base', '../src' ], 
-               libs     = [ 'm' ], 
-               uselib_local = [ 'toadslib', 'toads_base', 'toads_utils' ],
-               vnum     = '0.1.0' )
-    
-    lib.rpath = bld.env['PREFIX'] + '/lib'
+    lib = bld.shlib(
+        source = sources,
+        target = 'toadsflat', 
+        includes = [ '.', '../src_utils', '../src_base', '../src' ], 
+        libs     = [ 'm' ], 
+        use = [ 'toadslib', 'toads_base', 'toads_utils' ],
+        vnum     = '0.1.0', 
+        rpath    = bld.env['PREFIX'] + '/lib')
     
     
     prog_sources = "correlation.cc defringe.cc fringefinder.cc trim.cc".split()
     for src in prog_sources:
         
         target = src.replace('.cc', '')
-        prog = bld ( features = 'cxx cprogram', 
-                     source = src, 
-                     target = target, 
-                     includes = [ '.', '../src', '../src_utils', '../src_base' ],
-                     uselib_local = [ 'toadslib', 'toads_base', 
-                                        'toads_utils', 'toadsflat' ] )
+        prog = bld.program(
+            source = src, 
+            target = target, 
+            includes = [ '.', '../src', '../src_utils', '../src_base' ],
+            use = [ 'toadslib', 'toads_base', 
+                    'toads_utils', 'toadsflat' ] )
         prog.rpath = bld.env['PREFIX'] + '/lib'
-
+        
     # install the headers 
     headers = bld.path.ant_glob( '*.h' )
     bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)

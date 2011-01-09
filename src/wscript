@@ -27,30 +27,29 @@ def build( bld ):
     bld ( name = 'bis', 
           source = 'dbfileParse.y', 
           target = [ 'dbfileParse.c', 'dbfileParse.h', ], 
-          rule   = 'bison -y -l -d ${SRC} -o ${TGT[0].abspath(env)}',
+          rule   = 'bison -y -l -d ${SRC} -o ${TGT[0].abspath()}',
           includes = [ '.' ],
           before   = 'cc cxx'
           )
 
-    lib = bld( name = 'toadslib', 
-               features = 'cc cxx cshlib', 
-               source = sources + ' dbfileParse.c dbfileLex.c' ,
-               target = 'toadslib', 
-               includes = [ '.', '../src_utils', '../src_base' ],
-               libs     = libs, 
-               #                libpath  = [ '../../sex/build/default/src', 
-               #                             '../../sex/build/default/src/wcs', 
-               #                             '../../sex/build/default/src/fits', 
-               #                             '../../cfitsio/src'], 
-               uselib_local = local_libs, 
-               uselib = ['SEX','CFITSIO' ],
-               vnum     = '0.1.0' )
+    #    cdir = os.path.join(bld.bdir,bld.env.NAME)
+    lib = bld.shlib(name = 'toadslib', 
+                     #               features = 'cc cxx cshlib', 
+                    source = sources + ['dbfileParse.c', 'dbfileLex.c'],
+                    #                    source = sources + ['dbfileParse.y', 'dbfileLex.l'],                    
+                    target = 'toadslib', 
+                    includes = [ '.', '../src_utils', '../src_base' ],
+                    lib      = libs, 
+                    use      = local_libs, 
+                    uselib = ['SEX','CFITSIO' ],
+                    vnum     = '0.1.0')
+    #                    rpath    = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']])
     
-    cdir = os.path.join(bld.bdir,bld.env.NAME)
-    lib.rpath = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]    
+
+    #    lib.rpath = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]    
     
     # install the headers 
-    headers = bld.path.ant_glob( '*.h' ) + " starlist.cc"
+    headers = bld.path.ant_glob( '*.h' ) + [ " starlist.cc" ]
     bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
     
     

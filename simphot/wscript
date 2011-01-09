@@ -5,39 +5,41 @@
 
 def build( bld ):
     
-    sources = bld.path.ant_glob('*.cc').split()
+    sources = bld.path.ant_glob('*.cc', 
+                                excl=['mklc.cc', 
+                                      'testlc.cc', 
+                                      'testpsf.cc'])
     
-    sources.remove('mklc.cc')
-    sources.remove('testlc.cc')
-    sources.remove('testpsf.cc')
+    # sources.remove('mklc.cc')
+    # sources.remove('testlc.cc')
+    # sources.remove('testpsf.cc')
 
-#    print sources 
+    #    print sources 
     
-    lib = bld( features = "cxx cshlib", 
-               source   = sources,
-               target   = 'simphot', 
-               includes = [ '.', 
-                            '../src_base', 
-                            '../src_utils', 
-                            '../src',
-                            '../psf' ], 
-               libs     = [ 'm' ], 
-               uselib_local = [ 'toads_base', 
-                                'toads_utils', 
-                                'toadspsf'],
-               vnum     = '0.1.0' )
+    lib = bld.shlib(
+        source   = sources,
+        target   = 'simphot', 
+        includes = [ '.', 
+                     '../src_base', 
+                     '../src_utils', 
+                     '../src',
+                     '../psf' ], 
+        libs     = [ 'm' ], 
+        use      = [ 'toads_base', 
+                     'toads_utils', 
+                     'toadspsf'],
+        vnum     = '0.1.0', 
+        rpath    = bld.env['PREFIX'] + '/lib')
     
-    lib.rpath = bld.env['PREFIX'] + '/lib'
-    
-    prog = bld( features = "cxx cprogram", 
-                source   = "mklc.cc",
-                target   = "mklc",
-                includes = [ '.',
-                             '../src_base',
-                             '../src_utils',
-                             '../src' ],
-                uselib_local = [ 'toads_base', 
-                                 'toads_utils', 
-                                 'simphot' ])
+    prog = bld.program(
+        source   = "mklc.cc",
+        target   = "mklc",
+        includes = [ '.',
+                     '../src_base',
+                     '../src_utils',
+                     '../src' ],
+        use = [ 'toads_base', 
+                'toads_utils', 
+                'simphot' ])
     prog.rpath = bld.env['PREFIX'] + '/lib'
          
