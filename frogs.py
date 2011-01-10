@@ -71,19 +71,6 @@ def configure(conf):
     
     print "*** WAF: loading FROGS specific stuff ***"
     
-    # compatibility with 'fs sys' 
-    # symbolic link -> out 
-    # arch naming scheme: 
-    #    at_sys_name = None
-    #    if Options.options.enable_lyon:
-    #        if conf.find_program('fs') and \
-        #           os.system('fs sys') == 0:
-        #            ret = commands.getstatusoutput('fs sys')[1]
-        #            at_sys_name = ret.split("'")[-2]
-        #            targ = 'build.'+ at_sys_name
-        #            conf.env['AFS_SYS_NAME'] = at_sys_name
-        
-
     # c compiler 
     conf.check_tool( 'compiler_cc' )
     conf.env['CCFLAGS'] = ['-fPIC', '-DPIC']
@@ -185,17 +172,15 @@ def check_cernlib(conf, mandatory=True):
                 elif s.startswith('-l'):
                     current_libs.append(s[2:])
 
+        for stlib in static_libs:
+            conf.check_cc(stlib=stlib, uselib_store='CERN')
+        for dylib in dy_libs:
+            conf.check_cc(lib=dylib, uselib_store='CERN')
             
-        conf.env.STATICLIB_CERN     = static_libs
-        conf.env.STATICLIBPATH_CERN = static_libpaths
-        conf.env.LIB_CERN     = dy_libs
-        conf.env.LIBPATH_CERN = dy_libpaths
-
                 
     def parse_traditional_cernlib(conf, l):
         """
         """
-
         static_libs = []
         static_libpaths = []
         dy_libs = []
@@ -215,10 +200,15 @@ def check_cernlib(conf, mandatory=True):
             elif s.startswith('-L'):
                 dy_libpaths.append(s[2:].replace('@sys', afs_sys_name))
 
-        conf.env.STATICLIB_CERN = static_libs
-        conf.env.STATICLIBPATH_CERN = static_libpaths
-        conf.env.LIB_CERN       = dy_libs
-        conf.env.LIBPATH_CERN   = dy_libpaths
+        for stlib in static_libs:
+            conf.check_cxx(stlib=stlib)
+        for dylib in dy_libs:
+            conf.check_cxx(lib=dylib)
+
+        #        conf.env.STLIB_CERN = static_libs
+        #        conf.env.STATICLIBPATH_CERN = static_libpaths
+        #        conf.env.LIB_CERN       = dy_libs
+        #        conf.env.LIBPATH_CERN   = dy_libpaths
 
                 
                     

@@ -9,12 +9,13 @@ import shlex
 
 import Options
 import Configure
+import frogsutils 
 
 
 APPNAME  = 'poloka'
 VERSION  = '0.1.0'
 top   = '.'
-out   = 'build'
+out   = frogsutils.get_out_name()
 description = "This is poloka."
 requirements = [
     ('sex', '2.4.4', True), 
@@ -44,6 +45,7 @@ def configure(conf):
     
     # cernlib
     conf.check_cernlib()
+    #    conf.check_cxx(stlib='packlib')
     
     # requirements 
     conf.check_packages(requirements)    
