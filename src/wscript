@@ -34,9 +34,7 @@ def build( bld ):
 
     #    cdir = os.path.join(bld.bdir,bld.env.NAME)
     lib = bld.shlib(name = 'toadslib', 
-                     #               features = 'cc cxx cshlib', 
                     source = sources + ['dbfileParse.c', 'dbfileLex.c'],
-                    #                    source = sources + ['dbfileParse.y', 'dbfileLex.l'],                    
                     target = 'toadslib', 
                     includes = [ '.', '../src_utils', '../src_base' ],
                     lib      = libs, 
@@ -44,12 +42,12 @@ def build( bld ):
                     uselib = ['SEX','CFITSIO' ],
                     vnum     = '0.1.0')
     #                    rpath    = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']])
-    
-
     #    lib.rpath = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]    
     
     # install the headers 
-    headers = bld.path.ant_glob( '*.h' ) + [ " starlist.cc" ]
-    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
+    headers  = bld.path.ant_glob('*.h')
+    starlist = bld.path.ant_glob('starlist.cc')
+    
+    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers + starlist)
     
     
