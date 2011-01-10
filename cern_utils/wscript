@@ -22,7 +22,7 @@ def build( bld ):
         target = 'im2tup', 
         includes = [ '.', '../src_base' ],
         lib      = [ 'm', 'cfitsio', 'z' ],
-        uselib = 'cern',
+        uselib = 'CERN',
         use = [ 'toads_base', 'toads_utils'],
         vnum     = '0.1.0', 
         rpath = bld.env['PREFIX'] + '/lib')
