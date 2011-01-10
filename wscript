@@ -8,32 +8,21 @@ import Options
 import Configure
 import commands
 import shlex
+import frogs
+
 
 APPNAME  = 'poloka'
 VERSION  = '0.1.0'
 top   = '.'
-out   = 'build'
-
+out   = frogs.get_out_name()
 
 
 def options(opt):
     
-    opt.load('compiler_cc')
-    opt.load('compiler_cxx')
-    opt.load('compiler_fc')
+    opt.load('frogs')
     opt.load('flex')
     opt.load('bison')
         
-    opt.add_option('--with-cfitsio', action='store', help='Path to the cfitsio root dir')
-    opt.add_option('--with-sex', action='store', help='Path to the cfitsio root dir')
-    
-    opt.add_option('--no-global-lapack', action='store_false',
-                   default=True, dest='global_lapack',
-                   help='use/no do use system lapack library')
-    
-    opt.add_option("--no-cernlib", action='store_false', 
-                   default=True, dest='cernlib', 
-                   help='do not try to link with cernlib')
 
 def parse_cernlib_flags(line,uselib,env,at_sys_name):
     """
@@ -84,25 +73,25 @@ def parse_cernlib_flags(line,uselib,env,at_sys_name):
 
 
 
-def configure( conf ):
+def configure(conf):
 
     at_sys_name = None
     
-#    if conf.find_program('fs') and os.system('fs sys') == 0:
-#       ret = commands.getstatusoutput('fs sys')[1]
-#       at_sys_name = ret.split("'")[-2]
-#       targ = 'build.'+ at_sys_name
-#   else:
+    #    if conf.find_program('fs') and os.system('fs sys') == 0:
+    #       ret = commands.getstatusoutput('fs sys')[1]
+    #       at_sys_name = ret.split("'")[-2]
+    #       targ = 'build.'+ at_sys_name
+    #   else:
     ret = os.uname()
     targ = 'build.'+ ret[0]+'-'+ret[-1]
     try:
         os.remove('core')
     except OSError :
         pass
-    
-    
-    conf.env.NAME=targ
-    conf.env.set_variant(targ)
+        
+    #    conf.env.NAME=targ
+    #    conf.env.set_variant(targ)
+    #    out = targ
         
     # c compiler 
     conf.check_tool( 'compiler_cc' )
@@ -114,7 +103,8 @@ def configure( conf ):
     conf.check_tool( 'compiler_cxx' )
     conf.env.append_value( 'CXXFLAGS', [ '-fPIC', '-DPIC', '-g','-O3'] );
     
-    # fortran compilers (check it after you have checked the 'c' compiler)
+    # fortran compilers 
+    # apparently, we need to check for a c-compiler before.
     conf.load( 'compiler_fc')
     conf.check_fortran()
     conf.check_fortran_verbose_flag()

@@ -29,18 +29,13 @@ def scan_for_types( filename ):
     return ret_ttester, ret_tselector
 
 
-
 def gen_alltelinst(task):
     """
     Generate the alltelinst.h and alltelinst.cc files.
     """
     
-    #    print task.inputs
-    #    print task.outputs
-    
-    #    src = task.inputs[0].srcpath(task.env)
-    src = task.inputs[0].srcpath()
-
+    telinst_sources = [f.srcpath() for f in task.inputs]
+    telinst_sources.sort(reverse=True)
     
     # code fragments from task inputs 
     src_list = ""
@@ -49,8 +44,7 @@ def gen_alltelinst(task):
     declaration_list = ""
     is_of_kind_list = ""
     
-    for src in task.inputs:
-        src_path = src.srcpath()
+    for src_path in telinst_sources:
         src_list  = src_list + " " + src_path
         include_list = include_list + '\n#include "../telinst/%s"' % op.basename(src_path)
         ttype, acctype = scan_for_types(src_path)
@@ -89,8 +83,6 @@ static AcceptorType AcceptorsArray [] = {
     f.close()
 
 
-
-
 def build(bld):
     
     sources = bld.path.ant_glob('*.cc', excl=['virtualinstrument.cc', 
@@ -98,19 +90,7 @@ def build(bld):
     c_sources = bld.path.ant_glob('*.c', excl='slasub.c')
     
     #    bld.path.find_dir('../telinst').abspath()
-    telinst_sources = bld.path.find_dir('../telinst').ant_glob('*.cc') # flat=False)
-    #    telinst_sources.sort(reverse=True)
-    
-    #    ll = []
-    #    for s in telinst_sources:
-    #        ll.append((str(s), s))
-    #    # Reverse the sort because the SniffTelInst scans backwards
-    #    ll.sort(reverse=True)
-    #    for s in ll:
-    #        src.append(s)
-    #        src = src + " " + s[1].srcpath()
-    #        #        src = src + " " + s.srcpath(bld.env)
-        
+    telinst_sources = bld.path.find_dir('../telinst').ant_glob('*.cc')    
     bld ( name   = 'alltelinst', 
           rule = gen_alltelinst, 
           source = telinst_sources,
@@ -131,7 +111,7 @@ def build(bld):
         includes = [ '.' ], 
         lib      = libs, 
         use      = local_libs,
-        uselib = ['CFITSIO'],
+        uselib   = ['CFITSIO'],
         vnum     = '0.1.0', 
         after    = 'alltelinst', 
         rpath    = [bld.env['PREFIX'] + '/lib'] )    
