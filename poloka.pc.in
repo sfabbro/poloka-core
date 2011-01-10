@@ -5,7 +5,8 @@ includedir=${prefix}/include/poloka-@VERSION@
 Name: poloka
 Description: This is poloka
 Version: @VERSION@
-Libs: -L${libdir} -ltoadslib -ltoads_base -ltoads_utils -ltoadsmc -ltoadsflat
+# Libs: -L${libdir} -ltoadslib -ltoads_base -ltoads_utils -ltoadsmc -ltoadsflat
+Libs: @ALL_LIBS@
 Libs.private: -lm
 Requires: cfitsio-3.006 sex-2.4.4
 Cflags: -I${includedir}

@@ -3,7 +3,11 @@
 import os
 import os.path as op
 import sys
+import commands
 
+import Configure 
+import Options
+from waflib import Context
 
 
 def get_out_name():
@@ -15,7 +19,6 @@ def get_out_name():
     out_name = 'build.'+ ret[0]+'-'+ret[-1]
     return op.join('build', out_name)
 
-    
 
 def options(opt):
     """
@@ -41,5 +44,279 @@ def options(opt):
                    default=True, 
                    dest='cernlib', 
                    help='do not try to link with cernlib')
+    opt.add_option('--debug', 
+                   action='store', 
+                   default=True, 
+                   dest='debug', 
+                   type=int,
+                   help='turn on the -g option')
+    opt.add_option('--optimize', 
+                   action='store', 
+                   default=False, 
+                   dest='optimize', 
+                   type=int,
+                   help='turn on the -O3 option')    
+    opt.add_option('--enable_lyon', 
+                   action='store_true', 
+                   default=False,
+                   dest='enable_lyon',
+                   help='We are at CCIN2P3. Things behave strangely there')
+
+
+@Configure.conftest 
+def configure(conf):
+    """
+    Loads all the tools usually needed to compile poloka and co 
+    """
+    
+    print "*** WAF: loading FROGS specific stuff ***"
+    
+    # compatibility with 'fs sys' 
+    # symbolic link -> out 
+    # arch naming scheme: 
+    #    at_sys_name = None
+    #    if Options.options.enable_lyon:
+    #        if conf.find_program('fs') and \
+        #           os.system('fs sys') == 0:
+        #            ret = commands.getstatusoutput('fs sys')[1]
+        #            at_sys_name = ret.split("'")[-2]
+        #            targ = 'build.'+ at_sys_name
+        #            conf.env['AFS_SYS_NAME'] = at_sys_name
+        
+
+    # c compiler 
+    conf.check_tool( 'compiler_cc' )
+    conf.env['CCFLAGS'] = ['-fPIC', '-DPIC']
+    
+    # c++ compiler 
+    conf.check_tool( 'compiler_cxx' )
+    conf.env['CXXFLAGS'] = ['-fPIC', '-DPIC']
+    
+    # fortran compilers 
+    # apparently, we need to check for a c-compiler before.
+    conf.load( 'compiler_fc')
+    conf.check_fortran()
+    conf.check_fortran_verbose_flag()
+    conf.check_fortran_clib()
+    conf.check_fortran_dummy_main()
+    conf.check_fortran_mangling()
+
+    # Debug option 
+    if conf.options.debug == True:
+        conf.env['CCFLAGS'].append('-g')
+        conf.env['CXXFLAGS'].append('-g')
+    
+    # Optimizer ? 
+    if conf.options.optimize == True:
+        conf.env['CCFLAGS'].append('-O3')
+        conf.env['CXXFLAGS'].append('-O3')
+    
+    # lapack
+    if conf.options.global_lapack:
+        if conf.check_cc( lib='lapack', msg='checking for lapack' ):
+            conf.env.global_lapack = True
+        else:
+            conf.env.global_lapack = False
+        
+
+def load_pkg_config(conf):
+    """
+    Load pkg-config (used to read the package metadata)
+    """
+    
+    # first, we need pkg-config 
+    if not conf.env['PKG_CONFIG'] or \
+       not conf.env['PKG_CONFIG_PATH']:
+        try:
+            conf.find_program('pkg-config', var='PKG_CONFIG')
+            pkgcpath = op.join( conf.env.PREFIX, 'lib', 'pkgconfig')
+            if os.environ.has_key('PKG_CONFIG_PATH'):
+                os.environ['PKG_CONFIG_PATH'] = pkgcpath + ":" + os.environ['PKG_CONFIG_PATH']
+            else:
+                os.environ['PKG_CONFIG_PATH'] = pkgcpath
+        except Configure.ConfigurationError:
+            conf.fatal('pkg-config not found')
+    
+
+@Configure.conftest
+def check_cernlib(conf, mandatory=True):
+    """
+    Attempt to see whether the cernlib is around. 
+    
+    Using the cernlib is a bit tricky. As of today, the shared
+    versions of cernlib are known not to work on 64-bit linux. So, we
+    attempt to locate the static libs.
+    """
+    
+    if not conf.options.cernlib:
+        return
+    
+    def parse_new_cernlib(conf, l):
+        
+        s = ""
+        static_libs = []
+        static_libpaths = []
+        dy_libs = []
+        dy_libpaths = []
+        
+        current_libs  = None
+        current_libpaths = None
+        afs_sys_name = conf.env['AFS_SYS_NAME']
+        if afs_sys_name == []: afs_sys_name = ""
+        
+        while True:
+            try: 
+                s = l.pop(0)
+            except: 
+                break
+            
+            if s.startswith('-Wl,-static'):
+                current_libs = static_libs
+                current_libpaths = static_libpaths
+            elif s.startswith('-Wl,-dy'):
+                current_libs = dy_libs
+                current_libpaths = dy_libpaths
+            else:
+                if current_libs == None or \
+                   current_libpaths == None:
+                    conf.fatal('unable to parse cernlib output')
+                elif s.startswith('-L'):
+                    current_libpaths.append(s[2:].replace('@sys', afs_sys_name))
+                elif s.startswith('-l'):
+                    current_libs.append(s[2:])
+
+            
+        conf.env.STATICLIB_CERN     = static_libs
+        conf.env.STATICLIBPATH_CERN = static_libpaths
+        conf.env.LIB_CERN     = dy_libs
+        conf.env.LIBPATH_CERN = dy_libpaths
+
+                
+    def parse_traditional_cernlib(conf, l):
+        """
+        """
+
+        static_libs = []
+        static_libpaths = []
+        dy_libs = []
+        dy_libpaths = []
+        afs_sys_name = conf.env['AFS_SYS_NAME']
+        if afs_sys_name == []: afs_sys_name = ""
+        
+        while True:
+            try: s = l.pop(0)
+            except: break
+            if s.startswith('/'):
+                # we should check that these things exist ...
+                static_libs.append(op.basename(s))
+                static_libpaths.append(op.dirname(s).replace('@sys', afs_sys_name))
+            elif s.startswith('-l'):
+                dy_libs.append(s[2:])
+            elif s.startswith('-L'):
+                dy_libpaths.append(s[2:].replace('@sys', afs_sys_name))
+
+        conf.env.STATICLIB_CERN = static_libs
+        conf.env.STATICLIBPATH_CERN = static_libpaths
+        conf.env.LIB_CERN       = dy_libs
+        conf.env.LIBPATH_CERN   = dy_libpaths
+
+                
+                    
+    conf.find_program('cernlib', mandatory=mandatory)
+    ret = commands.getstatusoutput('cernlib packlib kernlib')
+    if ret[0] != 0:
+        if mandatory:
+            conf.fatal('unable to locate cernlib')
+        else:
+            conf.env['HAVE_CERN'] = 0
+            return
+        
+    # if we got something from `cernlib`,
+    # we attempt to extract the paths from it.
+    l = ret[1].split()
+    if l[0].startswith('-Wl,-static'):
+        parse_new_cernlib(conf, l)
+    else:
+        parse_traditional_cernlib(conf, l)
+    
+    conf.env['HAVE_CERN'] = 1
+
+
+@Configure.conftest
+def check_packages(conf, pkg_list):
+    """
+    - Check whether the packages passed in argument 
+      can be found by pkg-config. 
+    - Parse the cflags and libs and store the information 
+      in the uselib_store.
+    """
+    
+    load_pkg_config(conf)
+
+    # check for the packages passed in arguments 
+    for pkg in pkg_list:
+        try:
+            pkg_name, pkg_version, pkg_mandatory = pkg
+            conf.check_cfg(args='--cflags --libs', 
+                           package = pkg_name + '-' + pkg_version, 
+                           mandatory=pkg_mandatory, 
+                           uselib_store=pkg_name.upper())
+        except Configure.ConfigurationError:
+            conf.fatal('unable to locate %s-%s (mandatory)' % (pkg_name, pkg_version))
 
     
+def install_headers(bld, headers):
+    """
+    Just hide the install header commands 
+    """
+    name    = Utils.g_module.APPNAME
+    version = Utils.g_module.VERSION
+    install_dir = op.join('$PREFIX', 'include', '%s-%s' % (name, version))
+    
+    bld.install_files(install_dir, headers)
+
+
+def gen_pkgconfig(bld):
+    
+    # solution directly from T. Nagy (see email in google-groups)
+    from waflib.TaskGen import feature, before
+    @feature('subst')
+    @before('process_subst')
+    def read_libs(self):
+        for g in self.bld.groups:
+            for tg in g:
+                try:
+                    if 'cshlib' in tg.features or \
+                       'cxxshlib' in tg.features or \
+                       'fcshlib' in tg.features:
+                        # or 'cxxshlib'/'fcshlib'/'dshlib' in tg.features
+                        self.env.append_value('ALL_LIBS', "-l" + tg.name)
+                    
+                except:
+                    pass
+                
+
+    appname = Context.g_module.APPNAME
+    version = Context.g_module.VERSION    
+    description = Context.g_module.description
+    reqs = Context.g_module.requirements
+    requirements = ""
+    for r in reqs:
+        requirements += r[0] + "-" + r[1] + " "
+    
+    obj = bld(features = 'subst', 
+              target = '%s-%s.pc' % (appname, version),
+              source = 'pc.in', 
+              install_path =  '${PREFIX}/lib/pkgconfig/',
+              PREFIX = bld.env['PREFIX'], 
+              APPNAME   = appname,
+              DESCRIPTION = description,
+              VERSION = version,
+              REQUIREMENTS = requirements,
+              LIBS = ["-L${libdir} "] + bld.env['ALL_LIBS'])
+    
+    
+
+# for the moment, we hook up this function 
+# to the main module... May change in the future 
+Context.g_module.__dict__['gen_pkgconfig'] = gen_pkgconfig
