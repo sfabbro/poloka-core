@@ -1,7 +1,0 @@
-*_dict.cc
-*_dict.h
-*__persister.h
-*.lo
-*.la
-Makefile
-Makefile.in
