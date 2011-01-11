@@ -18,6 +18,24 @@ def get_out_name():
     return op.join('build', out_name)
 
 
+def get_afs_sys_name():
+    """
+    Attempt to get the afs sysname 
+    """
+
+    try:
+        ret = commands.getstatusoutput('fs sys')
+        if ret[0] != 0: 
+            os.remove('core')
+            raise ConfigurationError()
+    except:
+        raise ConfigurationError('unable to run fs sys')
+
+    at_sys_name = ret[1].split("'")[-2]
+
+    return at_sys_name
+
+
 def get_out_name_afs():
     """
     Generate an architecture-dependant output file, 

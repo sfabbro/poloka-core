@@ -9,6 +9,8 @@ import Configure
 import Options
 from waflib import Context
 
+import frogsutils
+
 
 def get_out_name():
     """
@@ -72,11 +74,11 @@ def configure(conf):
     print "*** WAF: loading FROGS specific stuff ***"
     
     # c compiler 
-    conf.check_tool( 'compiler_cc' )
+    conf.load( 'compiler_c' )
     conf.env['CCFLAGS'] = ['-fPIC', '-DPIC']
     
     # c++ compiler 
-    conf.check_tool( 'compiler_cxx' )
+    conf.load( 'compiler_cxx' )
     conf.env['CXXFLAGS'] = ['-fPIC', '-DPIC']
     
     # fortran compilers 
@@ -134,7 +136,7 @@ def check_cernlib(conf, mandatory=True):
     versions of cernlib are known not to work on 64-bit linux. So, we
     attempt to locate the static libs.
     """
-    
+
     if not conf.options.cernlib:
         return
     
@@ -172,6 +174,11 @@ def check_cernlib(conf, mandatory=True):
                 elif s.startswith('-l'):
                     current_libs.append(s[2:])
 
+        print static_libs
+        print static_libpaths
+        print dylib
+        print dy_libpaths
+
         for stlib in static_libs:
             conf.check_cc(stlib=stlib, uselib_store='CERN')
         for dylib in dy_libs:
@@ -181,12 +188,13 @@ def check_cernlib(conf, mandatory=True):
     def parse_traditional_cernlib(conf, l):
         """
         """
+
         static_libs = []
         static_libpaths = []
         dy_libs = []
         dy_libpaths = []
-        afs_sys_name = conf.env['AFS_SYS_NAME']
-        if afs_sys_name == []: afs_sys_name = ""
+        
+        afs_sys_name = frogsutils.get_afs_sys_name()
         
         while True:
             try: s = l.pop(0)
@@ -200,15 +208,18 @@ def check_cernlib(conf, mandatory=True):
             elif s.startswith('-L'):
                 dy_libpaths.append(s[2:].replace('@sys', afs_sys_name))
 
-        for stlib in static_libs:
-            conf.check_cxx(stlib=stlib)
-        for dylib in dy_libs:
-            conf.check_cxx(lib=dylib)
 
-        #        conf.env.STLIB_CERN = static_libs
-        #        conf.env.STATICLIBPATH_CERN = static_libpaths
-        #        conf.env.LIB_CERN       = dy_libs
-        #        conf.env.LIBPATH_CERN   = dy_libpaths
+#        for stlib in static_libs:
+#            conf.check_cxx(stlib=stlib)
+#        for dylib in dy_libs:
+#            conf.check_cxx(lib=dylib)
+
+
+
+        conf.env.STLIB_CERN = static_libs
+        conf.env.STATICLIBPATH_CERN = static_libpaths
+        conf.env.LIB_CERN       = dy_libs
+        conf.env.LIBPATH_CERN   = dy_libpaths
 
                 
                     
