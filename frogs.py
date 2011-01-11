@@ -201,23 +201,19 @@ def check_cernlib(conf, mandatory=True):
             except: break
             if s.startswith('/'):
                 # we should check that these things exist ...
-                static_libs.append(op.basename(s))
+                libname = op.basename(s)
+                if libname.startswith('lib'):
+                    libname = libname[3:-2]
+                static_libs.append(libname)
                 static_libpaths.append(op.dirname(s).replace('@sys', afs_sys_name))
             elif s.startswith('-l'):
                 dy_libs.append(s[2:])
             elif s.startswith('-L'):
                 dy_libpaths.append(s[2:].replace('@sys', afs_sys_name))
 
-
-#        for stlib in static_libs:
-#            conf.check_cxx(stlib=stlib)
-#        for dylib in dy_libs:
-#            conf.check_cxx(lib=dylib)
-
-
-
+                
         conf.env.STLIB_CERN = static_libs
-        conf.env.STATICLIBPATH_CERN = static_libpaths
+        conf.env.STLIBPATH = static_libpaths
         conf.env.LIB_CERN       = dy_libs
         conf.env.LIBPATH_CERN   = dy_libpaths
 
