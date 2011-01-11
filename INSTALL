@@ -1,5 +1,48 @@
-Install for poloka
+There are two ways to compile and install poloka. You may use either 
+  - autoconf/automake (somewhat broken) 
+  - waf 
 
+Install (waf)
+=============
+
+ (*) install sex and cfitsio first
+     $ git clone snova1.in2p3.fr:/home/frogshome/git/sex.git 
+     $ cd sex
+     $ ./waf configure --prefix=../local 
+     $ ./waf install 
+     $ git clone snova1.in2p3.fr:/home/frogshome/git/cfitsio
+     $ cd cfitsio
+     $ ./waf configure --prefix=../local 
+     $ ./waf install 
+     
+  (*) install poloka 
+     $ git clone snova1.in2p3.fr:/home/frogshome/git/poloka 
+     $ ./waf configure --prefix=../local [OPTIONS]
+     $ ./waf install 
+
+  (*) Configure options: 
+      --optimize          turn on -O3 (default)
+      --debug             turn on -g 
+      --no-cernlib        disable cernlib (for C. Lidman)
+      --no-global-lapack  link with small lapack lib that comes with poloka
+
+  (*) AT LYON
+  -----------
+      Everything seems to work fine at Lyon, except that 
+         (*) we have to use g77 to link with the cernlibs. 
+         (*) lapack / atlas installed on the SL5 machines 
+             on the other hand seems to have been compiled with gfortran
+         (I may be wrong, I have sent an email to user.support 
+          to ask for more details)
+
+      Hence, we have to issue:
+      $ setenv FC g77 
+      $ ./waf configure --prefix=../local --no-global-lapack 
+      $ ./waf install
+
+
+Install for poloka (traditional)
+================================
   1) autogen.sh
   1.5) there 2 options essentialy mandatory to configure:
        --enable-cmt (to locate sextractor and cfitsio)
