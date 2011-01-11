@@ -174,11 +174,6 @@ def check_cernlib(conf, mandatory=True):
                 elif s.startswith('-l'):
                     current_libs.append(s[2:])
 
-        print static_libs
-        print static_libpaths
-        print dylib
-        print dy_libpaths
-
         for stlib in static_libs:
             conf.check_cc(stlib=stlib, uselib_store='CERN')
         for dylib in dy_libs:
