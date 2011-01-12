@@ -5,24 +5,14 @@
 
 def build( bld ):
     
-        
-    prog1 = bld.program(
-        source = 'l2tup.cc',
-        target = 'l2tup', 
-        includes = [ '.', '../src_base' ],
-        lib      = [ 'm', 'cfitsio', 'z'],
-        uselib = 'CERN',
-        use = ['toads_base', 'toads_utils'],
-        vnum     = '0.1.0', 
-        rpath = bld.env['PREFIX'] + '/lib')
-
-    prog2 = bld.program(
-        source = 'im2tup.cc',
-        target = 'im2tup', 
-        includes = [ '.', '../src_base' ],
-        lib      = [ 'm', 'cfitsio', 'z' ],
-        uselib = 'CERN',
-        use = ['toads_base', 'toads_utils'],
-        vnum     = '0.1.0', 
-        rpath = bld.env['PREFIX'] + '/lib')
+    for tg in ['l2tup','im2tup','2im2tup'] :
+        prog = bld.program(
+            source = tg+'.cc',
+            target = tg,
+            includes = [ '.', '../src_base' ],
+            lib      = [ 'm', 'cfitsio', 'z'],
+            uselib = 'CERN',
+            use = ['toads_base', 'toads_utils'],
+            vnum     = '0.1.0', 
+            rpath = bld.env['PREFIX'] + '/lib')
 
