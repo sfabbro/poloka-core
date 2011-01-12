@@ -20,20 +20,23 @@ ostream& lc_write(ostream& Stream, const RefStarList& Objects, const ReducedImag
  
  \code
  
- # X Y [DATE_MIN=DD/MM/YYYY DATE_MAX=DD/MM/YYYY NAME=toto ]
+ # X Y [DATE_MIN=MJD_MIN DATE_MAX=MJD_MAX NAME=toto BAND=xyz]
+ # X Y : starting coordinates of the supernova
+ # Sn flux will be fitted on images within [date_min, date_max], and forced to zero outside. 
+ # NAME and BAND are used to name files on output. 
  OBJECTS
- 510.20 1043.98 DATE_MIN=10/08/2003 DATE_MAX=12/12/2003 NAME=R4D14-4
+ 510.20 1043.98 DATE_MIN=54xxx DATE_MAX=54yyy NAME=R4D14-4
  
  # The list of all DbImages in a single filter
  IMAGES
- DbImage1_R
- DbImage2_R
- DbImage1_I
- DbImage2_I
+ DbImage1
+ DbImage2
+ DbImage3
+ DbImage4
    .
    .
    .
- # Optional photometric reference. The default is the best seeing image.
+ # photometric reference. It should be the best seeing image 
  PHOREF
  PhoRefDbImage
  

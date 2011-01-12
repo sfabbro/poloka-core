@@ -265,6 +265,21 @@ go wrong.
 
 
 \section lightcurve Producing a lightcurve
+There are now two lightcurve packages. The one originally developed by 
+Sebastien Fabbro for his PhD (lc subdirectory), and the one written
+by Pierre Astier (simphot subdirectory). "lc" was further debugged by
+  Julien Guy (for the first year SNLS photometry), and "simphot" by Nicolas Fourmanoit (for the 5-year SNLS photometry). The key difference between both
+packages is that "lc" requires that images are geometrically aligned (i.e
+resampled), and psf-matched, while "simphot" resamples the model
+rather than the images, but requires PSF's of all input images. 
+As far as possible, the input and output files of both packages 
+are identical.  The comparison of both packages constitutes a
+big part of the Nicolas Fourmanoit's thesis. The bottom line is that
+  they agree at a few per mill level, and "simphot" (surprisingly)
+does very slightly better in terms of systematics residuals (on bright stars).
+We would expect "simphot" to do worse that "lc" because the latter 
+benefits from a PSF match to refine the geometrical alignment. 
+
 To build a lightcurve for a supernova we need to know where is the 
 supernova and on which night it has been observed. You then need 
 to produce a "lightfile" (see \ref lightfile) which mainly
@@ -273,14 +288,13 @@ to produce a "lightfile" (see \ref lightfile) which mainly
   pixel grid).
 Find a directory with a lot of space. Then type
 
-     make_lightcurve <myfile>
+  make_lightcurve <myfile>  (lc)
+     mklc <my_file>         (simphot)
 
 and go for coffee. See \ref lcresults for lightcurve results.
 This is basicaly the code used (on the French side) to produce the 
 SNLS light curves.
-A new scheme for computing light curves from  unregistered images has 
-been developed, and   passed the first tests. At variance with the 
-one decribed above, it was never tested on a large scale.
+
 
 
 
