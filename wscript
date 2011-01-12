@@ -40,9 +40,8 @@ def configure(conf):
     conf.env['BISONFLAGS'] = ['-y', '-l', '-d']
     
     # doxygen ? 
-    #    try: conf.load('doxygen')
-    #    except: pass
-    conf.find_program('doxygen', VAR='DOXYGEN')
+    conf.find_program('doxygen', VAR='DOXYGEN', 
+                      mandatory=False)
     
     # various headers & libraries 
     conf.check_cc( header_name='math.h' )
