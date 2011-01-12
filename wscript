@@ -49,7 +49,6 @@ def configure(conf):
     
     # cernlib
     conf.check_cernlib()
-    #    conf.check_cxx(stlib='packlib')
     
     # requirements 
     conf.check_packages(requirements)    
@@ -80,3 +79,4 @@ def build(bld):
 
     # pkg-config file 
     gen_pkgconfig(bld)
+

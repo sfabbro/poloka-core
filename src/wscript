@@ -3,6 +3,9 @@
 
 import pprint
 import os
+import frogsutils
+from waflib import Context
+
 def build( bld ):
     
     sources = bld.path.ant_glob('*.cc', bld=False)
@@ -41,13 +44,11 @@ def build( bld ):
                     use      = local_libs, 
                     uselib = ['SEX','CFITSIO' ],
                     vnum     = '0.1.0')
-    #                    rpath    = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']])
-    #    lib.rpath = [os.path.join(cdir,e) for e in ['src_base', 'src_utils', 'cern_stuff']]    
     
     # install the headers 
     headers  = bld.path.ant_glob('*.h')
     starlist = bld.path.ant_glob('starlist.cc')
     
-    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers + starlist)
+    bld.install_files('${PREFIX}/${PKG_INCDIR}', headers + starlist)
     
     

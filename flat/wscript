@@ -33,7 +33,7 @@ def build( bld ):
         
     # install the headers 
     headers = bld.path.ant_glob( '*.h' )
-    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
+    bld.install_files('${PREFIX}/${PKG_INCDIR}', headers)
     
     
 #     correlation = bld( features = 'cxx cprogram', 
