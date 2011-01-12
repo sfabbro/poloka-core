@@ -34,10 +34,15 @@ def configure(conf):
     conf.load('frogs')
     
     # flex and bison
-    conf.check_tool( 'flex' )
+    conf.load( 'flex' )
     conf.env['FLEXFLAGS'] = '' 
-    conf.check_tool( 'bison' )
+    conf.load( 'bison' )
     conf.env['BISONFLAGS'] = ['-y', '-l', '-d']
+    
+    # doxygen ? 
+    #    try: conf.load('doxygen')
+    #    except: pass
+    conf.find_program('doxygen', VAR='DOXYGEN')
     
     # various headers & libraries 
     conf.check_cc( header_name='math.h' )
@@ -70,6 +75,9 @@ def build(bld):
 
     if Options.options.cernlib and bld.env.HAVE_CERN:
         bld.add_subdirs("cern_utils")
+    
+    if bld.env['DOXYGEN']:
+        bld.add_subdirs("doc");
 
     # pkg-config file 
     gen_pkgconfig(bld)
