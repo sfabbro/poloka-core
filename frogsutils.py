@@ -57,6 +57,3 @@ def get_out_name_afs():
     
     return op.join('build', out_name)
         
-
-    
-    

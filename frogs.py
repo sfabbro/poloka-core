@@ -106,7 +106,12 @@ def configure(conf):
             conf.env.global_lapack = True
         else:
             conf.env.global_lapack = False
-        
+
+    # poloka-include
+    pkg = Context.g_module.APPNAME
+    ver = Context.g_module.VERSION
+    conf.env['PKG_INCDIR'] = op.join('include', '%s-%s' % (pkg,ver))
+    
 
 def load_pkg_config(conf):
     """
@@ -261,8 +266,8 @@ def install_headers(bld, headers):
     """
     Just hide the install header commands 
     """
-    name    = Utils.g_module.APPNAME
-    version = Utils.g_module.VERSION
+    name    = Context.g_module.APPNAME
+    version = Context.g_module.VERSION
     install_dir = op.join('$PREFIX', 'include', '%s-%s' % (name, version))
     
     bld.install_files(install_dir, headers)
@@ -307,8 +312,9 @@ def gen_pkgconfig(bld):
               REQUIREMENTS = requirements,
               LIBS = ["-L${libdir} "] + bld.env['ALL_LIBS'])
     
-    
 
 # for the moment, we hook up this function 
 # to the main module... May change in the future 
 Context.g_module.__dict__['gen_pkgconfig'] = gen_pkgconfig
+Context.g_module.__dict__['install_headers'] = install_headers
+

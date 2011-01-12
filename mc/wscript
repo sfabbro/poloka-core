@@ -21,5 +21,5 @@ def build( bld ):
     lib.rpath = bld.env['PREFIX'] + '/lib'
     
     # install the headers 
-    bld.install_files('${PREFIX}/include/poloka-${POLOKA_VERSION}', headers)
+    bld.install_files('${PREFIX}/${PKG_INCDIR}', headers)
  
