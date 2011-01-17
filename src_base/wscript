@@ -113,9 +113,12 @@ def build(bld):
         use      = local_libs,
         uselib   = ['CFITSIO'],
         vnum     = '0.1.0', 
-        after    = 'alltelinst', 
-        rpath    = [bld.env['PREFIX'] + '/lib'] )    
+        after    = 'alltelinst')
     
+    lib.rpath  = [ bld.env['PREFIX'] + '/lib'] 
+    lib.rpath += bld.env['LIBPATH_CFITSIO']
+
+
     # install the headers 
     headers = bld.path.ant_glob( '*.h' )
     bld.install_files('${PREFIX}/${PKG_INCDIR}', headers)

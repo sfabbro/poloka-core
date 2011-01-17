@@ -20,8 +20,10 @@ def build( bld ):
                     lib      = libs, 
                     use      = local_libs,
                     uselib = ['CFITSIO'],
-                    vnum     = '0.1.0' , 
-                    rpath    = bld.env['PREFIX'] + '/lib')
+                    vnum     = '0.1.0' )
+    
+    lib.rpath  = [ bld.env['PREFIX'] + '/lib'] 
+    lib.rpath += bld.env['LIBPATH_CFITSIO']
     
     # install the headers 
     headers = bld.path.ant_glob( '*.h' )

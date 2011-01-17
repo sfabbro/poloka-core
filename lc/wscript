@@ -29,13 +29,12 @@ def build( bld ):
                      'toads_utils', 
                      'toadspsf', 
                      'toadslib' ],
-        vnum     = '0.1.0', 
-        rpath    = bld.env['PREFIX'] + '/lib'
-        )
+        vnum     = '0.1.0')
+    lib.rpath = [bld.env.PREFIX + '/lib']
+    lib.rpath += bld.env.LIBPATH_CFITSIO
+    lib.rpath += bld.env.LIBPATH_SEX
     
-#    lib.rpath = bld.env['PREFIX'] + '/lib'
-
-
+    
 #     bld( features = "cxx cprogram", 
 #          source   = "make_lightcurve.cc", 
 #          includes = [ '.' ],

@@ -43,8 +43,12 @@ def build( bld ):
                     lib      = libs, 
                     use      = local_libs, 
                     uselib = ['SEX','CFITSIO' ],
-                    vnum     = '0.1.0')
-    
+                    vnum     = '0.1.0')    
+    lib.rpath  = [ bld.env['PREFIX'] + '/lib'] 
+    lib.rpath += bld.env['LIBPATH_CFITSIO']
+    lib.rpath += bld.env['LIBPATH_SEX']
+
+
     # install the headers 
     headers  = bld.path.ant_glob('*.h')
     starlist = bld.path.ant_glob('starlist.cc')

@@ -10,7 +10,6 @@ def build( bld ):
     lib = bld(features = 'fc fcshlib', 
               source = sources,
               target = 'cern_stuff', 
-              #        libs   = 'gfortran',
-              #               libs   = 'g2c',
-              vnum     = '0.1.0' )
+              vnum     = '0.1.0')
+
     

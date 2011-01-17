@@ -48,15 +48,16 @@ def build( bld ):
         prog = bld( features = 'cxx cprogram', 
                     source = src,
                     target = target,
-                    includes = [ '.', '../src_utils', '../src_base', '../src', '../flat',
+                    includes = [ '.', 
+                                 '../src_utils', 
+                                 '../src_base', 
+                                 '../src', '../flat',
                                  '../psf', '../lc' ], 
                     libs     = [ 'm', 'z'], 
-#                    uselib = [ 'CFITSIO', 'SEX' ],
+                    uselib = [ 'CFITSIO', 'SEX' ],
                     use = local_libs,
                     vnum     = '0.1.0' )
-                  
-        
-        prog.rpath = bld.env['PREFIX'] + '/lib'
-
-
-
+                          
+        prog.rpath  = [ bld.env['PREFIX'] + '/lib'] 
+        prog.rpath += bld.env.LIBPATH_CFITSIO
+        prog.rpath += bld.env.LIBPATH_SEX
