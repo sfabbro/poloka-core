@@ -44,14 +44,18 @@ def configure(conf):
                       mandatory=False)
     
     # various headers & libraries 
-    conf.check_cc( header_name='math.h' )
-    conf.check_cc( lib='z', msg='checking for zlib' )    
+    conf.check_cc(header_name='math.h')
+    conf.check_cc(function_name='feenableexcept', 
+                  header_name='fenv.h',
+                  define_name="HAVE_FEENABLEEXCEPT", 
+                  mandatory=False)
+    conf.check_cc(lib='z', msg='checking for zlib')    
     
     # cernlib
     conf.check_cernlib()
     
     # requirements 
-    conf.check_packages(requirements)    
+    conf.check_packages(requirements)
     conf.write_config_header("config.h")
 
 

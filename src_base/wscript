@@ -9,6 +9,7 @@ import re
 
 
 
+
 expr_ttester = re.compile("class\s+([\w\d_]+).+TYPE_TESTER.+")
 expr_tselector = re.compile("class\s+([\w\d_]+).+TYPE_SELECTOR.+");
 
@@ -101,7 +102,7 @@ def build(bld):
     local_libs = []
     if not bld.env.global_lapack:
         local_libs = ['lapack_stuff']
-    libs = ['m']
+    libs = ['m', 'z']
     if bld.env.global_lapack:
         libs.append('lapack')
         

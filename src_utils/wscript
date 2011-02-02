@@ -6,10 +6,10 @@
 def build( bld ):
     
     sources = bld.path.ant_glob('*.cc')
-    local_libs= ['cern_stuff']
+    local_libs= ['toads_base', 'cern_stuff']
     if not bld.env.global_lapack:
         local_libs += ['lapack_stuff']
-    libs = [ 'm']
+    libs = [ 'm', 'z']
     if bld.env.global_lapack:
         libs.append('lapack')
         
