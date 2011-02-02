@@ -45,11 +45,17 @@ def configure(conf):
     
     # various headers & libraries 
     conf.check_cc(header_name='math.h')
-    conf.check_cc(function_name='feenableexcept', 
-                  header_name='fenv.h',
+    conf.check_cc(header_name='fenv.h')
+    conf.check_cc(fragment="""#define _GNU_SOURCE
+#include <fenv.h>
+int main() {
+void *p;
+p=(void*)(feenableexcept);
+return 0;}""", 
                   define_name="HAVE_FEENABLEEXCEPT", 
+                  msg = "Checking for feenableexcept",
                   mandatory=False)
-    conf.check_cc(lib='z', msg='checking for zlib')    
+    conf.check_cc(lib='z', msg='Checking for zlib')    
     
     # cernlib
     conf.check_cernlib()
