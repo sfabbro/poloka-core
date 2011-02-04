@@ -530,8 +530,8 @@ static void TestTelInst(const FitsHeader &Head)
     {
       Frame illu = IlluRegion(Head, iamp);
       Frame bias = OverscanRegion(Head,iamp);
-      cout << " iamp " << iamp << " illu " << illu << " | overscan " << bias << endl;
-      cout << " amp region once trimmed " << AmpRegion(Head,iamp);
+      cout << " iamp " << iamp << " illu " << illu << " | overscan " << bias;
+      cout << " amp region once trimmed " << AmpRegion(Head,iamp) << endl;
     }
   cout << " total illu region " << TotalIlluRegion(Head) << endl;
   cout << " ------------------------------------------------" << endl;
