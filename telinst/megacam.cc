@@ -162,7 +162,7 @@ public:
   Frame IlluRegion(const FitsHeader &Head, const int Iamp) const;
   Frame AmpRegion(const FitsHeader &Head, const int Iamp) const;
   bool   IsTrimmed (const FitsHeader &Head) const;
-  Frame  extract_frame(const FitsHeader &Head, const char *KeyGenName,int Iamp) const;
+  Frame  extract_frame(const FitsHeader &Head, const char *KeyGenName,int Iamp=0) const;
 };
 
 
@@ -170,9 +170,9 @@ bool Megacam::IsTrimmed(const FitsHeader &Head) const {
   
   int nx = Head.KeyVal("NAXIS1");
   int ny = Head.KeyVal("NAXIS2");
-  if((nx>2048) || (ny>4612)) 
-    return false;
-  return true; 
+  if (nx < 2048) // one amplifier
+    return (nx==1024);
+  return (nx==2048);
 }
 
 double Megacam::AmpGain(const FitsHeader &Head, int Iamp) const
@@ -188,18 +188,24 @@ Frame Megacam::extract_frame(const FitsHeader &Head, const char *KeyGenName, int
 {
   char keyname[16];
 
-  int namp = TOADNAMP(Head, false);
-  if(namp == 2)
+  if (Iamp==0)
     {
-      char ampChar = 'A'+(Iamp-1);
-      sprintf(keyname,"%s%c",KeyGenName,ampChar);
-      if (!Head.HasKey(keyname)) sprintf(keyname,"%s",KeyGenName);
+      sprintf(keyname,"%s",KeyGenName);
     }
   else
     {
-      sprintf(keyname, "%s", KeyGenName);
+      int namp = TOADNAMP(Head, false);
+      if(namp == 2)
+	{
+	  char ampChar = 'A'+(Iamp-1);
+	  sprintf(keyname,"%s%c",KeyGenName,ampChar);
+	  if (!Head.HasKey(keyname)) sprintf(keyname,"%s",KeyGenName);
+	}
+      else
+	{
+	  sprintf(keyname, "%s", KeyGenName);
+	}
     }
-
   string keyval = Head.KeyVal(keyname, true);
   Frame result;
   fits_imregion_to_frame(keyval, result);
@@ -228,32 +234,61 @@ Frame Megacam::OverscanRegion(const FitsHeader &Head, const int Iamp) const
 
 Frame Megacam::IlluRegion(const FitsHeader &Head, const int Iamp) const
 {
-  if(!IsTrimmed(Head))
+  /* If you happen to chnge this routine, consider that it should work
+     for the 4 cases below : 1 or 2 amps , trimmed or not.
+  */
+  int nx = Head.KeyVal("NAXIS1");
+  if (nx<2048) // one amplifier
     {
-      if (Head.HasKey("DATASEC")) return extract_frame(Head,"DATASEC",Iamp);
-      else return extract_frame(Head,"DSEC",Iamp);
+      if (IsTrimmed(Head))
+	{
+	  Frame result;
+	  fits_imregion_to_frame("[1:1025,1:4613]", result);
+	  return result;
+	}
+      else  // 1 amp untrimmed
+	{
+	  if (Head.HasKey("DATASEC"))
+	    {
+	      return extract_frame(Head,"DATASEC",0);
+	    }
+	  else
+	    {
+	      cout << " il faudrait mettre le bon code ici :" << __FILE__ 
+		   << " line " << __LINE__ << endl;
+	      abort();
+	    }
+	}
+    }
+  else // 2 amps
+    {
+      if(!IsTrimmed(Head))
+	return extract_frame(Head,"DSEC",Iamp);
+      else
+	{
+	  // if trimmed we do something rather manual
+	  
+	  // first check if the geometry is what we expect
+	  string DSECA = Head.KeyVal("DSECA");
+	  if(DSECA!="[33:1056,1:4612]") {
+	    cerr << "warning in Megacam::IlluRegion, DSECA is not as expected [33:1056,1:4612]!=" << DSECA<< endl;
+	  }
+	  string DSECB = Head.KeyVal("DSECB");
+	  if(DSECB!="[1057:2080,1:4612]") {
+	    cerr << "warning in Megacam::IlluRegion, DSECB is not as expected [1057:2080,1:4612]!=" << DSECB << endl;
+	  }
+	  
+	  Frame result;
+
+	  if(Iamp==1)
+	    fits_imregion_to_frame("[1:1025,1:4613]", result);
+	  if(Iamp==2)
+	    fits_imregion_to_frame("[1025:2049,1:4613]", result);
+	  return result;
+
+	}
     }
 
-  // if trimmed we do something rather manual
-  
-  // first check if the geometry is what we expect
-  string DSECA = Head.KeyVal("DSECA");
-  if(DSECA!="[33:1056,1:4612]") {
-    cerr << "warning in Megacam::IlluRegion, DSECA is not as expected [33:1056,1:4612]!=" << DSECA<< endl;
-  }
-  string DSECB = Head.KeyVal("DSECB");
-  if(DSECB!="[1057:2080,1:4612]") {
-    cerr << "warning in Megacam::IlluRegion, DSECB is not as expected [1057:2080,1:4612]!=" << DSECB << endl;
-  }
-  Frame result;
-  if(Iamp==1)
-    fits_imregion_to_frame("[1:1024,1:4612]", result);
-  if(Iamp==2)
-    fits_imregion_to_frame("[1025:2048,1:4612]", result);
-  //! Megacam conventions : xMax and YMax are included in the frame
-  result.yMax++;
-  result.xMax++;
-  return result;
 }
 
 Frame Megacam::TotalIlluRegion(const FitsHeader &Head) const
