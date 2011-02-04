@@ -9,7 +9,7 @@
 
 
 #include <stdlib.h> /* for getenv */
-
+#include <stdio.h>
 #define _GNU_SOURCE 1
 #define __USE_GNU
 #include <fenv.h>
@@ -21,6 +21,10 @@ trapfpe ()
   /* Enable some exceptions.  At startup all exceptions are masked.  */
   
   if (getenv("DUMP_CORE_ON_FPE"))
+#ifdef HAVE_FEENABLEEXCEPT
     feenableexcept (FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
+#else
+  printf("[trapfpe] WARNING: DUMP_CORE_ON_FPE not implemented\n");
+#endif
 }
      
