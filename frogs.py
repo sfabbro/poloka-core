@@ -58,7 +58,7 @@ def options(opt):
                    dest='optimize', 
                    type=int,
                    help='turn on the -O3 option')    
-    opt.add_option('--enable_lyon', 
+    opt.add_option('--enable-lyon', 
                    action='store_true', 
                    default=False,
                    dest='enable_lyon',
