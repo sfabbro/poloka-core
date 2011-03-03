@@ -309,8 +309,9 @@ def gen_pkgconfig(bld):
               APPNAME   = appname,
               DESCRIPTION = description,
               VERSION = version,
-              REQUIREMENTS = requirements,
-              LIBS = ["-L${libdir} "] + bld.env['ALL_LIBS'])
+              REQUIREMENTS = requirements
+#              LIBS = ["-L${libdir} "] + bld.env['ALL_LIBS']
+	)
     
 
 # for the moment, we hook up this function 
