@@ -129,6 +129,11 @@ const BaseStar *FastFinder::SecondClosest(const Point &Where,
 	  pbest1 = p; 
 	  minDist1_2 = dist2;
 	}
+      else if (dist2< minDist2_2)
+	{
+	  pbest2 = p;
+	  minDist2_2 = dist2;
+	}
     }
   Closest = pbest1;
   //  cout << "Distance " << minDist2 << " " << dist  << endl;
