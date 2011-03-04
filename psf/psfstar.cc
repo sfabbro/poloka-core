@@ -239,7 +239,7 @@ bool PSFStar::FitPSFParams(const Image &I, const Image &W, const ImagePSF &PSF)
 
   
   /* We have to extract the weight matrix of the psf parameters (the first npar of params vector).
-     This invilves "marginalization" over the position and flux of the star. Compute 
+     This involves "marginalization" over the position and flux of the star. Compute 
      full covariance matrix (from chi2 second derivatives), extract the psf params sub block,
      and invert it back to get a weight matrix
   */
@@ -255,6 +255,7 @@ bool PSFStar::FitPSFParams(const Image &I, const Image &W, const ImagePSF &PSF)
       }
   // turn it back into a weight matrix
   psfParamsWeight.CholeskyInvert("L"); // should never fail
+  psfParamsWeight.Symmetrize("L");
 
 
 #if (DEBUG>=1)
@@ -269,7 +270,7 @@ provision for fitting several stars at a time (as DAOPhot does). Will
 do that in an other life. Or this one if we --really-- need it. The
 routine FitPSFParams has some code to find the minimum along the
 direction found when solving the linear system. Since we enter here
-with already accurate positions and fluxes, it is in practise not
+with already accurate positions and fluxes, it is in practice not
 necessary.  Would it become mandatory, it is not difficult to
 implement it. We could merge the FitStarParams and FitPSFParams
 routines by providing a routine in ImagePSF that does both PSFValue
