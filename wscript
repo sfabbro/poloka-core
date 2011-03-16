@@ -52,7 +52,7 @@ int main() {
 void *p;
 p=(void*)(feenableexcept);
 return 0;}""", 
-                  define_name="HAVE_FEENABLEEXCEPT", 
+                  define_name = "HAVE_FEENABLEEXCEPT",
                   lib = 'm', 
                   msg = "Checking for feenableexcept",
                   mandatory=False)

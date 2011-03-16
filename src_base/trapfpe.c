@@ -1,4 +1,4 @@
-
+ 
 /*
 
    a piece of code found on 
@@ -15,16 +15,13 @@
 #include <fenv.h>
 
 
+
 static void __attribute__ ((constructor))
 trapfpe ()
 {
   /* Enable some exceptions.  At startup all exceptions are masked.  */
   
   if (getenv("DUMP_CORE_ON_FPE"))
-#ifdef HAVE_FEENABLEEXCEPT
     feenableexcept (FE_INVALID|FE_DIVBYZERO|FE_OVERFLOW);
-#else
-  printf("[trapfpe] WARNING: DUMP_CORE_ON_FPE not implemented\n");
-#endif
 }
-     
+

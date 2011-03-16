@@ -88,7 +88,10 @@ def build(bld):
     
     sources = bld.path.ant_glob('*.cc', excl=['virtualinstrument.cc', 
                                               'alltelinst.cc'])
-    c_sources = bld.path.ant_glob('*.c', excl='slasub.c')
+    c_sources = bld.path.ant_glob('*.c', excl=['slasub.c', 'trapfpe.c'])
+    
+    if 'HAVE_FEENABLEEXCEPT' in bld.env:
+        c_sources += ['trapfpe.c']
     
     #    bld.path.find_dir('../telinst').abspath()
     telinst_sources = bld.path.find_dir('../telinst').ant_glob('*.cc')    
