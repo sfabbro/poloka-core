@@ -115,7 +115,7 @@ class AperSEStarList : public StarList<AperSEStar>
 
   AperSEStarList() {};
   
-  AperSEStarList(const string &FileName) {read(FileName);}
+  explicit AperSEStarList(const string &FileName) {read(FileName);}
 
   explicit AperSEStarList(const SEStarList &L);
 
