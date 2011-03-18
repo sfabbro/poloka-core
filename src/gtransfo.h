@@ -203,7 +203,7 @@ private:
 
 public :
   //! Default transfo : identity for all degrees (>=1 ). The degree refers to the highest total power (x+y) of monomials. 
-  GtransfoPoly(const unsigned Deg) ;
+  GtransfoPoly(const unsigned Deg=1) ;
 
   void apply(const double Xin, const double Yin, 
 	     double &Xout, double &Yout) const;
