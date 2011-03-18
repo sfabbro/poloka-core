@@ -1717,7 +1717,7 @@ bool ImagePSF::FitNonLinearity(const bool WriteResTuple) /* const */
   FitsImage image(reducedImage->FitsName());
   skylev = image.KeyVal("SKYLEV");
 
-  PSFStarList stars(reducedImage->StarCatalogName());
+  PSFStarList stars(AperSEStarList(reducedImage->StarCatalogName()));
   if (stars.size() == 0)
     {
       cout << " no stars .. giving up " << endl;
