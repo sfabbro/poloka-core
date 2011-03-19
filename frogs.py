@@ -1,4 +1,4 @@
-# -*- mode: pyton; -*- 
+# -*- mode: python; -*- 
 
 import os
 import os.path as op
