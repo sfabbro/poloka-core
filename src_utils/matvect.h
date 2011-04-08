@@ -264,6 +264,7 @@ class Vect {
   return data[i];
 }  
   unsigned int Size() const { return n;}
+  unsigned int size() const { return n;}
   
   void Zero() {memset(data, 0, n*sizeof(double));};
 
