@@ -23,8 +23,8 @@ requirements = [
 debug = False
 optimize = 3
 
-def options(opt):
-    
+
+def options(opt):    
     opt.load('frogs')
     opt.load('flex')
     opt.load('bison')

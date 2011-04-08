@@ -94,7 +94,7 @@ def configure(conf):
         debug_flag = Context.g_module.debug
     except: pass
     if debug_flag:
-        conf.env['CCFLAGS'].append('-g')
+        conf.env['CFLAGS'].append('-g')
         conf.env['CXXFLAGS'].append('-g')
     
     # Optimizer ? 
@@ -103,7 +103,7 @@ def configure(conf):
         opt_level = Context.g_module.optimize
     except: pass
     if opt_level > 0:        
-        conf.env['CCFLAGS'].append('-O%d' % opt_level)
+        conf.env['CFLAGS'].append('-O%d' % opt_level)
         conf.env['CXXFLAGS'].append('-O%d' % opt_level)
         conf.env['FCFLAGS'].append('-O%d' % opt_level)
     
