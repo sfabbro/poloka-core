@@ -20,7 +20,8 @@ static void usage(const char *prog)
        << " - matches with less than <minCount> are dropped if provided" 
        << "     (set to 2 for 2 input lists by default)" << endl
        << " ambiguities_handling can be 0,1,2 or 3(default)" << endl
-       << "-f find transformation" <<  endl;
+       << "-f find transformation" <<  endl
+       << "-d <transfoDegree> " << endl;
   
   exit(1);
 }
@@ -35,6 +36,7 @@ int main(int nargs, char **args)
   int minCount = 0;
   bool fittransfo = false;
   int remove_ambiguities = 3;
+  int transfoDegree = 3;
   for (int i=1; i <nargs; ++i)
     {
       char *arg = args[i];
@@ -51,6 +53,7 @@ int main(int nargs, char **args)
 	case 't' : ++i; tags = args[i]; break;
 	case 'n' : ++i; minCount = atoi(args[i]); break;
 	case 'f' : fittransfo = true; break;
+	case 'd' : transfoDegree = atoi(args[++i]); break;
 	default: std::cerr << "don't understand " << arg << std::endl; 
 	  usage(args[0]); break;
 	}
@@ -108,9 +111,10 @@ int main(int nargs, char **args)
       if (tags != "") tag = tags.substr(k,1);
       if(fittransfo && k!=0) {
 	StarMatchList* mlist = MatchSearchRotShift((BaseStarList &) l, (BaseStarList &)nsm,  Conditions);
-	mlist->SetTransfoOrder(3);
+	mlist->SetTransfoOrder(transfoDegree);
 	mlist->RefineTransfo(10);
 	CountedRef<Gtransfo> transfo = mlist->Transfo();
+	cout <<" found transfo " << *transfo << endl;
 	TStarList tlist((const BaseStarList &) l,*transfo);
 	TStar *empty = new TStar(*(l.EmptyStar()),*transfo);
 	nsm.MatchAnotherList((const BaseStarList &) tlist, matchCut, 
