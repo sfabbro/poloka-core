@@ -46,18 +46,16 @@ def options(opt):
                    default=True, 
                    dest='cernlib', 
                    help='do not try to link with cernlib')
-    opt.add_option('--debug', 
-                   action='store', 
-                   default=True, 
-                   dest='debug', 
-                   type=int,
-                   help='turn on the -g option')
-    opt.add_option('--optimize', 
-                   action='store', 
-                   default=False, 
-                   dest='optimize', 
-                   type=int,
-                   help='turn on the -O3 option')    
+    # opt.add_option('--debug', 
+    #                action='store', 
+    #                default=1, 
+    #                dest='debug', 
+    #                help='turn on the -g option')
+    # opt.add_option('--optimize', 
+    #                action='store', 
+    #                default=1, 
+    #                dest='optimize', 
+    #                help='turn on the -O3 option')    
     opt.add_option('--enable-lyon', 
                    action='store_true', 
                    default=False,
@@ -91,14 +89,23 @@ def configure(conf):
     conf.check_fortran_mangling()
 
     # Debug option 
-    if conf.options.debug == True:
-        conf.env['CCFLAGS'].append('-g')
+    debug_flag = False
+    try:
+        debug_flag = Context.g_module.debug
+    except: pass
+    if debug_flag:
+        conf.env['CFLAGS'].append('-g')
         conf.env['CXXFLAGS'].append('-g')
     
     # Optimizer ? 
-    if conf.options.optimize == True:
-        conf.env['CCFLAGS'].append('-O3')
-        conf.env['CXXFLAGS'].append('-O3')
+    opt_level = 0
+    try:
+        opt_level = Context.g_module.optimize
+    except: pass
+    if opt_level > 0:        
+        conf.env['CFLAGS'].append('-O%d' % opt_level)
+        conf.env['CXXFLAGS'].append('-O%d' % opt_level)
+        conf.env['FCFLAGS'].append('-O%d' % opt_level)
     
     # lapack
     if conf.options.global_lapack:

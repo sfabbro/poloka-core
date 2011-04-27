@@ -20,10 +20,11 @@ description = "This is poloka."
 requirements = [
     ('sex', '2.4.4', True), 
     ('cfitsio', '3.006', True) ]
+debug = False
+optimize = 3
 
 
-def options(opt):
-    
+def options(opt):    
     opt.load('frogs')
     opt.load('flex')
     opt.load('bison')
