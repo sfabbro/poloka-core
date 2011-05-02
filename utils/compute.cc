@@ -5,6 +5,8 @@
 
 using namespace std;
 
+// this is a very simple program
+
 int usage(char* pg) {
   cout << pg << ": performs simple image manipulation" << endl; 
   cout << endl;
