@@ -3,3 +3,42 @@ build/
 *.pyc
 *~
 .lock-*
+
+# autotools generated
+*.o
+*.so
+*.l[oa]
+*.loT
+.deps
+.libs
+stamp-h*
+config.h
+
+Makefile
+Makefile.in
+libtool
+poloka.pc
+/aclocal.m4
+/autom4te.cache
+/config.h
+/config.h.in
+/pka/cat/sex/config.h.in
+/config.log
+/config.status
+/configure
+/autoconf
+/doc/Doxyfile
+
+# parser generated
+/src_base/alltelinst.*
+/src/dbfileLex.c
+/src/dbfileParse.c
+/src/dbfileParse.h
+
+# execs
+!*.{cc,h}
+!Makefile.am
+!wscript
+flat/*
+simphot/mklc
+utils/*

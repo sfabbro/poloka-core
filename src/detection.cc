@@ -663,14 +663,13 @@ disappear.*/
 
 static void CleanDetectionList(DetectionList & stl, double delta)
 {
-  cout << "Size of the list before cleaning: " << stl.size() << endl ;
-  cout << "Cut radius for double detectiom " << delta << endl;
+  cout << " Cut radius for double detection " << delta << endl;
   // sort and copy of the list for old cleaner
   stl.FluxSort() ;
   
   FastFinder finder(*((BaseStarList*) &stl));
   
-  for (DetectionIterator it = stl.begin(); it != stl.end(); it++)
+  for (DetectionIterator it = stl.begin(); it != stl.end(); ++it)
     {
       Detection *star = *it ;
       // To avoid having neighbour = current star using FindClosest
@@ -763,7 +762,6 @@ void DetectionProcess::DoDetection(DetectionList &List)
 	i = List.erase(i);
       else ++i;
     }
-
   cout << " number of detections after cut on S/N : " 
        << List.size() << endl;
 
@@ -824,8 +822,7 @@ void DetectionProcess::SetScoresFromRef(DetectionList &List,
   SetCuts(PrintCuts);
   SEStarList RefList(Ref.CatalogName());
   FastFinder finder(*SE2Base(&RefList));
-  Gtransfo *Pix2RaDec = NULL;
-  WCSFromHeader(imageName, Pix2RaDec);
+  GtransfoRef Pix2RaDec = WCSFromHeader(imageName);
   for (DetectionIterator i= List.begin(); i!= List.end(); ++i)
     {
       Detection &Det = **i;
@@ -833,6 +830,8 @@ void DetectionProcess::SetScoresFromRef(DetectionList &List,
 	{
 	  FatPoint raDec;
 	  Pix2RaDec->TransformPosAndErrors(Det, raDec);
+	  Det.ra = raDec.x;
+	  Det.dec = raDec.y;
 	  Det.vRaRa = raDec.vx;
 	  Det.vDecDec = raDec.vy;
 	  Det.vRaDec = raDec.vxy;

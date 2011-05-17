@@ -25,7 +25,8 @@ class KernelFitter : public KernelFit
 
   Frame CommonFrame() const { return commonFrame;}
   double LargestSeeing() const { return largestSeeing;}
-
+  void WriteKernel(bool overwrite=false) const;
+  bool ReadKernel();
 };
 
 

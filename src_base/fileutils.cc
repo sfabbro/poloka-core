@@ -1,6 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
+#include <string>
+#include <iostream>
+#include <algorithm>
+#include <iterator>
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -8,12 +13,6 @@
 
 #include "fileutils.h"
 #include "stringlist.h"
-
-#include <string>
-#include <cctype>
-#include <iostream>
-#include <algorithm>
-#include <iterator>
 #include "polokaexception.h"
 
 
@@ -237,6 +236,48 @@ bool RemoveFiles(const std::string &FileNames)
     }
   return ok;
 }
+
+
+int CopyFile(const string& From, const string& To)
+{
+  FILE *from, *to;
+
+  // open source file
+  if ((from = fopen(From.c_str(), "rb")) == NULL) {
+    throw (PolokaException(" CopyFile: error cannot open file " + From));
+    return 1;
+  }
+
+  if ((to = fopen(To.c_str(), "wb")) == NULL) {
+    throw (PolokaException(" CopyFile: error cannot open file " + To));
+    return 1;
+  }
+
+  while (!feof(from)) {
+    char ch = fgetc(from);
+    if (ferror(from)) {
+      throw (PolokaException(" CopyFile: error reading file" + From));
+      return 1;
+    }
+    if (!feof(from)) fputc(ch, to);
+    if (ferror(to)) {
+      throw (PolokaException(" CopyFile: error putting file " + To));
+      return 1;
+    }
+  }
+
+  if (fclose(from) == EOF) {
+    throw (PolokaException(" CopyFile: error closing file " + From));
+    return 1;
+  }
+
+  if (fclose(to) == EOF) {
+    throw (PolokaException(" CopyFile: error closing file " + To));
+    return 1;
+  }
+  return 0;
+}
+
 
 int FileIsWritable(const char *FileName)
 {
@@ -565,22 +606,20 @@ int StringMatchPattern (
   return        match;
 }
 /***************************************************************************/
-string StringToUpper(const string Source)
+string StringToUpper(const string& Source)
   //Converts a string to uppercase
 {
-  int n = Source.length();
-  char* dest = new char[n+1];
-  for(int i=0; i <= n  ;i++) dest[i] = toupper(Source[i]); 
-  return string(dest);
+  string dest(Source);
+  transform(dest.begin(), dest.end(), dest.begin(), ::toupper);
+  return dest;
 }
 
-string StringToLower(const string Source)
+string StringToLower(const string& Source)
 //Converts a string to lowercase
 {
-  int n = Source.length();
-  char* dest = new char[n+1];
-  for(int i=0; i <= n  ;i++) dest[i] = tolower(Source[i]); 
-  return string(dest);
+  string dest(Source);
+  transform(dest.begin(), dest.end(), dest.begin(), ::tolower);
+  return dest;
 }
 
 string AddPrefix(const string &Prefix, const string &FileName)

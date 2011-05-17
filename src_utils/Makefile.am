@@ -1,53 +1,35 @@
+CLEANFILES = *~
+MAINTAINERCLEANFILES = \
+	Makefile.in \
+	*.new stamp-*
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/src_base  -I$(top_srcdir)/cern_stuff  @CFITSIO_CPPFLAGS@ @CMT_CFLAGS@ 
-AM_LDFLAGS = -L$(top_builddir)/src_base -L$(top_builddir)/cern_stuff -L$(top_builddir)/lapack_stuff -L@libdir@ -ltoadsbase -llapack -lcernstuff @CFITSIO_LDFLAGS@ @CMT_LDFLAGS@
-
-
-AM_CPPFLAGS += $($<_cppflags)
-optimize_it = -O3
-
-histo1d.cc_cppflags =    $(optimize_it)
-histo2d.cc_cppflags =    $(optimize_it)
-histo4d.cc_cppflags =    $(optimize_it)
-matvect.cc_cppflags =    $(optimize_it)
-imageinterpolation.cc_cppflags =    $(optimize_it)
-imageback.cc_cppflags = $(optimize_it)
-
-lib_LTLIBRARIES = libtoadsutils.la
-libtoadsutils_la_SOURCES = \
-	imageback.cc		      imageback.h \
-	matvect.cc		      matvect.h \
-	histo1d.cc		      histo1d.h \
-	histo2d.cc		      histo2d.h \
-	histo4d.cc		      histo4d.h \
-	imageinterpolation.cc	      imageinterpolation.h \
-	fitsslice.cc		      fitsslice.h
-include_HEADERS = \
-	matvect.h \
-	imageback.h \
+src_utils_includedir = $(includedir)/poloka
+src_utils_include_HEADERS = \
+	fitsslice.h \
 	histo1d.h \
 	histo2d.h \
 	histo4d.h \
+	imageback.h \
 	imageinterpolation.h \
-	fitsslice.h
+	matvect.h
 
-######## auto symbolic link #########
-# if configure is set with option --enable-autoinstall
-# symbolic links to all binaries are set in the install directory
-# this prevents during developpement to install
-# systematically the package
+lib_LTLIBRARIES = libtoadsutils.la
+libtoadsutils_la_SOURCES = \
+	$(src_utils_include_HEADERS) \
+	fitsslice.cc \
+	histo1d.cc \
+	histo2d.cc \
+	histo4d.cc \
+	imageback.cc \
+	imageinterpolation.cc \
+	matvect.cc
 
-if AUTOINSTALL
+libtoadsutils_la_CPPFLAGS = \
+	-I$(top_srcdir)/src_base \
+	-I$(top_srcdir)/cern_stuff \
+	@CFITSIO_CFLAGS@
 
-@prefix@/bin/% : .libs/%
-	ln -fs @abs_builddir@/.libs/$* $@
-
-@prefix@/lib/% : .libs/%
-	ln -fs @abs_builddir@/.libs/$* $@
-
-@prefix@/include/% : @abs_srcdir@/%
-	ln -fs @abs_srcdir@/$* $@
-
-all : $(patsubst .libs/%,@prefix@/lib/%,$(wildcard .libs/libtoadsutils.*))  $(patsubst %,@prefix@/include/%,${include_HEADERS})
-
-endif
+libtoadsutils_la_LIBADD = \
+	$(top_builddir)/src_base/libtoadsbase.la \
+	$(top_builddir)/cern_stuff/libcernstuff.la \
+	@LAPACK_LIBS@

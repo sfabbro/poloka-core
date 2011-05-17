@@ -14,12 +14,18 @@ If we use root for all I/O's, this file just disappears. */
 #include "imagesum.h"
 #include "transformedimage.h"
 #include "imagesubtraction.h"
+#include "subimage.h"
 
 ReducedImage* ReducedImageNew(const string &Name)
 {
 ReducedImage redImage(Name);
 if (!redImage.IsValid()) return NULL;
-string typeName = redImage.TypeName();
+ string typeName;
+ if (FileExists(redImage.Dir()+"type.name"))
+   typeName = redImage.StoredTypeName();
+ else
+   typeName = redImage.TypeName();
+
 if (typeName == "ReducedImage")
   {
     return new ReducedImage(Name);
@@ -36,6 +42,15 @@ else if (typeName == "ImageSubtraction")
   {
     return new ReducedImage(Name);// cause ImageSubtraction read is buggy 
   }
+else if (typeName == "SubImage")
+  {
+    return new SubImage(Name);
+  }
+ else if (redImage.HasCatalog()&& redImage.HasImage() && redImage.HasWeight()) // reducedimage that does not know it...
+  {
+    return new ReducedImage(Name);
+  }
+else
  cerr << " trying to reload " << Name << " as a ReducedImage, which it does not seem to be " << typeName << endl;
 return NULL;
 }
@@ -60,4 +75,14 @@ TransformedImage *IsTransformedImage(ReducedImage *RImage)
 ImageSum *IsImageSum(ReducedImage *RImage)
 {
   return dynamic_cast<ImageSum*>(RImage);
+}
+
+ImageSubtraction *IsImageSubtraction(ReducedImage *RImage)
+{
+  return dynamic_cast<ImageSubtraction*>(RImage);
+}
+
+SubImage *IsSubImage(ReducedImage *RImage)
+{
+  return dynamic_cast<SubImage*>(RImage);
 }

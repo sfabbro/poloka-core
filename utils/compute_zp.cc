@@ -61,8 +61,8 @@ FitsImage image_fits(image.FitsName());
 
 
 Frame current_Frame(image_fits, WholeSizeFrame);
-Gtransfo *Pix2RaDec;
-if (!WCSFromHeader(/*dynamic_cast <FitsHeader> */image_fits, Pix2RaDec))
+GtransfoRef Pix2RaDec = WCSFromHeader(image_fits);
+if (!Pix2RaDec)
         {
                 cout << "cannot handle "<<image.FitsName() <<" without a WCS " << endl;
 		exit(1);
@@ -193,7 +193,6 @@ cout  <<  ZP[0][0] << " +- " << ZP[0][1] << " \tchi2/N : " << ZP[0][2]/(double)c
 //cout << "with isoc_flux : " <<  ZP[2][0] << " +- " << ZP[2][1] << " \tchi2/N : " << ZP[2][2]/(double)count_ok << " variance : " << sqrt(ZP[2][3]/(double)count_ok)  <<endl;
 
 delete RaDec2Pix;
-delete Pix2RaDec;
 return(0);
 
 

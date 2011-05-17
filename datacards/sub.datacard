@@ -145,42 +145,39 @@
 @POLOKA_BACK_MESH_SIZE 256
 # POLOKA_BACK_MESH_SIZEX and POLOKA_BACK_MESH_SIZEY are also understood... 
 
+# saturation minimal factor 0 < factor < 1
+#
+#@SATUR_FACTOR 0.95
 
 ###########     KernelFits params
 #
 #
-#  The kernel base
+#  The kernel basis
+# 1 = Alard, 2 = delta, 3 = Alard when seeing(ref)>seeing(current), delta otherwise
+@KFIT_KERNEL_BASIS 1
 #
-# 1 = Alard, 2 = delta
-# not implemented ==> Alard
-# @KFIT_KERNEL_BASIS 1
+# Filtering bad stamps during the kernel fit (robust fitting)
+@KFIT_KERNEL_FILTERING 1
 #
-#  KFIT_SIG_GAUSS and KFIT_DEG_GAUSS only apply to Alard basis.
-#
+# KFIT_SIG_GAUSS and KFIT_DEG_GAUSS only apply to Alard basis.
 # the basis used to fit is made from Pol(u,v)*Gaussian.
 #
-#  sigma of gaussians (in units of the guessed kernel sigma):
-#
+# sigma of gaussians (in units of the guessed kernel sigma):
 @KFIT_SIG_GAUSS 0.7 1.5 2. 
 #
 # corresponding degrees of polynomials:
-#
 @KFIT_DEG_GAUSS 6 4 2
 #
 # Do we assume a uniform photom ratio (i.e. uniform kernel integral) ?
 @KFIT_UNIFORM_PHOTOM_RATIO 1
 #
-# maximum number of stamps (i.e. number of objects used to fit)
-#
-@KFIT_MAX_STAMPS 150
-#
+# maximum number of stamps (i.e. number of objects used to fit the kernel)
+@KFIT_MAX_STAMPS 550
 #
 # size of the kernel in number of (guessed) kernel sigma
-#
 @KFIT_NSIG 5.
 #
 # degree of kernel spatial variations
-#
 @KFIT_KERNVAR_DEG 2
 #
 # degree of polynomial used to fit differential image backgrounds
@@ -188,35 +185,87 @@
 @KFIT_BACKVAR_DEG -1
 #
 # degree of polynomial used to fit differential image backgrounds if fitted separatly
-#
 @KFIT_SEPBACKVAR_DEG 2
 #
-##################    end of KernelFit #################
+# Keep the basis orthogonal
+@KFIT_ORTHOGONAL_BASIS 1
+#
+# Maximum pixel intensity for star selection in units of the frame saturation
+@KFIT_STARS_MAXSAT 0.95
+#
+# Minimum signal to noise allowed for star selection
+@KFIT_STARS_MINSTN 10.
+#
+# Maximum distance in star match (increase if doing kernel fitting without resampling)
+@KFIT_STARS_MAXDIST 1.
 
+# Write the star list that was used to fit the kernel
+# in <worst>/kernel_from_<best>.list{,.ds9}
+@KFIT_WRITE_STARLIST 0
+#
+# Write a relative stacked residual image of all stars used to fit the kernel
+# in  <worst>/kernel_from_<best>_resid.fits for the median stacked residual
+# and <worst>/kernel_from_<best>_chi2.fits for the full chi2
+@KFIT_WRITE_RESID 0
+#
+# Write a FITS image of the kernel at 9 locations
+# will write in <worst>/kernel_from_<best>.fits
+@KFIT_WRITE_KERNEL 0
+#
+#
+##################    end of KernelFit #################
+##################    ImageSubtraction  #################
+#
+# Type of variance on image subtraction, to be used for detection
+# 0: r.m.s. only (~propagated sky variance)
+# 1: r.m.s. + Poisson(data) : bad for photometry, good when many bright stars
+# 2: r.m.s. + Poisson(model): not as bad for photometry, usually bad on crowded
+@SUB_VARIANCE_TYPE 0
+#
+# Dilate the bad pixels by a given radius on the weight map
+@SUB_MASK_DILATE 0
+#
+# Zero weight all pixel above SUB_SATUR_FACTOR*saturation
+# to avoid bright stars residuals
+@SUB_SATUR_FACTOR 1
+#
+# Uncoment this to your file name to produce quality check n-tuple 
+#@SUB_QUALI_TUPLE qual.list
+#
+#
+##################    end of ImageSubtraction #################
 ######### DatDet in detection.cc (detection on subtractions only)  #######
+#
 # min distance to bad pixel (in sig seeing)
-@DATDET_NRADBAD 2.
+#
+@DATDET_NRADBAD 1.
 #
 # integration radius for weighted flux (in sig seeing)
+#
 @DATDET_NRADWEIGHT 4.0
 #
 # integration radius for aper flux in sig seeing (mostly not used)
+#
 @DATDET_NRADAPER 2.5
 #
 # min distance between 2 detections (in sig seeing)
 #
-@DATDET_NMINDISTDOUBLE 2.
+@DATDET_NMINDISTDOUBLE 0.
 #
 # cut of detections on the convolved image (in S/N)
-@DATDET_NSIG_DET 2.0
+#
+@DATDET_NSIG_DET 1.5
 #
 # final flux cut of detections in S/N (usually larger than NSIG_DET)
-@DATDET_NSIG 2.5
+#
+@DATDET_NSIG 2.
 #
 # size of the inner radius removed from the square area used to estimate background (in sig seeing) (if < DATDET_NRADWEIGHT then = DATDET_NRADWEIGHT)
+#
 @DATDET_BACKRINGMIN 5
 #
 # half side (in sig seeing) of the square area used to estimate background. If =0, a constant background == 0 is assumed.
+#
 @DATDET_BACKRINGMAX 8
 # 
 # THIS KEY WORD IS OBSOLETE
@@ -229,7 +278,7 @@
 # i.e.: sig2nois_partial * compFactor > sig2nois_global
 # if negative then no cut is applied
 #
-@DATDET_COMPFACTOR 3
+@	DATDET_COMPFACTOR 3
 #
 # end of DatDet 
 ######################################
@@ -243,7 +292,7 @@
 # 3 : NoGlobalWeighting
 # 4 : NoWeightsAtAll
 #
-@WEIGHTING_METHOD 2 
+@WEIGHTING_METHOD 1
 #
 #   Choice of the Stacking Method
 # 1 : WeightedAverage
@@ -266,7 +315,7 @@
 @PSF_SPATIAL_PIX_VAR_DEG 1
 ##
 #outlier rejection of training stars (sigmas from median)
-@PSF_NSIG_CHI2_CUT 4
+@PSF_NSIG_CHI2_CUT 3
 #
 ##
 # PSF half size in units of IQ sigma
@@ -274,7 +323,7 @@
 #
 ##
 # Degree of non linearity of CCD response: -1 = no non-linearity
-# this datacard is not ignoreded in the mainstream of PSF modelling (makepsf).
+# this datacard is not ignored in the mainstream of PSF modelling (makepsf).
 # It is only read by "fitlin"
 #@PSF_NON_LINEARITY_DEGREE 1
 #
@@ -293,7 +342,7 @@
 # 
 ##
 # same as above but only at last iteration:
-#@PSF_LAST_RESIDUAL_FILENAME  psfpix
+@PSF_LAST_RESIDUAL_FILENAME  psfpix
 #
 ##
 # A tuple that contains all the pixles used to fit the PSF, 
@@ -304,14 +353,29 @@
 #
 # an image of the filed with only the residuals at the location of training
 #stars
-@PSF_RESIDUALS_IMAGE_FILENAME
+@PSF_RESIDUALS_IMAGE_FILENAME training
 ############ end of PSF section ################
+
+
 
 ############ APERCATS section ############
 # 
 #@FIXED_APER_RADS   0.5  1.0  1.5  2.0  3.0  4.0  5.0  6.0  8.0  10. 12.
 
+# radius cut in sigma for isolated stars
+#
+#@STARLIST_SIG_CUT 5
 
+# listmatch stuff
 
-
-
+@DATMATCH_NL1 70
+@DATMATCH_NL2 70
+@DATMATCH_MAXTRIAL 4
+@DATMATCH_NSIG_CUT 3
+@DATMATCH_MAXSHIFTX 50
+@DATMATCH_MAXSHIFTY 50
+@DATMATCH_SIZERATIO 1
+@DATMATCH_DELTA_SIZERATIO 0.1
+@DATMATCH_MINMATCHRATIO 0.33
+@DATMATCH_PRINTLEVEL 0
+@DATMATCH_ALGO 2

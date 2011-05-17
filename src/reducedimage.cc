@@ -80,7 +80,13 @@ void ReducedImage::FillSExtractorData(ForSExtractor & data,
   data.UniqueName = Name();
     
   // real stuff now.
-  data.saturation = (int) (SATUR_COEFF*Saturation());
+  double satFactor = SATUR_COEFF;
+  DataCards cards(DefaultDatacards());
+  if (cards.HasKey("SATUR_FACTOR"))
+    satFactor = cards.DParam("SATUR_FACTOR");
+
+  data.saturation = (int) (satFactor*Saturation());
+
   data.sigma_back  = -1 ;
   if (use_sigma_header)
     {
@@ -171,7 +177,13 @@ void ReducedImage::FillSExtractorData_2(ReducedImage & rim_det,
   data.UniqueName_1 = Name();
     
   // saturation from measurement image
-  data.saturation = (int) (SATUR_COEFF*Saturation());
+  double satFactor = SATUR_COEFF;
+  DataCards cards(DefaultDatacards());
+  if (cards.HasKey("SATUR_FACTOR"))
+    satFactor = cards.DParam("SATUR_FACTOR");
+
+  data.saturation = (int) (satFactor*Saturation());
+
   // pour comparaison avec datacard terapix
   //data.saturation = 40000. ;
   data.sigma_back  = -1 ;
@@ -819,7 +831,9 @@ bool ReducedImage::MakeAperCat()
   double seeing = Seeing();
   double xSize=0, ySize=0, corr = 0;
   StarScoresList scores;
-  if (FindStarShapes(apercat, 20, xSize, ySize, corr, scores))
+  // hacky way of dealing with very large catalogues of stars
+  double minsn = max(20., max(100., apercat.size() / 100.));
+  if (FindStarShapes(apercat, minsn, xSize, ySize, corr, scores))
     {
       double mxx = sq(xSize);
       double myy = sq(ySize);
@@ -1031,6 +1045,9 @@ bool ReducedImage::MakeStarCat()
   double xSize, ySize, corr;
   StarScoresList scores;
   AperSEStarList apercat(AperCatalogName());
+  // hacky way of dealing with very large catalogues of stars
+  double minsn = max(20., max(100., apercat.size() / 100.));
+  if (!FindStarShapes(apercat, minsn, xSize, ySize, corr, scores))
   if (!FindStarShapes(apercat, 20, xSize, ySize, corr, scores))
     {
       cout << " MakeStarList : could not find the star locus for " 
@@ -1382,14 +1399,27 @@ bool ReducedImage::MakeBad()
 bool ReducedImage::MakeSatur()
 {
   if (HasSatur()) return true;
-  cerr << "  ReducedImage::MakeSatur() should in principle never be called .... " << endl;
-  std::cerr << " it was called for image " << Name () << std::endl;
-// because it is done when making the catalog.. we could however have a rescue routine..
+  FitsImage image(FitsName(), RW);
+  FitsHeader &header = image;
+  DataCards cards(DefaultDatacards());
+  double satFactor = SATUR_COEFF;
+  if (cards.HasKey("SATUR_FACTOR"))
+    satFactor = cards.DParam("SATUR_FACTOR");
+
+  double satur = ComputeSaturation(image) * satFactor;
+  FitsImage sat(FitsSaturName(), header);
+  Pixel *psat = sat.begin();
+  Pixel *pim = image.begin();
+  for ( ; pim < image.end() ; ++pim, ++psat)
+    if (*pim >= satur) *psat = 1;
+  sat.AddOrModKey("BITPIX",8);
+  image.AddOrModKey("SATURLEV", satur, " Current saturation level");
   return false;
 }
 
 bool ReducedImage::MakeDead()
 {
+  if (HasDead()) return true;
   cerr << "  ReducedImage::MakeDead() should in principle never be called .... " << " Name : " << Name() << endl;
   // because it is in fact shared between images sharing the same flat. no way do build it.
   return false;
@@ -1846,6 +1876,7 @@ double ReducedImage::GFSeeing() const
   if (head.HasKey("GFSEEING")) return double(head.KeyVal("GFSEEING"));
   GlobalVal glob(AperCatalogName());
   if (glob.HasKey("SEEING")) return glob.getDoubleValue("SEEING");
+  if (head.HasKey("SESEEING")) return double(head.KeyVal("SESEEING"));
   throw PolokaException(" GFSeeing requested but absent both from fit image and apercat :"+Name());
 }
 
@@ -2294,30 +2325,26 @@ double ReducedImage::OverlapArcmin2(const ReducedImage& Other) const
  return Arcmin2Overlap(head, otherhead);
 }
 
-Gtransfo *ReducedImage::RaDecToPixels() const
+GtransfoRef ReducedImage::RaDecToPixels() const
 {
-  Gtransfo *pix2radec(0);
   FitsHeader head(FitsName());
-  if (!WCSFromHeader(head, pix2radec))
+  GtransfoRef pix2radec = WCSFromHeader(head);
+  if (!pix2radec)
     {
       cerr << " ReducedImage::RaDecToPixels() did not find the expected WCS in FITS header " 
 	   << FitsName() << endl;
-      return 0;
+      return pix2radec;
     }  
-  Gtransfo *inv =  pix2radec->InverseTransfo(0.01, Frame(head));
-  delete pix2radec;
-  return inv;
+  return pix2radec->InverseTransfo(0.01, Frame(head));
 }
 
-Gtransfo *ReducedImage::PixelsToRaDec() const
+GtransfoRef ReducedImage::PixelsToRaDec() const
 {
-  Gtransfo *pix2radec(0);
-  FitsHeader head(FitsName());
-  if (!WCSFromHeader(head, pix2radec))
+  GtransfoRef pix2radec = WCSFromHeader(FitsName());
+  if (!pix2radec)
     {
       cerr << " ReducedImage::PixelsToRaDec() did not find the expected WCS in FITS header " 
 	   << FitsName() << endl;
-      return 0;
     }
   return pix2radec;
 }
@@ -2561,7 +2588,7 @@ bool DecreasingArea(const ReducedImage *one, const ReducedImage *two)
 
 Frame CommonFrame(ReducedImageList &RedList)
 {
-  sort(RedList.begin(), RedList.end(), DecreasingArea);
+  RedList.sort(DecreasingArea);
   Frame frame_common(RedList.front()->UsablePart());
   for (ReducedImageCIterator im = RedList.begin(); im != RedList.end(); ++im)
     frame_common *= Frame((*im)->UsablePart());
@@ -2585,6 +2612,22 @@ ReducedImageCIterator ReducedImageList::Find(const string &Name) const
 //}
 	
 
+int ToTransform(const ReducedImage& Im) {
+  int toDo = 0;
+  if (Im.HasImage())
+    toDo |= DoFits;
+  if (Im.HasDead())
+    toDo |= DoDead;
+  if (Im.HasCatalog())
+    toDo |= DoCatalog;
+  if (Im.HasAperCatalog())
+    toDo |= DoAperCatalog;
+  if (Im.HasSatur())
+    toDo |= DoSatur;
+  if (Im.HasWeight())
+    toDo |= DoWeight;
+  return toDo;
+}
 
 
   

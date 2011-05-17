@@ -16,6 +16,7 @@
 #include "polokaexception.h"
 #include "scorescollection.h"
 #include "imagepair.h"
+#include "imageutils.h"
 #include "reducedutils.h" // for MedianPhotomRatio
 #include "fastfinder.h"
 
@@ -32,6 +33,11 @@
 
 
 static double sqr(double x) { return x*x;}
+
+string KernelFitFile(const ImagePair& ImPair) {
+  return ImPair.Worst()->Dir() + "kernel_from_" + ImPair.Best()->Name();
+}
+
 
 /**************    Stamp and StampList **********************/
 
@@ -62,7 +68,7 @@ public :
   int nActivePix;
 
   //! will be filled and used to discard outliers from the fit 
-  double chi2; 
+  double chi2, chi; 
   //  int HSize () const {return hsize;}  
 
   //! we should not assume that there is a BaseStar corresponding to this stamp, but if any, put its pointer here
@@ -85,7 +91,12 @@ public :
   StampList(ImagePair &ImPair, const StarMatchList &List, 
 	    const int hStampSize, const Kernel &GuessedKernel, const int MaxStamps);
 
+  StampList(ImagePair &ImPair, const int hStampSize, const Kernel &GuessedKernel, const int MaxStamps);
+
   void init(ImagePair &ImPair, const StarMatchList &List, 
+	    const int hStampSize, const Kernel &GuessedKernel, const int MaxStamps);
+
+  void init(ImagePair &ImPair, 
 	    const int hStampSize, const Kernel &GuessedKernel, const int MaxStamps);
 
 
@@ -200,7 +211,7 @@ static int build_variance(const Image &ImageWeight,
 			  const double &Gain, const BaseStar *Star, 
 			  DImage &VarStamp, double &CutVar)
 {
-  extract_pixels(VarStamp, ImageWeight, Xc, Yc);
+  extract_pixels(VarStamp, ImageWeight, int(Xc), int(Yc));
   // VarStamp constains weights
   int count;
   double vAverage;
@@ -209,7 +220,7 @@ static int build_variance(const Image &ImageWeight,
   CutVar = 1e8*vAverage;
 
    // tmpweight is now a variance
-  add_object_noise(Star, Xc, Yc, Star->flux/Gain, VarStamp);
+  add_object_noise(Star, int(Xc), int(Yc), Star->flux/Gain, VarStamp);
   return count;
 }
   
@@ -342,16 +353,19 @@ static bool GoodForFit(const SEStar *Star, const double &SaturLev, const double 
 	  );
 }
 
-static int MakeObjectList(const ImagePair& ImPair, const double MaxDist,
+static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams,
 			  StarMatchList &objectsUsedToFit)
 {
   //get list of objects suitable for the kernel fit 
   const ReducedImageRef &best= ImPair.Best();
   const ReducedImageRef &worst= ImPair.Worst();
-  const Frame &intersection = ImPair.CommonFrame();
-
-
+  const Frame bestFrame  = best->UsablePart();
+  // make it 
+  //const Gtransfo* bestToWorst = FindTransfo(*best, *worst);
+  const Gtransfo* bestToWorst = new GtransfoIdentity();
+  const Frame worstFrame = ApplyTransfo(bestFrame, *bestToWorst);
   AperSEStarList bestStarList(best->AperCatalogName());
+  AperSEStarList worstStarList(worst->AperCatalogName());
   
   // check whether background was subtracted
   // TODO : check if this is useful by any mean.
@@ -363,69 +377,38 @@ static int MakeObjectList(const ImagePair& ImPair, const double MaxDist,
   // sort with decreasing quality for the kernel fit. The chosen criterion is the peak flux (e.g. in best)
   bestStarList.sort(DecreasingFluxMax);
 
-
-  cout << " Entering FilterStarList with "<< bestStarList.size() 
-       << " stars " << endl;
-  //star list selection
-  SEStarList worstStarList(worst->ImageCatalogName());
+  cout << " MakeObjectList: initial list: "<< bestStarList.size() << " stars \n";
   
-  // check whether background was subtracted
-  if(worst->BackSub()) {
-    // then set all fond() to zero
-    SetStarsBackground(worstStarList,0.);
-  }
+  double saturLevBest = best->Saturation() * optParams.MaxSatur;
+  double saturLevWorst = worst->Saturation() * optParams.MaxSatur;
+  double bMinBest = best->GFSeeing() * optParams.MinB;
+  double bMinWorst = worst->GFSeeing()* optParams.MinB;
+  double mindist = worst->GFSeeing()*3;
+  cout << " MakeObjectList: cuts for best,  satur bmin " << saturLevBest << " " << bMinBest << endl;
+  cout << " MakeObjectList: cuts for worst, satur bmin " << saturLevWorst << " " << bMinWorst << endl;
+  FastFinder worstFinder(*AperSE2Base(&worstStarList));
 
-  double satfactor = 0.95;
-  double saturLevBest = best->Saturation() * satfactor;
-  double saturLevWorst = worst->Saturation() * satfactor;  
-  double bfactor = 0.2;
-  double bMinBest = best->Seeing() * bfactor;
-  double bMinWorst = worst->Seeing()* bfactor;
-  double mindist = worst->Seeing()*3;
-  double minsignaltonoiseratio = 10;
-  cout << "cuts for best, satur bmin " << saturLevBest << " " << bMinBest << endl;
-  cout << "cuts for worst, satur bmin " << saturLevWorst << " " << bMinWorst << endl;
-  FastFinder worstFinder(*SE2Base(&worstStarList));
-
-  int n_good_for_fit_best  = 0;
-  int n_matches = 0;
-  int n_good_for_fit_worst = 0;
-  int n_in_frame = 0;
-  int n_far_from_edges = 0;
-
-    
-  for (AperSEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); sibest++)
-    {
-      AperSEStar *sb = *sibest;
-      const SEStar *sworst;
-      if (sb->gflag == 0 && GoodForFit(sb, saturLevBest, bMinBest, minsignaltonoiseratio)) {
-	n_good_for_fit_best++;
-	sworst = (SEStar *) worstFinder.FindClosest(*sb,MaxDist);
-	if (sworst) {
-	  if(sb->Distance(*sworst) < MaxDist) { // useless?
-	    n_matches++;
-	    if(GoodForFit(sworst, saturLevWorst, bMinWorst, minsignaltonoiseratio)) {
-	      n_good_for_fit_worst++;
-	      if(intersection.InFrame(*sb)) {
-		n_in_frame++;
-		if(intersection.MinDistToEdges(*sb) > mindist) // remove objects close to the edge
-		  {
-		    n_far_from_edges++;
-		    objectsUsedToFit.push_back(StarMatch(*sb,*sworst,sb,sworst));
-		  }
-	      }
-	    }
-	  }
-	}
+  int n_good_for_fit_best = 0;
+  
+  for (AperSEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); ++sibest) {
+    AperSEStar *sb = *sibest;
+    const AperSEStar *sw;
+    if (sb->gflag == 0 && 
+	GoodForFit(sb, saturLevBest, bMinBest, optParams.MinSigToNoise) &&
+	bestFrame.InFrame(*sb) &&
+	bestFrame.MinDistToEdges(*sb) > mindist) {
+      n_good_for_fit_best++;
+      sw = (AperSEStar *) worstFinder.FindClosest(bestToWorst->apply(*sb), optParams.MaxDist);
+      if (sw && GoodForFit(sw, saturLevWorst, bMinWorst, optParams.MinSigToNoise) &&
+	  worstFrame.InFrame(*sw) &&
+	  worstFrame.MinDistToEdges(*sw) > mindist) {
+	objectsUsedToFit.push_back(StarMatch(*sb, *sw, sb, sw));
       }
     }
-  // dump all counters
-  cout << "n_good_for_fit_best " << n_good_for_fit_best << endl;
-  cout << "n_matches " << n_matches << endl;
-  cout << "n_good_for_fit_worst " << n_good_for_fit_worst << endl; 
-  cout << "n_in_frame " << n_in_frame << endl;
-  cout << "n_far_from_edges " << n_far_from_edges << endl; 
+  }
   
+  cout << " MakeObjectList: n_good_for_fit_best  " << n_good_for_fit_best << endl;
+  cout << " MakeObjectList:  final list: "<< objectsUsedToFit.size() << " stars \n";
   return objectsUsedToFit.size();
 }
 
@@ -556,9 +539,9 @@ void KernelFit::ImageConvolve(const Image &Source, Image &Out, int UpdateKernSte
   clock_t tstart = clock();
   assert(&Source != &Out);
 
-  if (solution.size()==0)
+  if (solution.empty())
     {
-      cerr << "BestImageConvolve : the kernel fit was not done yet... or was impossible .. no convolution" << endl;
+      cerr << " ImageConvolve : the kernel fit was not done yet... or was impossible .. no convolution" << endl;
       return;
     }
   // copy the input image so that side bands are filled with input values.
@@ -617,9 +600,6 @@ void KernelFit::ImageConvolve(const Image &Source, Image &Out, int UpdateKernSte
 		  for (int k=npix; k; --k) {sum += (*pk) * (*ps); ++pk ; --ps;}
 		}
 #endif
-	      // A REGARDER:
-	      //      sum -= kernSum*BestImageBack;
-  //  if (kern.begin() + kern.Nx()*kern.Ny() - pk ) cout << " BestImageImageConvol catastrophe...." << endl;
       Out(i,j) = sum;
     }
   }
@@ -649,7 +629,7 @@ void KernelFit::VarianceConvolve(const Image &Source, Image&Out, int UpdateKernS
     throw(PolokaException("KernelFit::ImageConvolve :  the kernel fit was not done yet ")); 
   assert(&Source != &Out);
   clock_t tstart = clock();
-if (solution.size()==0)
+  if (solution.empty())
    {
      cerr << "Variance Convolve : the kernel fit was not done yet... or was impossible .. no convolution" << endl;
      return;
@@ -753,10 +733,10 @@ delete [] vy;
 }
  
 
-static void SetDelta(Kernel &Kern)
+static void SetDelta(Kernel &Kern, int i=0, int j=0)
 {
 Kern.Zero();
-Kern(0,0) = 1.0;
+Kern(i,j) = 1.0;
 }
 
 
@@ -773,15 +753,16 @@ void KernelFit::BasisFill(Mat *BasisTransfo)
       Basis.clear(); 
     }
   /* all kernels should have the same size */
+  int oldprec = cout.precision();
+
+  if (optParams.KernelBasis == 1) {
   Basis.push_back(Kernel(optParams.HKernelSize, optParams.HKernelSize));
   SetDelta(Basis[0]);
-  int oldprec = cout.precision();
   cout << setprecision(10);
   cout << "  kernels parameters (sigma, degree) : ";
   for (int iwidth = 0; iwidth < optParams.NGauss ; ++iwidth) 
     cout << '(' <<optParams.Sigmas[iwidth] << ',' << optParams.Degrees[iwidth] << ')';
   cout << endl;  
-  
   for (int iwidth = 0; iwidth < optParams.NGauss ; ++iwidth)
     {
       int maxdeg = optParams.Degrees[iwidth];
@@ -796,6 +777,21 @@ void KernelFit::BasisFill(Mat *BasisTransfo)
 	    Basis.push_back(kern);
 	  }
     }
+  } else if (optParams.KernelBasis == 2) {
+    // circular kernel of deltas
+    int hsize = optParams.HKernelSize;
+    int h2 = hsize*hsize;
+    Kernel kern(hsize, hsize);
+    for (int j=-hsize; j<=hsize; ++j) {
+      for (int i=-hsize; i<=hsize; ++i) {
+	if (i*i + j*j < h2) {
+	  SetDelta(kern, i, j);
+	  Basis.push_back(kern);
+	}
+      }
+    }
+  }
+
   mSize = Basis.size() * optParams.KernVar.Nterms() + optParams.BackVar.Nterms();
   cout << " BasisFill : Number of basic kernels : " << Basis.size()
        << " number of fitted coefficients "  << mSize <<endl;
@@ -1218,8 +1214,16 @@ SepBackVar.SetDegree(-1); //degree of spatial variations of the background if yo
 UniformPhotomRatio = true;
 OrthogonalBasis = true;
  SubtractNoise = true;
+ MaxSatur = 0.95;
+ MinSigToNoise = 10.;
+ MinB = 0.2;
+ MaxDist = 1.;
  string dataCardsName = DefaultDatacards();
- 
+ KernelBasis = 1;
+ KernelFiltering = true;
+ WriteStarList = false;
+ WriteFitResid = false;
+ WriteKernel = false;
  if (FileExists(dataCardsName))
    {
      cout << " KernelFit uses datacards : " << dataCardsName << endl;
@@ -1269,9 +1273,28 @@ OrthogonalBasis = true;
        }
      if (cards.HasKey("KFIT_UNIFORM_PHOTOM_RATIO")) 
        UniformPhotomRatio = cards.IParam("KFIT_UNIFORM_PHOTOM_RATIO") == 1;
+     // what is this SubtractNoise used for?
      if (cards.HasKey("KFIT_SUBTRACT_NOISE")) 
        SubtractNoise = cards.IParam("KFIT_SUBTRACT_NOISE") == 1;
+     if (cards.HasKey("KFIT_ORTHOGONAL_BASIS")) 
+       OrthogonalBasis = cards.IParam("KFIT_ORTHOGONAL_BASIS") == 1;
 
+     if (cards.HasKey("KFIT_STARS_MAXSAT")) 
+       MaxSatur = cards.DParam("KFIT_STARS_MAXSAT");
+     if (cards.HasKey("KFIT_STARS_MINSTN")) 
+       MinSigToNoise = cards.DParam("KFIT_STARS_MINSTN");
+     if (cards.HasKey("KFIT_STARS_MAXDIST")) 
+       MaxDist = cards.DParam("KFIT_STARS_MAXDIST");
+     if (cards.HasKey("KFIT_KERNEL_BASIS"))
+       KernelBasis = cards.IParam("KFIT_KERNEL_BASIS");
+     if (cards.HasKey("KFIT_KERNEL_FILTERING"))
+       KernelFiltering = cards.IParam("KFIT_KERNEL_FILTERING");
+     if (cards.HasKey("KFIT_WRITE_STARLIST"))
+       WriteStarList = cards.IParam("KFIT_WRITE_STARLIST");
+     if (cards.HasKey("KFIT_WRITE_RESID"))
+       WriteFitResid = cards.IParam("KFIT_WRITE_RESID");
+     if (cards.HasKey("KFIT_WRITE_KERNEL"))
+       WriteKernel = cards.IParam("KFIT_WRITE_KERNEL");
    } // if (has datacards)
 }
   
@@ -1282,7 +1305,7 @@ void OptParams::OptimizeSizes(double BestSeeing, double WorstSeeing)
  cout << setprecision(10);
 cout << " Choosing sizes with bestseeing = " <<  BestSeeing << " WorstSeeing = " << WorstSeeing << endl;
 if ( BestSeeing > WorstSeeing) swap(BestSeeing, WorstSeeing);
-double kernSig = max(sqrt(WorstSeeing*WorstSeeing - BestSeeing*BestSeeing),0.4);
+double kernSig = max(sqrt(WorstSeeing*WorstSeeing - BestSeeing*BestSeeing), 0.5);
  cout << " Expected kernel sigma  : " << kernSig << endl ; 
 HKernelSize = max(int( ceil (NSig * kernSig)),4);
  for (int i=0; i<NGauss; ++i) Sigmas[i] *= kernSig;
@@ -1330,7 +1353,7 @@ void OptParams::read(istream& stream)
   string tmp_str;
   int version;
   stream >> tmp_str >> version;
-  if (version>1) throw(PolokaException(" unknown version number in OptParams::read"));
+  if (version > 2) throw(PolokaException(" unknown version number in OptParams::read"));
   read_member(stream, tmp_str, HKernelSize);
   read_member(stream, tmp_str, NGauss);
   read_member(stream, tmp_str, Sigmas);
@@ -1342,14 +1365,28 @@ void OptParams::read(istream& stream)
   read_member(stream, tmp_str, HStampSize);
   read_member(stream, tmp_str, MaxStamps);
   read_member(stream, tmp_str, UniformPhotomRatio);
-  if (version >=1) read_member(stream, tmp_str, OrthogonalBasis);
-  else OrthogonalBasis=false;
+  if (version >=1) 
+    read_member(stream, tmp_str, OrthogonalBasis);
+  else 
+    OrthogonalBasis = false;
+  if (version >=2) {
+    read_member(stream, tmp_str, KernelBasis);
+    read_member(stream, tmp_str, MaxSatur);
+    read_member(stream, tmp_str, MinSigToNoise);
+    read_member(stream, tmp_str, MinB);
+    read_member(stream, tmp_str, MaxDist);
+  } else {
+    KernelBasis = 1;
+    MaxSatur = 0.95;
+    MinSigToNoise = 10.;
+    MinB = 0.2;
+    MaxDist = 1.;
+  }
 }
-
 
 void OptParams::write(ostream& stream) const
 {
-  static int OptParams_version = 1;
+  static int OptParams_version = 2;
   stream << "[OptParams] " <<   OptParams_version ;
   write_member(stream, "HKernelSize", HKernelSize);
   write_member(stream, "NGauss", NGauss);
@@ -1363,6 +1400,11 @@ void OptParams::write(ostream& stream) const
   write_member(stream, "MaxStamps", MaxStamps);
   write_member(stream, "UniformPhotomRatio", UniformPhotomRatio);
   write_member(stream, "OrthogonalBasis", OrthogonalBasis);
+  write_member(stream, "KernelBasis", KernelBasis);
+  write_member(stream, "MaxSatur", MaxSatur);
+  write_member(stream, "MinSigToNoise", MinSigToNoise);
+  write_member(stream, "MinB", MinB);
+  write_member(stream, "MaxDist", MaxDist);
 }
 
 
@@ -1479,7 +1521,26 @@ sigma = sigma/double(nval) - mean*mean;
 if (sigma>0)  sigma = sqrt(sigma); else sigma = 0;
 }
 
+// compute median and M.A.D. = median(|x - median(x)|)
+// robust estimator of standard deviation
+static double median_mad(vector<double>& x, double& disp) {
+  size_t n = x.size();
+  sort(x.begin(), x.end());
+  double med = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  for (vector<double>::iterator it = x.begin(); it != x.end(); ++it) {
+    *it = fabs(*it - med);
+  }
+  sort(x.begin(), x.end());
+  double mad = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  disp = 1.4826 * mad;
+  return med;
+}
 
+static double median(vector<double>& x) {
+  size_t n = x.size();
+  sort(x.begin(), x.end());
+  return (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+}
 
 double KernelFit::StampChi2(Stamp &stamp, const Image &WorstImage)
 {
@@ -1492,6 +1553,7 @@ int hConvolvedSize = convolvedSize/2;
 DImage R_conv_K(convolvedSize,convolvedSize);
 Convolve(R_conv_K, stamp.bestPixels, kern);
 double chi2 = 0;
+double chi=0;
 int xs = xc - hConvolvedSize; 
 int ys = yc - hConvolvedSize;
 const DImage &weight = stamp.weight;
@@ -1502,11 +1564,13 @@ for (int i=0; i< convolvedSize; ++i)
   double res = R_conv_K(i,j) - w_value + BackValue(i + xs,j + ys); 
   double w = weight(i,j);
   chi2 += res*res*w;
+  chi += fabs(res)/stamp.star->flux;
   // the number of non zero weight pixels is already in Stamps
   }
 stamp.chi2 = chi2;
+stamp.chi = chi;
  if(chi2<0) {
-   cerr << " KernelFit::StampChi2 WARNING xc,yc,chi2 = " << xc << "," << yc << "," << chi2 << endl;  
+   cerr << " KernelFit::StampChi2 WARNING xc,yc,chi2,chi = " << xc << "," << yc << "," << chi2 << "," << chi << endl;  
  } 
 return chi2;
 }
@@ -1688,7 +1752,7 @@ double KernelFit::BackValue(const double&x, const double &y) const
 int KernelFit::DoTheFit(ImagePair &ImPair)
 {
   StarMatchList matchList;
-  int nobj = MakeObjectList(ImPair, 1, matchList);
+  size_t nobj = MakeObjectList(ImPair, optParams, matchList);
   cout << " We have " << nobj << " objects to fit with" << endl;
 
   if ( nobj == 0 ) {
@@ -1708,8 +1772,10 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   if(worstSeeing>bestSeeing) {
     PolGaussKern(guess, sqrt(worstSeeing*worstSeeing - bestSeeing*bestSeeing), 0, 0);
     guess *= 1./guess.sum();
+    if (optParams.KernelBasis == 3) optParams.KernelBasis = 1;
   }else{ // use delta
     SetDelta(guess);
+    if (optParams.KernelBasis == 3) optParams.KernelBasis = 2;
   }
 
   double sexPhotomRatio = 1./MedianPhotomRatio(matchList);
@@ -1795,7 +1861,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   cout << " BackValue(0,0)" << BackValue(0,0) << endl;
   int npixtot=0;
   double chi2_tot=0;
-  Point center = ImPair.CommonFrame().Center(); // for printouts
+  Point center = ImPair.Best()->UsablePart().Center(); // for printouts
   do // iterations on stamp clipping.
     {
       if (!Solve(m,b, center))
@@ -1809,25 +1875,33 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
       int i=0;
       npixtot = 0;
       chi2_tot = 0;
+      double chi_tot = 0;
       for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); ++si, ++i)
        {
 	 Stamp &stamp = *si;
 	 double chi2_stamp = StampChi2(stamp, *worstImage);
 	 chi2s[i] = chi2_stamp/stamp.nActivePix; /* also assigns stamp.chi2 */
 	 chi2_tot += chi2_stamp;
+	 chi_tot += stamp.chi;
 	 npixtot += stamp.nActivePix;
 	 // cout << " xc yc chi2 " << stamp.xc << ' ' << stamp.yc << ' ' << chi2s[i] << endl;
 	 // if (stamp.star) stamp.star->dump();
        }  
-      double mean,sigma,median;
-      mean_median_sigma(&(chi2s[0]),nstamps,mean,median,sigma);
-      cout << " chi2/dof per stamp : mean median sigma " << mean << ' ' << median << ' ' << sigma << endl;
-      cout << " chi2, ndof, chi2/ndof " << chi2_tot << ' ' << npixtot-mSize << ' ' << chi2_tot/(npixtot - mSize) << endl;
+      double sigma,median;
+      //mean_median_sigma(&(chi2s[0]),nstamps,mean,median,sigma);
+      median = median_mad(chi2s, sigma);
+      cout << " chi2/dof per stamp : median sigma " << median << ' ' << sigma << endl;
+      cout << " chi2, dof, chi2/dof, chi/npix" 
+	   << chi2_tot << ' ' 
+	   << npixtot-mSize << ' ' 
+	   << chi2_tot/(npixtot - mSize) 
+	   << chi_tot/npixtot
+	   << endl;
       dropped = 0;
      
       // this trick is used to fit the kernel using a predefined catalog
       // of objets to compute the kernel
-      if (getenv("NOFILTERING")) break;
+      if (!optParams.KernelFiltering) break;
       for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); )
 	{
 	  Stamp &stamp = *si; 
@@ -1887,19 +1961,107 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 
   // mostly printouts from now on
   cout  << " finished the fit  with " << bestImageStamps.size() << " stamps " << endl;
-  { // DEBUG
-    char *fileName = getenv("DUMP_FIT_LIST");
-      if (fileName)
-	{
-	  ofstream l(fileName);
-	  bestImageStamps.front().star->WriteHeader_(l);
-	  l << "# chi2 : \n# end " << endl;
-	  for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); ++si)
-	    {
-	      (*si).star->writen(l); 
-	      l << ' ' << (*si).chi2 << endl;
-	    }
+
+  if (optParams.WriteStarList)	{
+    string filename = KernelFitFile(ImPair)+".list";
+    cout << " Writing the kernel list in " << filename << endl;
+    ofstream l(filename.c_str());
+    filename += ".ds9";
+    ofstream lds9(filename.c_str());
+    bestImageStamps.front().star->WriteHeader_(l);
+    l << "# chi2 : \n# end " << endl;
+    for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); ++si)
+      {
+	(*si).star->writen(l); 
+	l << ' ' << (*si).chi2 << endl;
+	lds9 << "box("
+	     << si->xc
+	     << ',' << si->yc
+	     << ',' << si->bestPixels.Nx()
+	     << ',' << si->bestPixels.Ny()
+	     << ") #color = green\n";      
+      }
+  }
+
+  // make a stacked residual image
+  if (optParams.WriteFitResid) {
+    cout << " Computing a stacked residual\n";
+    int convolvedSize = optParams.ConvolvedSize();
+    int hConvolvedSize = convolvedSize/2;
+    DImage stackChi(convolvedSize, convolvedSize);
+    DImage stackRes(convolvedSize, convolvedSize);
+    const Image& worstImage = ImPair.WorstImage();
+    const Image& bestImage = ImPair.BestImage();
+    DImage counter(convolvedSize, convolvedSize);
+    double skyworst = ImPair.Worst()->BackLevel();
+    /*
+    double thresh = 5*ImPair.Worst()->SigmaBack() + skyworst;
+    vector< vector< vector<double> > >
+      cubRes(convolvedSize,
+	     vector< vector<double> >(convolvedSize, 
+				      vector<double>(bestImageStamps.size(),0)));
+    */
+    size_t k=0;
+    for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); ++si, ++k) {
+      int xc = si->xc;
+      int yc = si->yc;
+      Kernel kern(optParams.HKernelSize, optParams.HKernelSize);
+      KernCompute(kern, xc, yc);
+      const DImage& best = si->bestPixels;
+      DImage bestConv(convolvedSize, convolvedSize);
+      Convolve(bestConv, best, kern);
+      int xs = xc - hConvolvedSize; 
+      int ys = yc - hConvolvedSize;
+      for (int j=0; j<convolvedSize; ++j) {
+	for (int i=0; i<convolvedSize; ++i) {
+	  double wpix = worstImage(i+xs, j+ys);
+	  double weight = si->weight(i,j);
+	  double resid = bestConv(i,j) - wpix + BackValue(i+xs, j+ys);
+	  if (weight > 1e-10) {
+	    //cubRes[i][j][k] = resid / max(1., fabs(wpix-skyworst));
+	    stackRes(i,j) += resid * sqrt(weight);
+	    stackChi(i,j) += fabs(resid) / max(1., fabs(wpix-skyworst));
+	    counter(i,j) += 1;
+	  }
 	}
+      }
+    } 
+
+    /*
+    for (int j=0; j<convolvedSize; ++j)
+      for (int i=0; i<convolvedSize; ++i)
+	stackRes(i,j) = median(cubRes[i][j]);
+    */
+
+    stackRes /= counter;
+    stackChi /= counter;
+    stackRes.writeFits(KernelFitFile(ImPair)+"_resid.fits");
+    stackChi.writeFits(KernelFitFile(ImPair)+"_chi.fits");
+  }
+
+  // make an image of the kernel at different locations of the worst
+  if (optParams.WriteKernel) {
+    int nim = 3;
+    cout << " Making an image of the kernel at " << nim*nim << " locations\n";
+    int hsize = optParams.HKernelSize;
+    DImage kim((2*hsize+1)*nim + nim+1, (2*hsize+1)*nim + nim+1);
+    double dx = ImPair.Worst()->XSize() / nim;
+    double dy = ImPair.Worst()->YSize() / nim;
+    double xstart = dx/2;
+    double ystart = dy/2;
+    for (int i=0; i<nim; i++) {
+      for (int j=0; j<nim; j++) {
+	Kernel kern(hsize, hsize);
+	KernCompute(kern, xstart+i*dx, ystart+j*dy);
+	int kistart = hsize + i*kern.Nx() + 1;
+	int kjstart = hsize + j*kern.Ny() + 1;
+	for (int k=-hsize; k<=hsize; ++k)
+	  for (int l=-hsize; l<=hsize; ++l) {
+	    kim(kistart+k, kjstart+l) = kern(k,l);
+	  }
+      }
+    }
+    kim.writeFits(KernelFitFile(ImPair)+".fits");
   }
 
   double FinalSig2Noise = bestImageStamps.Sig2Noise();
@@ -2012,7 +2174,7 @@ void KernelFit::write(ostream& stream) const
   /* versions : 
      0 = "old unweighted code"
      1 = new weighted code (april 2007). same format as version 0
-     2 = after cleanup (march 2010) : some cores disapeared
+     2 = after cleanup (march 2010) : some scores disapeared
   */
   stream << "[KernelFit] " << 2;
   stream << setprecision(18);

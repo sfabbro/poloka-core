@@ -67,11 +67,13 @@ Dual_Image_Path = image_path;
 
 
   // checking if it contains the precious psfmatch
+  /*
   if (! Original_Sub->FitExists())
     {
       cerr << "kernel fit without fake absent (MC mode only working if sub re-computed), exiting." << endl ;
       abort();
     }
+  */
   // on decroche la sub et la new
   ReducedImageRef vide ;
   ImageSubtractionRef subvide ;
@@ -110,13 +112,13 @@ Dual_Image_Path = image_path;
 	  // on ecrase stacki
 	  stacki = stackmci ;
 	
-
+	  /*
       if (! stacki.original_sub->FitExists() )
 	{
 	  cerr << "No kernel fit present for : " << stacki.name <<endl ;
 	  cerr << "MC mode only working when the subs are re-computed, exiting." << endl ;
 	  abort();
-	}
+	  }*/
 
     }
   GlobalMCResultName() = "";

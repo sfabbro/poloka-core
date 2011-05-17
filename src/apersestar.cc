@@ -138,7 +138,7 @@ void AperSEStar::computeflux(const Image& I, const Image& W, const Image *pC,
   Aperture &aper = apers.back();
   aper.computeflux(x,y,I,W,pC,pS,Gain,Radius,this->num);
   // impose increasing order
-  unsigned naper = apers.size();
+  size_t naper = apers.size();
   if (sort_radii && (naper>1 || Radius < apers[naper-1].radius))
     sort(apers.begin(),apers.end());
 }
@@ -174,8 +174,8 @@ going to an oversampling of 9 increases the CPU by 50%
   enforced by ComputeFlux if called with default parameters sort_radii set to true*/
 Aperture AperSEStar::InterpolateFlux(const double &Radius) const
 {
-  unsigned naper = apers.size();
-  unsigned k=0;
+  size_t naper = apers.size();
+  size_t k=0;
   for (   ; k < naper; ++k)
     if (apers[k].radius > Radius) break;
   if (k == 0) return apers[0];
@@ -511,7 +511,7 @@ std::string AperSEStar::WriteHeader_(ostream & pr,
   pr << "#gmxy"<<i<< " : gaussian filtered 2nd moment (xy)" << endl;
   pr << "#gflag"<<i<< " : flag for computation of gaussian filtered 2nd moments" << endl;
   pr << "#naper"<<i<< " : number of apertures" << endl;
-  for (unsigned k=0; k < apers.size(); ++k)
+  for (size_t k=0; k < apers.size(); ++k)
     {
       char kk[8];
       sprintf(kk,"%-d",k);
@@ -538,7 +538,7 @@ void AperSEStar::writen(ostream& s) const
     << gmxy << ' '
     << gflag << ' '
     << apers.size() << ' ';
-  for (unsigned k=0; k < apers.size(); ++k)
+  for (size_t k=0; k < apers.size(); ++k)
     {
       const Aperture &aper = apers[k];
       s <<  aper.radius << ' ';
@@ -567,10 +567,10 @@ void AperSEStar::read_it(fastifstream& r, const char* Format)
 
   r >> gmxx >> gmyy >> gmxy >> gflag ; 
 
-  unsigned naper;
+  size_t naper;
   r >> naper;
   apers.reserve( naper );
-  for (unsigned k=0; k < naper; ++k)
+  for (size_t k=0; k < naper; ++k)
     {
       apers.push_back(Aperture());
       Aperture &aper = apers.back();
@@ -639,7 +639,7 @@ int AperSEStarList::write(const std::string &FileName) const
 {
   if (!empty())
     {
-      unsigned naper = front()->apers.size();
+      size_t naper = front()->apers.size();
       for (AperSEStarCIterator i = begin(); i !=end(); ++i)
 	{
 	  if ((*i)->apers.size() != naper)
@@ -685,7 +685,7 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
       scores.push_back(new StarScores (xx,yy,&s));
     }
 
-  unsigned nobj = scores.size();
+  size_t nobj = scores.size();
   if (nobj<5)
     {
       cout << " FindStarShapes : only " << nobj << " objects passing the cuts " << endl;
@@ -694,7 +694,7 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
 
   Ellipse ellipse;
   bool ok;
-  for (unsigned k=0;k<3; ++k)
+  for (size_t k=0;k<3; ++k)
     {
       if (k>=1) cout << " INFO : FindStarShape trying histo max # " << k << endl;
       double xMax, yMax;

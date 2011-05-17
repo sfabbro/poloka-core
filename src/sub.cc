@@ -38,6 +38,9 @@ By default, newmake_sub reads a file named subfile in the current directory.
 "FIXGEO" aims at fixing the geometric reference used to align all the images.
 Here is an example of a "subfile":
 
+"CONVOLVE REF" is an option to force the reference to be the one convolved no matter
+whether it has the best seeing or not. Useful when reference is much higher S/N. 
+
 \code
 # subtraction for fieldP1ccd9
 REF
@@ -124,6 +127,7 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
   onlyDet = OnlyDet;
   detectOnAllSub = false;
   FixRef = false;
+  convolveRef = false;
   StringList ToExtract;
   ImageNameToExtract = "";
   onlyOneSub = false;
@@ -182,6 +186,8 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 	  continue;
 	}
 
+      if (strstr(line,"CONVOLVE REF"))
+	{ convolveRef = true; continue; }
       if (!inRef && !inNew && !inFixRef)
 	{
 	  cerr << " ERROR : unrecognised syntax in file " << FileName << endl ;
@@ -240,7 +246,7 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 	{ // search if there is something after the image name
 	  std::string remainder = string(start_line + strcspn(start_line," \t"));
 	  RemovePattern(remainder," ");
-	  if (remainder.size() == 0) Ref.push_back(currentName);
+	  if (remainder.empty() || strstr(remainder.c_str(), "SubImage")) Ref.push_back(currentName);
 	  else if (strstr(remainder.c_str(), "SubImage") == 0)
 	    { // decode name=[a:b,c:d] 
 	      char refName[128];
@@ -257,11 +263,11 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 		  exit(1);
 		}
 	      SubImage ref(refName, currentName, Frame(imin,jmin,imax,jmax));
-	      ref.Execute(DoFits | DoWeight | DoSatur | DoCatalog );
+	      ref.Execute(DoFits | DoWeight | DoSatur | DoCatalog | DoAperCatalog);
 	      Ref.push_back(refName);
 	      currentName = refName; // for AllInputImages
 	      GeomRefName = currentName;
-	    }		    
+	    }
 	}
       else if (inNew)
 	{
@@ -377,7 +383,7 @@ StringList Sub::AllNewNames() const
       for (StringCIterator k = current.begin(); k != current.end(); ++k)
 	{ string s = *k ; res.push_back(s);}
     }
-  cerr << "All New Names : " << res << endl ; 
+  cout << " All New Names : " << res << endl ; 
   return res;
 }
 	     
@@ -400,16 +406,15 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
   ReducedImage large(ImageNameToExtract);
   FitsHeader largeHead(large.FitsName());
   Frame largeFrame(largeHead, WholeSizeFrame);
-  Gtransfo *largePix2RaDec;
-  if (!WCSFromHeader(largeHead, largePix2RaDec))
+  GtransfoRef largePix2RaDec = WCSFromHeader(largeHead);
+  if (!largePix2RaDec)
     {
       cerr << " ERROR : cannot handle a large reference without a WCS " 
 	   << endl;
       exit(1);
     }
-  Gtransfo *largeRaDec2Pix = 
+  GtransfoRef largeRaDec2Pix = 
     largePix2RaDec->InverseTransfo(0.1 /* accuracy in pixels*/, largeFrame);
-  delete largePix2RaDec;
 
   Frame toExtract; // =(0,0,0,0)
   for (StringIterator i = AllInputImages.begin() ; i != AllInputImages.end(); )
@@ -421,14 +426,12 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
       CountedRef<Gtransfo> current2Large;
       if (HasLinWCS(currentHead))
 	{
-	  Gtransfo *currentPix2RaDec;
-	  WCSFromHeader(currentHead, currentPix2RaDec);
+	  GtransfoRef currentPix2RaDec = WCSFromHeader(currentHead);
 	  current2Large = GtransfoCompose(largeRaDec2Pix, currentPix2RaDec);
-	  delete currentPix2RaDec;
 	}
       else // go the hard way
 	{
-	  CountedRef<Gtransfo> large2Current;
+	  GtransfoRef large2Current;
 	  if (ImageListMatch(current, large, current2Large, large2Current))
 	    {
 	      cerr << " could not match " << current.Name() << " and " << large.Name() << endl;
@@ -454,7 +457,6 @@ ReducedImage* Sub::ExtractSubimage(const string &SubName)
 	   << ", extract frame = " << toExtract << endl;
       ++i;
     }
-  delete largeRaDec2Pix;
   SubImage *subImage = new SubImage(SubName, ImageNameToExtract, toExtract);
   // to be able to match, "make" image and catalog
   subImage->MakeFits(); // need image to make catalog!
@@ -560,10 +562,10 @@ int Sub::DoIt()
   //int toDo = DoFits | DoCatalog | DoDead | DoSatur;
  
   // The dead is not used anymore (the dead are clipped)
-  int toDo = DoFits | DoCatalog | DoSatur | DoWeight;
-  cerr << "Processing ref stack " << endl ;
+  int toDo = DoFits | DoCatalog | DoSatur | DoWeight | DoAperCatalog;
+  cout << " Processing ref stack " << endl ;
 
-  if (RefStack ==  NULL) // RefStack isn't alreadt provided.
+  if (!RefStack) // RefStack isn't already provided.
     {
       RefStack = DoOneStack(Ref, "ref", toDo);
     }
@@ -581,41 +583,43 @@ int Sub::DoIt()
       NewStack &stack = AllNew[i]; 
       if (stack.newStack == NULL ) // regular mode, or MC mode in SwarpKind
 	{
-	  cerr << "Processing " << stack.Name() << endl ;
+	  cout << " Processing " << stack.Name() << endl ;
 	  stack.newStack = DoOneStack(stack, stack.Name() , toDo, stack.stackType);
-	  FlagDiffractionSpikes(stack.newStack);
+	  // this routine below gives wrong saturation maps 50% of the time
+	  //FlagDiffractionSpikes(stack.newStack);
 	}
       else
 	{
 	  // MC mode, in RegularKind
-	  cerr <<"Processing  in MC mode " << stack.Name() << endl ;
+	  cout << " Processing  in MC mode " << stack.Name() << endl ;
 	  if (stack.stackType != RegularKind)
 	    cerr <<"Error, bad stackType" << endl ;
 	  // pas de SExtractor sur MCnewi
 	  (stack.newStack)->Execute(DoFits | DoSatur | DoWeight); 
-	  FlagDiffractionSpikes(stack.newStack); //useful?
+	  // this routine below gives wrong saturation maps 50% of the time
+	  //FlagDiffractionSpikes(stack.newStack); //useful?
 	}
       
       if ( stack.original_newStack != NULL )
 	{
 	  // le fits du stack new est fait. on recupere le seeing du stack new d'origine
-	  cerr <<"Getting SESEEING value for : " << stack.Name()
+	  cout <<"Getting SESEEING value for : " << stack.Name()
 	       << " from : " <<  stack.original_newStack->Name() << endl ;
 	  string comment = "Seeing from " +  stack.original_newStack->Name() ;
 	  stack.newStack->SetSeeing(stack.original_newStack->Seeing(), comment.c_str());
 	}
       if ( stack.original_sub == NULL )
 	{
-	  cerr <<"Building Subtraction " << stack.SubName() << endl ;
-	  stack.sub = new ImageSubtraction(stack.SubName(), RefStack, stack.newStack);
+	  cout <<" Building Subtraction " << stack.SubName() << endl ;
+	  stack.sub = new ImageSubtraction(stack.SubName(), RefStack, stack.newStack, convolveRef);
 	}
       else
 	{
-	  cerr << "using a previous PsfMatch to build Subtraction " << stack.SubName() <<  endl ;
+	  cout << " Using a previous KernelFit to build Subtraction " << stack.SubName() <<  endl ;
 	  stack.sub = new ImageSubtraction(stack.SubName(), 
-					     RefStack, 
+					     RefStack,
 					     stack.newStack,
-					     stack.original_sub);
+					     *stack.original_sub);
 	}
       
       stack.sub->Execute(DoFits+DoWeight);
@@ -628,28 +632,29 @@ int Sub::DoIt()
     {
       ReducedImageList allAlignedNew(false);
       GetAllComponents(AllNew,allAlignedNew);
+      cout << " Processing new from all previously new's" << endl;
       GlobalNew = new ImageSum(GlobalNewName(),allAlignedNew, RefStack);     
       if (Original_New != NULL )
 	{ 
 	  // on recupere le seeing du stack new d'origine
 	  GlobalNew->Execute(DoFits); // pas de SExtractor sur MCnew.
-	  cerr <<"Getting SESEEING value for : " << GlobalNewName()
+	  cout << " Getting SESEEING value for : " << GlobalNewName()
 	       << " from : " <<  Original_New->Name() << endl ;
 	  string comment = "Seeing from " + Original_New->Name() ;
 	  GlobalNew->SetSeeing(Original_New->Seeing(), comment.c_str());	  
 	}
       else
-	 GlobalNew->Execute(DoFits + DoCatalog);
+	 GlobalNew->Execute(DoFits + DoCatalog + DoAperCatalog);
 
       if (Original_Sub == NULL ) // kernel fit wasn't done before
-	GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, GlobalNew);
+	GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, GlobalNew, convolveRef);
       else
 	{
-	  cerr << "Using a previous PsfMatch to build " 
+	  cout << " Using a previous KernelFit to build " 
 	       << GlobalSubName() <<  endl ; 
 	  GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, 
-					   GlobalNew, Original_Sub);
-	}	  
+					   GlobalNew, *Original_Sub);
+	}
       GlobalSub->Execute(DoFits+DoWeight);
     }
   else // only one subtraction
@@ -710,7 +715,7 @@ void Sub::RunDetection()
 {
   DetectionList detsOnGlobal;
   GlobalSub->RunDetection(detsOnGlobal);
-  cerr << "Numbers of Detection on  " <<  GlobalSubName() << " : " << detsOnGlobal.size() << endl ;
+  cout << " Numbers of Detection on  " <<  GlobalSubName() << " : " << detsOnGlobal.size() << endl ;
   if (AllNew.size() == 1) return; // no need to redo the same thing
   BaseStarList *positions = Detection2Base(&detsOnGlobal);
   MatchedDetectionList matchedDetections(detsOnGlobal);

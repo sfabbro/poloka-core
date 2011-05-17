@@ -3,11 +3,9 @@
 #define WCSUTILS__H
 
 #include <string>
+#include "gtransfo.h"
 
 class FitsHeader;
-class GtransfoLin;
-class TanPix2RaDec;
-class Gtransfo;
 class Frame;
 class StringList;
 
@@ -18,11 +16,10 @@ class StringList;
 */
 
 //! returns a transformation that combines availbale information in the header
-bool WCSFromHeader(const FitsHeader &Head, Gtransfo* &Pix2RaDec);
+GtransfoRef WCSFromHeader(const FitsHeader &Head);
 
 //! same as above
-bool WCSFromHeader(const std::string &FitsName, Gtransfo* &Pix2RaDec);
-
+GtransfoRef WCSFromHeader(const std::string &FitsName);
 
 
 //! Fills the fits file header with provided WCS transfo 

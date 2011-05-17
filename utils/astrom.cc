@@ -25,7 +25,7 @@ void usage()
 }
 
 
-static void convert_direct(const Gtransfo *Pix2RaDec, 
+static void convert_direct(const GtransfoRef Pix2RaDec, 
 			   const double x, const double y,
 			   const bool decimal,
 			   const char* Remainder = NULL)
@@ -138,9 +138,9 @@ int main(int argc, char **argv)
       cerr << " cannot open " << fitsName << endl;
       return 0;
     }
-  Gtransfo *Pix2RaDec;
   FitsHeader head(fitsName);
-  if (!WCSFromHeader(head, Pix2RaDec))
+  GtransfoRef Pix2RaDec = WCSFromHeader(head);
+  if (!Pix2RaDec)
     {
       cerr << " do not find the expected WCS in " << fitsName  << endl;
       return 0;
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
   else  if (angles2pix)
     {
       // 0.01 is the precision ot invertion (in pixels);
-      Gtransfo *RaDec2Pix = Pix2RaDec->InverseTransfo(0.01, Frame(head));
+      GtransfoRef RaDec2Pix = Pix2RaDec->InverseTransfo(0.01, Frame(head));
       for (size_t i=0; i<to_convert.size(); ++i)
 	{
 	  Coordinates &c = to_convert[i];

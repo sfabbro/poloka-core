@@ -7,10 +7,10 @@
 //#include "sestar.h"
 #include "point.h"
 #include "countedref.h"
-#include "cosmology.h"
-#include "saltmodel.h"
+#include <cosmology.h>
+#include <saltmodel.h>
 //#include "fakeobject.h"
-#include "instrument.h"
+#include <instrument.h>
 #include <cstdio>
 
 using namespace std;

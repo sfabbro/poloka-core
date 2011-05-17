@@ -4,8 +4,8 @@
 #include <fstream>
 #include <iomanip>
  
-#include "hostabsorption.h"
-#include "sampledfunction.h"
+#include <hostabsorption.h>
+#include <sampledfunction.h>
 #include "fakesnia.h"
 //#include "basestar.h"
 #include "fakelist.h"
@@ -144,11 +144,12 @@ string &band,const double day, const string magsys, const double H0)
   // calcul du point zero
   const Sampled1DFunction &refstar4magsystem = RefSpectrumForMags(magsys);
   double ref_flux = IntegPhotons(refstar4magsystem,instrumental_filter,0.);
+
   double zp = 2.5*log10(ref_flux);
   
   double flux_at_dl,mag,dl;
     
-	sn_model->SetRedshift(Redshift());	
+        sn_model->SetParameterValue("Redhsift", Redshift());
 	m_ext->val = H_Extinction();
 	m_pday->val = D0();
 	m_stretch->val = Stretch();  

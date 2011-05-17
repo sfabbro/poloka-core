@@ -112,12 +112,14 @@ MCSub::MCSub(Sub const & ASub, const int imc): Sub(ASub), original_globnewname(A
 
 
 
-  // checking if it contains the precious psfmatch
+  // checking if it contains the precious kernelfit
+  /* implicit with new kernelfitter
   if (! Original_Sub->FitExists())
     {
       cerr << "kernel fit without fake absent (MC mode only working if sub re-computed), exiting." << endl ;
       abort();
     }
+  */
   // on decroche la sub et la new
   ReducedImageRef vide ;
   ImageSubtractionRef subvide ;
@@ -216,12 +218,13 @@ MCSub::MCSub(Sub const & ASub, const int imc): Sub(ASub), original_globnewname(A
 	  stacki = stackmci ;
 	}
 
+      /* seems to be implicit with transition from psfmatch to kernelfitter
       if (! stacki.original_sub->FitExists() )
 	{
 	  cerr << "No kernel fit present for : " << stacki.name <<endl ;
 	  cerr << "MC mode only working when the subs are re-computed, exiting." << endl ;
 	  abort();
-	}
+	  }*/
 
     }
   GlobalMCResultName() = "";

@@ -59,6 +59,9 @@ int   IsLink(const std::string &FileName);
 //! mkdir shell command
 int MKDir(const char *path, const bool Warn=true);
 
+//! do the same as cp
+int CopyFile(const string& From, const string& To);
+
 //! expands a file name (prepends cwd if missing)
 std::string FullFileName(const string  &FileName);
 
@@ -89,10 +92,10 @@ char* StringDuplicate ( const char* This);
 int StringMatchPattern ( const char* This   ,const char* a_pattern );
 
 //! translates to upper case.
-std::string StringToUpper(const std::string Source);
+std::string StringToUpper(const std::string& Source);
 
 //! translate to lower case.
-std::string StringToLower(const std::string Source);
+std::string StringToLower(const std::string& Source);
 
 //! removes a given pattern
 int RemovePattern(std::string &Source, const std::string &aPattern);

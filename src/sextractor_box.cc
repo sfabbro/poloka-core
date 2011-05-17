@@ -16,10 +16,15 @@
 /* sextractor header files do not contain any provision for inclusion in C++ sources */
 
 extern "C" {
-#include <define.h> /* from sextractor, mandatory for next one () */
-#include <globals.h> /* from sextractor. nice name isn't it ? */
-#include <types.h> 
-#include <prefs.h> // a ajouter pour la version v244
+#ifdef OFF_T
+#define OFF_T_CFITSIO OFF_T
+#undef OFF_T
+#endif
+#include <sex/define.h> /* from sextractor, mandatory for next one () */
+#include <sex/globals.h> /* from sextractor. nice name isn't it ? */
+#include <sex/types.h> 
+#include <sex/prefs.h> // a ajouter pour la version v244
+#include <sex/back.h> 
 	   }
 
 
@@ -270,6 +275,7 @@ sex_proc(const AllForSExtractor & data,
      {
        prefs.dthresh[0] = prefs.dthresh[0] * data.sigma_back ;
        prefs.thresh[0] = prefs.thresh[0] * data.sigma_back ;
+       // check if it is needed...
        prefs.thresh_type[0] = THRESH_ABSOLUTE ;
      }
   cout << "DETECTION   THRESH " << prefs.dthresh[0] << endl ;
@@ -768,10 +774,6 @@ SEStarListMake_2(const ForSExtractor & shortdata,
 // Pour pouvoir recuperer le background a partir de la mini carte
 
 
-
-extern "C" {
-#include <back.h> 
-}
 /* back_meshx (or width according SExtractor)
 is coded in the mini back header as SEXBKGSX,
 back_meshy (or height) is coded in the mini back header 
@@ -802,3 +804,9 @@ Image *BackFromMiniBack(Image const & minib, int Nx, int Ny,
     }
   return(b);
 }
+
+#ifdef OFF_T_CFITSIO
+#undef OFF_T
+#define OFF_T OFF_T_CFITSIO
+#undef OFF_T_CFITSIO
+#endif

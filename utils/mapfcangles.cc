@@ -27,8 +27,7 @@ struct AstromData
   AstromData(const FitsHeader &Head)
   {
     chip = Head.KeyVal("TOADCHIP");
-    Gtransfo *wcs_temp = NULL;
-    WCSFromHeader(Head, wcs_temp);
+    GtransfoRef wcs_temp = WCSFromHeader(Head);
     wcs = wcs_temp;
     //radecFrame = pixFrame for now
     radecFrame=Frame(Head);
@@ -126,8 +125,7 @@ int main(int nargs, char **args)
     {
       const char *arg = args[i];
       FitsHeader head(arg);
-      Gtransfo *wcs_temp = NULL;
-      WCSFromHeader(head, wcs_temp);
+      GtransfoRef wcs_temp = WCSFromHeader(head);
       const Gtransfo *wcs = wcs_temp;
       int ccd = head.KeyVal("TOADCHIP");
       double cd1_1 = head.KeyVal("CD1_1");

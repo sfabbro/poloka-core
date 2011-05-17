@@ -38,7 +38,7 @@ class Model
   IntPoint refPix; // integer offset
   const double overSampling;
   ImagePSF refPSF;
-  SEStarList seRef;
+  BaseStarList seRef;
 
  protected :
   PixelBlock galaxyPixels;

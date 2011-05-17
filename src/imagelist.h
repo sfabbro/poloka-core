@@ -3,14 +3,14 @@
 #define IMAGELIST__H
 
 
-#include <vector>
+#include <list>
 #include <iostream>
 
 #include "countedref.h"
 #include "countedref.h"
 
 template <class T> class ImageList :
-  public  vector<CountedRef<T> >
+  public  list<CountedRef<T> >
 {
 
 private:
@@ -21,8 +21,8 @@ public:
   ImageList(const bool ShouldDelete = true) 
       {shouldDelete = ShouldDelete;};
 
-  typedef typename vector<CountedRef<T> >::iterator iterator;
-  typedef typename vector<CountedRef<T> >::const_iterator const_iterator;
+  typedef typename list<CountedRef<T> >::iterator iterator;
+  typedef typename list<CountedRef<T> >::const_iterator const_iterator;
 
 
   //!

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <cmath>
 #ifndef M_PI
 #define     M_PI            3.14159265358979323846  /* pi */
@@ -60,6 +61,7 @@ MatchConditions::MatchConditions(const std::string &DatacardsName)
       read_card(cards,"DATMATCH_MAXSHIFTY", MaxShiftY);
       read_card(cards,"DATMATCH_SIZERATIO", SizeRatio);
       read_card(cards,"DATMATCH_DELTA_SIZERATIO", DeltaSizeRatio);
+      DeltaSizeRatio *= SizeRatio;
       read_card(cards,"DATMATCH_MINMATCHRATIO", MinMatchRatio);
       read_card(cards,"DATMATCH_PRINTLEVEL", PrintLevel);
       read_card(cards,"DATMATCH_ALGO", Algorithm);
@@ -350,7 +352,7 @@ static StarMatchList *ListMatchupRotShift_New(BaseStarList &L1, BaseStarList &L2
      the angle is computed using atan2, its range is [-pi,pi],
      and the histogram range is [-pi-eps, pi-eps], so
      if (angle>pi- angleOffset) angle -= 2*pi before filling.   */
-int nBinsR = 21;
+ int nBinsR = 21;
 int nBinsAngle = 180; /* can be divided by 4 */
 double angleOffset = M_PI/nBinsAngle;
 double minRatio = Conditions.MinSizeRatio();
@@ -792,14 +794,43 @@ StarMatchList *ListMatchCollectWU(const BaseStarList &L1, const BaseStarList &L2
 #endif
 
 
-static bool is_transfo_ok(const StarMatchList* match, const double& pixSizeRatio2, const size_t nmin) {
-
-  if ((fabs(fabs(dynamic_cast<const GtransfoLin*>(match->Transfo())->Determinant())-pixSizeRatio2)/pixSizeRatio2 < 0.2) && (match->size() > nmin))
-    return true;
-  cout << " is_transfo_ok: no\n";
-  match->DumpTransfo();  
-  return false;
+// compute median and M.A.D. = median(|x - median(x)|)
+static double median_mad(vector<double>& x, double& disp) {
+  size_t n = x.size();
+  sort(x.begin(), x.end());
+  double med = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  for (vector<double>::iterator it = x.begin(); it != x.end(); ++it) {
+    *it = fabs(*it - med);
+  }
+  sort(x.begin(), x.end());
+  double mad = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  disp = 1.4826 * mad; // robust estimator of standard deviation
+  return med;
 }
+
+size_t StarMatchCheck(const StarMatchList* match) {
+    
+  size_t nstars = match->size();
+  const double nsig = 3.;
+
+  vector<double> chi2(nstars);
+  vector<double>::iterator ic = chi2.begin();
+
+  StarMatchCIterator it = match->begin();
+  for ( ; it != match->end(); ++it, ++ic) {
+    *ic = it->Chi2(*match->Transfo());
+  }
+
+  double schi2, medchi2 = median_mad(chi2, schi2);
+  double ngood = 0;
+  for (StarMatchCIterator it = match->begin(); it != match->end(); ++it) {
+    if (it->Chi2(*match->Transfo()) < medchi2 + nsig * schi2) ngood++;
+  }
+  cout << " StarMatchCheck: chi2 " << medchi2 << " (" 
+       << schi2 << ") ngood/nmatch " << ngood << "/" << nstars << endl;
+  return size_t(ngood);
+}
+
 
 // utility to check current transfo difference
 static double transfo_diff(const BaseStarList &List, const Gtransfo *T1, const Gtransfo*T2) {
@@ -821,112 +852,122 @@ static double transfo_diff(const BaseStarList &List, const Gtransfo *T1, const G
   return 0;
 }
 
-static double median_distance(const StarMatchList* match, const Gtransfo* transfo) {
+static double median_distance(const StarMatchList* match, const Gtransfo* transfo, double& mad) {
   size_t nstars = match->size();
   vector<double> resid(nstars);
   vector<double>::iterator ir = resid.begin();
   for (StarMatchCIterator it = match->begin(); it != match->end(); ++it, ++ir)
     *ir = sqrt(transfo->apply(it->point1).Dist2(it->point2));
-  sort(resid.begin(), resid.end());
-  return (nstars & 1) ? resid[nstars/2] : (resid[nstars/2-1] + resid[nstars/2])*0.5;
+  return median_mad(resid, mad);
 }
 
-
-Gtransfo* ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2, const MatchConditions& Conditions) {
+GtransfoRef ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2, const MatchConditions& Conditions) {
   BaseStarList L1, L2;
   List1.CopyTo(L1); L1.FluxSort();
   List2.CopyTo(L2); L2.FluxSort();
 
-  cout << " ListMatchCombinatorial: find match between " << L1.size() << " and " << L2.size() << " stars...";
+  cout << " ListMatchCombinatorial: find match between " 
+       << L1.size() << " and " << L2.size() << " stars...\n";
   StarMatchList *match = MatchSearchRotShiftFlip(L1, L2, Conditions);
-  Gtransfo *transfo = 0;
-  double pixSizeRatio2 = sqr(Conditions.SizeRatio);
-  size_t nmin = min(size_t(10), size_t(min(List1.size(), List2.size())*Conditions.MinMatchRatio));
+  GtransfoRef transfo;
+  size_t nmin = min(size_t(10), size_t(min(List1.size(), List2.size()) * 
+				       Conditions.MinMatchRatio));
 
-  if (is_transfo_ok(match, pixSizeRatio2, nmin))
+  if (StarMatchCheck(match) > nmin)
     transfo = match->Transfo()->Clone();
   else {
+    cout << " ListMatchCombinatorial: failed transfo was:\n";
+    cout << *match->Transfo();
+    cout << " ListMatchCombinatorial: trying reverse transfo\n";
     delete match;
-    cout << "FAILED\n ListMatchCombinatorial: direct transfo failed, trying reverse";
     match = MatchSearchRotShiftFlip(L2, L1, Conditions);
-    if (is_transfo_ok(match, pixSizeRatio2, nmin))
+    if (StarMatchCheck(match) > nmin)
       transfo = match->InverseTransfo();
-    else {
-      cout << "FAILED\n";
-      if (transfo) delete transfo;
-    }
   }
   delete match;
 
   if (transfo) {
-    cout << "FOUND\n";
     if (Conditions.PrintLevel >= 1)
       cout << " ListMatchCombinatorial: found the following transfo\n"
 	   << *transfo << endl;
   } else
-    cerr << "FAILED\n. Error: ListMatchCombinatorial: failed to find a transfo\n";  
+    cerr << " ListMatchCombinatorial: error: no transfo found\n";
   return transfo;
 }
 
-Gtransfo* ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2, Gtransfo* transfo, const int maxOrder) {
+GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2,
+			    GtransfoRef transfo, const int maxOrder) {
 
-  if (!transfo) { return 0; }
+  if (!transfo) { return GtransfoRef(); }
 
-  // some hard-coded constants that could go in a param file
-  const double brightDist = 2.;  // distance in pixels in a match
-  const double fullDist = 4.;    // distance in pixels in a match between entire lists
-  const double nSigmas = 3.;     // k-sigma clipping on residuals
-  const size_t nStars  = 500;    // max number of bright stars to fit
+  const double minDist = 2.;  // distance in pixels in a match
+  const double maxDist = 3.;  // distance in pixels in a match full lists
+  const double nSigmas = 3.;  // k-sigma clipping on residuals
 
-  int order = 1;
-  size_t nstarmin = 3;
-
+  // initialize
   BaseStarList L1, L2;
-  List1.CopyTo(L1); L1.FluxSort(); L1.CutTail(nStars);
-  List2.CopyTo(L2); L2.FluxSort(); L2.CutTail(nStars);
-
-  StarMatchList *fullMatch = ListMatchCollect(List1, List2, transfo, fullDist);
-  StarMatchList *brightMatch = ListMatchCollect(L1, L2, transfo, brightDist);
-  double curChi2 = ComputeChi2(*brightMatch, *transfo) / brightMatch->size();
-
-  cout << " ListMatchRefine: start  "
-       << " med.resid "  << median_distance(fullMatch, transfo) 
-       << " #match " << fullMatch->size() 
+  {
+    StarMatchList *bigMatch = ListMatchCollect(List1, List2, transfo, 10); 
+    for (StarMatchCIterator it=bigMatch->begin(); it!=bigMatch->end(); ++it) {
+      L1.push_back(it->s1);
+      L2.push_back(it->s2);
+    }
+    delete bigMatch;
+  }
+  StarMatchList *fitMatch = ListMatchCollect(L1, L2, transfo, maxDist);
+  double bestChi2 = ComputeChi2(*fitMatch, *transfo) / fitMatch->size();
+  double bestDisp, bestMed = median_distance(fitMatch, transfo, bestDisp);
+  size_t oldp = cout.precision();
+  cout << resetiosflags(ios::scientific)
+       << setiosflags(ios::fixed)
+       << " ListMatchRefine: start  "
+       << " resid "  << setw(6) << setprecision(4) << bestMed 
+       << " (" << setprecision(4) << bestDisp << ")"
+       << " #match " << fitMatch->size()
        << endl;
 
-  do { // loop on transfo order on full list of stars
-    Gtransfo* curTransfo = brightMatch->Transfo()->Clone();
+  size_t nStarsMin = 3;
+  int fitOrder = 1, bestOrder = fitOrder;
+  const size_t nStars  = 500; // max number of bright stars
+
+  BaseStarList fitList1, fitList2;
+  List1.CopyTo(fitList1); fitList1.FluxSort(); fitList1.CutTail(nStars);
+  List2.CopyTo(fitList2); fitList2.FluxSort(); fitList2.CutTail(nStars);
+
+  do { // loop on transfo order
+    GtransfoRef fitTransfo = fitMatch->Transfo()->Clone();
     unsigned iter = 0;
     double transDiff;
-    do { // loop on transfo diff only on bright stars
-      brightMatch->SetTransfoOrder(order);
-      brightMatch->RefineTransfo(nSigmas);
-      transDiff = transfo_diff(L1, brightMatch->Transfo(), curTransfo);
-      curTransfo = brightMatch->Transfo()->Clone();
-      delete brightMatch;
-      brightMatch = ListMatchCollect(L1, L2, curTransfo, brightDist);
-    } while (brightMatch->size() > nstarmin && transDiff > 0.05 && ++iter < 5);
+    do { // loop on transfo diff
+      fitMatch->SetTransfoOrder(fitOrder);
+      fitMatch->RefineTransfo(nSigmas);
+      transDiff = transfo_diff(fitList1, fitMatch->Transfo(), fitTransfo);
+      fitTransfo = fitMatch->Transfo()->Clone();
+      delete fitMatch;
+      fitMatch = ListMatchCollect(fitList1, fitList2, fitTransfo, minDist);
+    } while (fitMatch->size() > nStarsMin && transDiff > 0.05 && ++iter < 5);
     
-    double prevChi2 = curChi2;
-    curChi2 = ComputeChi2(*brightMatch, *curTransfo) / brightMatch->size();
-
-    delete fullMatch;
-    fullMatch = ListMatchCollect(List1, List2, curTransfo, fullDist);
-    cout << " ListMatchRefine: order " << order
-	 << " med.resid "  << median_distance(fullMatch, curTransfo) 
-	 << " #match " << fullMatch->size()
+    delete fitMatch;
+    fitMatch = ListMatchCollect(L1, L2, fitTransfo, maxDist);
+    double fitChi2 = ComputeChi2(*fitMatch, *fitTransfo) / fitMatch->size();
+    double fitDisp, fitMed = median_distance(fitMatch, fitTransfo, fitDisp);
+    cout << " ListMatchRefine: order " << fitOrder
+	 << " resid "  << setw(6) << setprecision(4) << fitMed
+	 << " (" << setprecision(4) << fitDisp << ")"
+	 << " #match " << fitMatch->size() 
 	 << endl;
-    if (((prevChi2 - curChi2) > 0.01*curChi2) && curChi2 > 0) {
-      cout << " ListMatchRefine: order " << order << " was a better guess\n";
-      delete transfo;
-      transfo = brightMatch->Transfo()->Clone();
+    if (fitChi2>0 && ((fitChi2 - bestChi2) < 0.005*bestChi2) && fitDisp < bestDisp) {
+      bestOrder = fitOrder;
+      bestChi2 = fitChi2;
+      bestMed = fitMed;
+      bestDisp = fitDisp;
+      transfo = fitMatch->Transfo()->Clone();
     }
-    nstarmin = brightMatch->Transfo()->Npar();
-  } while (++order <= maxOrder);
-
-  delete brightMatch;
-  delete fullMatch;
-
+    nStarsMin = fitMatch->Transfo()->Npar();
+  } while (++fitOrder <= maxOrder);
+  cout << resetiosflags(ios::fixed) << setprecision(oldp);
+  delete fitMatch;
+  cout << " ListMatchRefine: kept transfo of order " << bestOrder << endl;
   return transfo;
 }
 

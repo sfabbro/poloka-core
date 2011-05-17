@@ -13,6 +13,7 @@
 #include "polokaexception.h"
 
 #include <cmath> //for floor(double)
+#include <sstream>
 
 /*! Overall structure of the PSF modelling:
 
@@ -1094,12 +1095,9 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
 	  if (Cards().allResidualsFileName != "")
 	    for (unsigned k =0; k < residuals->NTerms(); ++k)
 	      {
-		char resFileName[64];
-		sprintf(resFileName,"%s%s_%d_%d.fits",
-			outputDirectory.c_str(),
-			CutExtension(Cards().allResidualsFileName).c_str(),
-			iterResiduals, k);
-		residuals->Coeffs(k).writeFits(resFileName);
+		ostringstream resFileName;
+		resFileName << outputDirectory << CutExtension(Cards().lastResidualsFileName) << "_" << k << ".fits";
+		residuals->Coeffs(k).writeFits(resFileName.str());
 	      }
 	  
 	  if (nonLinDeg >= 0)
@@ -1200,10 +1198,9 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
   Write(); // actually write the PSF
   /* .. and write the fitted stars (to be able to extract the fluxes 
      without refitting) */
-  Gtransfo *wcs;
-  if (!WCSFromHeader(image,wcs)) wcs = NULL;
+  GtransfoRef wcs = WCSFromHeader(image);
+  if (!wcs) wcs = GtransfoRef();
   Stars.WriteTuple(reducedImage->Dir()+"psfstars.list",wcs, this);
-  if (wcs) delete wcs;
 
   return true;
 }
@@ -1778,8 +1775,8 @@ bool ImagePSF::FitNonLinearity(const bool WriteResTuple) /* const */
   // from here on, it is only diagnostic code..
 
   // write the "corrected" star list
-  Gtransfo *wcs;
-  if (!WCSFromHeader(image,wcs)) wcs = NULL;
+  GtransfoRef wcs = WCSFromHeader(image);
+  if (!wcs) wcs = GtransfoRef();
   stars.WriteTuple((reducedImage->Dir()+"/psfstars2.list").c_str(),wcs,this);
 
   // write the "corrected" psf
@@ -1908,10 +1905,9 @@ bool MakePSF(const string &ImageName, const bool RefitPSF,
 	  string wholeStarRefCatName = DbConfigFindCatalog(starRefCatName.str());
 	  if (wholeStarRefCatName != "")
 	    {
-	      Gtransfo *readWcs;
+	      GtransfoRef readWcs = WCSFromHeader(head);
 	      TanPix2RaDec *wcs;
-	      if (WCSFromHeader(head, readWcs) 
-		  && ((wcs = dynamic_cast<TanPix2RaDec*>(readWcs))))
+	      if (readWcs && (wcs = dynamic_cast<TanPix2RaDec*>((Gtransfo*)readWcs)))
 		{
 		  BaseStarList starRefCat(wholeStarRefCatName);
 		  cout << " read " << starRefCat.size() << " stars from " 

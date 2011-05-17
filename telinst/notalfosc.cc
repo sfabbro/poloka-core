@@ -2,7 +2,8 @@
 class NotAlfoscFasu : public VirtualInstrument { /* TYPE_SELECTOR */
 public:  
   static VirtualInstrument *Acceptor(const FitsHeader &Head)
-  {if (CheckKey(Head,"INSTRUME","ALFOSC-FASU")) 
+  {if (CheckKey(Head,"INSTRUME","ALFOSC-FASU") ||
+       CheckKey(Head,"INSTRUME","ALFOSC_FASU")) 
   return new NotAlfoscFasu;
   return NULL;}
 
@@ -20,6 +21,17 @@ public:
   RETURN_A_VALUE(TOADRASC,RaDegToString(Head.KeyVal("RA")));
   RETURN_A_VALUE(TOADDECL,DecDegToString(Head.KeyVal("DEC")));
 
+  TRANSLATOR_DEC(TOADUTIM)
+  {
+    float ut = Head.KeyVal("UT");
+    int hh = (int) floor(ut);
+    int mm = (int) floor((ut-hh)*60.0);
+    float ss = ((ut-hh)*60.0-mm)*60.0;
+    char utim[11];
+    sprintf(utim,"%02d:%02d:%04.1f",hh,mm,ss);
+    return FitsKey("TOADUTIM",utim);
+  }
+
   TRANSLATOR_DEC(TOADPIXS)
   {
     int nx = Head.KeyVal("NAXIS1");
@@ -30,14 +42,23 @@ public:
 
   TRANSLATOR_DEC(TOADFILT)
   {
-    //assumed that only one filter is used at a certain time
+    // assumed that only one filter is used at a certain time
     // else only the last 'if' will be returned
     string keyval = Head.KeyVal("FILTER");
-    if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
-    keyval = static_cast<string>(Head.KeyVal("AFILTER"));
-    if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
-    keyval = static_cast<string>(Head.KeyVal("BFILTER"));
-    if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
+    if (keyval.length() == 0) {   // New ALFOSC header format
+      keyval = static_cast<string>(Head.KeyVal("ALFLTNM"));
+      if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
+      keyval = static_cast<string>(Head.KeyVal("FAFLTNM"));
+      if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
+      keyval = static_cast<string>(Head.KeyVal("FBFLTNM"));
+      if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
+    } else {                      // Old ALFOSC header format
+      if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
+      keyval = static_cast<string>(Head.KeyVal("AFILTER"));
+      if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
+      keyval = static_cast<string>(Head.KeyVal("BFILTER"));
+      if (!strstr(keyval.c_str(),"Open")) return FitsKey("TOADFILT",keyval);
+    }
     return FitsKey("TOADFILT","undefined");
   }
 

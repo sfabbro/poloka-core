@@ -11,11 +11,11 @@
 #include "reducedimage.h"
 #include "fitsimage.h"
 #include "toadscards.h"
-#include "hostabsorption.h"
-#include "cosmology.h"
-#include "instrument.h"
-#include "saltmodel.h"
-#include "minuit.h"
+#include <hostabsorption.h>
+#include <cosmology.h>
+#include <instrument.h>
+#include <saltmodel.h>
+#include <minuit.h>
 #include "lcsim.h"
 #include "myrdm.h"
 #include "wcsutils.h"
@@ -1397,7 +1397,7 @@ Sim::WriteShortList(const string &Name,const double  MJDate, const string &filte
 	if ( phase  > 69.0  || phase < -19.0 ) continue;
 	 double flux_at_dl,mag,dl;	
 	
-	sn_model.SetRedshift((*it)->Redshift());	
+	sn_model.SetParameterValue("Redshift", (*it)->Redshift());	
   	m_ext->val = (*it)->H_Extinction();
 	m_pday->val = (*it)->D0();
 	m_stretch->val = (*it)->Stretch();  

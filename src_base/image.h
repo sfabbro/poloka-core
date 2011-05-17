@@ -257,7 +257,7 @@ class Image {
       Pixel *get_elem_ref(int i, int j) {return data+i+nx*j;}
 
  private :
-      friend void image_copy(Image *To, const Image *From);
+  void image_copy(const Image& From);
 
 
 };
@@ -270,5 +270,6 @@ double EmpiricCov(const Image &Im1,const Image &Im2);
 double ImageAndWeightError(const Image &I, const Image &W,
 			 const double MinWeight = 0, double *AverageShift = NULL);  
 
+void dilate_binary_image(Image& image, int rad);
 
 #endif /* IMAGE__H */

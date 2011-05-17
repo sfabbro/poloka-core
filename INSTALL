@@ -1,6 +1,31 @@
 There are two ways to compile and install poloka. You may use either 
-  - autoconf/automake (somewhat broken) 
+  - autoconf/automake
   - waf 
+
+
+Install (autotools)
+===================
+   * install libsex
+     $ wget http://astrowww.phys.uvic.ca/~seb/libsex-2.4.4.2.tar.gz
+     $ tar xf libsex-2.4.4.2.tar.gz
+     $ cd libsex-2.4.4.2
+     $ ./configure --prefix=<myprefix> && make && make install
+     
+   * install cfitsio
+     $ wget http://astrowww.phys.uvic.ca/~seb/cfitsio-3.270.tar.gz
+     $ tar xf cfitsio-3.270.tar.gz
+     $ cd cfitsio-3.270
+     $ ./configure --prefix=<myprefix> && make && make install
+
+   * install poloka
+     $ wget http://astrowww.phys.uvic.ca/~seb/poloka-0.6.0.tar.gz
+     $ tar xf poloka-0.6.0.tar.gz
+     $ cd poloka-0.6.0
+     $ export PKG_CONFIG_PATH=<myprefix>/lib/pkgconfig:${PKG_CONFIG_PATH}
+     $ ./configure --prefix=<myprefix> && make && make install
+
+See INSTALL.autotools for more details.
+See README.autotools if you want to develop with autotools.
 
 Install (waf)
 =============
@@ -41,8 +66,8 @@ Install (waf)
       $ ./waf install
 
 
-Install for poloka (traditional)
-================================
+Install for poloka (old and buggy)
+==================================
   1) autogen.sh
   1.5) there 2 options essentialy mandatory to configure:
        --enable-cmt (to locate sextractor and cfitsio)

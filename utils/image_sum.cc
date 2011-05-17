@@ -3,6 +3,7 @@
 
 #include "fitsimage.h"
 #include "transformedimage.h"
+#include "reducedutils.h"
 #include "imagesum.h"
 
 static void usage(const char *progName)
@@ -55,11 +56,11 @@ int main(int nargs, char **args)
       // options
       arg++;
       sscanf(arg, "%s", arg);
-      if (strcmp(arg,"stack")==0) { ++i; stackMethod =  (StackingMethod) atoi(args[i]); continue; }
-      if (strcmp(arg,"weight")==0)  { ++i; weightMethod = (WeightingMethod) atoi(args[i]); continue; }
-      if (strcmp(arg,"geo")==0) { ++i; geoName = args[i]; continue; }
-      if (strcmp(arg,"sum")==0) { ++i; sumName = args[i]; continue; }
-      if (strcmp(arg,"pho")==0) { ++i; phoName = args[i]; continue; }
+      if (strcmp(arg,"stack")==0) { stackMethod =  (StackingMethod) atoi(args[++i]); continue; }
+      if (strcmp(arg,"weight")==0) { weightMethod = (WeightingMethod) atoi(args[++i]); continue; }
+      if (strcmp(arg,"geo")==0) { geoName = args[++i]; continue; }
+      if (strcmp(arg,"out")==0) { sumName = args[++i]; continue; }
+      if (strcmp(arg,"pho")==0) { phoName = args[++i]; continue; }
       if (strcmp(arg,"large")==0) { dolarge = true; continue; }
       if (strcmp(arg,"j")==0) { justSum = true; continue; }
 
@@ -79,11 +80,12 @@ int main(int nargs, char **args)
       for (ReducedImageIterator it=toSum.begin(); it != toSum.end(); ) {
 	if ((*it)->Name() == geoName) {
 	  it = toSum.erase(it);
-	  toSum.push_back(new ReducedImage(unionName));
+	  it = toSum.insert(it, new ReducedImage(unionName));
 	}	
 	else 
 	  ++it;
       }
+      if (geoName == phoName) phoName = unionName;
       geoName = unionName;
     }
   
@@ -107,14 +109,9 @@ int main(int nargs, char **args)
   else 
     {
       ImagesAlignAndSum(toSum, geoRef, sumName, 
-			DoFits | DoCatalog | DoWeight | DoSatur, 
+			DoFits | DoCatalog | DoAperCatalog | DoWeight | DoSatur, 
 			&phoRef, weightMethod, stackMethod);
     }
-
-  //not so useful to do, just run matchusno
-  //UsnoProcess(DbImage(sumName).FitsImageName(Calibrated),
-  //	      DbImage(sumName).ImageCatalogName(Sextractor),
-  //	      NULL);
 
   return EXIT_SUCCESS;
 }

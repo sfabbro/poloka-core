@@ -14,7 +14,7 @@ static void usage(char *progName)
   cerr << "   register images relatively to a given geometric reference image \n" 
        << "   OPTIONS:\n"
        << "     -geo <name> : indicate the reference image <name>. Default is first one\n"
-       << "     -p : print a quick photometric ratio\n"
+       << "     -p : compute a photometric ratio\n"
        << "     -d : dump the following:\n"
        << "            - the matched star list in <name>.<DbImage>.match.list\n "
        << "            - the transfos (direct and reverse) in <name>.<DbImage>.transfo\n";
@@ -29,7 +29,7 @@ int main(int nargs, char **args)
   if (nargs < 2)  { usage(args[0]); }
   if (nargs == 2) { cerr << " error: register at least 2 images"; usage(args[0]); }
   bool dump = false, phoratio = false;
-  string geoName("NOGEO");
+  string geoName("");
   ReducedImageList toRegister;
 
   //loop over arguments
@@ -53,7 +53,7 @@ int main(int nargs, char **args)
       usage(args[0]);
     }
 
-  if (geoName=="NOGEO") geoName = toRegister.front()->Name();
+  if (geoName.empty()) geoName = toRegister.front()->Name();
 
   ReducedImage geoRef(geoName);  
   char *old_dump = getenv("DUMP_MATCH");
@@ -64,12 +64,18 @@ int main(int nargs, char **args)
       if (dump) setenv("DUMP_MATCH","YES",1);
       //naming of the list dump is taken care in imagematch.cc
       ImageListMatch(geoRef, *current, direct, reverse);
+
       if (phoratio)
 	{
-	  double error;
-	  cout << " Photometric ratio: "
-	       << QuickPhotomRatio(geoRef, *current, error, direct)
-	       << " +/- " << error << endl;
+	  double error, ratio;
+	  if (PhotomRatio(geoRef, *current, ratio, error, direct))
+	    cout << " Slow photometric ratio: "
+		 << ratio << " +/- " << error << endl;
+	  else
+	    cerr << " Could not compute a photometric ratio\n";
+	  ratio = QuickPhotomRatio(geoRef, *current, error, direct);
+	  cout << " Quick photometric ratio: "
+	       << ratio << " +/- " << error << endl;
 	}
       if (dump)
 	{
@@ -78,7 +84,7 @@ int main(int nargs, char **args)
 	  direct->dump(gout);
 	  gout << "# Transfo " << current->Name() << " to " << geoName << endl;
 	  reverse->dump(gout);
-	}   
+	}
     }
 
   if (dump && !old_dump) unsetenv("DUMP_MATCH");

@@ -71,14 +71,15 @@ GtransfoLin *ListMatchupShift(const BaseStarList &L1,
 			      double MaxShift, double BinSize = 0);
 
 
-Gtransfo* ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2,
-				 const MatchConditions& Conditions=MatchConditions());
-Gtransfo* ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2, Gtransfo* transfo, const int maxOrder=3);
+size_t StarMatchCheck(const StarMatchList* Match);
 
-inline Gtransfo* ListMatch(const BaseStarList& List1, const BaseStarList& List2, const int maxOrder=3) {
-  Gtransfo* transfo = ListMatchCombinatorial(List1, List2);
-  transfo = ListMatchRefine(List1, List2, transfo, maxOrder);
-  return transfo;
+GtransfoRef ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2,
+				 const MatchConditions& Conditions=MatchConditions());
+GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2, GtransfoRef transfo, 
+			    const int maxOrder=3);
+
+inline GtransfoRef ListMatch(const BaseStarList& List1, const BaseStarList& List2, const int maxOrder=3) {
+  return ListMatchRefine(List1, List2, ListMatchCombinatorial(List1, List2), maxOrder);
 }
 
 #endif /* LISTMATCH__H */

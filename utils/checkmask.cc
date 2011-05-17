@@ -127,8 +127,8 @@ ReducedImage current(*i);
         band = (char) band[0];
 
  	Frame current_Frame(current_fits, WholeSizeFrame);
- 	Gtransfo *Pix2RaDec;
- 	if (!WCSFromHeader(/*dynamic_cast <FitsHeader> */current_fits, Pix2RaDec))
+ 	GtransfoRef Pix2RaDec = WCSFromHeader(current_fits);
+ 	if (!Pix2RaDec)
  	{
  		cout << "cannot handle "<< current.FitsWeightName() <<" without a WCS " << endl;
  		continue;

@@ -21,6 +21,27 @@ SubImage::SubImage(const string &Name, const string &LargeImageName,
   Create("here");
 }
 
+#include "reducedutils.h"
+SubImage::SubImage(const string& Name, const string &LargeImageName,
+		   const string& SmallImageName, int ExtraMargin) : ReducedImage(Name) {
+
+  largeImageName = LargeImageName;
+  ReducedImage large(LargeImageName);
+  ReducedImage small(SmallImageName);
+  Gtransfo* small2Large = FindWCSTransfo(small, large);
+  if (!small2Large) small2Large = FindTransfo(small, large);
+  if (!small2Large) {
+    cerr << " SubImage::SubImage could not find a match from "
+	 << LargeImageName << " to " << SmallImageName << endl;
+    return;
+  }
+  largeFrame = large.PhysicalSize();
+  Frame smallFrame = small.PhysicalSize();
+  smallFrame.CutMargin(-ExtraMargin);
+  smallFrame = ApplyTransfo(smallFrame, *small2Large);
+  subFrame = largeFrame*smallFrame;
+  Create("here");
+}
 
 static string frame_to_string( const Frame &AFrame, int &Imin, int &Imax)
 {
@@ -211,4 +232,37 @@ bool SubImage::MakeCatalog()
   inList.write(CatalogName());
   return true;
 }
+
+#include "apersestar.h"	  
+bool SubImage::MakeAperCat()
+{
+  if (HasAperCatalog()) return true;
+  ReducedImage large(largeImageName);
+  if (!large.HasAperCatalog())
+    {
+      cout << " Original large image " << largeImageName 
+	   << "  has no catalog " << endl
+	   << " Making Catalog of the subimage " << endl;
+      return ReducedImage::MakeAperCat();
+    }
+  // else : extract
+  AperSEStarList inList(large.AperCatalogName());
+
+  for (AperSEStarIterator i = inList.begin(); i != inList.end();)
+    {
+      AperSEStar &s = **i;
+      if (!subFrame.InFrame(s))
+	i = inList.erase(i);
+      else ++i;
+    }
+
+  GtransfoLinShift shift(-subFrame.xMin, -subFrame.yMin);
+  inList.ApplyTransfo(shift);
+
+  inList.write(AperCatalogName());
+  return true;
+}
+
+SubImage::SubImage(const string &Name) : ReducedImage(Name) { }
+
 	  

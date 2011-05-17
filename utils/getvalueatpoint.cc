@@ -77,8 +77,8 @@ if(cal)
 
 	FitsImage current_fits (current.FitsName());
  	Frame current_Frame(current_fits, WholeSizeFrame);
- 	Gtransfo *Pix2RaDec;
- 	if (!WCSFromHeader(/*dynamic_cast <FitsHeader> */current_fits, Pix2RaDec))
+ 	GtransfoRef Pix2RaDec = WCSFromHeader(current_fits);
+ 	if (!Pix2RaDec)
  	{
  		cout << "cannot handle "<<current.FitsName() <<" without a WCS " << endl;
  		continue;
@@ -96,8 +96,8 @@ if(weight)
 
 	FitsImage current_fits (current.FitsWeightName());
  	Frame current_Frame(current_fits, WholeSizeFrame);
- 	Gtransfo *Pix2RaDec;
- 	if (!WCSFromHeader(/*dynamic_cast <FitsHeader> */current_fits, Pix2RaDec))
+ 	GtransfoRef Pix2RaDec =WCSFromHeader(current_fits);
+ 	if (!Pix2RaDec)
  	{
  		cout << "cannot handle "<< current.FitsWeightName() <<" without a WCS " << endl;
  		continue;
@@ -115,8 +115,8 @@ else
 {
 	FitsImage current_fits (*i);
  	Frame current_Frame(current_fits, WholeSizeFrame);
- 	Gtransfo *Pix2RaDec;
- 	if (!WCSFromHeader(/*dynamic_cast <FitsHeader> */current_fits, Pix2RaDec))
+ 	GtransfoRef Pix2RaDec = WCSFromHeader(current_fits);
+ 	if (!Pix2RaDec)
  	{
  		cout << "cannot handle "<< *i <<" without a WCS " << endl;
  		continue;

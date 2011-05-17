@@ -44,8 +44,8 @@ int main(int nargs, char **args)
 
     }
 
-  if (seeingsort) sort(alls.begin(), alls.end(), IncreasingSeeing);
-  if (datesort) sort(alls.begin(), alls.end(), IncreasingJulianDate);
+  if (seeingsort) alls.sort(IncreasingSeeing);
+  if (datesort) alls.sort(IncreasingJulianDate);
 
   cout << "---------------------------------------------------------------------------------------------------------" << endl;
   cout << setw(maxs+2) << setiosflags(ios::left)<< "Image" << setiosflags(ios::right);
@@ -53,9 +53,9 @@ int main(int nargs, char **args)
        << "FWHM" << setw(10) << "Sky" << setw(9) << "Satur" << setw(5) 
        << "ZP" << setw(12) << "Target" << endl;
   cout << "---------------------------------------------------------------------------------------------------------" << endl;
-  for (unsigned int i=0; i<alls.size(); ++i)
+  for (ReducedImageIterator it = alls.begin(); it != alls.end(); ++it)
     {
-      ReducedImage *current = alls[i];
+      ReducedImage *current = *it;
       cout << setiosflags(ios::left);      
       cout << setw(maxs+2) << current->Name().c_str();
       cout << setiosflags(ios::right);      

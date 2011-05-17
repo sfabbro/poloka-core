@@ -19,36 +19,32 @@
    inline Pixel operator() (const int i, const int j) const 
 */
 
-Image::Image(const int Nx, const int Ny) : data(NULL)
+Image::Image(const int Nx, const int Ny) : nx(Nx), ny(Ny), data(NULL)
   {
   allocate(Nx, Ny);
   }
 
-Image::Image()
-{
-nx=ny=0;
-data = NULL;
-}
+Image::Image() : nx(0), ny(0), data(NULL) {}
 
-Image::Image(const Image& Source) : data(NULL)
+
+
+Image::Image(const Image& Source) : nx(0), ny(0), data(NULL)
   {
-   image_copy(this, &Source);
+   image_copy(Source);
   }
 
-
-void image_copy(Image *To, const Image *From)
+void Image::image_copy(const Image &From)
 {
   // To->data may be NULL, when To is a scalar image
-  if (From == To) return;
-  if ( !From->SameSize(*To) ||
-       !To->data ) To->allocate(From->nx, From->ny, 0);
-  memcpy(To->data, From->data, From->nx * From->ny * sizeof(Pixel));
+  if (this == &From) return;
+  if (!SameSize(From) || !data)
+    allocate(From.nx, From.ny, 0);
+  memcpy(data, From.data, From.nx * From.ny * sizeof(Pixel));
 }
-
 
 Image & Image::operator =(const Image& Right)
 {
-image_copy(this, &Right);
+image_copy(Right);
 return (*this);
 }
 
@@ -1046,7 +1042,7 @@ int Image::LaplacianFilter(const double & Sigma, const double &Mean,
   int ymax = this->Ny()-1;
   float l, f, med;
   
-  float cut = 4 * Sigma;
+  float cut = Mean + 4 * Sigma;
   float cut_lap = cut * sqrt(1.25);
   float cut_f = 2 * (Sigma*1.22/3);
   float cut_lf = 2./(seeing*2.35-1);
@@ -1118,3 +1114,41 @@ double ImageAndWeightError(const Image &I, const Image &W, const double MinWeigh
 }
 
 
+// taxicab distance
+static void manhattan_distance(Image& image) {
+
+  int nx = image.Nx();
+  int ny = image.Ny();
+  Pixel maxdist = nx + ny;
+
+  // compute distance up and left from pixel
+  for (int j=0; j<ny; j++) {
+    for (int i=0; i<nx; i++) {
+      Pixel *p = &image(i,j);
+      if (*p == 1) {
+	*p = 0;
+      } else {
+	*p = maxdist;
+	if (j>0) *p = min(*p, image(i,j-1)+1);
+	if (i>0) *p = min(*p, image(i-1,j)+1);
+      }
+    }
+  }
+
+  // compute distance down and right, reverse the traverse
+  for (int j=ny-1; j>=0; j--) {
+    for (int i=nx-1; i>=0; i--) {
+      Pixel *p = &image(i,j);
+      if (j+1<ny) *p = min(*p, image(i,j+1)+1);
+      if (i+1<nx) *p = min(*p, image(i+1,j)+1);
+    }
+  }
+}
+
+void dilate_binary_image(Image& image, int rad) {
+  manhattan_distance(image);
+  Pixel *pend = image.end();
+  for (Pixel *p=image.begin(); p<pend ; ++p)
+    *p = (*p <= rad) ? 1 : 0;
+}
+ 

@@ -4,8 +4,8 @@
 
 #include "reducedimage.h"
 #include "sestar.h"
+#include "gtransfo.h"
 
-class Gtransfo;
 class StarMatchList;
 
 //! arrange and copy a list of ReducedImage into different sets of images
@@ -32,7 +32,7 @@ double QuickPhotomRatio(const ReducedImage &CurImage, const ReducedImage &RefIma
 
 //! assumes that the Gtransfo is known. Computes "cur"/"ref"
 double QuickPhotomRatio(const SEStarList &CurList, const SEStarList &RefList, 
-			double &error, const Gtransfo *transfo);
+			double &error, const GtransfoRef transfo);
 
 //! quick and robust photometric ratio given a StarMatchList (s1->flux/s2->flux).
 double MedianPhotomRatio(const StarMatchList &MatchList);
@@ -54,5 +54,44 @@ typedef std::list<FluxPair> FluxPairList;
 //! compute R such that f1=R*f2 on average.
 bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R, double &Var);
 
+//! wrapper to SlowPhotomRatio
+bool PhotomRatio(const DbImage &Rim, const DbImage &Ref, double& Ratio, double &Error, GtransfoRef &Im2Ref);
+
+inline bool PhotomRatio(const DbImage &Rim, const DbImage &Ref, double& Ratio, double &Error) {
+  GtransfoRef g;
+  return PhotomRatio(Rim, Ref, Ratio, Error, g);
+}
+
+inline double PhotomRatio(const DbImage &Rim, const DbImage &Ref) {
+  double e, r;
+  if (PhotomRatio(Rim,Ref,r,e))
+    return r;
+  return -1; // bad idea, but you should not use this wrapper routine anyway.
+}
+
+//! returns a frame containing all images
+Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference=0);
+
+//! produce an image with margins large enough to include all images to align
+void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName);
+
+//! loads a decent basestarlist to use with matching routines
+//! preferences: 1. PSFStarList, 2. AperSEStarList, 3. SEStarList
+void LoadForMatch(const ReducedImage& Im, BaseStarList& BList, const double& MinSN=15);
+
+//! convenient wrapper to find a Gtransfo between 2 images only based on WCS information
+GtransfoRef FindWCSTransfo(const ReducedImage& Src, const ReducedImage& Dest);
+
+//! wrapper for lists to call matching routines
+//! tries: 1. WCS composition 2. Combinatorics then refines
+GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestList,
+			const ReducedImage& Src, const ReducedImage& Dest,
+			int MaxOrder=3);
+
+//! convenient wrapper to find a Gtransfo between 2 images using the above routine
+GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest, int MaxOrder=3);
+
+string ImageResample(const ReducedImage& Im, const ReducedImage& Ref);
+string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref);
 
 #endif // REDUCEDUTILS__H

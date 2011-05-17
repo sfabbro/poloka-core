@@ -178,9 +178,9 @@ int main(int nargs, char **args)
       if (setrad)
 	{
 	  Frame pixFrame(head);
-	  Gtransfo *Pix2RaDec;
+	  GtransfoRef Pix2RaDec = WCSFromHeader(head);
 	  rad_is_true = false;
-	  if (WCSFromHeader(head, Pix2RaDec))
+	  if (Pix2RaDec)
 	    {
 	      Frame sidFrame = ApplyTransfo(pixFrame,*Pix2RaDec);
 	      Frame overlap = sidFrame*sourceFrame;

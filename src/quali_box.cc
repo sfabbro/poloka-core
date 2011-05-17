@@ -154,7 +154,7 @@ Test_Qual_N_same(int N, const FitsHeader & header,
 					       tf, dist_max) ;
 
  
-  GoodForQualTest(*lmatchphot,saturation,0.3,50 );
+  GoodForQualTest(*lmatchphot,saturation,0.3,150 );
   Test_Qual_N_same(N, *lmatchphot, pimage, Fond,SigFond,dtaille,pr);
   delete lmatchphot;
 }

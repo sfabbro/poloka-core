@@ -28,7 +28,7 @@ public :
 
   TRANSLATOR_DEC(TOADRASC)
   {
-    if (!Head.HasKey("FIELDRA") || !Head.HasKey("FIELDDEC"))
+    if (Head.HasKey("RA") && Head.HasKey("DEC"))
       return FitsKey("TOADRASC", string(Head.KeyVal("RA")));
 
     string raString  = Head.KeyVal("FIELDRA");
@@ -75,8 +75,9 @@ public :
   
   TRANSLATOR_DEC(TOADDECL)
   {
-    if (!Head.HasKey("FIELDDEC"))
+    if (Head.HasKey("DEC"))
       return FitsKey("TOADDECL", string(Head.KeyVal("DEC")));
+
     string decString = Head.KeyVal("FIELDDEC");
     double dec = DecStringToDeg(decString);
     string ampid = Head.KeyVal("AMP-ID");

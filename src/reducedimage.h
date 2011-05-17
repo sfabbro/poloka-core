@@ -28,8 +28,7 @@ using namespace std;
 #include "frame.h"
 #include "fileutils.h" // for FileExists
 #include "countedref.h"
-
-class Gtransfo;
+#include "gtransfo.h"
 
 class ForSExtractor;
 
@@ -71,6 +70,7 @@ public :
   bool HasBack() const { return (FileExists(FitsBackName()));}
   bool HasMiniBack() const { return (FileExists(FitsMiniBackName()));}
   bool HasCatalog() const {return(FileExists(CatalogName()));}
+  bool HasAperCatalog() const {return(FileExists(AperCatalogName()));}
   bool HasDead() const {return(FileExists(FitsDeadName()));}
   bool HasFlat() const {return(FileExists(FitsFlatName()));}
   bool HasSatur() const {return(FileExists(FitsSaturName()));}
@@ -387,8 +387,8 @@ Usefull in case of artificially smoothed images
   double Airmass() const;
   bool SetAirmass(const double &Value, const string Comment = "");
 
-  Gtransfo *RaDecToPixels() const;
-  Gtransfo *PixelsToRaDec() const;
+  GtransfoRef RaDecToPixels() const;
+  GtransfoRef PixelsToRaDec() const;
  
   //! photometric reference (i.e. image that should have the same flux)
   string PhotomReference() const;
@@ -518,5 +518,6 @@ bool BoolImageAnd(ReducedImageList &List,
 
 #endif
 
+int ToTransform(const ReducedImage& Im);
 
 #endif /* REDUCEDIMAGE__H */

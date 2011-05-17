@@ -106,7 +106,8 @@ public:
   string TelName () const {return "CFHT";}
   string InstName () const { return "Megacam";}
   static VirtualInstrument *Acceptor(const FitsHeader &Head)
-  { if (StringToUpper(Head.KeyVal("DETECTOR")) == "MEGACAM") return new Megacam; 
+  { if (StringToUpper(Head.KeyVal("DETECTOR")) == "MEGACAM" && 
+	DeleteWhiteSpaces(StringToUpper(Head.KeyVal("TELESCOP"))) == "CFHT3.6m") return new Megacam; 
   else return NULL;}
   
   

@@ -115,9 +115,8 @@ int main(int argc, char **argv)
   // prepare transfo and frames for stars' selection
   Frame W = lclist.RefImage->UsablePart();
   // W = W.Rescale(1.); // remove boundaries
-  Gtransfo* Pix2RaDec=0;
-  WCSFromHeader(header, Pix2RaDec);
-  Gtransfo *RaDec2Pix = Pix2RaDec->InverseTransfo(0.01,W);
+  GtransfoRef Pix2RaDec= WCSFromHeader(header);
+  GtransfoRef RaDec2Pix = Pix2RaDec->InverseTransfo(0.01,W);
   Frame radecW = (ApplyTransfo(W,*Pix2RaDec)).Rescale(1.1);
 
   DictFile catalog(catalogname);

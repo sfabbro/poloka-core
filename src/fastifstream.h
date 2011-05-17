@@ -9,8 +9,8 @@
 #include <cstdio>
 #include <string>
 #include <cctype>
-#include <string.h> // for strcpy
-#include <stdlib.h> // for strtol strtoul
+#include <cstring> // for strcpy
+#include <cstdlib> // for strtol strtoul
 
 /*! This is a Mickey-Mouse implementation of ifstream over core C I/O's.
 The reason is that it is faster that actual ifstream: by a factor of 2
@@ -81,7 +81,7 @@ public :
     return *this;
   }
 
-  fastifstream& operator >> (unsigned &i) 
+  fastifstream& operator >> (size_t &i) 
   { 
     skip_spaces();
     char *end=NULL;

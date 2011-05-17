@@ -15,8 +15,8 @@ KernelFitter::KernelFitter(const ReducedImageRef &Ref, const ReducedImageRef &Ne
 	   << Ref->Name() << " and " << New->Name() << endl;
       throw PolokaException(" Cannot fit kernel on images of different sizes ");
     }
-  double refSeeing = Ref->Seeing();
-  double newSeeing = New->Seeing();
+  double refSeeing = Ref->GFSeeing();
+  double newSeeing = New->GFSeeing();  
   largestSeeing = (refSeeing > newSeeing) ? refSeeing : newSeeing;
   refIsBest =  (NoSwap || (refSeeing < newSeeing));
   if (refIsBest)
@@ -38,4 +38,28 @@ int KernelFitter::DoTheFit()
   ImagePair imPair(best,worst);
   return KernelFit::DoTheFit(imPair);  
   // clean up of images when deleting imPair;
+}
+
+static string kernfitfile(const ReducedImageRef best, const ReducedImageRef worst) {
+  ImagePair impair(best,worst);
+  return KernelFitFile(impair) + ".dat";
+}
+void KernelFitter::WriteKernel(bool overwrite) const
+{
+  string kernfile = kernfitfile(worst,best);
+  if (FileExists(kernfile)) {
+    if (overwrite) remove(kernfile.c_str());
+    else return;
+  }
+  cout << " Writing " << kernfile << endl;
+  write(kernfile);
+}
+
+bool KernelFitter::ReadKernel()
+{
+  string kernfile = kernfitfile(worst,best);
+  if (!FileExists(kernfile)) return false;
+  cout << " Reading " << kernfile << endl;
+  read(kernfile);
+  return true;
 }

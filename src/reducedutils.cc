@@ -1,7 +1,15 @@
 #include "reducedutils.h"
 #include "starmatch.h"
 #include "listmatch.h"
+#include "apersestar.h"
+#include "imageutils.h"
 #include "vutils.h" // for DArrayMedian
+#include "transformedimage.h"
+#include "fitsimage.h"
+#include "wcsutils.h"
+#include "toadscards.h"
+#include "allreducedimage.h"
+#include "polokaexception.h"
 
 static bool SM_DecFluxMax(const StarMatch &S1, const StarMatch &S2)
 {
@@ -9,7 +17,6 @@ static bool SM_DecFluxMax(const StarMatch &S1, const StarMatch &S2)
   const SEStar *p2 = (const SEStar *) (const BaseStar *) S2.s1;
   return  DecFluxMax(p1,p2);
 }
-
 
 /************************ Photom ratio estimators *******************/
 
@@ -71,17 +78,19 @@ double QuickPhotomRatio(const ReducedImage &CurImage, const ReducedImage &RefIma
 }
 
 double QuickPhotomRatio(const SEStarList &CurList, const SEStarList &RefList, 
-			double &error, const Gtransfo* transfo)
+			double &error, const GtransfoRef transfo)
 {
   const double distmax(1.);
   BaseStarList *lcur = (BaseStarList *) &CurList;
   BaseStarList *lref = (BaseStarList *) &RefList;
   GtransfoIdentity ident;
-  if (!transfo) transfo = &ident;
-  StarMatchList *matchlist = ListMatchCollect(*lcur, *lref, transfo, distmax);
+  const Gtransfo* mytransfo = transfo;
+  if (!transfo) mytransfo = &ident;
+  StarMatchList *matchlist = ListMatchCollect(*lcur, *lref, mytransfo, distmax);
   if (matchlist->empty()) 
     {
       cerr << " QuickPhotomRatio() : Error : matchlist empty, returning ratio=1" << endl;
+      error = 0;
       return 1;
     }
   matchlist->sort(&SM_DecFluxMax);
@@ -172,7 +181,9 @@ bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R,
   int oldCount = L.size();
   double *chi2Vals = new double[oldCount];
   double chi2Cut = 1e30;
+  const int nitermax = 50;
   R = PairListMedianPhotomRatio(L);
+  // cout << " initial ratio = " << R << " with " << L.size() << " stars" << endl;
   do
     {
       double num = 0;
@@ -206,28 +217,198 @@ bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R,
       double chi2Mean, chi2Med, chi2Sig;
       Dmean_median_sigma(chi2Vals, count, chi2Mean, chi2Med, chi2Sig);
       chi2Cut = chi2Med+NSigChi2Cut*chi2Sig;
+      if (chi2Cut == 0)
+	{
+	  cout << " INFO : SlowPhotomRatio finds a null chi2 cut !! seems we got twice the same list " << endl;
+	  chi2Cut = 1;
+	}
       bool outliers = false;
       for (int k=0; k < count; ++k) if (chi2Vals[k] > chi2Cut) {outliers = true;break;}
       if (!outliers && oldCount == count && chi2Old - chi2 < 1e-3) break;
       chi2Old = chi2;
       oldCount = count;
-      if (outliers) niter ++;
-      }   while (niter < 10);
+      if (outliers) niter++;
+      }   while (niter < nitermax);
   delete [] chi2Vals;
-  
+
   if ( isnan(R))
     {      
-      cerr  << "WARNING SlowPhotomRatio : nan value " << endl ;
+      cerr  << " WARNING SlowPhotomRatio : nan value " << endl ;
       return false ;
     }
-  cout << " chi2 photom ratio, niter " << chi2/(L.size()-1) << ' ' << niter << endl;
-  return (niter<10);
+
+  // cout << " chi2 photom ratio, niter " << chi2/(L.size()-1) << ' ' << niter << endl;
+  return (niter<nitermax);
 }
 
+void LoadForMatch(const ReducedImage& Im, BaseStarList& BList, const double& MinSN) {
+  
+  AperSEStarList sList;
+  if (Im.HasAperCatalog())
+    sList.read(Im.AperCatalogName());
+  else if (Im.HasCatalog())
+    sList.read(Im.CatalogName());
+  
+  for (AperSEStarIterator it=sList.begin(); it != sList.end(); ) {
+    AperSEStar *pstar = *it ;
+    // not in bad zone, keep satur, only with better 0.3 pixels accuracy
+    if (pstar->FlagBad() == 0 && pstar->Flag() < 8 && 
+	pstar->flux > MinSN * pstar->EFlux())
+      //pstar->vx + pstar->vy < 0.1)
+      ++it;
+    else 
+      it = sList.erase(it);
+  }  
+  BList = *AperSE2Base(&sList);
+}
 
+static bool ListMatchCheck(const BaseStarList& Src, const BaseStarList& Dest,
+			   const GtransfoRef Transfo, const double& DistMax, const double& MinMatch=0.1) {
+    
+  if (!Transfo) return false;
 
+  StarMatchList *match = ListMatchCollect(Src, Dest, Transfo, DistMax);
+  if (!match) return false;
+  if (match->empty()) {
+    cerr << " ListMatchCheck: empty match\n";
+    delete match;
+    return false;
+  }
+  size_t nmin = size_t(min(Src.size(), Dest.size()) * MinMatch);
+  cout << " ListMatchCheck: min stars to match = " << nmin << endl;
+  size_t ngood = StarMatchCheck(match);
+  delete match;
+  return (ngood > nmin);
+}
 
+GtransfoRef FindWCSTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
 
+  GtransfoRef src2dest;
+  FitsHeader hsrc(Src.FitsName());
+  if (!HasLinWCS(hsrc)) return src2dest;
+  FitsHeader hdest(Dest.FitsName());
+  if (!HasLinWCS(hdest)) return src2dest;
+  GtransfoRef wsrc = WCSFromHeader(hsrc);
+  GtransfoRef wdest = WCSFromHeader(hdest);
+  
+  if (wsrc && wdest) {
+    Frame fsrc = Src.UsablePart();
+    Frame fdest = Dest.UsablePart();
+    src2dest = GtransfoCompose(wdest->InverseTransfo(0.01, fdest), wsrc);
+  }
+  return src2dest;
+}
+
+GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest, int MaxOrder) {
+
+  if (Src == Dest) {
+    cout << " FindTransfo: same image: " << Src.Name() << " returning identity\n";
+    return new GtransfoIdentity();
+  }
+    
+  BaseStarList bsrcList;  LoadForMatch(Src, bsrcList);
+  BaseStarList bdestList; LoadForMatch(Dest, bdestList);
+
+  return FindTransfo(bsrcList, bdestList, Src, Dest, MaxOrder);  
+}
+
+GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestList,
+			const ReducedImage& Src, const ReducedImage& Dest,
+			int MaxOrder) {
+
+  cout << " FindTransfo: " 
+       << Src.Name() << " (" << SrcList.size() << " stars) to " 
+       << Dest.Name() << " (" << DestList.size() << " stars)\n";
+  cout << " FindTransfo: trying with WCS's...\n";
+  GtransfoRef transfo = FindWCSTransfo(Src, Dest);
+  MatchConditions cond(DefaultDatacards());
+  cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
+  cond.DeltaSizeRatio = 0.1 * cond.SizeRatio;
+
+  if (transfo) {
+    if (ListMatchCheck(SrcList, DestList, transfo, 2, cond.MinMatchRatio)) {
+      cout << " FindTransfo: refining WCS transfo\n";
+      transfo = ListMatchRefine(SrcList, DestList, transfo, MaxOrder);
+    } else {
+      cout << " FindTransfo: WCS not good enough\n";
+      transfo = GtransfoRef();
+    }
+  }
+
+  if (!transfo) {
+    cout << " FindTransfo: trying with combinatorial match\n";
+    transfo = ListMatchCombinatorial(SrcList, DestList, cond);
+    if (transfo) {
+      cout << " FindTransfo: refining combinatorial match\n";
+      transfo = ListMatchRefine(SrcList, DestList, transfo);
+    } else {
+      cout << " FindTransfo: no match found\n";
+      transfo = GtransfoRef();
+    }
+  }
+  return transfo;
+}
+
+bool PhotomRatio(const DbImage &Im, const DbImage &Ref, double& Ratio, double &Error, GtransfoRef &Im2Ref)
+{
+  const size_t nmax = 500;
+  if (Im == Ref) { 
+    Error = 0.;
+    Ratio = 1.;
+    return true;
+  }
+  string imListName = Im.ImageCatalogName();
+  string refListName = Ref.ImageCatalogName();
+
+  if (!FileExists(imListName) || !FileExists(refListName)) {
+   imListName = Im.ImageCatalogName(SExtractor);
+   refListName = Ref.ImageCatalogName(SExtractor);
+   if (!FileExists(imListName) || !FileExists(refListName)) {
+     cerr << " Error: no similar catalogues available for "
+	  << Im.Name() << " or " << Ref.Name() << endl;
+     return false;
+   }
+  }
+
+  SEStarList imList(imListName);
+  SEStarList refList(refListName);
+  BaseStarList *bimList  = SE2Base(&imList);
+  BaseStarList *brefList = SE2Base(&refList); 
+  // hack to detect a transformed image
+  if (!Im2Ref)
+    Im2Ref = ListMatch(*bimList, *brefList);
+  if (!Im2Ref) {
+     cerr << " Error: bad match for PhotomRatio between "
+	  << Im.Name() << " and " << Ref.Name() << endl;
+     return false;
+  }
+
+  StarMatchList *matchList = ListMatchCollect(*bimList, *brefList, Im2Ref, 1.);
+  matchList->sort(&SM_DecFluxMax);
+  FluxPairList fpl;
+  for (StarMatchCIterator it = matchList->begin(); it != matchList->end() && fpl.size() < nmax; ++it)  {
+    const SEStar* s = (const SEStar *)(it->s1);
+    const SEStar* r = (const SEStar *)(it->s2);
+    if (!r->IsBad() && !r->IsSaturated() && r->flux > 0 && r->EFlux() > 0 &&
+	!s->IsBad() && !s->IsSaturated() && s->flux > 0 && s->EFlux() > 0)
+      fpl.push_back(FluxPair(s->flux, s->EFlux(),r->flux, r->EFlux()));
+  }
+  delete matchList;
+  if (fpl.empty()) {
+    cerr << " Error: empty list in PhotomRatio between "
+	 << Im.Name() << " and " << Ref.Name() << endl;
+    return false;
+  }
+  double var;
+  bool ok = SlowPhotomRatio(fpl, 5, Ratio, var);
+  Error = sqrt(var);
+  if (!ok) {
+    cerr << " Error: could not find photometric ratio for " 
+	 << Im.Name() << " vs. " << Ref.Name() << endl;
+    ok = false;
+  }
+  return ok;
+}
 
 string ImageSetName(const ReducedImage& AnImage)
 {
@@ -305,7 +486,8 @@ void FilterWithOverlap(const ReducedImageList &Images, const ReducedImage &aRefe
   for (ReducedImageCIterator ri = Images.begin(); ri != Images.end(); ++ri)
     overlapImages.push_back(*ri);
 
-  sort(overlapImages.begin(), overlapImages.end(), DecreasingArea);
+  //sort(overlapImages.begin(), overlapImages.end(), DecreasingArea);
+  overlapImages.sort(DecreasingArea);
   for (ReducedImageIterator ri = overlapImages.begin(); ri != overlapImages.end(); )
     {      
       ReducedImage *current = *ri;      
@@ -325,3 +507,110 @@ void FilterWithOverlap(const ReducedImageList &Images, const ReducedImage &aRefe
 }
 
 
+Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference) {
+
+  const ReducedImage* ref = Reference;
+  if (!ref) ref = ImList.front();
+
+  BaseStarList brefList; LoadForMatch(*ref, brefList);
+  Frame unionFrame(ref->UsablePart());
+  for (ReducedImageCIterator it = ImList.begin(); it != ImList.end(); ++it) {
+    const ReducedImage *im = *it;
+    if (*im == *Reference) continue;
+    BaseStarList bimList; LoadForMatch(*im, bimList);
+    GtransfoRef imToref = FindTransfo(bimList, brefList, *im, *ref);
+    Frame frameInRef = ApplyTransfo(im->UsablePart(), *imToref, LargeFrame);
+    unionFrame += frameInRef;
+  }
+  // make an integer frame to avoid resampling1
+  unionFrame.xMin = floor(unionFrame.xMin);
+  unionFrame.yMin = floor(unionFrame.yMin);
+  unionFrame.xMax = ceil(unionFrame.xMax);
+  unionFrame.yMax = ceil(unionFrame.yMax);
+  cout << " UnionFrame: final frame is " << unionFrame << endl;
+
+  return unionFrame;
+}
+
+void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName) {
+  Frame unionFrame = UnionFrame(ToAlign, &Reference);
+  double dx = unionFrame.xMin;
+  double dy = unionFrame.yMin;
+  GtransfoRef transfoFromRef = new GtransfoLinShift( dx,  dy);
+  GtransfoRef transfoToRef   = new GtransfoLinShift(-dx, -dy);
+  ImageGtransfo imTransfo(transfoFromRef, transfoToRef, 
+			  ApplyTransfo(unionFrame, *transfoToRef, LargeFrame),
+			  Reference.Name());  
+  TransformedImage transformedRef(unionName, Reference, &imTransfo);
+  transformedRef.Execute(ToTransform(Reference));
+  FitsHeader headRef(transformedRef.FitsName(), RW);
+  headRef.AddOrModKey("PKAUNION", true);
+}
+
+
+string ImageResample(const ReducedImage& Im, const ReducedImage& Ref) {
+  string resampledName = TransformedName(Im.Name(), Ref.Name());
+  { 
+    ReducedImageRef resampledIm = ReducedImageNew(resampledName);
+    if (resampledIm && resampledIm->IsValid() && resampledIm->Execute(ToTransform(Im))) {
+      cout << " ImageResample: " << resampledName << " already produced\n";
+      return resampledName;
+    }
+  }
+  GtransfoRef imToRef = FindTransfo(Im, Ref);
+  GtransfoRef refToIm = imToRef->InverseTransfo(0.001, Ref.UsablePart());
+  cout << " Transfo from " << Im.Name() << " to " << Ref.Name() << endl;
+  cout << *imToRef;
+  ImageGtransfo *imTransfo = new ImageGtransfo(refToIm,
+					       imToRef,
+					       Ref.PhysicalSize(),
+					       Ref.Name());
+  TransformedImage imResampled(resampledName, Im, imTransfo);
+  if (!imResampled.Execute(ToTransform(Im)))
+    throw PolokaException(" Failed to produce " + resampledName);
+  delete imTransfo;
+  return resampledName;
+}
+
+static string ShiftedName(const string &ToShift, const string &Ref)
+{
+  return "S_" + Ref + ToShift;
+}
+
+static double sign(const double& x) {
+  return x>0.? 1. : -1.;
+}
+
+
+string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref) {
+  string shiftedName = ShiftedName(Im.Name(), Ref.Name());
+  {
+    ReducedImageRef shiftedIm = ReducedImageNew(shiftedName);
+    if (shiftedIm && shiftedIm->IsValid() && shiftedIm->Execute(ToTransform(Im))) {
+      cout << " ImageIntegerShift: " << shiftedName << " already produced\n";
+      return shiftedName;
+    }
+  }
+  GtransfoRef transfo = FindTransfo(Im, Ref);
+  GtransfoLin lintransfo = transfo->LinearApproximation(Ref.UsablePart().Center());
+  GtransfoLin *imToRef = new GtransfoLin(ceil(lintransfo.Coeff(0,0,0)),
+					 ceil(lintransfo.Coeff(0,0,1)),
+					 sign(lintransfo.Coeff(1,0,0)),
+					 0, 0,
+					 sign(lintransfo.Coeff(0,1,1)));
+
+  GtransfoRef refToIm = new GtransfoLin(imToRef->invert());
+  cout << " Transfo from " << Im.Name() << " to " << Ref.Name() << endl;
+  cout << *imToRef;
+
+  ImageGtransfo *imShift = new ImageGtransfo(refToIm,
+					     imToRef,
+					     Ref.PhysicalSize(),
+					     Ref.Name());
+  TransformedImage imShifted(shiftedName, Im, imShift);
+  if (!imShifted.Execute(ToTransform(Im)))
+    throw PolokaException(" Failed to produce " + shiftedName);
+  delete imShift;
+  delete imToRef;
+  return shiftedName;
+}

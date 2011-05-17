@@ -1,48 +1,105 @@
-#include "psfmatch.h"
-#include "kernelfit.h"
+#include <string>
 
-static void usage(const char *progName)
-{
-  cerr << progName << " -r <Ref> <DbImage1> ... <DbImageN> \n"; 
+#include "reducedutils.h"
+#include "allreducedimage.h"
+#include "subimage.h"
+#include "transformedimage.h"
+#include "polokaexception.h"
+
+static void usage(const char *progName) {
+  cerr << "Usage: " << progName << " [OPTIONS] <Ref> <DbImage(s)>\n"
+       << "  match <DbImages> relatively to a geometric reference image <Ref>\n" 
+       << "  [OPTIONS]:\n"
+       << "     -n : no resampling, only match catalogues\n"
+       << "     -i : integer shifting (no interpolation)\n"
+       << "     -u : union of all frames instead of intersection\n";
 }
 
-int main(int nargs, char **args)
-{
-  if (nargs <= 4){usage(args[0]); exit(1);}
+struct ImageMatcher {
 
-  ReducedImageList imlist;
-  string refName = "NOREF";
-  for (int i=1; i<nargs; ++i)
-    {
-      char *arg = args[i];
-      if (arg[0] != '-') 
-	{
-	    string name = string(args[i]);       
-	    ReducedImage *im = new ReducedImage(name);
-	    imlist.push_back(im);
-	    continue;
-	}
-      switch (arg[1])
-	{
-	case 'r' :++i; refName = args[i]; break;
-	default :{usage(args[0]); exit(1);}
-	}
-    }	
+  ImageMatcher() : doResample(true), doIntShift(false) {}
 
-  if (refName=="NOREF") {usage(args[0]); exit(1);}
-  ReducedImageRef ref = new ReducedImage(refName);
-  
-  for (ReducedImageCIterator it = imlist.begin(); it != imlist.end(); ++it)
-    {
-      ReducedImage *current = *it;
-      PsfMatch match(ref, current);
-      match.FitKernel();
-      Kernel kern;
-      match.KernelToWorst(kern,current->XSize()/2, current->YSize()/2);
-      string ker_name = ref->Name()+current->Name()+"_kernel.fits";
-      kern.writeFits(ker_name);
+  bool doResample, doIntShift;
+  ReducedImageRef Ref;
+
+  void operator () (const ReducedImageRef Im) const {
+    try {
+      if (*Im == *Ref) {
+	cout << " " << Im->Name() << " is same as reference, skipping\n";
+	return;
+      }
+      ReducedImageRef ref = Ref;
+      // ugly hack: ref bigger than 3X image, extract subimage
+      if (Ref->XSize()*Ref->YSize() > 3*Im->XSize()*Im->YSize()) {
+	cout << " Big image, will extract a sub image using rough match\n";
+	ref = new SubImage("Sub_" + Ref->Name() + "_" + Im->Name(), Ref->Name(), Im->Name(), 50);
+      }
+      if (doResample)
+	ImageResample(*Im, *ref);
+      else if (doIntShift)
+	ImageIntegerShift(*Im, *ref);
+      else
+	cout << *FindTransfo(*Im, *ref);
+    } catch (PolokaException p) {
+      p.PrintMessage(cerr);
     }
+  }
+};
+
+
+int main(int nargs, char **args) {
+
+  if (nargs < 2)  {
+    usage(args[0]); 
+    return EXIT_SUCCESS;
+  }
+
+  if (nargs == 2) {
+    cerr << args[0] << " error: need at least 2 images";
+    usage(args[0]); 
+    return EXIT_FAILURE;    
+  }
+
+  bool doUnion = false;
+  ReducedImageList imList;
+  ImageMatcher imMatcher;
+  
+  for (int i=1; i<nargs; ++i) {
+    char *arg = args[i];
+    if (arg[0] != '-') {
+      ReducedImageRef im = ReducedImageNew(arg);
+      if (!im || !im->IsValid()) { 
+	cerr << " not a valid dbimage: " << arg << endl;
+	continue;
+      }
+      imList.push_back(im);
+      continue;
+    }
+    switch (arg[1]) {
+    case 'n': imMatcher.doResample = false; break;
+    case 'i': imMatcher.doResample = false; imMatcher.doIntShift = true; break;
+    case 'u': doUnion = true; break;
+    default : usage(args[0]); return EXIT_FAILURE;
+    }
+  }
+
+  if (doUnion) {
+    string unionRefName = "U_" + imList.front()->Name();
+    ReducedImageRef unionRef = ReducedImageNew(unionRefName);
+    if (unionRef && unionRef->Execute(ToTransform(*imList.front()))) {
+      cout << " Union frame " << unionRefName << " already produced\n";
+      imMatcher.Ref = unionRef;
+    } else {
+      cout << " Creating a union frame reference " << unionRefName << endl;
+      MakeUnionRef(imList, *imList.front(), unionRefName);
+      imMatcher.Ref = ReducedImageNew(unionRefName);
+    }
+  } else
+    imMatcher.Ref = imList.front();
+
+  imList.pop_front();
+
+  for_each(imList.begin(), imList.end(), imMatcher);
 
   return EXIT_SUCCESS;
 }
-
