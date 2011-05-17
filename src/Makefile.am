@@ -134,7 +134,7 @@ libtoads_la_CPPFLAGS = \
 	-I$(top_srcdir)/src_base \
 	-I$(top_srcdir)/src_utils \
 	-I$(top_builddir)/src_base \
-	@CFITSIO_CFLAGS@ @SEX_CFLAGS@
+	@CFITSIO_CFLAGS@ @SEX_CFLAGS@/sex
 
 libtoads_la_LIBADD = \
 	$(top_builddir)/src_base/libtoadsbase.la \

@@ -20,11 +20,11 @@ extern "C" {
 #define OFF_T_CFITSIO OFF_T
 #undef OFF_T
 #endif
-#include <sex/define.h> /* from sextractor, mandatory for next one () */
-#include <sex/globals.h> /* from sextractor. nice name isn't it ? */
-#include <sex/types.h> 
-#include <sex/prefs.h> // a ajouter pour la version v244
-#include <sex/back.h> 
+#include <define.h> /* from sextractor, mandatory for next one () */
+#include <globals.h> /* from sextractor. nice name isn't it ? */
+#include <types.h> 
+#include <prefs.h> // a ajouter pour la version v244
+#include <back.h> 
 	   }
 
 
