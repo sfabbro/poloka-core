@@ -41,11 +41,9 @@ bin_PROGRAMS = \
 
 LDADD = $(top_builddir)/src/libtoads.la
 
-check_PROGRAMS = test_matvect
-TESTS = $(check_PROGRAMS)
-
 header_SOURCES = header.cc
 astrom_SOURCES = astrom.cc
+changekey_SOURCES = changekey.cc
 checker_SOURCES = checker.cc
 dbimstat_SOURCES = dbimstat.cc
 dead_correction_SOURCES = dead_correction.cc
