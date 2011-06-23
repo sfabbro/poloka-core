@@ -242,7 +242,7 @@ bool ImageSubtraction::MakeWeight()
   string datacards=DefaultDatacards();
   int subVarianceType = 0;
   int subMaskDilate = 0;
-  double subSaturFactor = 1;
+  double subMaskSig2Noise = -1;
     
   if (FileExists(datacards)) {
     DataCards cards(datacards);
@@ -250,8 +250,8 @@ bool ImageSubtraction::MakeWeight()
       subVarianceType = cards.IParam("SUB_VARIANCE_TYPE");
     if (cards.HasKey("SUB_MASK_DILATE"))
       subMaskDilate = cards.IParam("SUB_MASK_DILATE");
-    if (cards.HasKey("SUB_SATUR_FACTOR"))
-      subSaturFactor = cards.DParam("SUB_SATUR_FACTOR");
+    if (cards.HasKey("SUB_MASK_SIG2NOISE"))
+      subMaskSig2Noise = cards.DParam("SUB_MASK_SIG2NOISE");
   }
     
   FitsHeader imageHeader(FitsName()); 
@@ -275,13 +275,13 @@ bool ImageSubtraction::MakeWeight()
 	   << ", cannot get satur from " << Best()->Name() << endl;
     }
 
-  if (subSaturFactor < 1) {
+  if (subMaskSig2Noise > 0 && RefIsBest()) {
     FitsImage best(Best()->FitsName());
-    double saturbest = Best()->Saturation() * subSaturFactor;
+    double maxstn = Best()->SigmaBack() * subMaskSig2Noise;
+    cout << " Mask brighter pixels than " <<  maxstn << " on best\n";
     Pixel *pim = best.begin();
-    cout << " Mask brighter pixels than " << saturbest << " on best\n";
-    for (Pixel *p=weights.begin() ; pim < best.end() ; ++pim, ++p)
-      if (*pim >= saturbest) *p = 0;
+    for (Pixel *p=weightImage.begin() ; pim < best.end() ; ++pim, ++p)
+      if (*pim >= maxstn) *p = 0;
   }
 
   /* add a small constant to weights so that variances of 
@@ -344,13 +344,13 @@ bool ImageSubtraction::MakeWeight()
 	   << ", cannot get satur from " << Worst()->Name() << endl;
     }
 
-  if (subSaturFactor < 1) {
+  if (subMaskSig2Noise > 0 && !RefIsBest()) {
     FitsImage worst(Worst()->FitsName());
-    double saturworst = Worst()->Saturation() * subSaturFactor;
-    cout << " Mask brighter pixels than " << saturworst << " on worst\n";
+    double maxstn = Worst()->SigmaBack() * subMaskSig2Noise;
+    cout << " Mask brighter pixels than " <<  maxstn << " on worst\n";
     Pixel *pim = worst.begin();
-    for (Pixel *pw=weights_worst.begin() ; pim < worst.end() ; ++pim, ++pw)
-      if (*pim >= saturworst) *pw = 0;
+    for (Pixel *p=weightImage.begin() ; pim < worst.end() ; ++pim, ++p)
+      if (*pim >= maxstn) *p = 0;
   }
 
   /* add a small constant to weights so that variances of 
