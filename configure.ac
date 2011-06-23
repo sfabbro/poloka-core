@@ -1,11 +1,11 @@
 ## Initialization 
 AC_PREREQ(2.59)
-AC_INIT(poloka, 0.6.0, [poloka team])
+AC_INIT(poloka, 0.6.2, [poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src_base/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(autoconf)
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 
 ## Keep this one before libtool check
 AM_DISABLE_STATIC

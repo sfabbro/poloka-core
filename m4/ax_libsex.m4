@@ -32,7 +32,7 @@ if test x"$ax_sex_ok" = x"no"; then
    ax_sex_hdr_ok=no
    CPPFLAGS_sav="$CPPFLAGS"
    CPPFLAGS="$CPPFLAGS $SEX_CFLAGS"
-   AC_CHECK_HEADER([sex/define.h],
+   AC_CHECK_HEADER([define.h],
       [ax_sex_hdr_ok=yes],
       [AC_MSG_WARN([  *** SExtractor library headers not found.])])
 
