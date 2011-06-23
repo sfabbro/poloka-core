@@ -5,6 +5,7 @@ build/
 .lock-*
 
 # autotools generated
+ChangeLog
 *.o
 *.so
 *.l[oa]
@@ -36,9 +37,10 @@ poloka.pc
 /src/dbfileParse.h
 
 # execs
-!*.{cc,h}
-!Makefile.am
-!wscript
 flat/*
+!flat/*.cc
 simphot/mklc
 utils/*
+!utils/*.cc
+!Makefile.am
+!wscript
