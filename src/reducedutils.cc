@@ -243,14 +243,16 @@ bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R,
 
 void LoadForMatch(const ReducedImage& Im, BaseStarList& BList, const double& MinSN) {
   
-  AperSEStarList sList;
-  if (Im.HasAperCatalog())
-    sList.read(Im.AperCatalogName());
-  else if (Im.HasCatalog())
+  SEStarList sList;
+  if (Im.HasAperCatalog()) {
+    AperSEStarList asList(Im.AperCatalogName());
+    sList = AperSE2SE(asList);
+  } else if (Im.HasCatalog()) {
     sList.read(Im.CatalogName());
-  
-  for (AperSEStarIterator it=sList.begin(); it != sList.end(); ) {
-    AperSEStar *pstar = *it ;
+  }
+
+  for (SEStarIterator it=sList.begin(); it != sList.end(); ) {
+    SEStar *pstar = *it ;
     // not in bad zone, keep satur, only with better 0.3 pixels accuracy
     if (pstar->FlagBad() == 0 && pstar->Flag() < 8 && 
 	pstar->flux > MinSN * pstar->EFlux())
@@ -259,7 +261,7 @@ void LoadForMatch(const ReducedImage& Im, BaseStarList& BList, const double& Min
     else 
       it = sList.erase(it);
   }  
-  BList = *AperSE2Base(&sList);
+  BList = *SE2Base(&sList);
 }
 
 static bool ListMatchCheck(const BaseStarList& Src, const BaseStarList& Dest,
@@ -340,7 +342,7 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
     transfo = ListMatchCombinatorial(SrcList, DestList, cond);
     if (transfo) {
       cout << " FindTransfo: refining combinatorial match\n";
-      transfo = ListMatchRefine(SrcList, DestList, transfo);
+      transfo = ListMatchRefine(SrcList, DestList, transfo, MaxOrder);
     } else {
       cout << " FindTransfo: no match found\n";
       transfo = GtransfoRef();
