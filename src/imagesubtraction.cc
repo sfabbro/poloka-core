@@ -277,11 +277,10 @@ bool ImageSubtraction::MakeWeight()
 
   if (subMaskSig2Noise > 0 && RefIsBest()) {
     FitsImage best(Best()->FitsName());
-    double maxstn = Best()->SigmaBack() * subMaskSig2Noise;
-    cout << " Mask brighter pixels than " <<  maxstn << " on best\n";
+    cout << " Masking pixels with S/N > " << subMaskSig2Noise << " on best\n";
     Pixel *pim = best.begin();
     for (Pixel *p=weightImage.begin() ; pim < best.end() ; ++pim, ++p)
-      if (*pim >= maxstn) *p = 0;
+      if ( *pim * sqrt(*p) >= subMaskSig2Noise) *p = 0;
   }
 
   /* add a small constant to weights so that variances of 
