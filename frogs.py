@@ -8,6 +8,8 @@ import commands
 import Configure 
 import Options
 from waflib import Context
+from waflib.Tools import c_preproc
+c_preproc.go_absolute = True
 
 import frogsutils
 
@@ -87,7 +89,7 @@ def configure(conf):
     conf.check_fortran_clib()
     conf.check_fortran_dummy_main()
     conf.check_fortran_mangling()
-
+    
     # Debug option 
     debug_flag = False
     try:
@@ -105,8 +107,9 @@ def configure(conf):
     if opt_level > 0:        
         conf.env['CFLAGS'].append('-O%d' % opt_level)
         conf.env['CXXFLAGS'].append('-O%d' % opt_level)
-        conf.env['FCFLAGS'].append('-O%d' % opt_level)
+        conf.env['FCFLAGS'] = '-O%d' % opt_level
     
+
     # lapack
     if conf.options.global_lapack:
         if conf.check_cc( lib='lapack', msg='checking for lapack' ):
