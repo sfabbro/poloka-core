@@ -1,7 +1,7 @@
 # -*- mode: python -*-
 # 
 
-
+import frogsutils
 
 def build( bld ):
     
@@ -12,5 +12,5 @@ def build( bld ):
               target = 'lapack_stuff', 
               #               libs   = ['gfortran'],
               #               libs   = ['g2c'],
-              vnum     = '0.1.0' )
+              vnum     = frogsutils.get_version_number())
     

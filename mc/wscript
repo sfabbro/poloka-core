@@ -1,7 +1,7 @@
 # -*- mode: python -*-
 # 
 
-
+import frogsutils
 
 
 
@@ -15,8 +15,8 @@ def build( bld ):
                target = 'toadsmc', 
                includes = [ '.', '../src_utils', '../src_base', '../src' ], 
                libs     = [ 'm' ], 
-               uselib_local = [ 'toadslib', 'toads_base', 'toads_utils' ],
-               vnum     = '0.1.0' )
+               use      = [ 'toadslib', 'toads_base', 'toads_utils' ],
+               vnum     = frogsutils.get_version_number())
     
     lib.rpath = bld.env['PREFIX'] + '/lib'
     

@@ -2,6 +2,7 @@
 # 
 # 
 
+import frogsutils
 
 def build( bld ):
     
@@ -29,7 +30,7 @@ def build( bld ):
                      'toads_utils', 
                      'toadspsf', 
                      'toadslib' ],
-        vnum     = '0.1.0')
+        vnum     = frogsutils.get_version_number())
     lib.rpath = [bld.env.PREFIX + '/lib']
     lib.rpath += bld.env.LIBPATH_CFITSIO
     lib.rpath += bld.env.LIBPATH_SEX

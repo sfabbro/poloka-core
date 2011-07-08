@@ -1,9 +1,7 @@
 # -*- mode: python -*-
 # 
 
-
-
-
+import frogsutils
 
 def build( bld ):
     
@@ -56,7 +54,7 @@ def build( bld ):
                     libs     = [ 'm', 'z'], 
                     uselib = [ 'CFITSIO', 'SEX' ],
                     use = local_libs,
-                    vnum     = '0.1.0' )
+                    vnum     = frogsutils.get_version_number() )
                           
         prog.rpath  = [ bld.env['PREFIX'] + '/lib'] 
         prog.rpath += bld.env.LIBPATH_CFITSIO

@@ -1,7 +1,7 @@
 # -*- mode: python -*-
 # 
 
-
+import frogsutils
 
 def build( bld ):
     
@@ -10,6 +10,6 @@ def build( bld ):
     lib = bld(features = 'fc fcshlib', 
               source = sources,
               target = 'cern_stuff', 
-              vnum     = '0.1.0')
+              vnum     = frogsutils.get_version_number())
 
     

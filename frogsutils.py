@@ -6,7 +6,7 @@ import os.path as op
 import commands
 
 from waflib.Errors import ConfigurationError
-
+from waflib import Context
 
 def get_out_name():
     """
@@ -16,7 +16,6 @@ def get_out_name():
     ret = os.uname()
     out_name = 'build.'+ ret[0]+'-'+ret[-1]
     return op.join('build', out_name)
-
 
 def get_afs_sys_name():
     """
@@ -34,7 +33,6 @@ def get_afs_sys_name():
     at_sys_name = ret[1].split("'")[-2]
 
     return at_sys_name
-
 
 def get_out_name_afs():
     """
@@ -57,3 +55,6 @@ def get_out_name_afs():
     
     return op.join('build', out_name)
         
+def get_version_number():
+    """return this module version number"""
+    return Context.g_module.VERSION

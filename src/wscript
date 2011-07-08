@@ -43,7 +43,7 @@ def build( bld ):
                     lib      = libs, 
                     use      = local_libs, 
                     uselib = ['SEX','CFITSIO' ],
-                    vnum     = '0.1.0')    
+                    vnum     = frogsutils.get_version_number())    
     lib.rpath  = [ bld.env['PREFIX'] + '/lib'] 
     lib.rpath += bld.env['LIBPATH_CFITSIO']
     lib.rpath += bld.env['LIBPATH_SEX']
