@@ -22,6 +22,6 @@ def build( bld ):
     lib.rpath += bld.env.LIBPATH_SEX
 
     # install the headers 
-    #    headers  = bld.path.ant_glob('*.h')
-    #    bld.install_files('${PREFIX}/${PKG_INCDIR}', headers)
-    bld.install_files('${PREFIX}/${PKG_INCDIR}', 'psfstar.h')
+    headers  = bld.path.ant_glob('*.h')
+    bld.install_files('${PREFIX}/${PKG_INCDIR}', headers)
+    # bld.install_files('${PREFIX}/${PKG_INCDIR}', 'psfstar.h')
