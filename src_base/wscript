@@ -7,7 +7,7 @@ import os.path as op
 import string
 import re
 
-
+import frogsutils
 
 
 expr_ttester = re.compile("class\s+([\w\d_]+).+TYPE_TESTER.+")
@@ -116,7 +116,7 @@ def build(bld):
         lib      = libs, 
         use      = local_libs,
         uselib   = ['CFITSIO'],
-        vnum     = '0.1.0', 
+        vnum     = frogsutils.get_version_number(),
         after    = 'alltelinst')
     
     lib.rpath  = [ bld.env['PREFIX'] + '/lib'] 

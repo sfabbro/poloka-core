@@ -1,7 +1,7 @@
 # -*- mode: python -*-
 # 
 
-
+import frogsutils
 
 def build( bld ):
     
@@ -13,7 +13,7 @@ def build( bld ):
             lib      = [ 'm', 'cfitsio', 'z'],
             uselib = 'CERN',
             use = ['toads_base', 'toads_utils'],
-            vnum     = '0.1.0')
+            vnum     = frogsutils.get_version_number())
         prog.rpath  = [ bld.env['PREFIX'] + '/lib'] 
         prog.rpath += bld.env['LIBPATH_CFITSIO']
         prog.rpath += bld.env['LIBPATH_SEX']

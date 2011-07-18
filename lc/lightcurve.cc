@@ -5,6 +5,7 @@
 #include <fstream>
 #include <fitsimage.h>
 #include <reducedimage.h>
+#include "polokaexception.h"
 
 #include "lightcurve.h"
 #include "lcio.h"
@@ -95,7 +96,12 @@ void LightCurve::write_lc2fit(ostream& Stream) const
       Stream << " " << fs->Seeing();
       Stream << " " << fs->ExposureTime();
       Stream << " " << fs->photomratio;
-      Stream << " " << fs->GFSeeing();
+      try {
+	Stream << " " << fs->GFSeeing();
+      } catch (PolokaException p) {
+	p.PrintMessage(cout);
+	Stream << " " << 0.;
+      }
       Stream << " " << fs->SESky();
       Stream << " " << fs->SIGSky();
       Stream << " " << fs->sigscale_varflux; 
