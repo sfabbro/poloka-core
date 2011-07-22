@@ -24,7 +24,7 @@ int PrintOut(const string &FileName)
 {
   if (PrintIfAbsent || FileExists(FileName.c_str()))
     {
-      cout << ' ' << FileName; return 1;
+      cout << FileName; return 1;
     }
   return 0;
 }
@@ -48,6 +48,7 @@ void dump_info(const DbImageList &list, char **which_info, const int ninfo)
 		  usage();
 		  exit(-1);
 		}
+	      if (i>0) cout << ' ';
 	      count += PrintOut(fileName);
 	    }
 	  if (count) cout << endl;

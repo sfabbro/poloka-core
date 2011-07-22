@@ -19,6 +19,8 @@ struct MatchConditions
   int Algorithm;
 
   MatchConditions(const std::string &DatacardsName = "");
+  void read(const std::string &DatacardsName = "");
+  void init();
 
   double MinSizeRatio() const { return SizeRatio - DeltaSizeRatio;}  
   double MaxSizeRatio() const { return SizeRatio + DeltaSizeRatio;}  

@@ -323,9 +323,10 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
        << Dest.Name() << " (" << DestList.size() << " stars)\n";
   cout << " FindTransfo: trying with WCS's...\n";
   GtransfoRef transfo = FindWCSTransfo(Src, Dest);
-  MatchConditions cond(DefaultDatacards());
+  MatchConditions cond;
   cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
   cond.DeltaSizeRatio = 0.1 * cond.SizeRatio;
+  cond.read(DefaultDatacards());
 
   if (transfo) {
     if (ListMatchCheck(SrcList, DestList, transfo, 2, cond.MinMatchRatio)) {

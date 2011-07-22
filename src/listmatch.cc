@@ -35,7 +35,7 @@ static double sqr(const double& x) { return x*x; }
 
 #include "fileutils.h"
 
-MatchConditions::MatchConditions(const std::string &DatacardsName)
+void MatchConditions::init()
 {  /* default values */
   NStarsL1 = 70; NStarsL2=70;
   MaxTrialCount = 4;
@@ -45,6 +45,16 @@ MatchConditions::MatchConditions(const std::string &DatacardsName)
   MinMatchRatio = 1./3.;
   PrintLevel = 0;
   Algorithm = 2;
+}
+
+MatchConditions::MatchConditions(const std::string &DatacardsName)
+{
+  init();
+  read(DatacardsName);
+}
+
+void MatchConditions::read(const std::string& DatacardsName)
+{
   if (DatacardsName != "")
     {
       if (!FileExists(DatacardsName))
@@ -66,7 +76,6 @@ MatchConditions::MatchConditions(const std::string &DatacardsName)
       read_card(cards,"DATMATCH_PRINTLEVEL", PrintLevel);
       read_card(cards,"DATMATCH_ALGO", Algorithm);
     }
-  if (getenv("MATCH_PRINT")) PrintLevel = atoi(getenv("MATCH_PRINT"));
 }
 
 /* a Segment is a pair of stars form the same image. it is used for matching starlists */
