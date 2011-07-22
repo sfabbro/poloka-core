@@ -10,7 +10,7 @@ static void usage(const char * prog)
   cerr << " usage : " << endl;
   cerr << prog << " [-o] [-S subfile] [-M]" << endl
        << "        -o : overwrite existing images (default = false)" << endl
-       << "        -S subfile : to provide a subfile name (default = \"subfile\")" 
+       << "        -S <subfile> : to provide a subfile name (default = \"subfile\")" << endl 
 #ifdef ENABLE_MC
        << "        -M : MC mode for efficiency computation" << endl;
 #else
