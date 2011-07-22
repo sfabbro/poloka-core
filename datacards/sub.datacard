@@ -366,16 +366,34 @@
 #
 #@STARLIST_SIG_CUT 5
 
-# listmatch stuff
 
-@DATMATCH_NL1 70
-@DATMATCH_NL2 70
-@DATMATCH_MAXTRIAL 4
-@DATMATCH_NSIG_CUT 3
-@DATMATCH_MAXSHIFTX 50
-@DATMATCH_MAXSHIFTY 50
-@DATMATCH_SIZERATIO 1
-@DATMATCH_DELTA_SIZERATIO 0.1
-@DATMATCH_MINMATCHRATIO 0.33
-@DATMATCH_PRINTLEVEL 0
-@DATMATCH_ALGO 2
+############ Star matching section ############
+#
+# Number of stars in each list to start combinatorial match
+#@DATMATCH_NL1 70
+#@DATMATCH_NL2 70
+#
+# Number of trials for combinatorial search
+#@DATMATCH_MAXTRIAL 4
+#
+# k-sigma clipping doing refine fit for higher transfo orders
+#@DATMATCH_NSIG_CUT 3
+#
+# maximum shifting for translation search
+#@DATMATCH_MAXSHIFTX 50
+#@DATMATCH_MAXSHIFTY 50
+#
+# initial pixel size ratio to search
+#@DATMATCH_SIZERATIO 1
+#
+# maximum pixel size ratio 
+#@DATMATCH_DELTA_SIZERATIO 0.1
+#
+# minimum ratio of stars to match between two catalogues
+#@DATMATCH_MINMATCHRATIO 0.33
+#
+# debug print level
+#@DATMATCH_PRINTLEVEL 0
+#
+# don't touch this unless you really know
+#@DATMATCH_ALGO 2
