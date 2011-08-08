@@ -1589,7 +1589,7 @@ void ImagePSF::ResidualImage(const string &ResFitsName,
 {
   FitsImage image(reducedImage->FitsName());
   const FitsHeader &head = image;
-  FitsImage res(ResFitsName, head);
+  FitsImage res(ResFitsName+".fits", head);
   FitsImage stack(DirName(ResFitsName)+"/psf_res_stack.fits", 2*hSizeX+1, 2*hSizeY+1);
   for (PSFStarCIterator it = Stars.begin(); it != Stars.end(); ++it)
     {
