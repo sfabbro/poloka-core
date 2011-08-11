@@ -179,14 +179,6 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   // update usable part
   frame.WriteInHeader(Transformed);
 
-  // write a correct DATASEC in header if any
-  if (Transformed.HasKey("DATASEC"))
-    {
-      char datasec[80];
-      sprintf(datasec,"[1:%d,1:%d]", nx_aligned,ny_aligned);
-      Transformed.AddOrModKey("DATASEC",string(datasec)," updated by ImageGtransfo");
-    }
-
   // update RA and DEC
   //  if we copy the WCS we should not update RA and Dec
   //  string ra = Original.KeyVal("TOADRASC");
@@ -226,6 +218,7 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
       seeing = sqrt(seeing*seeing*scale2 + scale2/12);
       cout << " Expected seeing " << seeing << endl;
       Result->SetSeeing(seeing,"seeing in pixel sigma after transformation");
+      Result->SetUsablePart(frame);
     }
   clock_t tend = clock();
   cout << " CPU for resampling " 

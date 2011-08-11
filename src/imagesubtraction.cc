@@ -140,6 +140,7 @@ bool ImageSubtraction::MakeFits()
   SetSigmaBack(sigmaBack);
   double readnoise = sqrt(sqr(Worst()->ReadoutNoise())+sqr(photomRatio*Best()->ReadoutNoise()));
   SetReadoutNoise(readnoise);
+  SetUsablePart(CommonFrame());
   SetOriginalSkyLevel(Worst()->OriginalSkyLevel() +
 		      photomRatio * Best()->OriginalSkyLevel()," sum of sky levels of the subtraction terms");
 
