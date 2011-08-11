@@ -93,7 +93,7 @@ struct ImageAddStar {
     FitsImage image(outfile,RW);
     //FitsHeader header(rim->FitsName());
     //FitsImage image(outfile,header);
-    double zp = rim->ZeroPoint();
+    double zp = rim->AnyZeroPoint();
     for (BaseStarCIterator it=stars.begin(); it != stars.end(); ++it) {
       const BaseStar* s = *it;
       double flux = pow(10,0.4*(zp - s->flux));
