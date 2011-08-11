@@ -2267,6 +2267,10 @@ bool ReducedImage::SetUsablePart(const Frame &NewFrame)
 {
   FitsHeader head(FitsName()); 
   NewFrame.WriteInHeader(head);
+  ostringstream datasec;
+  datasec << "[" << int(floor(NewFrame.xMin)) + 1 << ":" << int(ceil(NewFrame.xMax)) + 1
+	  << "," << int(floor(NewFrame.yMin)) + 1 << ":" << int(ceil(NewFrame.yMax)) + 1 << "]";
+  head.AddOrModKey("DATASEC",datasec.str().c_str(),"Modified by Poloka::ReducedImage::SetUsablePart");
   return true;
 }
 
