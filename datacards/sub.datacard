@@ -353,7 +353,8 @@
 #
 # an image of the filed with only the residuals at the location of training
 #stars
-@PSF_RESIDUALS_IMAGE_FILENAME training
+#@PSF_RESIDUALS_IMAGE_FILENAME training
+
 ############ end of PSF section ################
 
 
@@ -397,3 +398,6 @@
 #
 # don't touch this unless you really know
 #@DATMATCH_ALGO 2
+#
+# maximum polynomial order of fitting refinement
+#@DATMATCH_MAXORDER 3

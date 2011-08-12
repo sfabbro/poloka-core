@@ -17,7 +17,8 @@ struct MatchConditions
   double SizeRatio, DeltaSizeRatio, MinMatchRatio;
   int PrintLevel;
   int Algorithm;
-
+  int MaxOrder;
+  
   MatchConditions(const std::string &DatacardsName = "");
   void read(const std::string &DatacardsName = "");
   void init();
@@ -72,17 +73,21 @@ GtransfoLin *ListMatchupShift(const BaseStarList &L1,
 			      const Gtransfo &Tin, 
 			      double MaxShift, double BinSize = 0);
 
-
+//! computes number of matches in a StarMatchList within 3 sigmas of chi2
 size_t StarMatchCheck(const StarMatchList* Match);
 
+//! wrapper around all possible combinatorial matching routines above
 GtransfoRef ListMatchCombinatorial(const BaseStarList &List1,
 				   const BaseStarList &List2,
 				   const MatchConditions& Conditions=MatchConditions());
+
+//! refine (fit) a Gtransfo up to maxOrder polynomial. maxOrder=0 not doing anything
 GtransfoRef ListMatchRefine(const BaseStarList& List1,
 			    const BaseStarList& List2,
 			    GtransfoRef transfo, 
 			    const int maxOrder=3);
 
+//! wrapper of the two above routines
 inline GtransfoRef ListMatch(const BaseStarList& List1,
 			     const BaseStarList& List2,
 			     const int maxOrder=3) {

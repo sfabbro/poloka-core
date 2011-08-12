@@ -45,6 +45,7 @@ void MatchConditions::init()
   MinMatchRatio = 1./3.;
   PrintLevel = 0;
   Algorithm = 2;
+  MaxOrder = 3;
 }
 
 MatchConditions::MatchConditions(const std::string &DatacardsName)
@@ -75,6 +76,7 @@ void MatchConditions::read(const std::string& DatacardsName)
       read_card(cards,"DATMATCH_MINMATCHRATIO", MinMatchRatio);
       read_card(cards,"DATMATCH_PRINTLEVEL", PrintLevel);
       read_card(cards,"DATMATCH_ALGO", Algorithm);
+      read_card(cards,"DATMATCH_MAXORDER", MaxOrder);
     }
 }
 
@@ -936,14 +938,14 @@ GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2
        << endl;
 
   size_t nStarsMin = 3;
-  int fitOrder = 1, bestOrder = fitOrder;
+  int fitOrder = 0, bestOrder = fitOrder;
   const size_t nStars  = 500; // max number of bright stars
 
   BaseStarList fitList1, fitList2;
   List1.CopyTo(fitList1); fitList1.FluxSort(); fitList1.CutTail(nStars);
   List2.CopyTo(fitList2); fitList2.FluxSort(); fitList2.CutTail(nStars);
 
-  do { // loop on transfo order
+  while (++fitOrder <= maxOrder) {
     GtransfoRef fitTransfo = fitMatch->Transfo()->Clone();
     unsigned iter = 0;
     double transDiff;
@@ -973,10 +975,13 @@ GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2
       transfo = fitMatch->Transfo()->Clone();
     }
     nStarsMin = fitMatch->Transfo()->Npar();
-  } while (++fitOrder <= maxOrder);
+  }  // end loop on transfo order
   cout << resetiosflags(ios::fixed) << setprecision(oldp);
   delete fitMatch;
-  cout << " ListMatchRefine: kept transfo of order " << bestOrder << endl;
+  if (bestOrder >= 1)
+    cout << " ListMatchRefine: kept transfo of order " << bestOrder << endl;
+  else
+    cout << " ListMatchRefine: kept initial transfo as best transfo\n";
   return transfo;
 }
 

@@ -327,11 +327,11 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
   cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
   cond.DeltaSizeRatio = 0.1 * cond.SizeRatio;
   cond.read(DefaultDatacards());
-
+  if (MaxOrder != -1) cond.MaxOrder = MaxOrder;
   if (transfo) {
     if (ListMatchCheck(SrcList, DestList, transfo, 2, cond.MinMatchRatio)) {
       cout << " FindTransfo: refining WCS transfo\n";
-      transfo = ListMatchRefine(SrcList, DestList, transfo, MaxOrder);
+      transfo = ListMatchRefine(SrcList, DestList, transfo, cond.MaxOrder);
     } else {
       cout << " FindTransfo: WCS not good enough\n";
       transfo = GtransfoRef();
@@ -343,7 +343,7 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
     transfo = ListMatchCombinatorial(SrcList, DestList, cond);
     if (transfo) {
       cout << " FindTransfo: refining combinatorial match\n";
-      transfo = ListMatchRefine(SrcList, DestList, transfo, MaxOrder);
+      transfo = ListMatchRefine(SrcList, DestList, transfo, cond.MaxOrder);
     } else {
       cout << " FindTransfo: no match found\n";
       transfo = GtransfoRef();
