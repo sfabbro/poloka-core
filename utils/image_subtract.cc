@@ -16,15 +16,15 @@ static void usage(const char *progName) {
 
 struct ImageSubtract {
 
-  bool overwrite, doswap, dosub, dodetect;
+  bool overwrite, noswap, dosub, dodetect;
   ReducedImageRef Ref;
 
-  ImageSubtract() : overwrite(false), doswap(true), dosub(true), dodetect(false) {}
+  ImageSubtract() : overwrite(false), noswap(false), dosub(true), dodetect(false) {}
   
   void operator () (const ReducedImageRef Im) const {
 
     // read or redo kernel fit
-    KernelFitter kernfit(Ref, Im, doswap);
+    KernelFitter kernfit(Ref, Im, noswap);
     if (overwrite || !kernfit.ReadKernel()) {
       if (kernfit.DoTheFit())
 	kernfit.WriteKernel(overwrite);
@@ -75,7 +75,7 @@ int main(int nargs, char **args) {
     }
     switch (arg[1]) {
     case 'd': imSubtract.dodetect = true; break;
-    case 'f': imSubtract.doswap = false; break;
+    case 'f': imSubtract.noswap = true; break;
     case 'n': imSubtract.dosub = false; break;
     case 'o': imSubtract.overwrite = true; break;
     default : usage(args[0]); return EXIT_FAILURE;
