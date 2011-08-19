@@ -551,7 +551,7 @@ void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference
 }
 
 
-string ImageResample(const ReducedImage& Im, const ReducedImage& Ref) {
+string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef, const GtransfoRef RefToIm) {
   string resampledName = TransformedName(Im.Name(), Ref.Name());
   { 
     ReducedImageRef resampledIm = ReducedImageNew(resampledName);
@@ -560,8 +560,11 @@ string ImageResample(const ReducedImage& Im, const ReducedImage& Ref) {
       return resampledName;
     }
   }
-  GtransfoRef imToRef = FindTransfo(Im, Ref);
-  GtransfoRef refToIm = imToRef->InverseTransfo(0.001, Ref.UsablePart());
+
+  GtransfoRef imToRef = ImToRef;
+  if (!imToRef) imToRef = FindTransfo(Im, Ref);
+  GtransfoRef refToIm = RefToIm;
+  if (!refToIm) refToIm = imToRef->InverseTransfo(0.001, Ref.UsablePart());
   cout << " Transfo from " << Im.Name() << " to " << Ref.Name() << endl;
   cout << *imToRef;
   ImageGtransfo *imTransfo = new ImageGtransfo(refToIm,
@@ -585,7 +588,7 @@ static double sign(const double& x) {
 }
 
 
-string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref) {
+string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef) {
   string shiftedName = ShiftedName(Im.Name(), Ref.Name());
   {
     ReducedImageRef shiftedIm = ReducedImageNew(shiftedName);
@@ -594,14 +597,14 @@ string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref) {
       return shiftedName;
     }
   }
-  GtransfoRef transfo = FindTransfo(Im, Ref);
+  GtransfoRef transfo = ImToRef;
+  if (!transfo) transfo = FindTransfo(Im, Ref);
   GtransfoLin lintransfo = transfo->LinearApproximation(Ref.UsablePart().Center());
-  GtransfoLin *imToRef = new GtransfoLin(ceil(lintransfo.Coeff(0,0,0)),
+  GtransfoLin* imToRef = new GtransfoLin(ceil(lintransfo.Coeff(0,0,0)),
 					 ceil(lintransfo.Coeff(0,0,1)),
 					 sign(lintransfo.Coeff(1,0,0)),
 					 0, 0,
-					 sign(lintransfo.Coeff(0,1,1)));
-
+					sign(lintransfo.Coeff(0,1,1)));
   GtransfoRef refToIm = new GtransfoLin(imToRef->invert());
   cout << " Transfo from " << Im.Name() << " to " << Ref.Name() << endl;
   cout << *imToRef;

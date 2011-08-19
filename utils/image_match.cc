@@ -11,7 +11,9 @@ static void usage(const char *progName) {
        << "  match <DbImages> relatively to a geometric reference image <Ref>\n" 
        << "  [OPTIONS]:\n"
        << "     -n : no resampling, only match catalogues\n"
+       << "     -s : extract subimage from <Ref> to match\n"
        << "     -i : integer shifting (no interpolation)\n"
+       << "     -t x y: translation parameters\n"
        << "     -u : union of all frames instead of intersection\n";
 }
 
@@ -21,6 +23,7 @@ struct ImageMatcher {
 
   bool doResample, doIntShift;
   ReducedImageRef Ref;
+  GtransfoRef RefToIm, ImToRef;
 
   void operator () (const ReducedImageRef Im) const {
     try {
@@ -34,12 +37,14 @@ struct ImageMatcher {
 	cout << " Big image, will extract a sub image using rough match\n";
 	ref = new SubImage("Sub_" + Ref->Name() + "_" + Im->Name(), Ref->Name(), Im->Name(), 50);
       }
+
       if (doResample)
-	ImageResample(*Im, *ref);
+	ImageResample(*Im, *ref, RefToIm, ImToRef);
       else if (doIntShift)
-	ImageIntegerShift(*Im, *ref);
+	ImageIntegerShift(*Im, *ref, RefToIm);
       else
 	cout << *FindTransfo(*Im, *ref);
+
     } catch (PolokaException p) {
       p.PrintMessage(cerr);
     }
@@ -78,6 +83,13 @@ int main(int nargs, char **args) {
     switch (arg[1]) {
     case 'n': imMatcher.doResample = false; break;
     case 'i': imMatcher.doResample = false; imMatcher.doIntShift = true; break;
+    case 't': { 
+      double dx = atof(args[++i]);
+      double dy = atof(args[++i]);
+      imMatcher.ImToRef = new GtransfoLinShift( dx,  dy);
+      imMatcher.RefToIm = new GtransfoLinShift(-dx, -dy);
+    }
+      break;
     case 'u': doUnion = true; break;
     default : usage(args[0]); return EXIT_FAILURE;
     }
