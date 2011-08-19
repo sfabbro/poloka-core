@@ -1580,8 +1580,8 @@ int FitsImage::Write(bool force_bscale)
     }
 	  
   if (bscale == 0) bscale = 1;
-  cout << "Min: " << mini << "  Max: " << maxi << endl ;
-  cout << " with BITPIX=" << bitpix << " BSCALE=" << bscale << " BZERO=" << bzero << endl;
+  cout << " Min: " << mini << " Max: " << maxi
+       << " BITPIX=" << bitpix << " BSCALE=" << bscale << " BZERO=" << bzero << endl;
   int status = 0;
 
   string stime = local_time();
