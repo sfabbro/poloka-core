@@ -735,7 +735,7 @@ double Arcmin2Area(const Frame &aFrame,const FitsHeader &Header)
   return aFrame.Area()*sqr(PixelSize(Header))/3600.;  
 }
 
-void RaDecFromWCS(const FitsHeader &Header, double &Ra, double &Dec)
+bool RaDecFromWCS(const FitsHeader &Header, double &Ra, double &Dec)
 {
   GtransfoRef pix2RaDec = WCSFromHeader(Header);
   if (pix2RaDec)
@@ -743,8 +743,10 @@ void RaDecFromWCS(const FitsHeader &Header, double &Ra, double &Dec)
       double xc = double(Header.KeyVal("NAXIS1"))/2.;
       double yc = double(Header.KeyVal("NAXIS2"))/2.;
       pix2RaDec->apply(xc,yc,Ra,Dec);
+      return true;
     }
-   
+  else 
+    return false;
 }
 
 double Arcmin2Area(const FitsHeader &Header)

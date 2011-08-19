@@ -72,8 +72,8 @@ bool CopyWCS(const FitsHeader &FromHeader, FitsHeader &ToHeader);
 //! fetch pixel sizes in arcsecond from a header using WCS info
 void GetPixelSize(const FitsHeader& Head, double &SizeX, double &SizeY);
 
-//! Get Ra and DEC from WCS on center of image
-void RaDecFromWCS(const FitsHeader &Header, double &Ra, double &Dec);
+//! Get Ra and DEC from WCS on center of image, return false if no wcs
+bool RaDecFromWCS(const FitsHeader &Header, double &Ra, double &Dec);
 
 //! so far returns average pixel size in arcsecond 
 double PixelSize(const FitsHeader& Head);
