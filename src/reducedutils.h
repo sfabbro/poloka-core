@@ -92,7 +92,7 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
 //! convenient wrapper to find a Gtransfo between 2 images using the above routine
 GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest, int MaxOrder=-1);
 
-string ImageResample(const ReducedImage& Im, const ReducedImage& Ref);
-string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref);
+string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef(), const GtransfoRef RefToIm=GtransfoRef());
+string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef());
 
 #endif // REDUCEDUTILS__H
