@@ -37,7 +37,7 @@ bin_PROGRAMS = \
         deadprop checkmask sumpixels wcs_for_vignets \
         apercorr simple_zpfitter satellite_trajectory \
         merge_headers image_match image_combine image_subtract \
-	daosetup daoconvert makesub make_satur addstars
+	daosetup daoconvert makesub make_satur addstars magellan_to_poloka
 
 LDADD = $(top_builddir)/src/libtoads.la
 
@@ -49,6 +49,7 @@ dbimstat_SOURCES = dbimstat.cc
 dead_correction_SOURCES = dead_correction.cc
 elixir_to_toads_SOURCES = elixir_to_toads.cc
 elixir_to_toads_LDADD = $(LDADD) $(top_builddir)/flat/libtoadsflat.la
+magellan_to_poloka_SOURCES = magellan_to_poloka.cc
 findsatellite_SOURCES = findsatellite.cc
 image_align_SOURCES = image_align.cc
 image_register_SOURCES = image_register.cc
