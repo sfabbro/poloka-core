@@ -278,10 +278,11 @@ bool ImageSubtraction::MakeWeight()
 
   if (subMaskSig2Noise > 0 && RefIsBest()) {
     FitsImage best(Best()->FitsName());
-    cout << " Masking pixels with S/N > " << subMaskSig2Noise << " on best\n";
+    cout << " Masking pixels with S/N > " << subMaskSig2Noise << " on " << Best()->Name() << endl;
     Pixel *pim = best.begin();
+    Pixel skybest = Best()->BackLevel();
     for (Pixel *p=weightImage.begin() ; pim < best.end() ; ++pim, ++p)
-      if ( *pim * sqrt(*p) >= subMaskSig2Noise) *p = 0;
+      if ( (*pim-skybest) * sqrt(*p) >= subMaskSig2Noise) *p = 0;
   }
 
   /* add a small constant to weights so that variances of 
@@ -346,11 +347,11 @@ bool ImageSubtraction::MakeWeight()
 
   if (subMaskSig2Noise > 0 && !RefIsBest()) {
     FitsImage worst(Worst()->FitsName());
-    double maxstn = Worst()->SigmaBack() * subMaskSig2Noise;
-    cout << " Mask brighter pixels than " <<  maxstn << " on worst\n";
+    cout << " Masking pixels with S/N > " <<  subMaskSig2Noise << " on " << Worst()->Name() << endl;
     Pixel *pim = worst.begin();
+    Pixel skyworst = Worst()->BackLevel();
     for (Pixel *p=weightImage.begin() ; pim < worst.end() ; ++pim, ++p)
-      if (*pim >= maxstn) *p = 0;
+      if ( (*pim-skyworst) * sqrt(*p) >= subMaskSig2Noise) *p = 0;
   }
 
   /* add a small constant to weights so that variances of 
