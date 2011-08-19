@@ -140,6 +140,7 @@ Usefull in case of artificially smoothed images
 			   bool weight_from_measurement_image, 
 			   string catalog_name, bool do_segmentation);
 
+  bool MakeBack(bool dosubtract);
 
 //! Produce the Saturated stars pixels mask, subtract the image background, detect with the SExtractor computed sigma. search the cosmics, and update catalog and weight for cosmics. No free coffee.
   virtual bool MakeCatalog();
@@ -148,6 +149,7 @@ Usefull in case of artificially smoothed images
   //! produces aperture photometry on the objects from the SE catalog
   virtual bool MakeAperCat();
 
+  virtual bool MakeBack();
 
   //! Extracts stars form the AperCat
   virtual bool MakeStarCat();

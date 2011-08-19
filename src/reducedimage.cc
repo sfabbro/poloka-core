@@ -2,16 +2,64 @@
 #include <memory> // for auto_ptr
 
 #include "fitsimage.h"
-#include "reducedimage.h"
-#include "astroutils.h"
 #include "fitstoad.h"
-#include "sestar.h"
-#include "cluster.h"
-#include "gtransfo.h"
-#include "wcsutils.h"
-#include "imageutils.h" // ConvolveSegMask
+#include "fitsslice.h" // for FitsParallelSlices
 #include "fitsexception.h"
 
+#include "reducedimage.h"
+#include "astroutils.h"
+#include "sestar.h"
+#include "apersestar.h"
+
+#include "cluster.h"
+#include "imageutils.h" // ConvolveSegMask
+#include "imageback.h"
+#include "histopeakfinder.h"
+
+#include "gtransfo.h"
+#include "wcsutils.h"
+#include "fastfinder.h"
+
+#include "sextractor_box.h"
+#include "seeing_box.h"
+
+#include "datacards.h"
+#include "toadscards.h"
+
+
+#define SATUR_COEFF 0.98
+#define UNDEFINED -1
+
+#define READ_IF_EXISTS(VAR,TAG,TYPE) \
+if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
+
+#define READ_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)\
+VALUETYPE ReducedImage::ROUTINE_NAME() const\
+{\
+  return read_##VALUETYPE##_key(FITS_KEY_NAME,#ROUTINE_NAME);\
+}
+
+#define  SET_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME) \
+bool ReducedImage::Set##ROUTINE_NAME(const VALUETYPE &Value, const string Comment)\
+{\
+  return set_##VALUETYPE##_key(Value,FITS_KEY_NAME,"Set"#ROUTINE_NAME, Comment);\
+}
+
+#define  REMOVE_ROUTINE(ROUTINE_NAME, FITS_KEY_NAME) \
+void ReducedImage::Remove##ROUTINE_NAME()\
+{\
+  remove_key(FITS_KEY_NAME,"Remove"#ROUTINE_NAME);\
+}
+
+#define  HAS_ROUTINE(ROUTINE_NAME, FITS_KEY_NAME) \
+bool ReducedImage::Has##ROUTINE_NAME() const \
+{\
+  return( has_key(FITS_KEY_NAME,"Has"#ROUTINE_NAME));\
+}
+
+#define READ_AND_SET_ROUTINES(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME) \
+        READ_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)\
+        SET_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)
 
 /* it seems that a constructor cannot call another constructor:
    hence put a routine that both call */
@@ -54,13 +102,6 @@ bool ReducedImage::MakeFits()
   return false;
 }
 
-
-#include "sextractor_box.h" /* for SEStarListMake */
-#include "toadscards.h"
-#include "seeing_box.h" /*pour le calcul du seeing lors du catalogue */
-
-
-#define SATUR_COEFF 0.98
 
 
 /* Pour remplir le carnet d'ordres de SExtractor */
@@ -225,12 +266,110 @@ void ReducedImage::FillSExtractorData_2(ReducedImage & rim_det,
 }
 
 
+bool ReducedImage::MakeBack(bool dosubtract) {
+
+  RecoverBack(false);
+  FitsImage *largeBack = 0;
+
+  if (FileExists(FitsBackName()))
+    largeBack = new FitsImage(FitsBackName());
+  else {
+    if (!FileExists(FitsSegmentationName()))  {
+      return MakeCatalog(true, true, false, !dosubtract, false);
+    }
+    int poloka_back_object_mask_border = 5;
+    DataCards cards(DefaultDatacards());
+    READ_IF_EXISTS(poloka_back_object_mask_border, "POLOKA_BACK_OBJECT_MASK_BORDER", IParam);
+    cout << " Convolving object mask with bordersize = " << poloka_back_object_mask_border << endl;
+
+    FitsImage *segmentationMask = new FitsImage(FitsSegmentationName());
+    ConvolveSegMask(*segmentationMask, *segmentationMask, poloka_back_object_mask_border);
+
+    // build a weight image with objects masked
+    // "invert" the mask
+    Pixel *end = segmentationMask->end();
+    for (Pixel *pm = segmentationMask->begin(); pm < end; ++pm) if (*pm == 0) *pm=1; else *pm = 0;
+    FitsImage *weight = new FitsImage(FitsWeightName());	  
+    *weight *= *segmentationMask;
+    delete segmentationMask;
+    {
+      // read mesh size from datacards
+      int poloka_back_mesh_sizex = 256;
+      int poloka_back_mesh_sizey = poloka_back_mesh_sizex;
+          if (cards.HasKey("POLOKA_BACK_MESH_SIZE")) {
+	poloka_back_mesh_sizex = poloka_back_mesh_sizey = cards.IParam("POLOKA_BACK_MESH_SIZE");
+      } else {
+	READ_IF_EXISTS(poloka_back_mesh_sizex,"POLOKA_BACK_MESH_SIZEX", IParam);
+	poloka_back_mesh_sizey = poloka_back_mesh_sizex;
+	READ_IF_EXISTS(poloka_back_mesh_sizey,"POLOKA_BACK_MESH_SIZEY", IParam);
+      }
+      // simple  isn't it?
+      cout << " Computing Image Background with mesh = " 
+	   <<  poloka_back_mesh_sizex << ',' << poloka_back_mesh_sizey << endl;
+
+      FitsImage *im = new FitsImage(FitsName());
+      ImageBack back(*im, poloka_back_mesh_sizex, poloka_back_mesh_sizey, weight);
+      delete weight;
+      delete im;
+      
+      { // save the mini back
+	FitsImage miniBack(FitsMiniBackName(), back.BackValue());
+	miniBack.AddOrModKey("SEXBKGSX", poloka_back_mesh_sizex);
+	miniBack.AddOrModKey("SEXBKGSY", poloka_back_mesh_sizey);
+	miniBack.AddOrModKey("BITPIX",-32);
+	miniBack.AddOrModKey("EXTRAPIX", poloka_back_object_mask_border,
+			     " by how many pixels we enlarged the segmentation sex patches");
+	miniBack.AddCommentLine("Poloka Computed Miniback (class ImageBack)");
+      }
+      FitsHeader head(FitsName());
+      largeBack = new FitsImage(FitsBackName(), head, *back.BackgroundImage());
+    }
+  }
+  
+  if (dosubtract) {
+    if (!BackSub()) {
+      // set back ("Fond() ") of stars to zero.
+      // this idea of having n catalogs is starting to be moronic
+      if (HasCatalog()) {
+	SEStarList selist(CatalogName());
+	SetStarsBackground(selist, 0.);
+	selist.write(CatalogName());
+      }
+      if (HasAperCatalog()) {
+	AperSEStarList salist(AperCatalogName());
+	for(AperSEStarIterator it = salist.begin() ; it != salist.end() ; it++) {
+	  (*it)->Fond() =  0;
+	}
+	salist.write(AperCatalogName());
+      }
+      if (FileExists(StarCatalogName())) {
+	AperSEStarList salist(StarCatalogName());
+	for(AperSEStarIterator it = salist.begin() ; it != salist.end() ; it++) {
+	  (*it)->Fond() = 0;
+	}
+	salist.write(StarCatalogName());
+      }
+      // update saturation level in image header
+      SetOriginalSaturation(Saturation(), "Original saturation level before sky subtraction"); 
+      SetSaturation(Saturation() - BackLevel(), "Saturation level corrected from sky subtraction");
+      SetBackLevel(0., "Sky background subtracted"); // activates BackSub
+    }
+    // subtracting background and saving image
+    cout << " Subtracting Image Background" << endl;
+    FitsImage img(FitsName(), RW);
+    img -= *largeBack;
+  }
+
+  delete largeBack;
+  return true;
+}
+
 
 bool 
 ReducedImage::RecoverBack(bool add_to_image) {
   if ( FileExists(FitsBackName()) )
    {
-     cerr << "background image existing for image " << FitsName()
+     cout << " Background image existing for image " << FitsName()
 	  << endl ;
      if (add_to_image)
        {
@@ -242,7 +381,7 @@ ReducedImage::RecoverBack(bool add_to_image) {
    } 
   if ( ! FileExists(FitsMiniBackName()) )
    {
-     cerr << "Mini background image NOT existing for image " << FitsName()
+     cerr << " Mini background image absent for image " << FitsName()
 	  << endl ;
      return false;
    } 
@@ -256,7 +395,7 @@ ReducedImage::RecoverBack(bool add_to_image) {
     }
   else
     {
-      cerr << "No key SEXBKGSX and SEXBKGSY in MiniBack header for " << Name() << ". Can't build Back Image. " << endl ;
+      cerr << " No key SEXBKGSX and SEXBKGSY in MiniBack header for " << Name() << ". Can't build Back Image. " << endl ;
       return false;
     }
   Image * imageback = BackFromMiniBack(miniback, XSize(), YSize(), 
@@ -296,10 +435,6 @@ ReducedImage::ReAddBackground_and_ResetKeys()
     }
 }
 
-#define READ_IF_EXISTS(VAR,TAG,TYPE) \
-if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
-
-#include "imageback.h"
 
 bool
 ReducedImage::MakeCatalog(bool redo_from_beg, 
@@ -696,9 +831,12 @@ bool ReducedImage::MakeCatalog()
   // MakeCosmic();
   return(ok);
 }
-#include "apersestar.h"
-#include "datacards.h"
-#include "toadscards.h"
+
+bool ReducedImage::MakeBack() 
+{
+  return MakeBack(false);
+}
+
 
 /* routine steps
 
@@ -728,8 +866,6 @@ static double sq(const double &x) {return x*x;}
 
 
 
-#include "histopeakfinder.h"
-#include "fitsslice.h" // for FitsParallelSlices
 
 bool ReducedImage::MakeAperCat()
 {
@@ -795,14 +931,16 @@ bool ReducedImage::MakeAperCat()
     FitsParallelSlices slices(ySliceSize,sliceOverlap);
 
     slices.AddFile(FitsName());
+    slices.AddFile(FitsWeightName());
 
+    bool backsub = true;
     if (!bool(slices[0]->KeyVal("BACK_SUB")))
       {
-	cout << " ReducedImage::MakeAperCat : this code cannot accomodate images with background left" << endl;
-	return false;
+	MakeBack();
+	backsub = false;
+	slices.AddFile(FitsBackName());
       }
     
-    slices.AddFile(FitsWeightName());
     
     
     double yStarMin = 0;
@@ -811,6 +949,7 @@ bool ReducedImage::MakeAperCat()
 	double yStarMax = (slices.LastSlice())? slices.ImageJ(ySliceSize): slices.ImageJ(ySliceSize)-55;
 	
 	double offset = slices.ImageJ(0);
+	if (!backsub) *slices[0] -= *slices[2];
 	for (AperSEStarIterator i = apercat.begin(); i != apercat.end(); ++i)
 	  {
 	    AperSEStar &s = **i;
@@ -1427,7 +1566,6 @@ bool ReducedImage::MakeDead()
 
 
 
-#include "fastfinder.h"
 
 void ReducedImage::FlagCosmicsInCatalog(const Image &CosmicImage,
 					const double dist)
@@ -1586,8 +1724,6 @@ bool  ReducedImage::Execute(const int ToDo)
 }
 
   
-
-#define UNDEFINED -1
 
 // hidden routines
 
@@ -1754,38 +1890,6 @@ int ReducedImage::YSize() const
 {
   return read_int_key("NAXIS2","YSize()");
 }
-
-#define READ_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)\
-VALUETYPE ReducedImage::ROUTINE_NAME() const\
-{\
-  return read_##VALUETYPE##_key(FITS_KEY_NAME,#ROUTINE_NAME);\
-}
-
-#define  SET_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME) \
-bool ReducedImage::Set##ROUTINE_NAME(const VALUETYPE &Value, const string Comment)\
-{\
-  return set_##VALUETYPE##_key(Value,FITS_KEY_NAME,"Set"#ROUTINE_NAME, Comment);\
-}
-
-#define  REMOVE_ROUTINE(ROUTINE_NAME, FITS_KEY_NAME) \
-void ReducedImage::Remove##ROUTINE_NAME()\
-{\
-  remove_key(FITS_KEY_NAME,"Remove"#ROUTINE_NAME);\
-}
-
-#define  HAS_ROUTINE(ROUTINE_NAME, FITS_KEY_NAME) \
-bool ReducedImage::Has##ROUTINE_NAME() const \
-{\
-  return( has_key(FITS_KEY_NAME,"Has"#ROUTINE_NAME));\
-}
-
-#define READ_AND_SET_ROUTINES(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME) \
-        READ_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)\
-        SET_ROUTINE(ROUTINE_NAME, VALUETYPE, FITS_KEY_NAME)
-
-
-
-
 
 READ_AND_SET_ROUTINES(Exposure,double,"TOADEXPO") 
 READ_AND_SET_ROUTINES(Epoch,double,"TOADEQUI") 
