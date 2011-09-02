@@ -47,7 +47,7 @@ public :
 	double cd1_2 = Head.KeyVal("CD1_2");
 	double cd2_2 = Head.KeyVal("CD2_2");
 	double cd2_1 = Head.KeyVal("CD2_1");
-	return FitsKey("TOADPIXS",sqrt(fabs(cd1_1*cd2_2-cd1_2*cd2_1)));
+	return FitsKey("TOADPIXS",sqrt(fabs(cd1_1*cd2_2-cd1_2*cd2_1))*3600.);
       }	
     else return FitsKey("TOADPIXS", 0.);
   }
