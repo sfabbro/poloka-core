@@ -88,6 +88,8 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   star->Fond() = obj->bkg  ;
   star->Flux_auto() = obj2->flux_auto ;
   star->Eflux_auto() = obj2->fluxerr_auto  ;
+  star->Flux_petro() = obj2->flux_petro ;
+  star->Eflux_petro() = obj2->fluxerr_petro  ;
 
   // doit etre defini dans le fichier de param !
   if (obj2->flux_aper)
@@ -103,6 +105,7 @@ void  Get_SEStar(SEStar *star, objstruct* obj, obj2struct *obj2)
   star->Eflux_isocor() = obj2->fluxerr_isocor  ;
   star->Fwhm() = obj->fwhm  ;
   star->Kronradius() = obj2->kronfactor ;
+  star->Petroradius() = obj2->petrofactor ;
   star->Isoarea() = obj->npix  ;
   star->Mxx() = obj->mx2  ;
   star->Myy() = obj->my2  ;
@@ -160,7 +163,7 @@ static
 int 
 sex_proc(const AllForSExtractor & data,
 	 _SexStarFill StarFill,  _SexImgFill MaskFill, 
-          double & Fond, double &SigmaFond)
+          double & Fond, double &SigmaFond, double *phot_autoaper, double *phot_autoparam)
 {
 
   std::vector<void *> toFree;
@@ -299,6 +302,12 @@ sex_proc(const AllForSExtractor & data,
 
   Fond = thefield1.backmean;
   SigmaFond= thefield1.backsig ;
+
+  phot_autoaper[0] = prefs.autoaper[0] ;
+  phot_autoaper[1] = prefs.autoaper[1] ;
+
+  phot_autoparam[0] = prefs.autoparam[0] ;
+  phot_autoparam[1] = prefs.autoparam[1] ;
   
   // free the mallocs:
   for (unsigned k=0; k<toFree.size(); ++k) free(toFree[k]);
@@ -355,9 +364,15 @@ _SEStarListMake(const AllForSExtractor & data,
   pmask = pmask_sat ;
   if (file_exists(data.FitsFileName.c_str()) )
     {
+      double phot_autoaper[2] ;
+      double phot_autoparam[2] ;
      sex_proc(data, Get_SEStarList, Get_PixelSat,
-	      Fond, SigmaFond);
+	      Fond, SigmaFond, phot_autoaper, phot_autoparam);
      MakeNumbers(List);
+     List.GlobVal().AddKey("PHOT_AUTOAPER_0",phot_autoaper[0]) ;
+     List.GlobVal().AddKey("PHOT_AUTOAPER_1",phot_autoaper[1]) ;
+     List.GlobVal().AddKey("PHOT_AUTOPARAM_0",phot_autoparam[0]) ;
+     List.GlobVal().AddKey("PHOT_AUTOPARAM_1",phot_autoparam[1]) ;
      return 1;
     }
   return 0;
@@ -430,11 +445,6 @@ AllForSExtractor::FillFromEnvironnement()
   else
     cout << " TOADSCARDS not defined, use local directory  " << endl;
   SexConfigFileName = sextractor_dir+"/default.sex";
-  if (getenv("SECARD1"))
-    {
-      SexConfigFileName = sextractor_dir+"/default1.sex";
-      cout << "Taking datacard: " << SexConfigFileName << endl ;
-    }
   SexParamName = sextractor_dir+"/default.param" ;
   SexNNWName   = sextractor_dir+"/default.nnw";
   SexFilterName = sextractor_dir+"/default.conv" ;
@@ -482,7 +492,7 @@ int
 sex_proc_2(const AllForSExtractor & data,
 	 _SexStarFill StarFill, 
 	   double & Fond_0, double &SigmaFond_0, 
-	   double & Fond_1, double &SigmaFond_1, bool weight_from_measurement_image)
+	   double & Fond_1, double &SigmaFond_1, double *phot_autoaper,  double *phot_autoparam, bool weight_from_measurement_image)
 {
   std::vector<void *> toFree;
 
@@ -727,6 +737,10 @@ prefs.weight_thresh[1]: 0
   SigmaFond_0= thefield1.backsig ;
   Fond_1 = thefield2.backmean;
   SigmaFond_1= thefield2.backsig ;
+  phot_autoaper[0] = prefs.autoaper[0] ;
+  phot_autoaper[1] = prefs.autoaper[1] ;
+  phot_autoparam[0] = prefs.autoparam[0] ;
+  phot_autoparam[1] = prefs.autoparam[1] ;
   
   // free the mallocs:
   for (unsigned k=0; k<toFree.size(); ++k) free(toFree[k]);
@@ -749,9 +763,15 @@ _SEStarListMake_2(const AllForSExtractor & data,
   Liste_de_SEStar= &List;
   if (file_exists(data.FitsFileName_0.c_str()) && file_exists(data.FitsFileName_1.c_str()) )
     {
+      double phot_autoaper[2] ;
+      double phot_autoparam[2] ;
      sex_proc_2(data, Get_SEStarList, 
-	      Fond_0, SigmaFond_0,Fond_1, SigmaFond_1, weight_from_measurement_image);
+	      Fond_0, SigmaFond_0,Fond_1, SigmaFond_1, phot_autoaper, phot_autoparam,  weight_from_measurement_image);
      MakeNumbers(List);
+     List.GlobVal().AddKey("PHOT_AUTOAPER_0",phot_autoaper[0]) ;
+     List.GlobVal().AddKey("PHOT_AUTOAPER_1",phot_autoaper[1]) ;
+     List.GlobVal().AddKey("PHOT_AUTOPARAM_0",phot_autoparam[0]) ;
+     List.GlobVal().AddKey("PHOT_AUTOPARAM_1",phot_autoparam[1]) ;
      return 1;
     }
   return 0;
