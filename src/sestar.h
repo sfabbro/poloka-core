@@ -78,6 +78,11 @@ public:
   //! SExtractor FLUXERR_AUTO :  RMS error for Flux_auto
  double Eflux_auto() const {return e_flux_auto;} 
  
+  //! SExtractor FLUX_PETRO: Flux within a petrosian aperture 
+ double Flux_petro() const {return flux_petro;}
+
+double Eflux_petro() const {return e_flux_petro;}  
+
   /* SExtractor FLUX_APER: Flux within a Fixed aperture.
      Not Filled by SExtractor. Can be filled later using a
   routine from photometrie package */
@@ -105,6 +110,8 @@ public:
  
   //! extension of the  aperture , in units of A or B
   double Kronradius() const {return kronradius;} 
+  
+  double Petroradius() const {return petroradius;} 
   
   //! area of lowest isophote en pixels 
   double Isoarea() const {return isoarea;} 
@@ -163,7 +170,9 @@ public:
   double& Fluxmax()  {return fluxmax;}
   double& Fond()  {return fond;}
   double& Flux_auto()  {return flux_auto;}
-  double& Eflux_auto()  {return e_flux_auto;} 
+  double& Eflux_auto()  {return e_flux_auto;}  
+  double& Flux_petro()  {return flux_petro;}
+  double& Eflux_petro()  {return e_flux_petro;} 
   double& Flux_circ_aper()  {return flux_circ_aper;}
   double& Eflux_circ_aper()  {return e_flux_circ_aper;} 
  
@@ -176,6 +185,7 @@ public:
   double&  Fwhm()   {return fwhm;} 
  
   double& Kronradius()  {return kronradius;} 
+  double& Petroradius()  {return petroradius;} 
   double& Isoarea()  {return isoarea;}
   double& Mxx() {return mxx;}
   double& Myy() {return myy;}
@@ -258,6 +268,8 @@ protected:
   double fond ;
   double flux_auto  ;
   double e_flux_auto  ;
+  double flux_petro  ;
+  double e_flux_petro  ;
   double flux_circ_aper  ;
   double e_flux_circ_aper  ;
    double flux_iso ; 
@@ -265,6 +277,7 @@ protected:
   double flux_isocor ; 
   double e_flux_isocor ;
   double kronradius ;
+  double petroradius ;
   double isoarea ;
   double fwhm ; 
   double mxx ;

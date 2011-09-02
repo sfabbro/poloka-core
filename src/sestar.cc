@@ -31,6 +31,7 @@ const BaseStarList* SE2Base(const SEStarList * This)
 #define MEM_OV1_FLAG 64
 #define MEM_OV2_FLAG 128
 #define DAOFLAG 256
+#define SAT_ON_MASK 512 // le centroid tombe dans une zone flaggee comme saturee
 
 
 #define NOTSATUR_FLAG ~SATUR_FLAG
@@ -76,17 +77,6 @@ bool SEStar::IsTruncated() const
 {
 return (Flag() & TRUNC_FLAG);
 }
-
-#ifdef STORAGE
-//! object aperture data is incomplete or corrupted
-#define APER_CORRUPT(m)    ((bool) ((m) & APER_COR_FLAG) )
-// object isophotal data are incomplete or corrupted
-#define ISO_CORRUPT(m)    ((bool) ((m) & ISO_COR_FLAG ) )
-// memory overflow during deblending
-#define MEM_OVFLOW1(m)    ((bool) ((m) & MEM_OV1_FLAG) )
-// memory overflow during extraction
-#define MEM_OVFLOW2(m)    ((bool) ((m) & MEM_OV2_FLAG) )
-#endif
 
 
 //! To un-flag a star because it is not saturated
@@ -142,6 +132,8 @@ SEStar::Set_to_Zero()
 
   flux_auto  = 0 ;
   e_flux_auto  = 0 ;
+  flux_petro = 0 ;
+  e_flux_petro  = 0 ;
   flux_circ_aper  = 0 ;
   e_flux_circ_aper  = 0 ;
   flux_iso = 0 ; 
@@ -151,6 +143,7 @@ SEStar::Set_to_Zero()
 
   fwhm = 0 ;
   kronradius = 0 ;
+  petroradius = 0 ;
   isoarea = 0 ;
  
   mxx = 0 ;
@@ -187,11 +180,14 @@ SEStar::dumpn(ostream& s) const
   s << " Fond : " << Fond() ;
   s << " Flux_auto : " << Flux_auto() ;
   s << " Eflux_auto : " << Eflux_auto() ;
+  s << " Flux_petro : " << Flux_petro() ;
+  s << " Eflux_petro : " << Eflux_petro() ;
   s << " Flux_iso : " << Flux_iso() ;
   s << " Eflux_iso : " << Eflux_iso() ;
   s << " Flux_isocor : " << Flux_isocor() ;
   s << " Eflux_isocor : " << Eflux_isocor() ;
   s << " Kronradius : " << Kronradius() ;
+  s << " Petroradius : " << Petroradius() ;
   s << " Isoarea : " << Isoarea() ;
   s << " Fwhm : " << Fwhm() ;
   s << " Mxx : " << Mxx() ;
@@ -258,6 +254,9 @@ SEStar::writen(ostream& s)  const
   s << Iter() << " ";
   s << Chi() << " ";
   s << Sharp() << " ";
+  s << Flux_petro ()  << " " ;
+  s << Eflux_petro()   << " " ;
+  s << Petroradius()   << " " ;
 }
 
 
@@ -317,6 +316,12 @@ SEStar::read_it(fastifstream& r, const char * Format)
       r  >> Iter();
       r  >> Chi();
       r  >> Sharp();
+    } 
+  if (format >=6)
+    { 
+      r >> Flux_petro()  ;
+      r >> Eflux_petro() ;
+      r >> Petroradius() ;
     }
   return ;
 }
@@ -365,12 +370,15 @@ std::string SEStar::WriteHeader_(ostream & pr, const char *i) const
 	<< "# num"<< i <<" : star number " << endl 
 	<< "# iter" << i << "  : number of iterations" << endl 
 	<< "# chi" << i << "  : robustified chi per star" << endl 
-	<< "# sharp" << i << "  : sharp index" << endl; 
+	<< "# sharp" << i << "  : sharp index" << endl
+	<< "# fpet" << i << "  : f petro" << endl 
+	<< "# efpet" << i << "  : err f petro" << endl  
+	<< "# rpet" << i << "  : petro radius" << endl; 
 
 
 /* 1 is the current format id for SEStars (when being written) it must correspond
 to the right behaviour of the read routine ( and match what write does ! ) */
-return baseStarFormat + " SEStar 5 ";
+return baseStarFormat + " SEStar 6 ";
 }
 
 
