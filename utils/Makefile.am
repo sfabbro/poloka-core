@@ -36,8 +36,9 @@ bin_PROGRAMS = \
         getvalueatpoint catalog_images_match \
         deadprop checkmask sumpixels wcs_for_vignets \
         apercorr simple_zpfitter satellite_trajectory \
-        merge_headers image_match image_combine image_subtract \
-	daosetup daoconvert makesub make_satur addstars magellan_to_poloka
+        merge_headers image_match image_combine image_subtract image_detect \
+	daosetup daoconvert makesub make_satur addstars magellan_to_poloka \
+	fitsfix
 
 LDADD = $(top_builddir)/src/libtoads.la
 
@@ -122,6 +123,7 @@ satellite_trajectory_SOURCES = satellite_trajectory.cc
 merge_headers_SOURCES = merge_headers.cc
 image_combine_SOURCES = image_combine.cc
 image_subtract_SOURCES = image_subtract.cc
+image_detect_SOURCES = image_detect.cc
 image_match_SOURCES = image_match.cc
 daoconvert_SOURCES = daoconvert.cc
 daosetup_SOURCES = daosetup.cc
@@ -129,3 +131,4 @@ makesub_SOURCES = makesub.cc
 make_satur_SOURCES = make_satur.cc
 addstars_SOURCES = addstars.cc
 addstars_LDADD = $(LDADD) $(top_builddir)/psf/libtoadspsf.la
+fitsfix_SOURCES = fitsfix.cc
