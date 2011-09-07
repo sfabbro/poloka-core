@@ -30,8 +30,10 @@ const Image& ImagePair::WorstImage()
 static Image* weight_with_satur(const ReducedImageRef &Ri)
 {
   Image *res = new FitsImage(Ri->FitsWeightName());
-  FitsImage satur = Ri->FitsSaturName();
-  *res *= (1.-satur);
+  if (Ri->HasSatur()) {
+    FitsImage satur(Ri->FitsSaturName());
+    *res *= (1.-satur);
+  }
   return res;
 }
 
