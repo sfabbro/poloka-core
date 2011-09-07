@@ -508,13 +508,10 @@ void Kernel::dump_info(ostream &stream) const
   double dx,dy, varx, vary, varxy;
   bias(dx,dy);
   moments(varx,vary,varxy);
-  int oldprec = stream.precision();
-  stream << setprecision(10);
   stream << " bias ( " << dx << ',' << dy << ")"
 	 << " sx,sy,rho,sum " << sqrt(varx) << ',' << sqrt(vary) << ',' << varxy/sqrt(varx*vary) << ',' << sum () 
 	 << " vx,vy,vxy,sum2 " << varx << ',' << vary << ',' << varxy << ',' << sum2()
 	 << endl;
-  stream <<setprecision(oldprec);
 }
 
 Kernel::Kernel(const Kernel& K, int BandX, int BandY) 
