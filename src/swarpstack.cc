@@ -491,6 +491,8 @@ SwarpStack::SwarpStack(const string &Name, const ReducedImageList &Images,
 }
 
 
+SwarpStack::SwarpStack(const string &Name) : ReducedImage(Name) {}
+
 static string build_file_name(const std::string &Format, const std::string &AName)
 {
   char link_name[1024];
@@ -555,7 +557,7 @@ static void extract_ascii_wcs(const std::string &FitsName,
 
 
 /* on makiki/kiholo, the openfile limit was enlarged only 
-   for tcsh*/
+   for tcsh
 static int my_tcsh_system(const std::string &Command)
 {
   std::cout << " spawning command:" << std::endl << Command << std::endl;
@@ -563,6 +565,7 @@ static int my_tcsh_system(const std::string &Command)
 }
 
 
+*/
 
 bool SwarpStack::MakeFits()
 {
@@ -700,9 +703,9 @@ bool SwarpStack::MakeFits()
 
   string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName 
     + inputFiles;
-  if (my_tcsh_system(command.c_str())!=0)
+  if (system(command.c_str())!=0)
     {
-      cerr <<" something went wrong ... " << std::endl;
+      cerr <<" swarpstack: something went wrong ... " << std::endl;
       return false;
     }
   // STILL have to add a few things in the header
@@ -832,9 +835,9 @@ bool SwarpStack::MakeSatur()
   MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
 
   string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName + inputFiles;
-  if (my_tcsh_system(command.c_str())!=0)
+  if (system(command.c_str())!=0)
     {
-      cerr <<" something went wrong ... " << std::endl;
+      cerr <<" swarpstack: something went wrong ... " << std::endl;
       return false;
     }
   /* we have to process the output, first to quantize it (0 or 1) to
