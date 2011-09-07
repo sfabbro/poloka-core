@@ -11,7 +11,6 @@ static void usage(const char *progName) {
        << "  match <DbImages> relatively to a geometric reference image <Ref>\n" 
        << "  [OPTIONS]:\n"
        << "     -n : no resampling, only match catalogues\n"
-       << "     -s : extract subimage from <Ref> to match\n"
        << "     -i : integer shifting (no interpolation)\n"
        << "     -t x y: translation parameters\n"
        << "     -u : union of all frames instead of intersection\n";
@@ -34,8 +33,9 @@ struct ImageMatcher {
       ReducedImageRef ref = Ref;
       // ugly hack: ref bigger than 3X image, extract subimage
       if (Ref->XSize()*Ref->YSize() > 3*Im->XSize()*Im->YSize()) {
-	cout << " Big image, will extract a sub image using rough match\n";
+	cout << " " << Ref->Name() << " is a big image, will extract a sub image using rough match\n";
 	ref = new SubImage("Sub_" + Ref->Name() + "_" + Im->Name(), Ref->Name(), Im->Name(), 50);
+	ref->Execute(DoFits|DoCatalog);
       }
 
       if (doResample)
