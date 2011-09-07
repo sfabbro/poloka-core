@@ -14,6 +14,7 @@ If we use root for all I/O's, this file just disappears. */
 #include "imagesum.h"
 #include "transformedimage.h"
 #include "imagesubtraction.h"
+#include "swarpstack.h"
 #include "subimage.h"
 
 ReducedImage* ReducedImageNew(const string &Name)
@@ -46,7 +47,11 @@ else if (typeName == "SubImage")
   {
     return new SubImage(Name);
   }
- else if (redImage.HasCatalog()&& redImage.HasImage() && redImage.HasWeight()) // reducedimage that does not know it...
+else if (typeName == "SwarpStack")
+  {
+    return new SwarpStack(Name);
+  }
+else if (redImage.HasCatalog()&& redImage.HasImage() && redImage.HasWeight()) // reducedimage that does not know it...
   {
     return new ReducedImage(Name);
   }
