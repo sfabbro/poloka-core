@@ -1,16 +1,16 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+
 #include "fitsimage.h"
-//#include "../dao_stuff/cdaophot.h"
 
 int main(int argc,char **args)
 {
-  if (argc <=1)
+  if (argc<=1)
     {
-      cout << " image_stats <fitsfile(s)>\n"
-	   << " Computes: mean, r.m.s., expected r.m.s., min and max values\n";
-      exit(-1);
+      cout << "Usage: " << args[0] << " [FITS]...\n"
+	   << "Compute sky, r.m.s., expected r.m.s., min and max values\n";
+      exit(EXIT_FAILURE);
     }
   size_t nchar = 10;
   for (int i=1; i< argc; ++i) if (strlen(args[i]) > nchar) nchar = strlen(args[i]);
@@ -18,7 +18,7 @@ int main(int argc,char **args)
   cout << endl << setiosflags(ios::left)
        << setw(nchar) << "IMAGE" 
        << setiosflags(ios::right)
-       << setw(9) << "MEAN"
+       << setw(9) << "SKY"
        << setw(7) << "SIG" 
        << setw(7) << "STH" 
        << setw(9) << "MIN" 
@@ -34,7 +34,7 @@ int main(int argc,char **args)
 
       if (!image.IsValid())
 	{
-	  cout << " invalid file "  << endl;
+	  cerr << args[i] << ": invalid file\n";
 	  continue;
 	}
       Pixel mean,sigma,minv,maxv;
@@ -55,5 +55,5 @@ int main(int argc,char **args)
 	   << endl;
     }
   
-  return 1; 
+  return EXIT_SUCCESS; 
 }

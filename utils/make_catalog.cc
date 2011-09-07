@@ -2,9 +2,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
-#include <getopt.h>
 #include <string>
-
 
 #include "seeing_box.h"
 #include "sextractor_box.h"
@@ -15,27 +13,24 @@
 
 
 
-void usage()
+static void usage(const char *progName)
 {
-  cerr << "usage: " ; 
-  cerr << "-O: redo from beginning, re-adding background." << endl ;
-  cerr << "-o: overwrite" << endl ;
-  cerr << "-S: write saturated pixel map" << endl ;
-  cerr << "-N: background will NOT be subtracted, wether it is used or not " << endl ;
-  cerr << "-d use the sigma background in header for detection " << endl ;
-  cerr << " <DbImages ... > " << endl;
-  cerr << "What is done is:" << endl ;
-  cerr << " sextractor catalog and seeing computation if not already done,except when -o used" << endl ;
-  cerr << " Datacards are read in $TOADSCARDS " << endl;
+  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+       << "Perform SExtractor cataloguing and seeing computation\n\n"
+       << "  -O : redo from beginning, re-adding background\n"
+       << "  -o : overwrite\n"
+       << "  -S : write saturated pixel map\n"
+       << "  -N : do not subtract background whether it is used or not\n"
+       << "  -d : use the sigma background in header for detection\n";
   exit(EXIT_FAILURE);
 }
-
-
 
 
 int main(int argc, char **argv)
 {
  
+  if (argc<2) usage(argv[0]);
+
   bool overwrite = false ;
   bool savemasksat = false ;
   bool use_sigma_header = false ;
@@ -56,7 +51,7 @@ int main(int argc, char **argv)
 	  switch (arg[1])
 	    {
 	    case 'h' :
-	      usage();
+	      usage(argv[0]);
 	      break;
 	    case 'd' :
 	      use_sigma_header = true ;specif = true ;
@@ -77,7 +72,7 @@ int main(int argc, char **argv)
 	      cerr << " argument -t to make_catalog obsoleted " << endl;
 	      break;
 	    default:
-	      usage();
+	      usage(argv[0]);
 	    }
 	}
     }/* end args loop */

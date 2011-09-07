@@ -12,40 +12,30 @@
 #include "dbimage.h"
 #include "imageutils.h"
 
-static void usage(const char *progName)
-{
-
-  cerr << "Usage: " << progName << " [OPTIONS] <image(s)>\n"
-       << "  list FITS images with criteria of keys in header \n"
-       << "   OPTIONS are \n"
-       << "     -db : flag for <image(s)> to be dbimages (calibrated, then raw) \n"
-       << "     -band BAND : select by specified one letter filter BAND \n"
-       << "     -chip CHIP : select by specified chip CHIP \n"
-       << "     -ra HH:MM:SS  : select by right ascencion \n"
-       << "     -dec DD:MM:SS : select by declination \n"
-       << "     -rad VALUE : select an radius in arcmin around specified ra and dec (default is 1)\n"
-       << "     -date DD/MM/YYYY-DD/MM/YYYY : select between 2 UTC dates \n"
-       << "     -area VALUE : minimum overlap area in armin2 to use with -ref (default is 20) \n"
-       << "     -ref IMAGE : match WCS among images and a reference IMAGE \n"
-       << "     -s 'KEY OP VAL' : select with a formatted expression: \n"
-       << "                        KEY -> FITS key to select \n"
-       << "                        OP  -> operator (==,<,>,<=,>=,~=) ~= is search string\n"
-       << "                        VAL -> value to search for\n"
-       << "   Exemple:\n"
-       << "     image_select -chip 00 -date '22/03/2003-24/03/2003' *.fits\n"
-       << "           or \n"
-       << "     image_select -db -band i -s 'TOADOBJE ~= D3' -s 'SESEEING <= 1'  `dbls 2003-03-03`\n\n";
-
-  exit(-1);
+static void usage(const char *progName) {
+  cerr << "Usage: " << progName << " [OPTION]... [FITS]...\n"
+       << "Select and list FITS images with criteria of keys in their header\n\n"
+       << "   -cal           : use dbimages (calibrated, raw)\n"
+       << "   -date [MIN,MAX]: UTC date interval, format is YYYY-MM-DD or MJD\n"
+       << "   -band C        : select by band (given by TOADBAND)\n"
+       << "   -chip N        : select by chip number (given by TOADCHIP)\n"
+       << "   -ra RA         : select by RA (HH:MM:SS or degrees)\n"
+       << "   -dec DEC       : select by DEC (DD:MM:SS or degrees)\n"
+       << "   -rad VAL       : specify radius (arcmin) from RA and DEC (default: 1')\n"
+       << "   -area VAL      : min area (arcmin2) to match image set by -ref (default: 20)\n"
+       << "   -ref FITS      : select such that WCS matches a reference FITS\n"
+       << "   -s 'KEY OP VAL': select from a general expression:\n"
+       << "            KEY -> FITS key to use\n"
+       << "            OP  -> operator (==,<,>,<=,>=,~=) ~= is search string\n"
+       << "            VAL -> FITS value to match\n";
+  exit(EXIT_FAILURE);
 }
 
-bool DecodeFitsExpression(const FitsHeader &Head, const string&Exp)
-{
+bool DecodeFitsExpression(const FitsHeader &Head, const string&Exp) {
   istringstream iss(Exp);
   string keyname, op, keyval;
   iss >> keyname >> op >> keyval;
   if (!Head.HasKey(keyname)) return false;
-
   if (op == "==") 
     return string(Head.KeyVal(keyname)) == keyval;
   if (op == "~=")
@@ -62,146 +52,161 @@ bool DecodeFitsExpression(const FitsHeader &Head, const string&Exp)
   return true;
 }
 
-int main(int nargs, char **args)
-{
-  // if nothing is given
-  if (nargs < 2){usage(args[0]);}
+struct ImageSelector {
 
-  // default stuff
-  bool withDbImages = false;
-  double radius=1, ra=-1, dec=-1, minarea = 20;
-  string datestr="", refstr="";
+  double mjdMin, mjdMax, minArea;
+  StringList expList;
+  bool withDbImages;  
+  Frame *radecFrame;
+  FitsHeader *refHead;
 
-  StringList toSelect, explist;
+  ImageSelector() 
+    : mjdMin(-1), minArea(20), withDbImages(false),
+      refHead(0), radecFrame(0) {}
+
+  ~ImageSelector() {
+    if (refHead) delete refHead;
+    if (radecFrame) delete radecFrame;
+  }
+
+  void operator () (const string& imname) const {
+    string fitsname = imname;
+    // get the FITS file
+    if (withDbImages) {
+      if (!DbImage(imname).IsValid()) return;      
+      fitsname = DbImage(imname).FitsImageName(Calibrated);
+      if (!FileExists(fitsname)) fitsname = DbImage(imname).FitsImageName(Raw);
+    }
+    if (!FileExists(fitsname)) return;
+
+    FitsHeader head(fitsname);
+    if (!head.IsValid()) return;
+
+    // decode dates
+    bool filter_date = true;
+    if (mjdMin>0) {
+      double mjd = ModJulianDay(head);
+      filter_date = (mjd >= mjdMin && mjd <= mjdMax);
+    }
+      
+    // decode ref matching
+    bool filter_ref = true;
+    if (refHead)
+      filter_ref = (Arcmin2Overlap(*refHead, head) >= minArea);
+
+    // decode radius
+    bool filter_rad = true;
+    if (radecFrame) {
+      Frame pixFrame(head);
+      GtransfoRef Pix2RaDec = WCSFromHeader(head);
+      filter_rad = false;
+      if (Pix2RaDec) {
+	Frame overlap =  ApplyTransfo(pixFrame, *Pix2RaDec) * (*radecFrame);
+	filter_rad = (overlap.Area()>0);
+      } else
+	cerr << head.FileName() << ": missing WCS\n";
+    }
+    
+    // decode expressions
+    bool filter_exp = true;
+    for (StringCIterator it=expList.begin(); it != expList.end(); ++it)
+      filter_exp &= DecodeFitsExpression(head, *it);
+    
+    // print image if selected
+    if (filter_exp && filter_date && filter_rad && filter_ref)
+      cout << imname << endl;
+  }
+
+};
+
+int main(int nargs, char **args) {
+
+  if (nargs<2) usage(args[0]);
+
+  string datestr(""), refstr("");
+  string rastr(""), decstr("");
+  StringList toSelect;
+  double radius = 1;
+  ImageSelector imSelect;
 
   // loop over arguments
-  for (int i=1; i<nargs; ++i)
-    {
-      char *arg = args[i];
-      // images
-      if (arg[0] != '-') 
-	{
-	  toSelect.push_back(arg);
-	  continue;
-	}
+  for (int i=1; i<nargs; ++i) {
+    char *arg = args[i];
 
-      // options
-      arg++;
-      sscanf(arg, "%s", arg);
-      if (strcmp(arg,"db")==0)  { withDbImages = true; continue;}
-      if (strcmp(arg,"band")==0){ ++i; explist.push_back(string("TOADBAND == ")+args[i]); continue;}
-      if (strcmp(arg,"chip")==0){ ++i; explist.push_back(string("TOADCHIP == ")+args[i]); continue;}
-      if (strcmp(arg,"s")==0) { ++i; explist.push_back(args[i]); continue;}
-      if (strcmp(arg,"date")==0){ ++i; datestr = args[i]; continue;}
-      if (strcmp(arg,"ref")==0){ ++i; refstr = args[i]; continue;}
-      if (strcmp(arg,"area")==0) { ++i; minarea = atof(args[i]); continue;}
-      if (strcmp(arg,"rad")==0) { ++i; radius = atof(args[i])/60./* convert to deg */; continue;}
-      if (strcmp(arg,"ra")==0)  { ++i; ra = RaStringToDeg(args[i]); continue;}
-      if (strcmp(arg,"dec")==0) { ++i; dec = DecStringToDeg(args[i]); continue;}
-
-      // unrecognized option
-      usage(args[0]);      
+    // images
+    if (arg[0] != '-') {
+      toSelect.push_back(arg);
+      continue;
     }
 
-  double julmin,julmax,ramin,ramax,decmin,decmax;
+    // options
+    arg++;
+    if (strcmp(arg,"cal"))  { imSelect.withDbImages = true; continue; }
+    if (strcmp(arg,"band")) { imSelect.expList.push_back(string("TOADBAND == ")+args[++i]); continue; }
+    if (strcmp(arg,"chip")) { imSelect.expList.push_back(string("TOADCHIP == ")+args[++i]); continue; }
+    if (strcmp(arg,"s"))    { imSelect.expList.push_back(args[++i]); continue; }
+    if (strcmp(arg,"date")) { datestr = args[++i]; continue; }
+    if (strcmp(arg,"ref"))  { refstr = args[++i]; continue; }
+    if (strcmp(arg,"area")) { imSelect.minArea = atof(args[++i]); continue; }
+    if (strcmp(arg,"rad"))  { radius = atof(args[++i])/60./* convert to deg */; continue; }
+    if (strcmp(arg,"ra"))   { rastr  = args[++i]; continue; }
+    if (strcmp(arg,"dec"))  { decstr = args[++i]; continue; }
+    
+    // unrecognized option
+    usage(args[0]);      
+  }
 
-  bool setdate = (datestr.length() > 0);
-  if (setdate)
-    {	
-      int d1,m1,y1,d2,m2,y2;
-      if (sscanf(datestr.c_str(),"%d/%d/%d-%d/%d/%d", &d1,&m1,&y1,&d2,&m2,&y2) !=6)
-	{
-	  cerr << " Error parsing date format. Please use DD/MM/YYYY-DD/MM/YYYY \n";
-	  exit(1);
-	}
-      julmin = JulianDay(d1,m1,y1);
-      julmax = JulianDay(d2,m2,y2);
+  // decode dates
+  if (!datestr.empty()) {	
+    int d1,m1,y1,d2,m2,y2;
+    if (sscanf(datestr.c_str(),"[%d-%d-%d,%d-%d-%d]", &y1,&m1,&d1,&y2,&m2,&d2) == 6) {
+      imSelect.mjdMin = JulianDay(d1,m1,y1) - 2400000.5;
+      imSelect.mjdMax = JulianDay(d2,m2,y2) - 2400000.5;
+    } else if (sscanf(datestr.c_str(),"[%f,%f]", &imSelect.mjdMin, &imSelect.mjdMax) != 2) {
+      cerr << datestr << ": wrong date format\n";
+      return(EXIT_FAILURE);
     }
-
-  bool setref = (refstr.length() > 0);
-  FitsHeader *refhdr = 0;
-  if (setref)
-    {
-      if (withDbImages)
-	{
-	  refstr = DbImage(refstr).FitsImageName(Calibrated);
-	  if (!FileExists(refstr)) refstr = DbImage(refstr).FitsImageName(Raw);
-	}
-      refhdr = new FitsHeader(refstr);      
+  }
+  
+  // decode reference
+  if (!refstr.empty()) {
+    if (imSelect.withDbImages) {
+      refstr = DbImage(refstr).FitsImageName(Calibrated);
+      if (!FileExists(refstr)) refstr = DbImage(refstr).FitsImageName(Raw);
+      if (!FileExists(refstr)) {
+	cerr << refstr << ": not a valid reference file\n";
+	return(EXIT_FAILURE);
+      }
     }
+    imSelect.refHead = new FitsHeader(refstr);
+  }
 
-  bool setrad = (ra != -1 && dec !=-1);
-  Frame sourceFrame;
-  if (setrad)
-    {
-      double cosdec = cos(M_PI*dec/180);
-      ramin = ra-radius*cosdec;
-      ramax = ra+radius*cosdec;
-      decmin = dec-radius;
-      decmax = dec+radius;
-      sourceFrame = Frame(ramin,decmin, ramax, decmax);
+  // decode ra, dec, radius
+  if (!rastr.empty() && !decstr.empty()) {
+    double ra;
+    if (sscanf(rastr.c_str(),"%f", &ra) != 1) {
+      ra = RaStringToDeg(rastr);
+      if (ra >= 99) {
+	cerr << rastr << ": wrong RA format\n";
+	return(EXIT_FAILURE);
+      }
     }
-
-  for (StringCIterator it=toSelect.begin(); it!=toSelect.end(); ++it)
-    {
-      string name(*it);
-      if (withDbImages)
-	{
-	  if (!DbImage(*it).IsValid()) continue;
-	  name = DbImage(*it).FitsImageName(Calibrated);
-	  if (!FileExists(name)) name = DbImage(*it).FitsImageName(Raw);
-	}
-      if (!FileExists(name)) continue;
-
-      FitsHeader head(name);
-      if (!head.IsValid()) continue;
-
-      // decode dates
-      bool date_is_true = true;
-      if (setdate) 
-	{
-	  double juldate = JulianDay(head);
-	  date_is_true = (juldate >= julmin) && (juldate <= julmax);
-	}
-      
-      // decode ref matching
-      bool ref_is_true = true;
-      if (setref)
-	{	  
-	  double overlap = Arcmin2Overlap(*refhdr, head);
-	  // cout << overlap << endl;
-	  ref_is_true = (overlap >= minarea);
-	}
-
-      // decode radius
-      bool rad_is_true = true;
-      if (setrad)
-	{
-	  Frame pixFrame(head);
-	  GtransfoRef Pix2RaDec = WCSFromHeader(head);
-	  rad_is_true = false;
-	  if (Pix2RaDec)
-	    {
-	      Frame sidFrame = ApplyTransfo(pixFrame,*Pix2RaDec);
-	      Frame overlap = sidFrame*sourceFrame;
-	      cout << "sidFrame " << sidFrame << endl;
-	      cout << "sourceFrame " << sourceFrame << endl;
-	      rad_is_true = (overlap.Area()>0);
-	    }
-	  else
-	    cerr << " cannot select on Ra,Dec : no WCS in " << head.FileName() << endl;
-	}
-      
-      // decode expressions
-      bool exp_is_true = true;
-      for (StringCIterator ie=explist.begin(); ie!=explist.end(); ++ie)
-	exp_is_true = DecodeFitsExpression(head, *ie) && exp_is_true;
-
-      // print image if selected
-      if ((exp_is_true) && (date_is_true) && (rad_is_true) && (ref_is_true)) cout << *it << endl;
+    double dec;
+    if (sscanf(decstr.c_str(),"%f", &dec) != 1) {
+      dec = DecStringToDeg(rastr);
+      if (dec >= 199) {
+	cerr << decstr << ": wrong DEC format\n";
+	return(EXIT_FAILURE);
+      }
     }
+    double cosdec = cos(M_PI*dec/180);
+    imSelect.radecFrame = new Frame(ra - radius*cosdec,
+				    dec - radius,
+				    ra + radius*cosdec,
+				    dec + radius);
+  }
 
-  if (refhdr) delete refhdr;
+  for_each(toSelect.begin(), toSelect.end(), imSelect);
 
   return EXIT_SUCCESS;
 }

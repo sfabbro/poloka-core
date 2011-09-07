@@ -2,14 +2,16 @@
 #include "reducedimage.h"
 #include <cstdio>
 
-static void usage(const string &exec) {
-  cerr << "Usage: " << exec << " <DbImages...>\n"
+static void usage(const char* progname) {
+  cerr << "Usage: " << progname << " [OPTION]...[DBIMAGE}...\n"
+       << "Compute saturation level and create a saturation map\n\n"
        << "    -o : overwrite\n";
+  exit(EXIT_FAILURE);
 }
 
 int main(int nargs, char ** args) {
 
-  if (nargs<2) { usage(args[0]); return EXIT_FAILURE; }
+  if (nargs<2) usage(args[0]);
 
   bool overwrite = false;
   ReducedImageList imList;
@@ -19,7 +21,7 @@ int main(int nargs, char ** args) {
     if ((arg[0] != '-')) {
       ReducedImageRef im = ReducedImageNew(arg);
       if (!im || !im->IsValid()) { 
-	cerr << " not a valid dbimage: " << arg << endl;
+	cerr << arg << ": not a valid dbimage\n";
 	continue;
       }
       imList.push_back(im);
@@ -27,7 +29,7 @@ int main(int nargs, char ** args) {
     }
     switch (arg[1]) {
     case 'o': overwrite = true; break;
-    default: usage(args[0]); return EXIT_FAILURE;
+    default: usage(args[0]);
     }
   }
   

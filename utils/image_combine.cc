@@ -5,27 +5,27 @@
 
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTIONS] <DbImage(s)>\n"
-       << "  combine pixels (do not resample)\n"
-       << "  [OPTIONS] are \n"
-       << "     -m <n>: specify the combining method:\n"
-       << "              1  Weighted average (default)\n"
-       << "              2  Clipped weighted average\n"
-       << "              3  Median\n"
-       << "     -w <n>: specify the weight method:\n"
-       << "              1  Point source optimal\n"
-       << "              2  Extended source optimal (default)\n"
-       << "              3  No global weighting\n"
-       << "              4  No weights at all\n"
-       << "     -o <name>: name of the combined dbimage (default is 'stack')\n"
-       << "     -r <name>: name of the photometric reference (default is first image)\n";
+  cerr << "Usage: " << progName << " [OPTION]... [DBIMAGE]...\n"
+       << "Combine pixels of DBIMAGE\n\n"
+       << "    -m METHOD: specify the combining method:\n"
+       << "            1  Weighted average (default)\n"
+       << "            2  Clipped weighted average\n"
+       << "            3  Median\n"
+       << "    -w METHOD: specify the weighting method:\n"
+       << "             1  Point source optimal (seeing weighted)\n"
+       << "             2  Extended source optimal (default)\n"
+       << "             3  No global weighting, but using weight maps\n"
+       << "             4  No weights at all\n"
+       << "    -o DBIMAGE: output name of the combined dbimage (default is 'stack')\n"
+       << "    -r DBIMAGE: photometric reference (default is first DBIMAGE)\n";
+  exit(EXIT_FAILURE);
 }
 
 int main(int nargs, char **args) {
 
-  if (nargs < 2) { usage(args[0]); return EXIT_SUCCESS; }
+  if (nargs < 2) usage(args[0]);
   if (nargs == 2) { 
-    cerr << " combine at least 2 images \n";
+    cerr << args[0] << ": need at least 2 images \n";
     return EXIT_FAILURE;
   }
 
@@ -51,7 +51,7 @@ int main(int nargs, char **args) {
     case 'w': { weightMethod = (WeightingMethod) atoi(args[++i]); continue; }
     case 'o': { outName = args[++i]; continue; }
     case 'r': { phoName = args[++i]; continue; }
-    default: usage(args[0]); return EXIT_FAILURE;
+    default: usage(args[0]);
     }
   }
   if (imList.empty()) { cerr << " no images to combine\n";  return EXIT_FAILURE; }

@@ -5,13 +5,13 @@
 #include "polokaexception.h"
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTIONS] <Ref> <DbImage(s)>\n"
-       << "  PSF match and subtract <Ref> to each <DbImage>. Assumes images more or less aligned.\n"
-       << "  [OPTIONS]:\n"
-       << "     -d: perform candidate detection on individual images\n"
-       << "     -f: force <Ref> to be convolved even if worse seeing\n"
-       << "     -n: do not subtract, only fit kernel\n"
-       << "     -o: overwrite\n";
+  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+       << "PSF match and subtract DBIMAGE to first DBIMAGE\n\n"
+       << "   -d: perform candidate detection on each subtraction\n"
+       << "   -f: force first DBIMAGE to be convolved even if worse seeing\n"
+       << "   -n: do not subtract, only PSF match\n"
+       << "   -o: overwrite\n";
+  exit(EXIT_FAILURE);
 }
 
 struct ImageSubtract {
@@ -52,7 +52,7 @@ struct ImageSubtract {
 };
 
 int main(int nargs, char **args) {
-  if (nargs < 2) { usage(args[0]); return EXIT_FAILURE; }
+  if (nargs < 2) usage(args[0]);
   if (nargs == 2) { 
     cerr << " needs an image to subtract from\n";
     return EXIT_FAILURE;
@@ -78,7 +78,7 @@ int main(int nargs, char **args) {
     case 'f': imSubtract.noswap = true; break;
     case 'n': imSubtract.dosub = false; break;
     case 'o': imSubtract.overwrite = true; break;
-    default : usage(args[0]); return EXIT_FAILURE;
+    default : usage(args[0]);
     }
   }
 

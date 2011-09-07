@@ -69,13 +69,12 @@ struct RunDetection {
 
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTIONS] <DbImage(s)>\n"
-       << "  detect and measure point sources using adapted gaussian filter (bad for crowded)\n"
-       << "  [OPTIONS] are \n"
-       << "     -r <DbImage>: specify a reference (for mateched det and subs)\n"
-       << "     -m <file>   : match all detections into <file>\n"
-       << "     -p <file>   : specify a star list for initial positions \n"
-       << "     -f          : fixed position measurement (need -p)\n";
+  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+       << "Detect and measure point sources using adapted gaussian filter\n\n"
+       << "   -r DBIMAGE: specify a reference (for matched det and subs)\n"
+       << "   -m FILE   : match all detections into <file>\n"
+       << "   -p FILE   : specify a star list for initial positions \n"
+       << "   -f        : fixed position measurement (need -p)\n";
 }
 
 int main(int nargs, char **args) {

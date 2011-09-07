@@ -7,13 +7,13 @@
 #include "polokaexception.h"
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTIONS] <Ref> <DbImage(s)>\n"
-       << "  match <DbImages> relatively to a geometric reference image <Ref>\n" 
-       << "  [OPTIONS]:\n"
-       << "     -n : no resampling, only match catalogues\n"
-       << "     -i : integer shifting (no interpolation)\n"
-       << "     -t x y: translation parameters\n"
-       << "     -u : union of all frames instead of intersection\n";
+  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+       << "Match DBIMAGE to a geometric reference image (first DBIMAGE)\n\n" 
+       << "   -n : no resampling, only match catalogues\n"
+       << "   -i : integer shifting (no interpolation)\n"
+       << "   -t x y: translation parameters\n"
+       << "   -u : union of all frames instead of intersection\n";
+  exit(EXIT_FAILURE);
 }
 
 struct ImageMatcher {
@@ -54,14 +54,10 @@ struct ImageMatcher {
 
 int main(int nargs, char **args) {
 
-  if (nargs < 2)  {
-    usage(args[0]); 
-    return EXIT_SUCCESS;
-  }
+  if (nargs < 2) usage(args[0]); 
 
   if (nargs == 2) {
     cerr << args[0] << " error: need at least 2 images";
-    usage(args[0]); 
     return EXIT_FAILURE;    
   }
 
@@ -91,7 +87,7 @@ int main(int nargs, char **args) {
     }
       break;
     case 'u': doUnion = true; break;
-    default : usage(args[0]); return EXIT_FAILURE;
+    default : usage(args[0]);
     }
   }
 
