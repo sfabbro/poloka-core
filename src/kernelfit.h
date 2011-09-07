@@ -57,20 +57,21 @@ struct XYPower  /* to handle and compute things like x**n*y**m */
   /* was separated from other stuff because we need 2 of them : one for the spatial variations of the kernel,
    and one for the spatial variation of the background (see in OptParams) */
   int Degree;
+  double scale;
   vector<int> Xdeg; // values of x exponant of monomials
   vector<int> Ydeg; // values of exponant for x and y of monomials
-  unsigned nterms;
-  unsigned Nterms() const {return nterms;};
+  size_t nterms;
+  size_t Nterms() const {return nterms;};
 
   /* the value of monomial of rank q (where q < Nterms) */
-  double Value(const double X, const double Y, const unsigned q) const;
+  double Value(const double& X, const double& Y, const size_t q) const;
 
   //!
-  void ApplyToImage(Image &I, double Factor, const vector<double> &ParamVal) const;
+  void ApplyToImage(Image &I, const double& Factor, const vector<double> &ParamVal) const;
 
   /* default constructor: Value(x,y,0) will return 1. */
-  XYPower() { SetDegree(0);};
-  XYPower(int Degree) { SetDegree(Degree);};
+  XYPower() : scale(1) { SetDegree(0); }
+  XYPower(const int Degree) : scale(1) { SetDegree(Degree); }
   void SetDegree(const int Degree);
   ~XYPower() {};
   

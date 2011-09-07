@@ -212,14 +212,14 @@ static int build_variance(const Image &ImageWeight,
 			  DImage &VarStamp, double &CutVar)
 {
   extract_pixels(VarStamp, ImageWeight, int(Xc), int(Yc));
-  // VarStamp constains weights
+  // VarStamp contains weights
   int count;
   double vAverage;
   weight_to_variance(VarStamp, count, vAverage);
   if (!count) return 0; // we are done: the stamp is dead
   CutVar = 1e8*vAverage;
 
-   // tmpweight is now a variance
+   // is now a variance
   add_object_noise(Star, int(Xc), int(Yc), Star->flux/Gain, VarStamp);
   return count;
 }
@@ -512,7 +512,6 @@ int KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double NSig)
   if (cholesky_solve(A,B,"U")!= 0)
     throw(PolokaException(" KernelFit: ERROR could not compute differential background"));
   
-  cout << setprecision(6);
   cout << " KernelFit: separate diff background coeffs:" << endl;
   cout << " -------------------------------------------" << endl;
   cout << " ";
@@ -708,7 +707,7 @@ cout << " KernelFit: CPU for variance convolution " << float(tend-tstart)/float(
 }
 
 
-static double my_pow(const double X, const int k)
+static double my_pow(const double& X, const unsigned k)
 {
   if (k==0) return 1;
   double res = X;
@@ -717,7 +716,7 @@ static double my_pow(const double X, const int k)
 }
 
 
-static void PolGaussKern(Kernel &Kern, double Sig, int DegX, int DegY)
+static void PolGaussKern(Kernel &Kern, const double& Sig, unsigned DegX, unsigned DegY)
 {
   /* fills the kernel array with values : exp (-(x**2+y**2)/(2.sigma**2))*(x**degx)*(y**degy) */
 int s = Kern.HSizeX();
@@ -729,8 +728,8 @@ for (int i=0; i<totSize; ++i)
   {
   double x = double(i-s);
   double valg = exp(-x*x*alpha);
-  vx[i] = valg*my_pow(x,DegX);
-  vy[i] = valg*my_pow(x,DegY);
+  vx[i] = valg * my_pow(x,DegX);
+  vy[i] = valg * my_pow(x,DegY);
   }
 
 DPixel *p = Kern.begin();
@@ -803,7 +802,7 @@ void KernelFit::BasisFill(Mat *BasisTransfo)
   }
 
   mSize = Basis.size() * optParams.KernVar.Nterms() + optParams.BackVar.Nterms();
-  cout << " KernelFit: " << Basis.size() << " kernels and " 
+  cout << " KernelFit: model with " << Basis.size() << " kernels and " 
        << mSize << " coefficients" << endl;
   
   
@@ -1053,8 +1052,6 @@ void KernelFit::OneStampMAndB(const Stamp &AStamp, const Image &WorstImage, Mat 
      to this routine.
   */
   // useless : no printouts in the routine .
-  int oldprec = cout.precision();
- cout << setprecision(6);
  ios::fmtflags  old_flags = cout.flags(); 
  cout << resetiosflags(ios::fixed) ;
  cout << setiosflags(ios::scientific) ;
@@ -1178,7 +1175,6 @@ for (size_t i=0; i<mSize; ++i)
   for (size_t j=i+1; j<mSize; ++j) 
     M(i,j) = M(j,i);
 
- cout << setprecision(oldprec);
  cout.flags(old_flags);
 }
 
@@ -1433,33 +1429,63 @@ for (int xdeg=0; xdeg <=Degree; ++xdeg)
 }
 
 
-double XYPower::Value(const double X, const double Y, const unsigned q) const
+double XYPower::Value(const double& X, const double& Y, const size_t q) const
 {
-  if ((unsigned int)q>=Nterms())
+  if (q >= Nterms())
     throw(PolokaException("XYPower: monomial rank higher than number of terms"));
 
-// my_pow(double,int) is about 5 times faster than pow(double,doublke)
-  return my_pow(X/100.,Xdeg[q])*my_pow(Y/100.,Ydeg[q]); 
+  // my_pow(double,int) is about 5 times faster than pow(double,doublke)
+  return my_pow(X/scale, Xdeg[q]) * my_pow(Y/scale, Ydeg[q]); 
 }
 
 
-void XYPower::ApplyToImage(Image&I, double Factor, const vector<double> &ParamVal) const
+#if 0
+double KernelFit::BackValue(const double&x, const double &y) const
+{
+  double val=0.0;
+
+  if (optParams.BackVar.Nterms()==0)
+    {
+      val= diffbackground[0]; /* the constant in the polynomial .. */
+      for (size_t ib=1; ib < optParams.SepBackVar.Nterms(); ++ib)
+	{
+	  val += diffbackground[ib]*optParams.SepBackVar.Value(x,y,ib);
+	}
+    }
+  else
+    {
+      val= solution[BackIndex(0)]; /* the constant in the polynomial .. */
+      for (size_t ib=1; ib < optParams.BackVar.Nterms(); ++ib)
+	{
+	  val += solution[BackIndex(ib)]*optParams.BackVar.Value(x,y,ib);
+	}
+    }
+  return val;
+}
+#endif
+
+
+
+void XYPower::ApplyToImage(Image &Im, const double& Factor, const vector<double> &ParamVal) const
 {
   assert(ParamVal.size() >= nterms);
-  double *xpow = new double[I.Nx()*nterms];
-  double *ypow = new double[I.Ny()*nterms];
-  for (int i=0; i<I.Nx(); ++i)
-    for (int k=0; k<nterms; ++k) xpow[i*nterms+k] = my_pow(double(i)/100.,Xdeg[k])*Factor*ParamVal[k];
-  for (int j=0; j<I.Ny(); ++j)
-    for (int k=0; k<nterms; ++k) ypow[j*nterms+k] = my_pow(double(j)/100.,Ydeg[k]);
-  for (unsigned j=0; j<I.Ny(); ++j)
-    for (unsigned i=0; i<I.Nx(); ++i) 
+
+  double *xpow = new double[Im.Nx()*nterms];
+  double *ypow = new double[Im.Ny()*nterms];
+
+  for (int i=0; i<Im.Nx(); ++i)
+    for (size_t k=0; k<nterms; ++k) xpow[i*nterms+k] = my_pow(double(i)/scale, Xdeg[k]) * Factor * ParamVal[k];
+  for (int j=0; j<Im.Ny(); ++j)
+    for (size_t k=0; k<nterms; ++k) ypow[j*nterms+k] = my_pow(double(j)/scale, Ydeg[k]);
+
+  for (int j=0; j<Im.Ny(); ++j)
+    for (int i=0; i<Im.Nx(); ++i) 
       {
 	double val = 0;
 	double *px = &xpow[i*nterms];
 	double *py = &ypow[j*nterms];
 	for (unsigned k=0; k<nterms; ++k) {val += (*px)*(*py); ++px; ++py;}
-	  I(i,j) += val;
+	  Im(i,j) += val;
       }
   delete [] xpow; delete [] ypow;
 }
@@ -1560,6 +1586,12 @@ int convolvedSize = optParams.ConvolvedSize(); /* should be odd */
 int hConvolvedSize = convolvedSize/2;
 DImage R_conv_K(convolvedSize,convolvedSize);
 Convolve(R_conv_K, stamp.bestPixels, kern);
+ {
+   double mean, median, sig;
+   mean_median_sigma(R_conv_K.begin(), R_conv_K.Nx()*R_conv_K.Ny(), mean, median, sig);
+   cout << " mmm " << mean << " " << median << " " << sig << endl;
+ }
+
 double chi2 = 0;
 double chi=0;
 int xs = xc - hConvolvedSize; 
@@ -1568,8 +1600,9 @@ const DImage &weight = stamp.weight;
 for (int j=0; j< convolvedSize; ++j)
 for (int i=0; i< convolvedSize; ++i)
   {
-  double w_value = WorstImage(i+xs, j + ys);
+  double w_value = WorstImage(i+xs, j+ys);
   double res = R_conv_K(i,j) - w_value + BackValue(i + xs,j + ys); 
+  cout << " res " << res << endl;
   double w = weight(i,j);
   chi2 += res*res*w;
   chi += fabs(res)/stamp.star->flux;
@@ -1587,8 +1620,6 @@ return chi2;
 
 bool KernelFit::Solve(const Mat &m, const Vect &b, const Point &Center)
 {
-  int oldprec = cout.precision();
-  cout << setprecision(6);
   ios::fmtflags  old_flags = cout.flags(); 
   cout << resetiosflags(ios::fixed) ;
   cout << setiosflags(ios::scientific) ;
@@ -1720,7 +1751,6 @@ bool KernelFit::Solve(const Mat &m, const Vect &b, const Point &Center)
   cout << " ------------------------------------------- " << endl;
   if (optParams.BackVar.Nterms()) 
     {
-      cout << setprecision(6);
       cout << " KernelFit: diff background coeffs:\n";
       cout << " ------------------------------------------- " << endl;
       for (size_t ib=0; ib< optParams.BackVar.Nterms(); ++ib) 
@@ -1816,7 +1846,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   // we have to subtract diff. background if it was fitted:
   const Image *worstImage=NULL;
   auto_ptr<Image> del_worst(NULL); // to ensure deletion of temporary image, if needed.
-  if (optParams.SepBackVar.Nterms() != 0)
+  if (optParams.SepBackVar.Nterms() > 0)
     {
       Image *tmp = new Image(ImPair.WorstImage());
       optParams.SepBackVar.ApplyToImage(*tmp, -1, diffbackground);
@@ -1863,13 +1893,11 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   //now iterate stamp filtering and refitting until all stamps are acceptable
   int dropped;
   vector<double> chi2s(nstamps);
-  int oldprec = cout.precision();
-  cout << setprecision(6);
-  // A REGARDER
-  cout << " KernelFit: BackValue(0,0)" << BackValue(0,0) << endl;
+  cout << " KernelFit: BackValue(0,0) = " << BackValue(0,0) << endl;
   int npixtot=0;
   double chi2_tot=0;
   Point center = ImPair.Best()->UsablePart().Center(); // for printouts
+
   do // iterations on stamp clipping.
     {
       if (!Solve(m,b, center))
@@ -1898,11 +1926,9 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
       //mean_median_sigma(&(chi2s[0]),nstamps,mean,median,sigma);
       median = median_mad(chi2s, sigma);
       cout << " KernelFit: stamp  chi2/dof median sigma " << median << ' ' << sigma << endl;
-      cout << " KernelFit: global chi2/dof chi/npix chi2 dof " 
+      cout << " KernelFit: global chi2/dof chi/npix " 
 	   << chi2_tot/(npixtot - mSize) << ' '
 	   << chi_tot/npixtot << ' '
-	   << chi2_tot << ' ' 
-	   << npixtot-mSize
 	   << endl;
       dropped = 0;
      
@@ -1916,7 +1942,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 	  double chi2 = stamp.chi2/stamp.nActivePix;
 	  if (chi2 > median + 4*sigma || chi2 < 0) 
 	    {
-	      cout << " KernelFit: delete (" << stamp.xc << ',' << stamp.yc << ") npix " << stamp.nActivePix << " chi2/pix " << chi2 << endl;
+	      cout << " KernelFit: delete stamp (" << stamp.xc << ',' << stamp.yc << ") npix " << stamp.nActivePix << " chi2/pix " << chi2 << endl;
 	      //if (stamp.star) stamp.star->dump();
 	      // drop it :
 	      dropped++;
@@ -2102,8 +2128,6 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   StoreScore("kfit","hksize",optParams.HKernelSize);
   StoreScore("kfit","hssize",optParams.HStampSize);
   
-  cout << setprecision(oldprec);
-
   // there are historical scripts that grep this line in the log :
   cout << "PsfMatch_SUMMARY_best_worst_kernelphotomratio_sextractorratio_nstamps_chi2/dof "
        << ImPair.Best()->Name() << ' ' << ImPair.Worst()->Name() << ' ' 
