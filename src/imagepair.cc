@@ -17,13 +17,21 @@ ImagePair::ImagePair(const ReducedImageRef &Best, const ReducedImageRef &Worst) 
 
 const Image& ImagePair::BestImage()
 {
-  if (images[0] == NULL) images[0] = new FitsImage(best->FitsName());
+  if (images[0] == NULL) { 
+    FitsImage im(best->FitsName());
+    im -= best->BackLevel();
+    images[0] = new Image(im);
+  }
   return *images[0];
 }
 
 const Image& ImagePair::WorstImage()
 {
-  if (images[1] == NULL) images[1] = new FitsImage(worst->FitsName());
+  if (images[1] == NULL) { 
+    FitsImage im(worst->FitsName());
+    im -= worst->BackLevel();
+    images[1] = new Image(im);
+  }
   return *images[1];
 }
 
