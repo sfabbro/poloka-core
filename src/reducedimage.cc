@@ -2030,7 +2030,13 @@ double ReducedImage::BackLevel() const
       if (head.HasKey("BACKLEV")) return double(head.KeyVal("BACKLEV")); // set by transformedimage and such
       if (head.HasKey("SEXSKY")) return double(head.KeyVal("SEXSKY"));   // set when making the catalog.
       if (head.HasKey("SKYLEV")) return double(head.KeyVal("SKYLEV"));   // set when flatfielding
-      cerr << " no way to figure out BackLevel in " << Name() << endl;
+      cerr << " no information about BackLevel in header of " << Name() << ", compute it" << endl;
+      {
+	FitsImage image(FitsName());
+	Pixel sky,sig;
+	image.SkyLevel(&sky, &sig);
+	return sky;
+      }
       return 0;
     }
   else //
