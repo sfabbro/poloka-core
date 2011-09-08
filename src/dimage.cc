@@ -509,8 +509,10 @@ void Kernel::dump_info(ostream &stream) const
   bias(dx,dy);
   moments(varx,vary,varxy);
   stream << " bias ( " << dx << ',' << dy << ")"
-	 << " sx,sy,rho,sum " << sqrt(varx) << ',' << sqrt(vary) << ',' << varxy/sqrt(varx*vary) << ',' << sum () 
-	 << " vx,vy,vxy,sum2 " << varx << ',' << vary << ',' << varxy << ',' << sum2()
+	 << " sx,sy,rho " << sqrt(varx) << ',' << sqrt(vary) << ',' << varxy/sqrt(varx*vary)
+	 << endl
+	 << " vx,vy,vxy " << varx << ',' << vary << ',' << varxy
+	 << " sum,sum2 " <<  sum() << ',' << sum2()     
 	 << endl;
 }
 

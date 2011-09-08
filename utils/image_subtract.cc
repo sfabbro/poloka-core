@@ -29,7 +29,7 @@ struct ImageSubtract {
       if (kernfit.DoTheFit())
 	kernfit.WriteKernel(overwrite);
       else {
-	PolokaException(" PSF match between " + 
+	PolokaException("PSF match between " + 
 			Ref->Name() + " and " + 
 			Im->Name() + " failed");
 	return;
@@ -42,7 +42,7 @@ struct ImageSubtract {
     if (overwrite) { 
       if (sub.HasImage()) remove(sub.FitsName().c_str());
       if (sub.HasWeight()) remove(sub.FitsWeightName().c_str());
-      if (sub.HasWeight()) remove(sub.FitsWeightName().c_str());
+      if (sub.HasCosmic()) remove(sub.FitsCosmicName().c_str());
       if (FileExists(sub.DetectionsName())) remove(sub.DetectionsName().c_str());
     }
 
@@ -54,7 +54,7 @@ struct ImageSubtract {
 int main(int nargs, char **args) {
   if (nargs < 2) usage(args[0]);
   if (nargs == 2) { 
-    cerr << " needs an image to subtract from\n";
+    cerr << args[0] << ": needs an image to subtract from\n";
     return EXIT_FAILURE;
   }
 
@@ -66,7 +66,7 @@ int main(int nargs, char **args) {
     if (arg[0] != '-') {
       ReducedImageRef im = ReducedImageNew(arg);
       if (!im || !im->IsValid()) { 
-	cerr << " not a valid dbimage: " << arg << endl;
+	cerr << arg << ": not a valid dbimage\n";
 	continue;
       }
       im->Execute(DoFits|DoCatalog|DoAperCatalog);

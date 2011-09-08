@@ -43,13 +43,15 @@ int main(int argc,char **args)
 
       float gain = image.KeyVal("TOADGAIN");
       float rdnoise = image.KeyVal("TOADRDON");
-      float sigth = sqrt(mean*gain + rdnoise*rdnoise) / gain;
+      float sigth = 0;
+      if (gain>0 && rdnoise>0)
+	sigth = sqrt(mean*gain + rdnoise*rdnoise) / gain;
 
       cout << setiosflags(ios::right) << setiosflags(ios::fixed)
-	   << setw(9) << setprecision(2) << mean 
-	   << setw(7) << setprecision(2) << sigma 
-	   << setw(7) << setprecision(2) << sigth 
-	   << setw(9) << setprecision(1) << minv
+	   << setw(9) << setprecision(2) << mean << ' '
+	   << setw(7) << setprecision(2) << sigma << ' '
+	   << setw(7) << setprecision(2) << sigth << ' '
+	   << setw(9) << setprecision(1) << minv << ' '
 	   << setw(9) << setprecision(1) << maxv
 	   << resetiosflags(ios::right)
 	   << endl;
