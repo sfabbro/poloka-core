@@ -874,6 +874,64 @@ void Image::SkyLevel(const Frame &AFrame, Pixel *Mean, Pixel *Sigma) const
   delete [] pixelValues;
 }
 
+double Image::SkyLevel(const Image& Mask, Pixel *Sigma) const
+{
+   Frame frame(*this);
+   return SkyLevel(frame, Mask, Sigma);
+}
+
+double Image::SkyLevel(const Frame &AFrame, const Image& Mask, Pixel *Rms) const
+{
+  // is AFrame inside the image ?
+  Frame frame = AFrame*Frame(*this);
+  int npix = int(frame.Nx()*frame.Ny());
+  int nvalues=10000;
+  int step = npix/nvalues;
+  if (npix < nvalues)
+    {
+      step = 1;
+      nvalues = npix;
+    }
+  
+  // lower step until it is prime with nx, unless we sample columns
+  int nx = int(frame.Nx());
+  int ny = int(frame.Ny());
+  while (greatest_common_divider(nx,step) != 1)
+    step--;
+
+  //update nvalues accordingly;
+  nvalues = npix/step;
+
+  double *pixelValues = new double[nvalues];
+  int count =0;
+  int imin = int(frame.xMin);
+  int jmin = int(frame.yMin);
+  int di=0;
+  int dj=0;
+  while( count < nvalues)
+    {
+      int i = imin + di;
+      int j = jmin + dj;
+      if (frame.InFrame(Point(i,j)) && Mask(i,j) > 0)
+	{
+	  pixelValues[count] = (*this)(i,j);
+	  ++count;
+	}
+      int toto = di+step;
+      dj += toto/nx;
+      di = toto%nx;
+      if (dj>=ny) break;
+    }
+
+  double average, rms;
+  //  if (count != nvalues) cout << " ca ne va pas du tout " << endl;
+  clipped_average_rms(pixelValues, count, average, rms);
+   
+  if (Rms) *Rms = rms;
+  delete [] pixelValues;
+  return average;
+}
+
 
 #ifdef STORAGE
 void Image::convolve(Kernel& K, Image& Result)

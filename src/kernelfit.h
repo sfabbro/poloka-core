@@ -70,8 +70,8 @@ struct XYPower  /* to handle and compute things like x**n*y**m */
   void ApplyToImage(Image &I, const double& Factor, const vector<double> &ParamVal) const;
 
   /* default constructor: Value(x,y,0) will return 1. */
-  XYPower() : scale(1) { SetDegree(0); }
-  XYPower(const int Degree) : scale(1) { SetDegree(Degree); }
+  XYPower() : scale(1000) { SetDegree(0); }
+  XYPower(const int Degree) : scale(1000) { SetDegree(Degree); }
   void SetDegree(const int Degree);
   ~XYPower() {};
   

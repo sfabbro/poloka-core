@@ -101,6 +101,8 @@ class Image {
   //! computes the mean and sigma of an image using the median (from 10000 random pixels) and loop 3 times.
       void SkyLevel(Pixel *Mean, Pixel *Sigma) const;
       void SkyLevel(const Frame &Frame, Pixel *Mean, Pixel *Sigma) const;
+      double SkyLevel(const Image& Mask, Pixel *Rms=0) const;
+      double SkyLevel(const Frame &AFrame, const Image& Mask, Pixel *Rms=0) const;
 
       void dump() const;
   //! returns x size of the image. 
