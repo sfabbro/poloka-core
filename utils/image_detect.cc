@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "reducedimage.h"
 #include "allreducedimage.h"
 #include "detection.h"

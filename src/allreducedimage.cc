@@ -60,6 +60,8 @@ else
 return NULL;
 }
 
+
+
 const TransformedImage *IsTransformedImage(const ReducedImage *RImage)
 {
   return dynamic_cast<const TransformedImage*>(RImage);
@@ -85,27 +87,7 @@ ImageSubtraction *IsImageSubtraction(ReducedImage *RImage)
   return dynamic_cast<ImageSubtraction*>(RImage);
 }
 
-const ImageSubtraction *IsImageSubtraction(const ReducedImage *RImage)
-{
-  return dynamic_cast<const ImageSubtraction*>(RImage);
-}
-
 SubImage *IsSubImage(ReducedImage *RImage)
 {
   return dynamic_cast<SubImage*>(RImage);
-}
-
-const SubImage *IsSubImage(const ReducedImage *RImage)
-{
-  return dynamic_cast<const SubImage*>(RImage);
-}
-
-SwarpStack *IsSwarpStack(ReducedImage *RImage)
-{
-  return dynamic_cast<SwarpStack*>(RImage);
-}
-
-const SwarpStack *IsSwarpStack(const ReducedImage *RImage)
-{
-  return dynamic_cast<const SwarpStack*>(RImage);
 }

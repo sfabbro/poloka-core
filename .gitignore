@@ -14,16 +14,16 @@ ChangeLog
 .libs
 stamp-h*
 config.h
+
 Makefile
 Makefile.in
 libtool
 poloka.pc
-/m4/libtool.m4
-/m4/lt*.m4
 /aclocal.m4
 /autom4te.cache
 /config.h
 /config.h.in
+/pka/cat/sex/config.h.in
 /config.log
 /config.status
 /configure
@@ -37,10 +37,10 @@ poloka.pc
 /src/dbfileParse.h
 
 # execs
-/flat/*
-!/flat/*.cc
-/simphot/mklc
-/utils/*
-!/utils/*.cc
+flat/*
+!flat/*.cc
+simphot/mklc
+utils/*
+!utils/*.cc
 !Makefile.am
 !wscript

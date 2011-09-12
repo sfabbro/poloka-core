@@ -10,7 +10,6 @@ class ImageSum;
 class TransformedImage;
 class ImageSubtraction;
 class SubImage;
-class SwarpStack;
 
 /*! \file 
     \brief utilities around all derived classes ot ReducedImage.
@@ -27,16 +26,12 @@ TransformedImage *IsTransformedImage(ReducedImage *RImage);
 const ImageSum *IsImageSum(const ReducedImage *RImage);
 ImageSum *IsImageSum(ReducedImage *RImage);
 
-//! returns NULL if the argument is not an ImageSubtraction.
+//! returns NULL if the argument is not an ImageSum.
 const ImageSubtraction *IsImageSubtraction(const ReducedImage *RImage);
 ImageSubtraction *IsImageSubtraction(ReducedImage *RImage);
 
-//! returns NULL if the argument is not a SubImage.
+//! returns NULL if the argument is not an ImageSum.
 const SubImage *IsSubImage(const ReducedImage *RImage);
 SubImage *IsSubImage(ReducedImage *RImage);
-
-//! returns NULL if the argument is not a SwarpStack.
-const SwarpStack *IsSwarpStack(const ReducedImage *RImage);
-SwarpStack *IsSwarpStack(ReducedImage *RImage);
 
 #endif /*  ALLREDUCEDIMAGE__H */
