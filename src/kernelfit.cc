@@ -35,6 +35,27 @@
 
 static double sqr(double x) { return x*x;}
 
+// compute median and M.A.D. = median(|x - median(x)|)
+// robust estimator of standard deviation
+static double median_mad(vector<double>& x, double& disp) {
+  size_t n = x.size();
+  sort(x.begin(), x.end());
+  double med = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  for (vector<double>::iterator it = x.begin(); it != x.end(); ++it) {
+    *it = fabs(*it - med);
+  }
+  sort(x.begin(), x.end());
+  double mad = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  disp = 1.4826 * mad;
+  return med;
+}
+
+static double median(vector<double>& x) {
+  size_t n = x.size();
+  sort(x.begin(), x.end());
+  return (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+}
+
 string KernelFitFile(const ImagePair& ImPair) {
   return ImPair.Worst()->Dir() + "kernel_from_" + ImPair.Best()->Name();
 }
@@ -123,7 +144,7 @@ static void extract_pixels(DImage &Target, const Image &image,
   int xend = min(xstart+width,image.Nx());
   int yend = min(ystart+height, image.Ny());
   if (width*height != (xstart-xend)*(ystart-yend)) {
-    cerr << " extract_pixels: ERROR we miss pixels for (" << xc << ',' << yc << ')' << endl;
+    cerr << " extract_pixels: we miss pixels for (" << xc << ',' << yc << ')' << endl;
     throw(PolokaException("extract_pixels missing pixels"));
   }
   for (int j=ystart; j <yend; ++j)
@@ -377,7 +398,7 @@ static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams
   // sort with decreasing quality for the kernel fit. The chosen criterion is the peak flux (e.g. in best)
   bestStarList.sort(DecreasingFluxMax);
 
-  cout << " MakeObjectList: initial list: "<< bestStarList.size() << " stars \n";
+  cout << " MakeObjectList: initial list has "<< bestStarList.size() << " objects\n";
   
   double saturLevBest = best->Saturation() * optParams.MaxSatur;
   double saturLevWorst = worst->Saturation() * optParams.MaxSatur;
@@ -408,7 +429,7 @@ static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams
   }
   
   cout << " MakeObjectList: n_good_for_fit_best " << n_good_for_fit_best << endl;
-  cout << " MakeObjectList: final list has "<< objectsUsedToFit.size() << " stars \n";
+  cout << " MakeObjectList: final list has "<< objectsUsedToFit.size() << " objects\n";
   return objectsUsedToFit.size();
 }
 
@@ -452,78 +473,140 @@ return sum;
 }  
 
 
-int KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double NSig)
+bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
 {  
-  if (optParams.SepBackVar.Degree == -1) return 0;
 
-  double minWeight = 1e-18;
+  cout << " Kernelfit: fitting differential background separately" << endl;
+  // build a weight to fit the background on all pixels
+  // weight = 1/(var(best)+var(worst)) * masked bad pixels
+  // no factor (gain/kernel) involved, we are fitting additive components
+  FitsImage weightBack(ImPair.Best()->FitsWeightName());
 
-  Image maskBest(ImPair.BestWeight());
-  maskBest.Simplify(minWeight);
+  // start with best image weight
+  // avoid dividing zeros
+  Pixel minVal,maxVal;
+  weightBack.MinMaxValue(&minVal, &maxVal);
+  double eps = maxVal * 1e-10;
+  weightBack += eps;
+  // now go to variances  
+  for (Pixel *p = weightBack.begin(); p < weightBack.end(); ++p) *p = 1. / *p;
+
+  // add the worst image variance
+  // block to save memory
+  {
+    FitsImage weightWorst(ImPair.Worst()->FitsWeightName());
+    weightWorst.MinMaxValue(&minVal, &maxVal);
+    eps = maxVal * 1e-10;
+    weightWorst += eps;
+    // go to variances    
+    for (Pixel *pw = weightWorst.begin(); pw < weightWorst.end(); ++pw) *pw = 1. / *pw;
+    // add variances and go back to weight
+    // value under which we set weight to zero
+    eps *= 100;    
+    for (Pixel *pw = weightWorst.begin(), *p = weightBack.begin(); p < weightBack.end(); ++p, ++pw) {
+      *p = 1. / (*pw + *p);
+      if (*p < eps) *p = 0;
+    }
+  }
+
+  // mask objects and saturated pixels on the combined best+worst weight
+  if (ImPair.Best()->HasSatur()) {
+    FitsImage satur(ImPair.Best()->FitsSaturName());
+    weightBack *= (1 - satur);
+  }
   if (FileExists(ImPair.Best()->FitsSegmentationName())) {
     FitsImage seg(ImPair.Best()->FitsSegmentationName());
-    maskBest *= seg;
+    seg.Simplify(0.5,0,1);
+    // dilate seg to simulate convolution
+    ConvolveSegMask(seg, seg, optParams.HKernelSize);
+    weightBack *= seg;
   }
-
-  Image maskWorst(ImPair.WorstWeight());
-  maskWorst.Simplify(minWeight);
+  if (ImPair.Worst()->HasSatur()) {
+    FitsImage satur(ImPair.Worst()->FitsSaturName());
+    weightBack *= (1 - satur);
+  }
   if (FileExists(ImPair.Worst()->FitsSegmentationName())) {
     FitsImage seg(ImPair.Worst()->FitsSegmentationName());
-    maskWorst *= seg;
+    seg.Simplify(0.5,0,1);
+    weightBack *= seg;
   }
+  // weight is now done
+  
+  // resolve l.s. system ||weight_back * (best - worst + diffbackground||^2
+  // diffbackground model is bivariate polynomial
 
-  const Image &bestImage = ImPair.BestImage();
-  const Image &worstImage = ImPair.WorstImage();
-  const Frame &dataFrame = ImPair.CommonFrame();
-  Pixel bestSig, worstSig;
-  Pixel bestSky = bestImage.SkyLevel(dataFrame, maskBest, &bestSig);
-  Pixel worstSky = worstImage.SkyLevel(dataFrame, maskWorst, &worstSig);
-  Pixel cutBest  = NSig * bestSig;
-  Pixel cutWorst = NSig * worstSig;
-
-  int ibeg = int(dataFrame.xMin);
-  int iend = int(dataFrame.xMax);
-  int jbeg = int(dataFrame.yMin);
-  int jend = int(dataFrame.yMax);
-
-  int nterms = optParams.SepBackVar.Nterms();
+  unsigned nterms = optParams.SepBackVar.Nterms();
   Mat A(nterms,nterms);
   Vect B(nterms);
   Vect monom(nterms);
   diffbackground.resize(nterms);
 
-  const int step = 1;
-  for (int j=jbeg; j<jend; j+= step)
-    for (int i=ibeg; i<iend; i+= step)
-      {
-	Pixel pw = worstImage(i,j);
-	if (maskWorst(i,j) || fabs(pw-worstSky) > cutWorst) continue;
-	Pixel pb = bestImage(i,j);
-	if (maskBest(i,j) || fabs(pb-bestSky) > cutBest) continue;
-	for (int q1=0; q1<nterms; ++q1)
-	  {
-	    monom(q1) = optParams.SepBackVar.Value(double(i), double(j), q1);	    
-	    for (int q2 = q1; q2<nterms; ++q2) A(q1,q2) += monom(q1)*monom(q2);
-	    B(q1) += monom(q1)*(pw-pb);
-	  }
+  const Image &bestImage = ImPair.BestImage();
+  const Image &worstImage = ImPair.WorstImage();
+
+  const Frame &dataFrame = ImPair.CommonFrame();
+  int ibeg = int(dataFrame.xMin);
+  int iend = int(dataFrame.xMax);
+  int jbeg = int(dataFrame.yMin);
+  int jend = int(dataFrame.yMax);
+
+  int iter = 2;
+  weightBack.MinMaxValue(&minVal, &maxVal);
+  eps = 1e-10*maxVal;
+
+  do {
+    A.Zero();
+    B.Zero();
+    // fill up matrix and vector
+    for (int j=jbeg; j<jend; j++)
+      for (int i=ibeg; i<iend; i++) {
+	Pixel weight = weightBack(i,j);
+	if (weight<eps) continue;
+	Pixel diff = worstImage(i,j) - bestImage(i,j);
+	for (unsigned q1=0; q1<nterms; ++q1) {
+	  monom(q1) = optParams.SepBackVar.Value(double(i), double(j), q1);
+	  for (unsigned q2 = q1; q2<nterms; ++q2) A(q1,q2) += monom(q1)*monom(q2) * weight;
+	  B(q1) += monom(q1) * diff * weight;
+	}
       }
+    // symmetrize and solve
+    for (int q1=0; q1<nterms; ++q1) 
+      for (int q2 = q1+1; q2<nterms; ++q2) A(q2,q1) = A(q1,q2);
+    if (cholesky_solve(A,B,"U") != 0)
+      return false;
 
-  // symmetrize
-  for (int q1=0; q1<nterms; ++q1) 
-    for (int q2 = q1+1; q2<nterms; ++q2) A(q2,q1) = A(q1,q2); 
+    // hard masking pixels |resid(i,j)| > n*sigma
+    double chi2 = 0.;
+    double npix = 0.;
 
-  if (cholesky_solve(A,B,"U")!= 0)
-    throw(PolokaException(" KernelFit: ERROR could not compute differential background"));
-  
+    for (int j=jbeg; j<jend; j++)
+      for (int i=ibeg; i<iend; i++) {
+	Pixel weight = weightBack(i,j);
+	if (weight<eps) continue;
+	double back = 0.0;
+	for (unsigned q=0; q<nterms; ++q)
+	  back += B(q) * optParams.SepBackVar.Value(double(i),double(j),q);
+	Pixel resid = worstImage(i,j) - bestImage(i,j) - back;
+	chi2 += resid * resid * weight;
+	npix++;
+	if (fabs(resid)*sqrt(weight) > NSig) 
+	  weightBack(i,j) = 0;
+      }
+    cout << " KernelFit: background fit chi2/npix " << chi2/npix << endl;
+
+  } while (iter--);
+
   cout << " KernelFit: separate diff background coeffs:" << endl;
   cout << " -------------------------------------------" << endl;
   cout << " ";
-  for (int q1=0; q1< nterms; ++q1) cout << B(q1) << ' ' ;
+  for (unsigned q=0; q< nterms; ++q) { 
+    cout << B(q) << ' ' ;
+    diffbackground[q] = B(q);
+  }
   cout << endl;
   cout << " -------------------------------------------" << endl;
-  for (int q1=0; q1<nterms; ++q1)
-    diffbackground[q1] = B(q1);
-  return 1;
+
+  return true;
 }
 
 
@@ -1520,26 +1603,6 @@ sigma = sigma/double(nval) - mean*mean;
 if (sigma>0)  sigma = sqrt(sigma); else sigma = 0;
 }
 
-// compute median and M.A.D. = median(|x - median(x)|)
-// robust estimator of standard deviation
-static double median_mad(vector<double>& x, double& disp) {
-  size_t n = x.size();
-  sort(x.begin(), x.end());
-  double med = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
-  for (vector<double>::iterator it = x.begin(); it != x.end(); ++it) {
-    *it = fabs(*it - med);
-  }
-  sort(x.begin(), x.end());
-  double mad = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
-  disp = 1.4826 * mad;
-  return med;
-}
-
-static double median(vector<double>& x) {
-  size_t n = x.size();
-  sort(x.begin(), x.end());
-  return (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
-}
 
 double KernelFit::StampChi2(Stamp &stamp, const Image &WorstImage)
 {
@@ -1753,26 +1816,26 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   StarMatchList matchList;
   size_t nobj = MakeObjectList(ImPair, optParams, matchList);
   cout << " KernelFit: we have " << nobj << " objects to do the fit" << endl;
+  cout << " KernelFit: max number of stamps " << optParams.MaxStamps << endl;
 
-  if ( nobj == 0 )
-    throw(PolokaException("KernelFit: No stars available"));
+  if (nobj == 0)
+    throw(PolokaException("KernelFit: no stars available"));
+  if (nobj < 10) cerr << " KernelFit: WARNING: less than 10 common objects\n";
 
-  if (nobj < 10) cerr << " KernelFit: WARNING: Less than 10 common objects"<< endl;
   cout << " KernelFit: frame limits " <<  ImPair.CommonFrame();
 
   double bestSeeing = ImPair.BestSeeing();
   double worstSeeing = ImPair.WorstSeeing();
   optParams.OptimizeSizes(bestSeeing, worstSeeing);
-  cout << " KernelFit: max number of stamps " << optParams.MaxStamps << endl;
-  optParams.OptimizeSpatialVariations(min(optParams.MaxStamps,int(matchList.size())));
+  optParams.OptimizeSpatialVariations(min(optParams.MaxStamps, int(matchList.size())));
 
- //cook up a plausible kernel to propagate weight map if bestimage
+ // cook up a plausible kernel to propagate weight map if bestimage
   Kernel guess(optParams.HKernelSize);
-  if(worstSeeing>bestSeeing) {
-    PolGaussKern(guess, sqrt(worstSeeing*worstSeeing - bestSeeing*bestSeeing), 0, 0);
+  if (worstSeeing>bestSeeing) {
+    PolGaussKern(guess, sqrt(sqr(worstSeeing) - sqr(bestSeeing)), 0, 0);
     guess *= 1./guess.sum();
     if (optParams.KernelBasis == 3) optParams.KernelBasis = 1;
-  }else{ // use delta
+  } else { // use delta
     SetDelta(guess);
     if (optParams.KernelBasis == 3) optParams.KernelBasis = 2;
   }
@@ -1782,22 +1845,26 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   cout << " KernelFit: initial photom ratio " << sexPhotomRatio << endl;
   StampList bestImageStamps(ImPair, matchList, optParams.HStampSize, guess, optParams.MaxStamps);
 
-  double InitialSig2Noise = bestImageStamps.Sig2Noise();
+  double initialSig2Noise = bestImageStamps.Sig2Noise();
   cout << " KernelFit: total S/N of objects initially used for the fit " 
-       << InitialSig2Noise << endl;
-  StoreScore("kfit","is2n",InitialSig2Noise);
+       << initialSig2Noise << endl;
+  StoreScore("kfit","is2n",initialSig2Noise);
 
   if (bestImageStamps.empty())
-    throw(PolokaException("KernelFit: no Stars to fit the kernel"));
+    throw(PolokaException("KernelFit: no stamps to fit the kernel"));
 
   nstamps = bestImageStamps.size();
   
   cout << " KernelFit: 1/2 StampSize " << optParams.HStampSize 
        << " 1/2 KernelSize  " << optParams.HKernelSize 
        << " ConvolvedSize " << optParams.ConvolvedSize() << endl; 
+
   clock_t tstart = clock();
 
-  FitDifferentialBackground(ImPair, 3.0); // does nothing if datacards don't tell it explicitly
+  if (optParams.SepBackVar.Degree > -1) {
+    if (!FitDifferentialBackground(ImPair, 3.0))
+      throw(PolokaException(" KernelFit: could not compute separately differential background"));
+  }
 
   // handle worst: it is the actual worst if diff. background is not fitted separately,
   // we have to subtract diff. background if it was fitted:
@@ -1830,8 +1897,8 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
        si != bestImageStamps.end(); ++si)
     OneStampMAndB(*si, *worstImage, m, b);
 
-  if (0)
-    { // DEBUG
+#ifdef DEBUG
+    {
     clock_t tstart = clock();
     Mat mnoise(mSize, mSize);
     for (StampIterator si = bestImageStamps.begin(); 
@@ -1843,7 +1910,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 
     mnoise.writeFits("mnoise.fits");
   }
-  
+#endif
   cout << " KernelFit: finished computation of m and b" << endl;
 
   //now iterate stamp filtering and refitting until all stamps are acceptable
@@ -2057,10 +2124,10 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
     kim.writeFits(KernelFitFile(ImPair)+".fits");
   }
 
-  double FinalSig2Noise = bestImageStamps.Sig2Noise();
+  double finalSig2Noise = bestImageStamps.Sig2Noise();
   cout << " KernelFit: total S/N of objects eventually used for the fit " 
-       << FinalSig2Noise << endl;
-  StoreScore("kfit","fs2n",FinalSig2Noise);
+       << finalSig2Noise << endl;
+  StoreScore("kfit","fs2n",finalSig2Noise);
   StoreScore("kfit","nparams",mSize);
 
   double mean,median,sigma;
@@ -2109,7 +2176,7 @@ void KernelFit::read(const string& FileName)
 {
   ifstream s(FileName.c_str());
   if (!s)
-    throw(PolokaException(" KernelFit::read: cannot read file "+FileName)); 
+    throw(PolokaException("KernelFit::read: cannot read file "+FileName)); 
   read(s);
 }
 
@@ -2121,7 +2188,7 @@ void KernelFit::read(istream& stream)
   try {
     stream.exceptions (ios::failbit); // allow exceptions to be raised
     stream >> tmp_str >> version;
-    if (tmp_str != "[KernelFit]") throw(PolokaException("Do not recognize a kernel in this file"));
+    if (tmp_str != "[KernelFit]") throw(PolokaException("KernelFit: do not recognize a kernel in this file"));
     if (version <=1)
       { // these things are not used any longer
 	double BestImageBack, WorstImageBack, SkyVarianceWorstImage, 
@@ -2150,7 +2217,7 @@ void KernelFit::read(istream& stream)
 void KernelFit::write(const string &FileName) const
 {
   if (!fitDone) 
-    throw(" KernelFit: ERROR: we don't write a Kernel that was not fitted (yet) ");
+    throw("KernelFit: we don't write a Kernel that was not fitted (yet) ");
   ofstream s(FileName.c_str());
   write(s);
   s.close();

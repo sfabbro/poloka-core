@@ -258,7 +258,7 @@ private :
 
 
 /* Fit the differential background separately from the kernel */
-  int FitDifferentialBackground(ImagePair &ImPair, const double NSig);
+  bool FitDifferentialBackground(ImagePair &ImPair, const double& NSig);
 
 /* simultaneously fitted differential background value */
   double BackValue(const double&x, const double &y) const; 
