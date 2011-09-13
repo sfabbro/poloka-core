@@ -143,16 +143,15 @@ SNList = new SimSNStarList();
  Gtransfo *RaDecToPix;		      
  FitsHeader head(GeometricReference->FitsName());
  Frame largeFrame(head, WholeSizeFrame);
- Gtransfo *Pix2RaDec;
- if (!WCSFromHeader(head, Pix2RaDec))
+ GtransfoRef Pix2RaDec = WCSFromHeader(head);
+ if (!Pix2RaDec)
  {
  	cerr 	<< " ERROR : cannot handle a large reference without a WCS " 
  		<< endl;
  	exit(1);
  }
  RaDecToPix = Pix2RaDec->InverseTransfo(0.1 /* accuracy in pixels*/, largeFrame);
- delete Pix2RaDec;
- 	      
+  	      
 		      
 		      
 		      
