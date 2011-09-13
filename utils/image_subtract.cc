@@ -24,30 +24,31 @@ struct ImageSubtract {
   void operator () (const ReducedImageRef Im) const {
 
     // read or redo kernel fit
-    KernelFitter kernfit(Ref, Im, noswap);
-    if (overwrite || !kernfit.ReadKernel()) {
-      if (kernfit.DoTheFit())
-	kernfit.WriteKernel(overwrite);
-      else {
-	PolokaException("PSF match between " + 
-			Ref->Name() + " and " + 
-			Im->Name() + " failed");
-	return;
+    try {
+      KernelFitter kernfit(Ref, Im, noswap);
+      if (overwrite || !kernfit.ReadKernel())
+	if (kernfit.DoTheFit())
+	  kernfit.WriteKernel(overwrite);
+	else
+	  cerr << " match between "
+	       << Ref->Name() << " and "
+	       << Im->Name() << " failed\n";
+	  
+      if (!dosub) return;
+      ImageSubtraction sub(SubtractedName(Ref->Name(), Im->Name()), Ref, Im, kernfit);
+      
+      if (overwrite) { 
+	if (sub.HasImage()) remove(sub.FitsName().c_str());
+	if (sub.HasWeight()) remove(sub.FitsWeightName().c_str());
+	if (sub.HasCosmic()) remove(sub.FitsCosmicName().c_str());
+	if (FileExists(sub.DetectionsName())) remove(sub.DetectionsName().c_str());
       }
+      
+      sub.Execute(DoFits|DoWeight|DoCosmic);
+      if (dodetect) sub.MakeCatalog();
+    } catch (PolokaException p) {
+      p.PrintMessage(cerr);
     }
-
-    if (!dosub) return;
-    ImageSubtraction sub(SubtractedName(Ref->Name(), Im->Name()), Ref, Im, kernfit);
-
-    if (overwrite) { 
-      if (sub.HasImage()) remove(sub.FitsName().c_str());
-      if (sub.HasWeight()) remove(sub.FitsWeightName().c_str());
-      if (sub.HasCosmic()) remove(sub.FitsCosmicName().c_str());
-      if (FileExists(sub.DetectionsName())) remove(sub.DetectionsName().c_str());
-    }
-
-    sub.Execute(DoFits|DoWeight|DoCosmic);
-    if (dodetect) sub.MakeCatalog();
   }
 };
 
