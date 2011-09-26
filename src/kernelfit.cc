@@ -498,7 +498,7 @@ bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
     weightWorst.MinMaxValue(&minVal, &maxVal);
     eps = maxVal * 1e-10;
     weightWorst += eps;
-    // go to variances    
+    // go to variances
     for (Pixel *pw = weightWorst.begin(); pw < weightWorst.end(); ++pw) *pw = 1. / *pw;
     // add variances and go back to weight
     // value under which we set weight to zero
@@ -510,24 +510,19 @@ bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
   }
 
   // mask objects and saturated pixels on the combined best+worst weight
-  if (ImPair.Best()->HasSatur()) {
-    FitsImage satur(ImPair.Best()->FitsSaturName());
-    weightBack *= (1 - satur);
-  }
+  const int hwidthDilate = 5;
   if (FileExists(ImPair.Best()->FitsSegmentationName())) {
     FitsImage seg(ImPair.Best()->FitsSegmentationName());
     seg.Simplify(0.5,0,1);
-    // dilate seg to simulate convolution
-    ConvolveSegMask(seg, seg, optParams.HKernelSize);
+    // dilate seg larger to simulate convolution
+    ConvolveSegMask(seg, seg, optParams.HKernelSize+hwidthDilate);
     weightBack *= seg;
-  }
-  if (ImPair.Worst()->HasSatur()) {
-    FitsImage satur(ImPair.Worst()->FitsSaturName());
-    weightBack *= (1 - satur);
   }
   if (FileExists(ImPair.Worst()->FitsSegmentationName())) {
     FitsImage seg(ImPair.Worst()->FitsSegmentationName());
     seg.Simplify(0.5,0,1);
+    // dilate seg larger to mask more
+    ConvolveSegMask(seg, seg, hwidthDilate);
     weightBack *= seg;
   }
   // weight is now done
@@ -550,10 +545,11 @@ bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
   int jbeg = int(dataFrame.yMin);
   int jend = int(dataFrame.yMax);
 
-  int iter = 2;
+  int iter = 3;
   weightBack.MinMaxValue(&minVal, &maxVal);
   eps = 1e-10*maxVal;
 
+  double chi2, npix;
   do {
     A.Zero();
     B.Zero();
@@ -576,9 +572,9 @@ bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
       return false;
 
     // hard masking pixels |resid(i,j)| > n*sigma
-    double chi2 = 0.;
-    double npix = 0.;
-
+    chi2 = 0.;
+    npix = 0.;
+    double meanresid = 0;
     for (int j=jbeg; j<jend; j++)
       for (int i=ibeg; i<iend; i++) {
 	Pixel weight = weightBack(i,j);
@@ -587,24 +583,34 @@ bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
 	for (unsigned q=0; q<nterms; ++q)
 	  back += B(q) * optParams.SepBackVar.Value(double(i),double(j),q);
 	Pixel resid = worstImage(i,j) - bestImage(i,j) - back;
-	chi2 += resid * resid * weight;
-	npix++;
 	if (fabs(resid)*sqrt(weight) > NSig) 
 	  weightBack(i,j) = 0;
+	else {
+	  chi2 += resid * resid * weight;
+	  npix++;
+	  meanresid += resid;
+	}
       }
-    cout << " KernelFit: background fit chi2/npix " << chi2/npix << endl;
+    cout << " KernelFit: background fit " << iter << " chi2/npix " << chi2/npix << endl;
 
   } while (iter--);
+
+#ifdef DEBUG
+  if (cholesky_invert(A,"U") != 0)
+    return false;
+  cout << " KernelFit: errors on first term " << chi2 / (npix - nterms) * sqrt(A(0,0)) << endl;
+#endif
 
   cout << " KernelFit: separate diff background coeffs:" << endl;
   cout << " -------------------------------------------" << endl;
   cout << " ";
   for (unsigned q=0; q< nterms; ++q) { 
-    cout << B(q) << ' ' ;
+    cout << B(q) << ' ';
     diffbackground[q] = B(q);
   }
   cout << endl;
   cout << " -------------------------------------------" << endl;
+
 
   return true;
 }
@@ -1968,7 +1974,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 		   << setw(4) << stamp.xc << ',' 
 		   << setw(4) << stamp.yc << ") npix " 
 		   << setw(4) << stamp.nActivePix << " chi2/pix "
-		   << setprecision(2) << chi2 << endl;
+		   << setw(6) << chi2 << endl;
 	      //if (stamp.star) stamp.star->dump();
 	      // drop it :
 	      dropped++;
@@ -1992,10 +1998,14 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
       Vect eigenVals(b);
       //      symetric_diagonalize(eigenVects,eigenVals,"L");
       DiagonalizeRealSymmetricMatrix(m, eigenVects, eigenVals);
-      cout << " KernelFit: lowest eigenvalues " << eigenVals(0) << ' ' << eigenVals(1) << ' ' << endl;
+      double condnum = fabs(eigenVals(mSize-1)/eigenVals(0));
+      cout << " KernelFit: lowest  eigenvalues " << eigenVals(0) << ' ' << eigenVals(1) << endl;
+      cout << " KernelFit: highest eigenvalues " << eigenVals(mSize-1) << ' ' << eigenVals(mSize-2) << endl;
+      cout << " KernelFit: condition number " << condnum << endl;
       StoreScore("kfit","lammin0",eigenVals(0));
       StoreScore("kfit","lammin1",eigenVals(1));
       StoreScore("kfit","lammin2",eigenVals(2));
+      StoreScore("kfit","condnum", condnum);
     }
 #endif
 
