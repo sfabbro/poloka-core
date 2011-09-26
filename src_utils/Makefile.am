@@ -11,7 +11,9 @@ src_utils_include_HEADERS = \
 	histo4d.h \
 	imageback.h \
 	imageinterpolation.h \
-	matvect.h
+	matvect.h \
+	poly1.h \
+	poly2.h
 
 lib_LTLIBRARIES = libtoadsutils.la
 libtoadsutils_la_SOURCES = \
@@ -22,7 +24,9 @@ libtoadsutils_la_SOURCES = \
 	histo4d.cc \
 	imageback.cc \
 	imageinterpolation.cc \
-	matvect.cc
+	matvect.cc \
+	poly2.cc \
+	poly1.cc
 
 libtoadsutils_la_CPPFLAGS = \
 	-I$(top_srcdir)/src_base \
