@@ -98,6 +98,7 @@ string ToadBand(const string &keyval)
 	  ToadBandMap["r.MP9601"] = 'R';
 	  ToadBandMap["i.MP9701"] = 'I';
 	  ToadBandMap["z.MP9801"] = 'Z';
+	  ToadBandMap["u.MP9301"] = 'U';
 	  ToadBandMap["macho_v"] = 'V';
 	  ToadBandMap["macho_r"] = 'R';
 	}  
