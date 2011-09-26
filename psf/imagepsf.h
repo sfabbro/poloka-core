@@ -18,7 +18,7 @@ class Poly2Image;
 
 class ImagePSF : public RefCount {
  private :
-  ReducedImageRef reducedImage; /* imposes that reducedImage was allocated by new. Corresponding comment placed on constructor "documentation". */
+  const ReducedImageRef reducedImage; /* imposes that reducedImage was allocated by new. Corresponding comment placed on constructor "documentation". */
   bool refitPSF;
   const AnalyticPSF* analyticPSF;
   int hSizeX, hSizeY;
@@ -62,7 +62,7 @@ class ImagePSF : public RefCount {
   double PSFValueWithParams(const double &Xc, const double &Yc, 
 			    const int IPix, const int JPix,
 			    const Vect &Params,
-			    Vect *PosDer = 0, Vect *ParamDer = 0) const;
+			    Vect *PosDer, Vect *ParamDer, double *AnalyticValue = 0) const;
 
   //! Access to the current PSF pixels.
   double PSFValue(const double &Xc, const double &Yc, 
@@ -90,7 +90,6 @@ class ImagePSF : public RefCount {
 
 
  private :
-
   bool StackResiduals(PSFStarList &Stars, 
 		      const Image &I, const Image &W, NonLinModel *NonLin = NULL);
 
@@ -107,7 +106,10 @@ class ImagePSF : public RefCount {
 
   int RemoveOutlierPixels(const PSFStarList &Stars,const Image &I, Image &W, const double NSigResCut) const;
 
-  double ComputeChi2(const PSFStarList &Stars, const Image &I, const Image &W) const;
+  void SetStarsChi2(const Image &I, const Image &W, PSFStarList &Stars) const;
+
+ public :
+  void test_derivatives(const Image &I) const;
 
 };
 

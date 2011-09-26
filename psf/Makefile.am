@@ -8,8 +8,6 @@ psf_include_HEADERS = \
 	analyticpsf.h \
 	imagepsf.h \
 	nonlinmodel.h \
-	poly1.h \
-	poly2.h \
 	psfstar.h \
 	sparsevect.h
 
@@ -20,8 +18,6 @@ libtoadspsf_la_SOURCES = \
 	analyticpsf.cc \
 	imagepsf.cc \
 	nonlinmodel.cc \
-	poly2.cc \
-	poly1.cc \
 	psfstar.cc
 
 # MATVECT_CHECK_BOUNDS checks access to Mat and Vect for index over/underflow

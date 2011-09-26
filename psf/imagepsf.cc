@@ -53,6 +53,9 @@ fit the PSF, and one to use it for fits.
 #define PSF_FILE_NAME "psf.dat"
 
 
+static bool FitPos=false;
+
+
 struct PSFCards
 {
   /* when you add a field here, your should take care of it in 3 other places:
@@ -146,7 +149,7 @@ bool PSFCards::ReadCards(const string &FileName)
 
 PSFCards::PSFCards()
 {
-  spatialAnalyticVarDeg = 2;
+  spatialAnalyticVarDeg = 1;
   spatialPixVarDeg = 1;
   nSigPSFChi2Cut = 4;
   nSigPSFHalfSize = 5;
@@ -660,7 +663,6 @@ void ImagePSF::Write(const std::string &FileName) const
 
 void ImagePSF::Write(std::ostream &S) const
 {
-  //  ReducedImage reducedImage; ??
   S << "ImagePSF_version 1" << endl;
   S << analyticPSF->Name() << endl;
   S << hSizeX << ' ' <<  hSizeY << endl;
@@ -682,7 +684,7 @@ void ImagePSF::Write(std::ostream &S) const
 
 bool ImagePSF::Read(std::istream &S)
 {
-  string info;//  ReducedImage reducedImage; ??
+  string info;
   int version;
   S >> info >> version;
   if (info != "ImagePSF_version" || version != 1) 
@@ -726,18 +728,6 @@ ImagePSF::~ImagePSF()
 }
 
 
-/*! for the moment, just forward the call to PSFValue to the
-corresponding AnalyticPSF routine.  we'll add pixelized corrections
-here if needed
-*/
-double ImagePSF::PSFValueWithParams(const double &Xc, const double &Yc, 
-				    const int IPix, const int JPix,
-				    const Vect &Params,
-				    Vect *PosDer, Vect *ParamDer) const
-{
-  return analyticPSF->PixValue(Xc,Yc,IPix, JPix, Params, PosDer, ParamDer);
-}
-
 
 Vect ImagePSF::PSFParams(const double &Xc, const double &Yc) const
 {
@@ -751,36 +741,56 @@ double ImagePSF::PSFValue(const double &Xc, const double &Yc,
 			  const int IPix, const int JPix, 
 			  Vect *PosDer, Vect *ParamDer, double *AnalyticValue) const
 {
+  Vect params(PSFParams(Xc,Yc));
+  return PSFValueWithParams(Xc,Yc,IPix,JPix, params, PosDer, ParamDer, AnalyticValue);
+}
+
+
+double ImagePSF::PSFValueWithParams(const double &Xc, const double &Yc, 
+				    const int IPix, const int JPix, 
+				    const Vect &Params,
+				    Vect *PosDer, Vect *ParamDer, 
+				    double *AnalyticValue) const
+{
 
   double val = 0;
   double residuals_integral = 0;
-  /* the policy is to provide user with a centered PSF, i.e.
-     with a PSF which has a centroid equal to the requested coordinate.
-     dx and dy are the offsets necessary to acheive that. They are 
-     NOT applied to address the "residual" part, because they are not
-     used in the fit (in StackResiduals). If we put them in here,
-     then they also have to be accounted for there.*/
-  double dx = 0;
-  double dy = 0;
+
+  if (PosDer)
+    {
+      (*PosDer)(0) = 0;
+      (*PosDer)(1) = 0;
+    }
   if (residuals)
     {
+      double dx = 0;
+      double dy = 0;
       residuals->Moments(Xc,Yc,residuals_integral, dx, dy);
       // no offsets (dx,dy) applied, see comment above.
       val += residuals->PixValue(Xc,Yc,IPix, JPix, PosDer);
     }
 
 
-  Vect params(npar);
-  for (int k =0; k < npar; ++k)
-    params(k) = psfParams[k].Value(Xc,Yc);
-  double anal_val = analyticPSF->PixValue(Xc-dx,Yc-dy,
-					  IPix, JPix, params, 
-					  PosDer, ParamDer);
+  double anal_val;
+  if (PosDer)
+    {
+      Vect posDer(2);
+      anal_val = analyticPSF->PixValue(Xc,Yc,
+				       IPix, JPix, Params, 
+				       &posDer, ParamDer);
+      (*PosDer)(0) += posDer(0)*(1-residuals_integral);
+      (*PosDer)(1) += posDer(1)*(1-residuals_integral);
+    }
+  else
+    anal_val = analyticPSF->PixValue(Xc,Yc,
+				     IPix, JPix, Params, 
+				     PosDer, ParamDer);
+
   val += (1.-residuals_integral) * anal_val;
   if (AnalyticValue) *AnalyticValue = anal_val;
 
   return val;
-}  
+}
 
 void ImagePSF::StampLimits(const double &X, const double &Y, 
 			   int &BeginI, int &EndI,
@@ -848,7 +858,7 @@ bool ImagePSF::FitParametersVariation(PSFStarList &Stars, double MaxChi2)
 	  Vect wp =  (s.PSFParamsWeight()*s.PSFParams());
 	  
 	  for (int ip1 = 0; ip1 < npar; ++ip1)
-	    for (unsigned ih1 = 0; ih1< nterms; ++ih1)
+ 	    for (unsigned ih1 = 0; ih1< nterms; ++ih1)
 	      {
 		int ind1 = ip1*nterms+ih1;
 		b(ind1) += h(ih1)*wp(ip1);	  
@@ -933,31 +943,6 @@ void ImagePSF::Chi2Stat(const PSFStarList &Stars, double &mean,
 }
 
 
-double ImagePSF::ComputeChi2(const PSFStarList &Stars, const Image &I, const Image &W) const
-{
-  double chi2 = 0;
-  for (PSFStarCIterator it = Stars.begin(); it != Stars.end(); ++it)
-    {
-      const PSFStar &s = **it;
-      double xc = s.PSFX();
-      double yc = s.PSFY();
-      double psfFlux = s.PSFFlux();
-      int starti, endi, startj,endj;
-      StampLimits(xc,yc,starti, endi, startj, endj);
-      for (int j=startj; j < endj; ++j)
-	for (int i=starti; i < endi; ++i)
-	  {
-	    double w = W(i,j);
-	    if (w<=0) continue;	    
-	    double psfVal = PSFValue(xc,yc,i,j);
-	    w = 1./(1./w+psfVal*psfFlux/gain);
-	    double res = (I(i,j)-psfFlux*psfVal);
-	    chi2 += res*res*w;
-	  }
-    }
-  return chi2;
-
-}
 
 #include "fitsimage.h"
 
@@ -973,7 +958,10 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
   cout << " PSF half sizes = " << hSizeX << ' ' << hSizeY << endl;
   analyticPSF = ChooseAnalyticPSF(Cards().analyticKind);
   npar = analyticPSF->NPar();
-  double seeing = reducedImage->Seeing();
+  double seeing = reducedImage->GFSeeing();
+  if (seeing <= 0) 
+    seeing = reducedImage->Seeing();
+  cout << " FitPSF: seeing  = " <<  seeing <<  endl;
   Vect startParams(npar); // initial uniform params
   analyticPSF->InitParamsFromSeeing(seeing,startParams);
 
@@ -1001,8 +989,8 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
   for (PSFStarIterator i = Stars.begin(); i != Stars.end(); )
     {
       PSFStar &s = **i;
-      s.SetPSFParams(startParams);
-      if (s.FitPSFParams(image, weight, *this)) ++i;
+      s.SetPSFParams(startParams); // used as input values by FitAllParams
+      if (s.FitAllParams(image, weight, *this)) ++i;
       else 
 	{
 	  cout << " fit failure: erasing star at " 
@@ -1081,17 +1069,26 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
 	  if (nonLinDeg >= 0)
 	    lastNonLin = new NonLinModel(nonLinDeg, 0., 60000.);
 
+
+	  // DEBUG
+	  SetStarsChi2(image, weight, Stars);
+	  Chi2Stat(Stars, mean, median, sigma, chi2, ndof, "before StackResiduals");	  
 	  // compute pixellized residuals.
-	  
+
 	  if (!StackResiduals(Stars, image, weight, lastNonLin))
 	    {
 	      cout << " could not fit pixellized residuals " << endl; 
 	      return false;
 	    }
-	  
-	  //debug
-	  // double chi2_2 = ComputeChi2(Stars, image,weight);
 
+#if 0	  
+	  // DEBUG
+	  SetStarsChi2(image, weight, Stars);
+	  Chi2Stat(Stars, mean, median, sigma, chi2, ndof, "after StackResiduals");	  
+	  StackResiduals(Stars, image, weight, lastNonLin);
+	  SetStarsChi2(image, weight, Stars);
+	  Chi2Stat(Stars, mean, median, sigma, chi2, ndof, "after StackResiduals (2) ");
+#endif
 	  if (Cards().allResidualsFileName != "")
 	    for (unsigned k =0; k < residuals->NTerms(); ++k)
 	      {
@@ -1120,6 +1117,7 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
 	    {
 	      PSFStar &s = **i;
 	      if (s.FitStarParams(image, weight, *this)) ++i;
+
 	      else
 		{
 		  cout << " erasing star at " << s.x << ' ' << s.y 
@@ -1136,9 +1134,6 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
 	  
 	  maxChi2 = median + Cards().nSigPSFChi2Cut * sigma;
 	  
-	  // debug
-	  // cout << " debug chi2 avant, milieu, fin " << chi2_1 << ' ' << chi2_2 << ' ' << chi2 << endl;
-
 	  // discard outliers
 	  int erasedCount = erase_outliers(Stars, maxChi2);
 
@@ -1199,9 +1194,8 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
   /* .. and write the fitted stars (to be able to extract the fluxes 
      without refitting) */
   GtransfoRef wcs = WCSFromHeader(image);
-  if (!wcs) wcs = GtransfoRef();
-  Stars.WriteTuple(reducedImage->Dir()+"psfstars.list",wcs, this);
-
+  Stars.WriteTuple(reducedImage->Dir()+"psftuple.list",wcs, this);
+  Stars.write(reducedImage->Dir()+"psfstars.list");
   return true;
 }
 
@@ -1214,7 +1208,7 @@ int ImagePSF::RemoveOutlierPixels(const PSFStarList &Stars,const Image &I, Image
       const PSFStar &s = **it;
       double xc = s.PSFX();
       double yc = s.PSFY();
-      double psfFlux = s.PSFFlux();
+      double psfFlux = s.flux;
       int starti, endi, startj,endj;
       StampLimits(xc, yc, starti, endi, startj, endj);
       for (int j=startj; j <endj; ++j)
@@ -1291,10 +1285,7 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
   Vect hSkyNonLin(nparNonLin);
 
   if (NonLin)
-  {
-    FitsHeader head(reducedImage->FitsName());
     NonLin->ParamDerivatives(skylev, hSkyNonLin);
-  }
 
   double maxPixVal = -1e30;
 
@@ -1302,16 +1293,23 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
   int nterms = tmpRes.NTerms();
   int npix_coeffs = npix*nterms; 
   int startNonLin =  npix_coeffs+nstars;
-  int constant_start = npix_coeffs+nstars + nparNonLin;
-  unsigned ntot = constant_start+2*nterms; // why 2? 1 is for the spatially constant term.1 is for the constraint
+  int ntot = startNonLin+ nparNonLin;
   Mat a(ntot, ntot);
   Vect b(ntot);
+  Mat X(ntot,nterms);
+  Mat aa(nterms,nterms);
+  Vect bb(nterms);
+
   SparseVect h;
 
   Vect cx(ResampNCoeffs());
   Vect cy(ResampNCoeffs());
   Vect hpol(nterms);
 
+
+  //bool fittingFluxes = false;
+  bool fittingFluxes = true;
+  if (!fittingFluxes) cout << "fluxes are not fitted in StackResiduals" << endl;
 
   int ks = npix_coeffs;
   for (PSFStarCIterator it = Stars.begin(); it != Stars.end(); ++it, ++ks)
@@ -1333,7 +1331,327 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
       endj = min(jc+hy+1,ny);
       
 
-      double flux = s.PSFFlux();
+      double flux = s.flux;
+      double totW = 0;
+
+      /* the psf reads :
+	 psi(i,j) = [ 1-sum_{k,l} PR(k,l) ] *phi(i,j)+ PR(i,j)
+	 PR : Pixellised Residuals.
+	 So there are two sets of derivatives. The derivative of the sum is 
+	 handled separatly because it is not sparse (at all), but pretty "uniform".
+	 the aa and X matrices, and the bb vector handle this part.
+	 
+	 The derivatives were checked by removing all sources of non-linearity:
+	 - setting the pixel weight to W(i,j)
+	 - not fitting fluxes
+	 and checking that a second round in this routine does not change anything.
+      */
+
+
+      for (int j=startj; j < endj; ++j)
+      for (int i=starti; i < endi; ++i)
+	{
+	  if (W(i,j) <= 0) continue;
+	  h.zero();
+	  for (int ip = 0; ip<nterms; ++ip) // loop on terms of the polynomial(s)
+	  for (int jo = minDj; jo<= maxDj; ++jo)
+	    {
+	      int jPix = j-jc+jo+hyRes;
+	      if (jPix <0 || jPix >= nyRes) continue;
+	      for (int io=minDi; io <= maxDi; ++io)
+		{
+		  int iPix = i-ic+io+hxRes;
+		  if (iPix<0 || iPix >=nxRes) continue;
+		  {
+		    // position in the parameter vector of this "pixel"
+		    int hindex = npix*ip+iPix+jPix*nxRes; 
+		    h.set(hindex, hpol(ip)*cx(io-minDi)*cy(jo-minDj)*flux);			
+		  }
+		}
+	    } // end loop on PSF pixels and terms of the polynomials
+	  // the PSF pixels part of h is filled
+	  double analyticPSFVal = 0;
+	  double psfVal = PSFValue(xc, yc, i, j, NULL, NULL, &analyticPSFVal);
+	  double expectedVal  = flux*psfVal;
+	  
+	  /* derivative w.r.t non linearity parameters: these are
+	     computed using expected value rather than observed one.
+	     doing otherwise causes (very) large biases. See
+	     README.ls_biases */
+	  if (NonLin)
+	    {
+	      NonLin->ParamDerivatives(expectedVal+skylev,hNonLin);
+	      hNonLin -= hSkyNonLin;
+	      for (unsigned ik=0; ik < nparNonLin; ++ik)
+		h.set(ik + startNonLin, -hNonLin(ik)); // minus sign is OK.
+	    }
+	  
+	  /* We have to account for the contribution of the star to
+	     the photon noise, absent from the weight map. So we add
+	     it, but using the model and *NOT* the data.See
+	     README.ls_biases.  Note that this introduces
+	     non-linearities.
+	  */
+#warning "wrong weigths in StackResiduals"
+	  //	  double pixWeight =  1./(1./ W(i,j)+expectedVal/gain);
+	  double pixWeight =  W(i,j);
+	  if (pixWeight <= 0) continue;
+	  totW += pixWeight;
+	  
+	  double pixVal = I(i,j);
+	  if (pixVal > maxPixVal) maxPixVal = pixVal;
+	  double weightedRes =  pixWeight*(pixVal - expectedVal);
+#define FLUX_FACT 4e7
+	  // derivative w.r.t flux (when flux is fitted)
+	  if (fittingFluxes)
+	    h.set(ks, FLUX_FACT*psfVal);
+
+	  h.sort(); // mandatory : h is filled in the wrong order to speed up computations	  
+	  for (SVCIterator i1 = h.begin(); i1< h.end(); ++i1)
+	    {
+	      int hindex1 = i1->index;
+	      double hval1 = i1->value;
+	      for (SVCIterator i2 = i1; i2< h.end(); ++i2)
+		{
+		  a(hindex1, i2->index) += pixWeight*hval1*i2->value;
+		}
+	      b(hindex1) += weightedRes*hval1;
+	    }
+
+	  // ingredients for the derivatives of the sum (see above). 
+	  Vect hs(nterms);
+	  for (int ip=0; ip<nterms; ++ip) hs(ip) = flux*analyticPSFVal*hpol(ip);
+	  for (int ip=0; ip<nterms; ++ip)
+	    {
+	      for (int iq=0; iq<nterms; ++iq)
+		aa(ip,iq) += pixWeight*hs(iq)*hs(ip); // the "sum-sum" term
+	      for (SVCIterator i1 = h.begin(); i1< h.end(); ++i1)
+		{
+		  int hindex1 = i1->index;
+		  X(hindex1,ip)+= pixWeight * i1->value * hs(ip);  // the "sum-pixel" term
+		}
+	      bb(ip) +=  weightedRes * hs(ip); // the contribution of the sum ot the gradient.
+	    }
+	}// end loop on pixels for this star
+
+      if (!fittingFluxes || totW == 0) // this sometime happens, I don't quite get how, but it forbids to solve
+	a(ks,ks) = 1;
+    } // end loop on stars
+
+  // end the filling of a and b (for the terms involving the sum)
+  // note that this is a non-sparse loop, but it is the only one  in this routine. 
+  for (int ip=0; ip<nterms; ++ip)
+  for (int ipix=0; ipix<npix; ++ipix)
+    {
+      int i=npix*ip+ipix;
+      b(i) -= bb(ip);
+      for (int jp=0; jp<nterms; ++jp)
+      for (int jpix=0; jpix<npix; ++jpix)
+	{
+	  int j=jp*npix+jpix;
+	  a(i,j) += aa(ip,jp);
+	}
+      for (int k=0; k<ntot; ++k) // fill both parts. not easy to fill the "U" part only.
+	{
+	  a(k,i) -= X(k,ip);
+	  a(i,k) -= X(k,ip);
+	}
+    }
+
+  /* check here if all diagonal terms of a are != 0 :we may
+   miss a few pixels (sides or dead). If this happens the line and
+   column also has to be 0 as well as the corresponding b
+   component. replacing the diagonal null term of a by 1 should do a
+   good job
+  */
+  for (int k = 0; k<npix_coeffs; ++k)
+    if (a(k,k) == 0 ) 
+      {
+	cout << " ImagePSF::StackResiduals : unconstrained pix at index k = " << k << endl;
+	a(k,k) = 1;
+      }
+
+  // the Lapack routines take hours if the matrix contains nan, so
+  // check before proceeding
+  for (unsigned k1=0; k1<ntot; ++k1)
+    {
+      for (unsigned k2=0; k2<ntot; ++k2)
+	if (isnan(a(k1,k2)))
+	  {
+	    cout << " StackResiduals : the Hessian contains nan's " << endl;
+	    return false;
+	  }
+      if (isnan(b(k1)))
+	{
+	  cout << " StackResiduals : the gradient contains nan's " << endl;
+	  return false;
+	}
+    }
+
+  //DEBUG check
+  //  Mat cpa(a);
+  // Vect cpb(b);
+
+  //   b.writeASCII("b.dat");
+
+  cout << " solving linear system (size = " << a.SizeX() << ")" << endl;
+  //  a.writeFits("a.fits");
+  // b.writeASCII("b.dat");
+  // since there are constraints, the matrix is NOT posdef.
+  // So we cannot use the Cholesky factorization (dposv in lapack). But since it is
+  // twice as fast as the next fastest factorization (dsysv in lapack), I cooked up a "block solver"
+  // which uses Cholesky for the posdef part and hand made stuff for the remainder.
+
+  clock_t tstart = clock();
+
+  int info;
+  if (NonLin == NULL)
+    {
+      info = cholesky_solve(a,b,"U");
+    }
+  else
+    {
+      /* involved trick here: I wish to get the covariance matrix of
+       the nonlin parameters.  rather than inverting the whole matrix,
+       I solve the system for a few (=nparNonLin) RHS from which I can
+       extract the small covariance matrix.  */
+      Mat tempB(ntot, 1+nparNonLin);
+      for (unsigned i=0; i<ntot; ++i) tempB(i,0) = b(i); // copy the "real" RHS
+
+      // add the ones needed for inversion
+      for (unsigned k=0; k <nparNonLin; ++k) tempB(startNonLin+k,1+k) = 1.; 
+      // solve the system
+      info = cholesky_solve(a,tempB,"U"); 
+      // place the result where the actual parameters are read downstream
+      for (unsigned i=0; i<ntot; ++i) b(i) = tempB(i,0); 
+      // collect non linearity parameters ...
+      Vect tmp(nparNonLin);
+      for (unsigned ik =0; ik < nparNonLin; ++ik) tmp(ik) = b(startNonLin+ik);
+      NonLin->SetParams(tmp);
+      // ... and  their covariance matrix
+      Mat &nonLinCov = NonLin->Cov();
+      for (unsigned i=0; i<nparNonLin; ++i)
+	for (unsigned j=0; j<nparNonLin; ++j)
+	  {
+	    nonLinCov(i,j) = tempB(startNonLin+j, 1+i);
+	  }
+      NonLin->SetMaxPix(maxPixVal);
+    } /* end of nonlin special processing. b contains the same value
+	 as if not fitting non linearities. */
+
+  if (info != 0)
+      {
+	cout << " could not solve for pixellized residuals " << endl;
+	cout << " size of the matrix " << a.SizeX() << endl;
+	cout << " npix = " << npix << "  nterms= " << nterms << endl;
+	return false;
+      }
+      
+  clock_t tend = clock();
+  cout << " CPU for solving " << float(tend-tstart)/float(CLOCKS_PER_SEC) << endl;
+
+  cout << " StackResiduals : max pix value =  " << maxPixVal << endl;
+
+  // put the pixels into the psf pixels (Poly2Image class)
+  tmpRes.SetCoeffs(b);
+  Vect cst(nterms);
+
+  if (!residuals) residuals = new Poly2Image(tmpRes);
+  else *residuals += tmpRes;
+
+
+  // propagate fit results :  update fluxes
+  if (fittingFluxes)
+    {
+      int ks = npix_coeffs;
+      for (PSFStarIterator it = Stars.begin(); it != Stars.end(); ++it, ++ks)
+	{
+	  PSFStar &s = **it;
+	  s.flux += b(ks)/FLUX_FACT;
+	}
+    }
+  return true;
+}
+
+
+
+#ifdef STORAGE 
+bool ImagePSF::StackResiduals(PSFStarList &Stars, 
+			      const Image &I, const Image &W, NonLinModel *NonLin)
+{
+  int nstars = Stars.size();
+  if (nstars == 0) return false;
+  cout << " entering StackResiduals with half sizes = " << hSizeX << ' ' << hSizeY << ", nstars=" << nstars << endl;
+  int hx = hSizeX;
+  int hy = hSizeY;
+  /* The resampling kernel size determines how larger we want the
+   discretized PSF to be compared to the "user window" (the size used
+   for fits) : 
+    - if kernel size is 1 (nearest neighbor) increment by 0
+    - if kernel size is 2, increment by 1,
+    - if kernel size is 3, increment by 1
+  This proved to be a bad idea, because the extra pixels,
+  on the border are poorly defined, and cannot be used. 
+  Poly2Image::PixValue assumes that these pixels are zero, as we do here.
+*/
+  //  int extraPix = ResampNCoeffs()/2;
+  int extraPix = 0; // ResampNCoeffs()/2;
+  int hxRes = hSizeX+extraPix;
+  int nxRes = 2*hxRes+1;
+  int hyRes = hSizeY+extraPix;
+  int nyRes = 2*hyRes+1;
+
+  Poly2Image tmpRes(0,0,nx,ny, Cards().spatialPixVarDeg, hxRes, hyRes);
+
+  // image non-linearity stuff.
+  unsigned nparNonLin = (NonLin)? NonLin->NPar() : 0;
+
+  Vect hNonLin(nparNonLin);
+  Vect hSkyNonLin(nparNonLin);
+
+  if (NonLin)
+    NonLin->ParamDerivatives(skylev, hSkyNonLin);
+
+  double maxPixVal = -1e30;
+
+  int npix = tmpRes.NPix();
+  int nterms = tmpRes.NTerms();
+  int npix_coeffs = npix*nterms; 
+  int startNonLin =  npix_coeffs+nstars;
+  int constant_start = npix_coeffs+nstars + nparNonLin;
+  unsigned ntot = constant_start+2*nterms; // why 2? 1 is for the spatially constant term.1 is for the constraint
+  Mat a(ntot, ntot);
+  Vect b(ntot);
+  SparseVect h;
+
+  Vect cx(ResampNCoeffs());
+  Vect cy(ResampNCoeffs());
+  Vect hpol(nterms);
+
+  cout << "fluxes are not fitted in StackResiduals" << endl;
+  bool fittingFluxes = false;
+
+  int ks = npix_coeffs;
+  for (PSFStarCIterator it = Stars.begin(); it != Stars.end(); ++it, ++ks)
+    {
+      const PSFStar &s = **it;
+      double xc = s.PSFX();
+      double yc = s.PSFY();
+      int ic = int(floor(xc+0.5));
+      int jc = int(floor(yc+0.5));
+      int minDi, maxDi, minDj, maxDj;
+      ResampCoeffs(ic-xc,minDi,maxDi,cx);
+      ResampCoeffs(jc-yc,minDj,maxDj,cy);
+      tmpRes.Monomials(xc,yc, hpol);
+
+      int starti, endi, startj,endj;
+      starti = max(ic-hx,0);
+      startj = max(jc-hy,0);
+      endi = min(ic+hx+1,nx);
+      endj = min(jc+hy+1,ny);
+      
+
+      double flux = s.flux;
       double totW = 0;
 
 
@@ -1356,7 +1674,7 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
 			int hindex = npix*ip+iPix+jPix*nxRes; 
 			h.set(hindex, hpol(ip)*cx(io-minDi)*cy(jo-minDj)*flux);			
 		      }
-		    }
+		  }
 		} // the pixels part of h is filled
 	    double analyticPSFVal = 0;
 	    double psfVal = PSFValue(xc, yc, i, j, NULL, NULL, &analyticPSFVal);
@@ -1376,15 +1694,19 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
 	      }
 
 	    // derivative w.r.t flux (when flux is fitted)
-	    h.set(ks, psfVal);
+	    if (fittingFluxes)
+	      h.set(ks, psfVal);
 
+#warning "on ne fitte pas alpha"
+#if 0
 	    //derivative w.r.t the spatially constant term:
 	    for (int ip = 0; ip<nterms; ++ip) // loop on terms of the residual polynomial(s)
 	      {
 		int hindex = constant_start+ip;
-		h.set(hindex, hpol(ip)*flux*(1.-npix*analyticPSFVal));
+		// top of page 274 of my logbook:
+		h.set(hindex, hpol(ip)*flux*(1-npix*analyticPSFVal));
 	      }
-
+#endif
 	    h.sort(); // mandatory : h is filled in the wrong order to speed up computations
 
 #if (false)
@@ -1404,7 +1726,9 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
 	       but using the model and *NOT* the data.See README.ls_biases.
 	       Note that this introduces non-linearities.
             */
-	    double pixWeight =  1./(1./ W(i,j)+expectedVal/gain);
+	    //	    double pixWeight =  1./(1./ W(i,j)+expectedVal/gain);
+# warning "wrong weight in StackResiduals"	    
+	    double pixWeight =  W(i,j);
 	    if (pixWeight <= 0) continue;
 	    totW += pixWeight;
 
@@ -1423,7 +1747,7 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
 		b(hindex1) += weightedRes*hval1;
 	      }
 	  }// end loop on pixels for this star
-      if (totW == 0) // this sometime happens, I don't quite get how, but it forbids to solve
+      if (!fittingFluxes || totW == 0) // this sometime happens, I don't quite get how, but it forbids to solve
 	{
 	  a(ks,ks) = 1;
 	}
@@ -1456,7 +1780,15 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
 	cout << " ImagePSF::StackResiduals : unconstrained pix at index k = " << k << endl;
 	a(k,k) = 1;
       }
-
+  for (int k=0; k<nterms; ++k)
+    {
+      int j = constant_start+k;
+      if (a(j,j) == 0 ) 
+	{
+	  cout << " ImagePSF::StackResiduals : unconstrained const at index k = " << k << endl;
+	  a(j,j) = 1;
+	}
+    }
 
   // the Lapack routines take hours if the matrix contains nan, so
   // check before proceeding
@@ -1557,17 +1889,18 @@ bool ImagePSF::StackResiduals(PSFStarList &Stars,
 
 
   // propagate fit results :  update fluxes
-  ks = npix_coeffs;
-  for (PSFStarIterator it = Stars.begin(); it != Stars.end(); ++it, ++ks)
+  if (fittingFluxes)
     {
-      PSFStar &s = **it;
-      s.SetPSFFlux(s.PSFFlux() + b(ks));
+      int ks = npix_coeffs;
+      for (PSFStarIterator it = Stars.begin(); it != Stars.end(); ++it, ++ks)
+	{
+	  PSFStar &s = **it;
+	  s.flux += b(ks);
+	}
     }
-
-
   return true;
 }
-
+#endif /* STORAGE */
 
 void ImagePSF::ApplyNonLinearities(Image &I, const NonLinModel& NonLin) const
 {
@@ -1583,6 +1916,32 @@ void ImagePSF::ApplyNonLinearities(Image &I, const NonLinModel& NonLin) const
     }
 }
 
+void ImagePSF::SetStarsChi2(const Image &I, const Image &W, PSFStarList &Stars) const
+{
+  double sChi2 = 0;
+  for (PSFStarIterator it = Stars.begin(); it != Stars.end(); ++it)
+    {
+      PSFStar &s = **it;
+      double xc = s.PSFX();
+      double yc = s.PSFY();
+      double psfFlux = s.flux;
+      int starti, endi, startj,endj;
+      StampLimits(xc, yc, starti, endi, startj, endj);
+      double sChi2 = 0;
+      for (int j=startj; j <endj; ++j)
+	for (int i=starti ; i < endi; ++i)
+	  {
+	    double w = W(i,j);
+	    if (w<=0) continue;
+	      
+	    double psfVal = PSFValue(xc, yc, i, j);
+	    double res = (I(i,j)-psfVal*psfFlux);
+	    w = 1./(1./w+psfVal*psfFlux/gain);
+	    sChi2 += res*res*w;
+	  }// end loop on pixels
+      s.SetPSFChi2(sChi2);
+    }
+}
 
 void ImagePSF::ResidualImage(const string &ResFitsName, 
 			     const PSFStarList &Stars)const
@@ -1602,9 +1961,9 @@ void ImagePSF::ResidualImage(const string &ResFitsName,
 	  for (int i=starti; i < endi; ++i)
 	    {
 	      double val  = PSFValue(x,y, i, j);
-	      val *= s.PSFFlux();
+	      val *= s.flux;
 	      res(i,j) = image(i,j) - val;
-	      stack(i-starti, j - startj) += (image(i,j) - val)/s.PSFFlux();
+	      stack(i-starti, j - startj) += (image(i,j) - val)/s.flux;
 	    }
     }
   stack *= (1./Stars.size());
@@ -1645,11 +2004,11 @@ void ImagePSF::ResidualTuple(const string &ResTupleName,
 	  {
 	    
 	    double val  = PSFValue(x,y, i, j);
-	    val *= s.PSFFlux();
+	    val *= s.flux;
 	    //	      res(i,j) = image(i,j) - val;
 	    file << x << ' ' 
 		 << y << ' '
-		 << s.PSFFlux() << ' '
+		 << s.flux << ' '
 		 << icenter << ' '
 		 << jcenter << ' '
 		 << count << ' ' 
@@ -1714,7 +2073,8 @@ bool ImagePSF::FitNonLinearity(const bool WriteResTuple) /* const */
   FitsImage image(reducedImage->FitsName());
   skylev = image.KeyVal("SKYLEV");
 
-  PSFStarList stars(AperSEStarList(reducedImage->StarCatalogName()));
+  PSFStarList stars(reducedImage->Dir()+"/psfstars.list");
+
   if (stars.size() == 0)
     {
       cout << " no stars .. giving up " << endl;
@@ -1722,44 +2082,11 @@ bool ImagePSF::FitNonLinearity(const bool WriteResTuple) /* const */
     }
   int fitFailures = 0;
   
-
-  cout << " refitting all stars " << endl;
   for (PSFStarIterator i = stars.begin(); i != stars.end();)
     {
       PSFStar &s = **i;
-      if (s.FitStarParams(image, weight, *this)) ++i;
-      else
-	{
-	  cout << " erasing star at " << s.x << ' ' << s.y 
-	       << " for fit failure " << endl;
-	  i = stars.erase(i); 
-	  fitFailures++;
-	}
+      s.oldPsfFlux = s.flux;
     }
-  if (fitFailures) 
-    cout << " Erased " << fitFailures << " stars (fit failure) in the last fitting loop " 
-	 << endl;
-
-
-  // discard outlier stars
-  int erasedCount;
-  do
-    {
-        double mean,median,sigma, chi2_init;
-	int ndof;
-	Chi2Stat(stars, mean, median, sigma, chi2_init, ndof, "independent profiles");
-
-	double maxChi2 = median + Cards().nSigPSFChi2Cut * sigma;  
-	erasedCount = erase_outliers(stars, maxChi2);
-
-
-	if (erasedCount)
-	  {
-	    cout << " Erased " << erasedCount << " stars (outliers) " << endl;
-	    Chi2Stat(stars, mean, median, sigma, chi2_init, ndof,"");// recompute stats
-	  }
-    }
-  while (erasedCount != 0);
 
   stars.sort(DecreasingFlux); // don't remember why .... 
 
@@ -1822,8 +2149,8 @@ bool ImagePSF::FitNonLinearity(const bool WriteResTuple) /* const */
       //      cout << " flux df/flux " << s.PSFFlux() << ' ' << b(ks)/s.PSFFlux() << endl;
       double xc = s.PSFX();
       double yc = s.PSFY();
-      double psfFlux = s.PSFFlux();
-      double oldPsfFlux = s.OldPSFFlux();
+      double psfFlux = s.flux;
+      double oldPsfFlux = s.oldPsfFlux;
       double dflux = psfFlux - oldPsfFlux;
       sumDflux += dflux;
       sumFluxes += oldPsfFlux;
@@ -1854,7 +2181,7 @@ bool ImagePSF::FitNonLinearity(const bool WriteResTuple) /* const */
 	  }
     }
   cout << " chi2 old new " << chi2Old << ' ' << chi2New << endl;
-  cout << " sumfluxes sumDFlux " << sumFluxes << ' ' << sumDflux << endl;
+  //  cout << " sumfluxes sumDFlux " << sumFluxes << ' ' << sumDflux << endl;
 
 
   if (WriteResTuple) restuple.close();
@@ -1902,7 +2229,7 @@ bool MakePSF(const string &ImageName, const bool RefitPSF,
 	{
 	  ostringstream starRefCatName;
 	  starRefCatName << fieldName << ".list";
-	  string wholeStarRefCatName = DbConfigFindCatalog(starRefCatName.str());
+	  string wholeStarRefCatName = DbConfigFindCatalog(starRefCatName.str(), /* Throw = */ false);
 	  if (wholeStarRefCatName != "")
 	    {
 	      GtransfoRef readWcs = WCSFromHeader(head);
@@ -1962,4 +2289,103 @@ bool MakePSF(const string &ImageName, const bool RefitPSF,
   return imagePSF.FitPSF(stars);
 }
  
-  
+void ImagePSF::test_derivatives(const Image &I) const
+{
+  int hx = 13;
+  int hy = 13;
+  /* The resampling kernel size determines how larger we want the
+   discretized PSF to be compared to the "user window" (the size used
+   for fits) : 
+    - if kernel size is 1 (nearest neighbor) increment by 0
+    - if kernel size is 2, increment by 1,
+    - if kernel size is 3, increment by 1
+  This proved to be a bad idea, because the extra pixels,
+  on the border are poorly defined, and cannot be used. 
+  Poly2Image::PixValue assumes that these pixels are zero, as we do here.
+*/
+  //  int extraPix = ResampNCoeffs()/2;
+  int extraPix = 0; // ResampNCoeffs()/2;
+  int hxRes = hSizeX+extraPix;
+  int nxRes = 2*hxRes+1;
+  int hyRes = hSizeY+extraPix;
+  int nyRes = 2*hyRes+1;
+  int nx = I.Nx();
+  int ny = I.Ny();
+
+  Poly2Image tmpRes(0,0,nx,ny, Cards().spatialPixVarDeg, hxRes, hyRes);
+
+  int npix = tmpRes.NPix();
+  int nterms = tmpRes.NTerms();
+  int npix_coeffs = npix*nterms; 
+  cout << " npix_coeffs " << npix_coeffs << endl;
+
+  Vect cx(ResampNCoeffs());
+  Vect cy(ResampNCoeffs());
+  Vect hpol(nterms);
+
+  double stepx = nx/(5+1);
+  double stepy = ny/(5+1);
+
+  SparseVect h;
+
+  for (double xc = 0.5*stepx ; xc < nx; xc += stepx)
+  for (double yc = 0.5*stepy ; yc < ny; yc += stepy)
+    {
+      cout << " xc yc " << xc << ' ' << yc << endl;
+      int ic = int(floor(xc+0.5));
+      int jc = int(floor(yc+0.5));
+      int minDi, maxDi, minDj, maxDj;
+      ResampCoeffs(ic-xc,minDi,maxDi,cx);
+      ResampCoeffs(jc-yc,minDj,maxDj,cy);
+      tmpRes.Monomials(xc,yc, hpol);
+      int starti, endi, startj,endj;
+      starti = max(ic-hx,0);
+      startj = max(jc-hy,0);
+      endi = min(ic+hx+1,nx);
+      endj = min(jc+hy+1,ny);
+      int testedZeros = 0;
+      int testedNonZeros = 0;
+      for (int j=startj; j < endj; ++j)
+	for (int i=starti; i < endi; ++i)
+	  {
+	    cout << " i j " << i << ' ' << ' ' << j 
+		 << ' ' << testedZeros << ' ' << testedNonZeros << endl;
+	    //if (W(i,j) <= 0) continue;
+	    h.zero();
+	    for (int ip = 0; ip<nterms; ++ip) // loop on terms of the polynomial(s)
+	    for (int jo = minDj; jo<= maxDj; ++jo)
+	      {
+		int jPix = j-jc+jo+hyRes;
+		if (jPix <0 || jPix >= nyRes) continue;
+		for (int io=minDi; io <= maxDi; ++io)
+		  {
+		    int iPix = i-ic+io+hxRes;
+		    if (iPix<0 || iPix >=nxRes) continue;
+		      {
+			// position in the parameter vector of this "pixel"
+			int hindex = npix*ip+iPix+jPix*nxRes; 
+			h.set(hindex, hpol(ip)*cx(io-minDi)*cy(jo-minDj));
+		      }
+		  }
+	      } // the pixels part of h is filled
+	    h.sort();
+
+	    for (int k=0; k<npix_coeffs; ++k)
+	      {
+
+		Poly2Image test(tmpRes);
+		Vect x(npix_coeffs);
+		x(k) = 1;
+		test.SetCoeffs(x);
+		double val = test.PixValue(xc,yc,i,j);
+		double valh = h(k);
+		if ((val==0 && valh != 0) || (val != 0  && fabs(valh/val-1)>1e-6))
+		  cout << " problème pour xc yc i j k" 
+		       << xc << ' ' << yc << ' ' << i << ' ' << j << ' ' << k << endl;
+		if (val == 0) testedZeros++; else testedNonZeros++;
+	      }
+	  } // end loop on image pixels 
+    }// end loop on positions
+}
+
+

@@ -71,6 +71,13 @@ class SparseVect : public std::vector<SparseVectElement>
     return end();
   }
 
+
+  double operator()(const int ii) const
+  {
+    for (const_iterator i = begin(); i != end(); ++i)
+      if (i->index == ii) return i->value;
+    return 0;
+  }
   
  protected:
   bool sorted;

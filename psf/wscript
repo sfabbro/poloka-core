@@ -22,6 +22,14 @@ def build( bld ):
     lib.rpath += bld.env.LIBPATH_SEX
 
     # install the headers 
-    headers  = bld.path.ant_glob('*.h')
-    bld.install_files('${PREFIX}/${PKG_INCDIR}', headers)
-    # bld.install_files('${PREFIX}/${PKG_INCDIR}', 'psfstar.h')
+
+    bld.install_files('${PREFIX}/${PKG_INCDIR}', [ 'analyticpsf.h', 'psfstar.h', 'imagepsf.h'])
+#    for tg in ['testder'] :
+#        prog = bld.program(
+#            source   = tg+".cc",
+#            target   = tg,
+#            includes = [ '.', '../src_utils', '../src_base', '../src' ], 
+#            use = [ 'toadspsf'] )
+#        prog.rpath = [bld.env['PREFIX'] + '/lib']
+#        prog.rpath += bld.env.LIBPATH_CFITSIO
+#        prog.rpath += bld.env.LIBPATH_SEX
