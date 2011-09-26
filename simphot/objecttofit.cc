@@ -12,11 +12,11 @@ ObjectToFit::ObjectToFit(const string& Line)
     throw(LightCurveSyntaxError(Line,"not enough words"));
 
 
-  type=0; // defalut is star+galaxy
+  type=0; // default is star+galaxy
   x = atof(words[0].c_str());
   y = atof(words[1].c_str());
   vector<string>::const_iterator it=words.begin();
-  ++it; ++it;
+  ++it; ++it; // skip the 2 coordinates
   for ( ; it != words.end(); ++it)
     {
       vector<string> option;

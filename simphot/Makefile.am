@@ -20,7 +20,9 @@ simphot_include_HEADERS = \
 	model.h \
 	objecttofit.h \
 	pixelblock.h \
+	pmstar.h \
 	resampler.h \
+	rimage.h \
 	simphotfit.h \
 	vignette.h
 
@@ -34,6 +36,7 @@ libtoadssimphot_la_SOURCES = \
 	model.cc \
 	objecttofit.cc \
 	pixelblock.cc \
+	pmstar.cc \
 	resampler.cc \
 	simphotfit.cc \
 	vignette.cc

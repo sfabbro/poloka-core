@@ -9,6 +9,7 @@ def build( bld ):
     sources = bld.path.ant_glob('*.cc', 
                                 excl=['mklc.cc', 
                                       'testlc.cc', 
+                                      'testpsf2.cc', 
                                       'testpsf.cc'])
     
     # sources.remove('mklc.cc')
@@ -33,18 +34,25 @@ def build( bld ):
     lib.rpath = [bld.env['PREFIX'] + '/lib']
     lib.rpath += bld.env.LIBPATH_CFITSIO
     lib.rpath += bld.env.LIBPATH_SEX
-    
-    prog = bld.program(
-        source   = "mklc.cc",
-        target   = "mklc",
-        includes = [ '.',
-                     '../src_base',
-                     '../src_utils',
-                     '../src' ],
-        use = [ 'toads_base', 
-                'toads_utils', 
-                'simphot' ])
-    prog.rpath = [bld.env['PREFIX'] + '/lib']
-    prog.rpath += bld.env.LIBPATH_CFITSIO
-    prog.rpath += bld.env.LIBPATH_SEX
+
+
+    for tg in ['mklc','testpsf'] :
+        prog = bld.program(
+            source   = tg+".cc",
+            target   = tg,
+            includes = [ '.',
+                         '../src_base',
+                         '../src_utils',
+                         '../psf',
+                         '../src' ],
+            use = [ 'toads_base', 
+                    'toads_utils', 
+                    'simphot' ])
+        prog.rpath = [bld.env['PREFIX'] + '/lib']
+        prog.rpath += bld.env.LIBPATH_CFITSIO
+        prog.rpath += bld.env.LIBPATH_SEX
          
+   # install the headers 
+    headers  = ['lightcurvefile.h', 'objecttofit.h', 'pmstar.h','rimage.h']
+    
+    bld.install_files('${PREFIX}/${PKG_INCDIR}', headers)

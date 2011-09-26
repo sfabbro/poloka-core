@@ -1,5 +1,6 @@
 #include "model.h"
-
+#include "lightcurvefile.h"
+#include "pmstar.h"
 
 #include <cmath> // for floor
 static IntPoint nearest_integer_pos(const Point &P)
@@ -9,16 +10,17 @@ static IntPoint nearest_integer_pos(const Point &P)
 
 
 #include "matvect.h"
-
-
 #include "imagematch.h"
 #include "gtransfo.h"
-
-#include "dicstar.h"
+#include "psfstar.h"
 #include "listmatch.h" // for ListMatchCollect
+#include "fitsimage.h"
 
+#ifdef STORAGE 
 
 /*********************** MStar is a utility class used in PSFStarListMatch ****************/
+
+
 
 //! utility class. May go into dicstar.h
 struct MStar : public BaseStar
@@ -70,21 +72,18 @@ MStarList::MStarList(const DicStarList &L, const string &XName,
       push_back(new MStar(&s, XName, YName, FluxName));
     }
 }
-
-
+#endif /* STORAGE */
 
 static StarMatchList *PSFStarsListMatch(const DbImage &DbImage1, 
 					const DbImage &DbImage2,
 					const Gtransfo *One2Two, 
 					const double &Cut)
 {
-  DicStarList l1(DbImage1.Dir()+"/psfstars.list");
-  DicStarList l2(DbImage2.Dir()+"/psfstars.list");
-  MStarList m1(l1,"xpsf","ypsf","flux");
-  MStarList m2(l2,"xpsf","ypsf","flux");
+  PSFStarList l1(DbImage1.Dir()+"/psfstars.list");
+  PSFStarList l2(DbImage2.Dir()+"/psfstars.list");
 
-  StarMatchList *matches = ListMatchCollect((const BaseStarList &)m1,
-					    (const BaseStarList &)m2, 
+  StarMatchList *matches = ListMatchCollect((const BaseStarList &)l1,
+					    (const BaseStarList &)l2, 
 					    One2Two, Cut);
   cout << " matched " << matches->size() << endl;
   //DEBUG
@@ -133,29 +132,100 @@ class GtransfoServer {
 
 };
 
+#include "reducedutils.h" // for SlowPhotomRatio et al
+
+
+struct PhotomRatioServer : public map<string,double>
+{
+  double FindPhotomRatio(const ReducedImage *Ref, const ReducedImage *Current,
+			 const GtransfoRef Transfo2Ref, double Cut)
+  {
+    // Check if we already have it : 
+    string key=Current->Name()+"@"+Ref->Name();
+    const_iterator it = find(key);
+    if (it != end()) return it->second;
+
+    // we do not have it already to compute it ... 
+    PSFStarList l1(Current->Dir()+"/psfstars.list");
+    // TODO (perhaps) : store the ref list (but file systems have caches)
+    PSFStarList l2(Ref->Dir()+"/psfstars.list");
+
+    StarMatchList *matches = ListMatchCollect((const BaseStarList &)l1,
+					      (const BaseStarList &)l2, 
+					      Transfo2Ref, Cut);
+    FluxPairList fpl;
+    for (StarMatchCIterator i = matches->begin(); i != matches->end(); ++i)
+      {
+	const PSFStar& s1 = (const PSFStar &)*(i->s1);
+	const PSFStar& s2 = (const PSFStar &)*(i->s2);
+	fpl.push_back(FluxPair(s1.flux, s1.EFlux(), s2.flux, s2.EFlux()));
+      }
+    delete matches;
+    double sig;
+    //TODO : put the sig cut into datacards
+    double nSigChi2Cut = 5;
+    double photomRatio;
+    if (!SlowPhotomRatio(fpl, nSigChi2Cut, photomRatio, sig))
+      {
+	cout << " could not find photom ratio for " << Current->Name() << endl;
+	return false;
+      }
+    // ... and store it
+    (*this)[key] = photomRatio;
+    return photomRatio;
+  };
+};
+
+static PhotomRatioServer ThePhotomRatioServer;
+
 
 static GtransfoServer TheGtransfoServer;
 
 /********************************* Model Class *****************************/
 
-Model::Model(const ReducedImage *RefImage, const Point &ObjectPos,
+Model::Model(const LightCurveFile &LCF, const Point &ObjectPos,
 	     const double OverSampling) :
-  refImage(RefImage), objectPosInImage(ObjectPos), 
-  overSampling(OverSampling), refPSF(*refImage,false)
+  refImage(LCF.GeomRef()), objectPosInImage(ObjectPos), 
+  overSampling(OverSampling), refPSF(*refImage,false), 
+  useStoredTransfos(LCF.UseStoredTransfos())
 {
   //hSizeX = 0;
   //hSizeY = 0;
+  pmStar = LCF.FindNearestPmStar(objectPosInImage);
+  // if farther than 2 pixels, it is not it.
+  if (pmStar && pmStar->Distance(objectPosInImage)>2) pmStar = NULL;
+  refMJD = LCF.RefMJD();
+  if (pmStar)
+    cout << " INFO, using proper motions x,y, pmx, pmy , refdate " 
+	 << pmStar->x << ' ' << pmStar->y << ' ' 
+	 <<pmStar->pmx << ' ' << pmStar->pmy << ' ' 
+	 <<refMJD << endl;
   refPix = nearest_integer_pos(ObjectPos);
   objectPos = objectPosInImage-refPix;
   hasGalaxy = false;
 }
 
 
-#include "reducedutils.h" // for SlowPhotomRatio et al
 #include "sestar.h"
 
 
-bool Model::FindTransfos(const ReducedImage* Current, 
+Point Model::ProperMotionOffset(const double &MJDate) const
+{
+  if (pmStar)
+    {
+      return Point(pmStar->pmx*(MJDate - refMJD),
+		   pmStar->pmy*(MJDate - refMJD));
+    }
+  return Point(0,0);
+}
+
+static std::string transfo_file_name(const ReducedImage *Ref, const ReducedImage *Cur)
+{
+  return Cur->Dir()+"/transfoTo"+Ref->Name()+".dat";
+}
+
+
+bool Model::FindTransfos(const RImageRef Current, 
 			 GtransfoRef &Transfo2Ref,
 			 GtransfoRef &TransfoFromRef, 
 			 Point &ObjectPosInCurrent,
@@ -171,42 +241,33 @@ bool Model::FindTransfos(const ReducedImage* Current,
     }
   else
     {
-      // minor tricks to avoid reloading the same ref catalog again and again
-      if (seRef.empty())
+      if (useStoredTransfos)
 	{
-	  LoadForMatch(*refImage, seRef);
+	  Transfo2Ref = GtransfoRead(transfo_file_name(refImage,Current));
+	  FitsHeader refHead(refImage->FitsName());
+	  TransfoFromRef = InversePolyTransfo(*Transfo2Ref, Frame(refHead), 0.0002);
 	}
-      BaseStarList seCur; LoadForMatch(*Current, seCur);
-      Transfo2Ref = FindTransfo(seCur, seRef, *Current, *refImage);
-      TransfoFromRef = FindTransfo(seRef, seCur, *refImage, *Current);
-      if (!Transfo2Ref) return false;
+      else
+	{
+	  // minor tricks to avoid reloading the same ref catalog again and again
+	  if (seRef.size() == 0)
+	    {
+	      if (!ListAndFitsCheckForMatch(*refImage, seRef)) return false;
+	    }
+	  SEStarList seCur;
+	  if (!ListAndFitsCheckForMatch(*Current, seCur)) return false;
+	  if (!ImageListMatch(*Current, seCur, *refImage, seRef, Transfo2Ref, TransfoFromRef))
+	    return false;
+	}
       TheGtransfoServer.StoreTransfos(Current, refImage, Transfo2Ref, TransfoFromRef);
-
     }
+
   // before altering transformations (to reduced coordinates), match
   // PSF stars for photom ratio.
   //TODO put the distance cut (1) into the datacards
-  StarMatchList *matches = PSFStarsListMatch(*Current, *refImage,
-					     Transfo2Ref, 1.);
-  FluxPairList fpl;
-  for (StarMatchCIterator i = matches->begin(); i != matches->end(); ++i)
-    {
-      const MStar& s1 = (const MStar &)*(i->s1);
-      const MStar& s2 = (const MStar &)*(i->s2);
-      fpl.push_back(FluxPair(s1.getval("flux"), s1.getval("eflux"),
-			     s2.getval("flux"), s2.getval("eflux")));
-    }
-  delete matches;
-  double sig;
-  //TODO : put the sig cut into datacards
-  double nSigChi2Cut = 5;
-  if (!SlowPhotomRatio(fpl, nSigChi2Cut, PhotomRatio, sig))
-    {
-      cout << " could not find photom ratio for " << Current->Name() << endl;
-      return false;
-    }
+  PhotomRatio = ThePhotomRatioServer.FindPhotomRatio(refImage, Current,Transfo2Ref, 1);
   
-  ObjectPosInCurrent = TransfoFromRef->apply(objectPosInImage);
+  ObjectPosInCurrent = TransfoFromRef->apply(objectPosInImage+ProperMotionOffset(Current.ModifiedJulianDate()));
   GtransfoLinShift shift(-refPix.x, -refPix.y);
   Transfo2Ref = GtransfoCompose(&shift, Transfo2Ref);
 
@@ -216,7 +277,6 @@ bool Model::FindTransfos(const ReducedImage* Current,
   //DEBUG
   //cout << " Model::FindTransfos(), expect 0,0 " 
   //     << Transfo2Ref->apply(ObjectPosInCurrent)-objectPos << endl;
-
 
   if (overSampling != 1)
     {
@@ -235,6 +295,11 @@ bool Model::FindTransfos(const ReducedImage* Current,
 bool Model::Solve(Mat &A, Vect &B, const string &U_or_L, 
 		  const bool FittingGalaxy, const int HalfKernelSize) const
 {
+  if (B.size() == 0) 
+    {
+      cout << "  Model::Solve cannot solve without parameters !" << endl;
+      return false;
+    }
   for (unsigned int j = 0; j < A.SizeY(); ++j)
   for (unsigned int i = 0; i < A.SizeX(); ++i)
     {
@@ -262,12 +327,12 @@ bool Model::Solve(Mat &A, Vect &B, const string &U_or_L,
     {
       //unsmoothed area:
       IntFrame unsmoothed((const IntFrame &) galaxyPixels);
+
       // because we have convolution AND resampling, we need to add 1      
       int smoothingLength = HalfKernelSize+1;
       cout << " Model::Solve : smoothing galaxy edges over " 
 	   << smoothingLength << endl; 
-      unsmoothed.CutMargin(smoothingLength); 
-      
+      unsmoothed.CutMargin(smoothingLength);
       int central_index = galaxyPixels.PixelIndex(1,1);
       double weight = A(central_index, central_index)*0.01;
       
@@ -506,7 +571,7 @@ void ComputePSFPixels(const ImagePSF &PSF,
       }
     }
   else
-    {
+    { 
       PIXEL_LOOP(PSFPixels,i,j)
       {
 	PSFPixels(i,j) = PSF.PSFValue(PosInImage.x, PosInImage.y, 

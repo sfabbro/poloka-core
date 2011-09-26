@@ -41,21 +41,21 @@ static IntFrame NearestIntegerFrame(const Frame &In)
 #include "array4d.h"
 
 
-Vignette::Vignette(SimPhotFit &SPF, const ReducedImage &Current):
-  ri(&Current), simPhotFit(SPF), photomRatio(1.), 
+Vignette::Vignette(SimPhotFit &SPF, const RImageRef &Current):
+  ri(Current), simPhotFit(SPF), photomRatio(1.), 
   flux(0), sky(0)
 {
-  mmjd = ri->ModifiedModifiedJulianDate();
-  mjd = ri->ModifiedJulianDate();
-  seeing = ri->Seeing();
-  exptime = ri->Exposure();
-  seeing = ri->GFSeeing();
-  sesky = ri->BackLevelNoSub();
-  sigsky = ri->SigmaBack();
+
+  //  mjd = ri->ModifiedJulianDate();
+  //  exptime = ri->Exposure();
+  //  seeing = ri->GFSeeing();
+  //  sesky = ri->BackLevelNoSub();
+  //  sigsky = ri->SigmaBack();
   size_n_seeing = SPF.vignette_size_n_seeing;
   const ObjectToFit &obj =  SPF.ObjToFit();
-  couldFitFlux = (mjd >=obj.JdMin() && mjd <= obj.JdMax());
-  imagePSF = FindImagePSF(&Current);
+  double mjd = MJD();
+  mightFitFlux = (mjd >=obj.JdMin() && mjd <= obj.JdMax());
+  imagePSF = FindImagePSF(Current);
 }
 
 
@@ -71,6 +71,7 @@ Vignette::Vignette(SimPhotFit &SPF, const ReducedImage &Current):
 bool Vignette::SetGeomTransfos()
 {
   //TODO : compute photom ratio.
+  // TODO : calculer le decalage entre position posInImage et trFromRef(simPhotFit.ObjectPos());
 
   GtransfoRef trFromRef;
   GtransfoRef tr2Ref;
@@ -91,10 +92,12 @@ bool Vignette::SetGeomTransfos()
   GtransfoLin reverseShift(shiftHere.invert());
   model2Vignette = GtransfoCompose(&reverseShift, trFromRef);
 
+
   //TODO : put "4" into the datacards : put in size_n_seeing now
-  int radius = nearest_integer(size_n_seeing * seeing+1);
-  IntFrame frame; // NULL Frame
-  frame.CutMargin(-radius); // right size
+  int radius = nearest_integer(size_n_seeing * Seeing()+1);
+  IntFrame frame(0,0,1,1); // single pixel frame
+  //  frame.CutMargin(-radius); // right size
+  frame.CutMargin(-(imagePSF->HSizeX()), -(imagePSF->HSizeY())); // borrow stamp size to PSF
   stampLimits = frame;
   convolvedStampLimits = stampLimits; // until SetKernel eventually updates
   //DEBUG
@@ -151,7 +154,7 @@ void Vignette::UpdateResiduals()
 {
   if (imagePix.Ntot() == 0) ReadPixels();
   residuals = imagePix;
-  if (simPhotFit.HasGalaxy())
+  if (simPhotFit.HasGalaxy()) // subtract it
     {
       PixelBlock resampModel(convolvedStampLimits);
       ResampleImage(simPhotFit.GalaxyPixels(), vignette2Model, resampModel);
@@ -159,18 +162,23 @@ void Vignette::UpdateResiduals()
       ConvolveImage(resampModel,kernel, convolvedGal);
       residuals -= convolvedGal;
     }
-  if (flux != 0)
+  if (flux != 0)    // subtract point source from residuals
     {
       // DEBUG
-      // Point oldPos = posInStamp;
-      posInStamp = model2Vignette->apply(simPhotFit.ObjectPos());
-      //cout << " obj pos in image " << Name() << " old " << oldPos << " new " << posInStamp << endl;
+      //  Point oldPos = posInStamp;
+      posInStamp = model2Vignette->apply(simPhotFit.ObjectPos(MJD()));
+      //      cout << " obj pos in image " << Name() << " old " << oldPos << " new " << posInStamp 
+      //	   << 	" delta " << posInStamp-oldPos << endl;
+      // DEBUG
+      //      cout << " verif " << vignette2Model->apply(posInStamp) - simPhotFit.ObjectPos(MJD()) << endl;
+
       PixelBlock psf(residuals);// borrow the frame
       GetPSF(psf);
       psf *= flux;
       residuals -= psf;
     }
-  residuals -= sky;
+  residuals -= sky;   // subtract sky
+
   // compute chi2 and number of chi2 terms this Vignette provides
   nterms = 0;
   chi2 = 0;
@@ -196,12 +204,15 @@ int Vignette::KillOutliers(const double NSigCut)
     }
   if (sw == 0) return 0;
   double mean = sf/sw;
-  double sigma = sqrt(sf2/sw-sq(mean));
-  double cut = mean + NSigCut * sigma;
+  double sigma = sf2/sw-sq(mean);
+  if (sigma<=0) return 0; // might happen with a single pixel.
+  sigma = sqrt(sigma);
+  double cuth = mean + NSigCut * sigma;
+  double cutl = mean - NSigCut * sigma;
   int outCount = 0;
   for (pr = residuals.begin(), pw = weightPix.begin() ; pr<pend; ++pr, ++pw)
     {
-      if (*pr > cut) {*pw = 0; outCount++;}
+      if (*pr > cuth  || *pr < cutl ) {*pw = 0; outCount++;}
     }
   return outCount;
 }
@@ -245,7 +256,7 @@ int Vignette::CanDo() const
     for (int i = sumFrame.xmin; i < sumFrame.xmax; ++i)
       sumw += weightPix(i,j);
   int toDo = FIT_GALAXY + FIT_SKY;
-  if (sumw > 0 && couldFitFlux) toDo += (FIT_FLUX + FIT_POS);
+  if (sumw > 0 && mightFitFlux) toDo += (FIT_FLUX + FIT_POS);
   return toDo;
 }
 
@@ -278,9 +289,9 @@ void Vignette::FillAAndB(Mat &A, Vect &B, const int ToDo)
   */
 
   // collect indices to address A and B. 
-  /*  If ToDo does not indicate that we should use itthat it makes
-   sense, we should get -1, and a nice crash should follow if we use
-   the senseless index.
+  /*  If ToDo does not indicate that we should use a certainindex, 
+      it is set to -1, and a (graceful) crash should follow if we use 
+      the senseless index.
   */
   int fluxIndex = simPhotFit.FluxIndex(this);
   int skyIndex = simPhotFit.SkyIndex(this);

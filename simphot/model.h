@@ -18,45 +18,59 @@
 */
 
 #include "gtransfo.h"
-#include "reducedimage.h"
+#include "rimage.h"
+//#include "reducedimage.h"
 #include "intpoint.h"
 #include "pixelblock.h"
 #include "imagepsf.h"
 #include "sestar.h"
 
+class LightCurveFile;
 class Mat;
 class Vect;
+class PmStar;
 
 /*! this class contains the subpart of SimPhotFit that deals with the galaxy model
   and the reference PSF. It is inherited by SimPhotFit. */
 
+
+
 class Model
 {
  private:
-  const ReducedImageRef refImage;
+  const RImageRef refImage;
+  double refMJD;
   Point objectPosInImage; // in image coordinates, initial value
   IntPoint refPix; // integer offset
   const double overSampling;
   ImagePSF refPSF;
-  BaseStarList seRef;
+  SEStarList seRef;
+  const PmStar* pmStar;
+  const bool useStoredTransfos;
+
 
  protected :
   PixelBlock galaxyPixels;
-  Point objectPos; // in reduced coordinates (objectPosInImage-refPix)
+  Point objectPos; // in reduced coordinates (objectPosInImage-refPix), gets updated when fitting
   bool hasGalaxy;
 
  public :
-  Model(const ReducedImage *RefImage, const Point &ObjectPos,
+  Model(const LightCurveFile &LCF, const Point &ObjectPos,
 	const double OverSampling=1);
 
-  //! position in reduced coordinates (eventually fitted)
-  const Point &ObjectPos() const { return objectPos;}
+  //! position in reduced coordinates (at ref date)
+  Point ObjectPos() const {return objectPos;}
 
+  //! position in reduced coordinates (at any date)
+  Point ObjectPos(const double &Mjd) const { return ObjectPos() + ProperMotionOffset(Mjd);}
+
+  //! proper motion offset (in reference coordinates)
+  Point ProperMotionOffset(const double &MJDate) const;
 
   //! position in non-reduced coordinates (eventually fitted)
   const Point ObjectPosInImage() const { return refPix+objectPos;}
 
-  const ReducedImage *RefImage() const { return refImage;}
+  const RImageRef& RefImage() const { return refImage;}
 
   //!
   bool HasGalaxy() const { return hasGalaxy;}
@@ -71,7 +85,7 @@ class Model
   //! PSF centered on current object position, in ref coordinates
   void RefPSFPixels(PixelBlock &PSFPixels) const;
 
-  bool FindTransfos(const ReducedImage* Current, 
+  bool FindTransfos(const RImageRef Current, 
 		    GtransfoRef &Transfo2Ref,
 		    GtransfoRef &TransfoFromRef, 
 		    Point &ObjectPosInCurrent,

@@ -65,14 +65,20 @@ int main(int nargs, char **args)
       if (oneDirPerObj) lcf.PleaseOneDirPerObject();
       if (calibrationCatalog != "")
 	{
+	  if (fit_type==0)
+	    {
+	      cout << " assuming you mean fit_type = 1" << endl;
+	      fit_type = 1;
+	    }
 	  success = lcf.SimPhotFitAllCalib(calibrationCatalog, outputCatalog, fit_type, Nmax);
 	}
       else success = lcf.SimPhotFitAll();
     }
   catch (PolokaException e)
     {
-      cout << e.message() << endl;
+      cout << "ERROR : " <<  e.message() << endl;
       success = false;
+      abort();
     }
   return ((success)? EXIT_SUCCESS :  EXIT_FAILURE) ;
 }

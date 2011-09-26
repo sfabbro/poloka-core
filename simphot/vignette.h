@@ -4,7 +4,8 @@
 
 #include <string>
 
-#include "reducedimage.h"
+//#include "reducedimage.h"
+#include "rimage.h"
 #include "gtransfo.h"
 #include "countedref.h"
 
@@ -24,8 +25,8 @@ class ImagePSF;
 
 class Vignette : public RefCount {
  private :
-  double mmjd, mjd, seeing, exptime;
-  double gfseeing, sesky, sigsky;
+  //  double mjd, seeing, exptime;
+  //  double gfseeing, sesky, sigsky;
   double size_n_seeing ;
   SimPhotFit &simPhotFit;
   GtransfoRef vignette2Model; // image to model transfo (stamp coordinates)
@@ -53,13 +54,13 @@ class Vignette : public RefCount {
 
  public:
 
-  ReducedImageRef ri;
+  RImageRef ri;
 
-  bool couldFitFlux;
+  bool mightFitFlux; // means the SN is "on"
   bool has_saturated_pixels;
   int n_saturated_pixels;
 
-  Vignette(SimPhotFit &SPF,const ReducedImage &Current);
+  Vignette(SimPhotFit &SPF,const RImageRef &Current);
 
   string Name() const { return ri->Name();}
 
@@ -90,14 +91,13 @@ class Vignette : public RefCount {
 
 
 
-  double MMJD() const { return mmjd;}
-  double MJD() const { return mjd;}
-  double Seeing() const {return seeing;}
-  double PhotomRatio() const {return photomRatio ;}
-  double ExpTime() const { return exptime;}
-  double GFSeeing() const {return gfseeing;}
-  double SESky() const {return sesky ;}
-  double SIGSky() const { return sigsky;}
+  double MJD() const { return ri.ModifiedJulianDate();}
+  double Seeing() const {return ri.Seeing();}
+  double PhotomRatio() const {return photomRatio;}
+  double ExpTime() const { return ri.Exposure();}
+  double GFSeeing() const {return ri.GFSeeing();}
+  double SESky() const {return ri.BackLevelNoSub() ;}
+  double SIGSky() const { return ri.SigmaBack();}
  private :
 
   void ComputeGalaxyDerivatives(Array4D &);

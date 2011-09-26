@@ -12,12 +12,14 @@ static ReducedImage* read_image(const string& line)
   RemovePattern(words.front()," ");
 
   ReducedImage *red = new ReducedImage(words.front());
+  /*
   if (!red->ActuallyReduced())
     {
       throw(LightCurveSyntaxError(line, " image is not reduced " ));
       return NULL;
     }
   //cout << "mmjd " << words.front() << " " << red->ModifiedModifiedJulianDate() << endl;
+  */
   return red;
 }
 
@@ -32,13 +34,13 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
   writeVignettes = false;
   writeMatrices = false ; 
   subDirPerObject = false;
-
+  useProperMotions = false;
 
   ifstream stream(LCFileName.c_str());
   if (!stream)
     throw(PolokaException(" lightfile \""+LCFileName+"\" could not be opened"));
 
-  bool objin=false, rimin=false, phoin=false;
+  bool objin=false, rimin=false, phoin=false, pmlistin=false;
   string line;
  
   while (getline(stream, line))
@@ -46,13 +48,16 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
       if (line[0] == '#' || line.length() == 0) continue; 
       
       if (line.find("OBJECTS") != line.npos)
-	{ rimin=false; objin=true; phoin=false;  continue; }
+	{ rimin=false; objin=true; phoin=false;  pmlistin = false; continue; }
       
       if (line.find("IMAGES") != line.npos)   
-	{ rimin=true;  objin=false; phoin=false; continue; }
+	{ rimin=true;  objin=false; phoin=false;  pmlistin = false; continue; }
 
       if (line.find("PHOREF") != line.npos)   
-	{ rimin=false;  objin=false; phoin=true; continue; }
+	{ rimin=false;  objin=false; phoin=true; pmlistin = false; continue; }
+
+      if (line.find("PMLIST") != line.npos)
+	{ rimin=false;  objin=false; phoin=false; pmlistin = true; continue;  }
 
       if (objin) 
 	{
@@ -86,6 +91,16 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
 	    }
 	  continue; 
 	}
+      if (pmlistin)
+	{
+	  pmStarListFileName = line;
+	  RemovePattern(pmStarListFileName," ");
+	  useProperMotions = true;
+	  continue;
+	}
+
+      // if we get here, we have a problem
+      throw(LightCurveSyntaxError(line, "could not interpret line"));
     }// end of parsing
   stream.close();
 
@@ -94,9 +109,6 @@ LightCurveFile::LightCurveFile(const string &LCFileName)
       cout << " No Geom REf provided (PHOREF card...) : cannot fit " << endl;
       throw (LightCurveSyntaxError(""," lightfile \""+LCFileName+"\" does not contain a PHOREF line"));
     }
-
-
-
 }
 
 
@@ -205,4 +217,17 @@ bool  LightCurveFile::SimPhotFitAll(double vignette_size_n_seeing) const
 	}
     }// end loop on objects
   return status;
+}
+
+
+
+const PmStar* LightCurveFile::FindNearestPmStar(const Point &Where) const
+{
+  if (!useProperMotions) return NULL;
+  if (pmStarList.size() == 0) 
+    {
+      cout << " INFO : reading " << pmStarListFileName << " for proper motions " << endl;
+      ((PmStarList &) pmStarList).read(pmStarListFileName);  // will throw if file is missing
+    }
+  return pmStarList.FindClosest(Where.x, Where.y);
 }

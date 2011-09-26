@@ -32,7 +32,7 @@ class ImagePSFServer
 
   ~ImagePSFServer()
   {
-    cout << " deleting ImagePSF's" << endl;
+    //    cout << " deleting ImagePSF's" << endl;
     for (iterator i = psfMap.begin(); i != psfMap.end(); ++i) delete i->second;
   }
 

@@ -17,6 +17,7 @@ int DecodeFitType(const int FitType)
   int toDo = FIT_SKY;
   switch (FitType)
     {
+    case -2 : toDo = FIT_FLUX + FIT_POS; break; // NO SKY
     case -1 : toDo += (FIT_FLUX + FIT_GALAXY); break; 
     case 0 : toDo += (FIT_FLUX + FIT_GALAXY + FIT_POS); break; 
     case 1 : toDo += (FIT_FLUX + FIT_POS); break; 
@@ -54,7 +55,7 @@ static string todo_2_string(const int ToDo)
 /*************************** SimPhotFit class routines *****************/
 
 SimPhotFit::SimPhotFit(const ObjectToFit &Obj, const LightCurveFile &LCFile):
-  Model(LCFile.GeomRef(), Obj),
+  Model(LCFile, Obj),
   objToFit(Obj), lcFile(LCFile)
 { 
   vignette_size_n_seeing = 4. ;// vignette size in seeing
@@ -112,11 +113,11 @@ bool SimPhotFit::DoTheFit()
 
 bool SimPhotFit::BuildVignettes()
 {
-  const ReducedImageList &images = lcFile.Images();
+  const RImageList &images = lcFile.Images();
   bool willFitGal = (toDo & FIT_GALAXY);
-  for (ReducedImageCIterator i = images.begin(); i != images.end(); ++i)
+  for (RImageCIterator i = images.begin(); i != images.end(); ++i)
     {
-      const ReducedImage &current = **i;
+      const RImageRef &current = *i;
       Vignette *v = new Vignette(*this, current);
       // we need the convolution kernel only if we fit the galaxy
       if (v->SetGeomTransfos() && (!willFitGal || v->SetKernel()))
@@ -126,7 +127,7 @@ bool SimPhotFit::BuildVignettes()
 	}
       else
 	{
-	  cout << " dropping image " << current.Name() << endl;
+	  cout << " dropping image " << current->Name() << endl;
 	  delete v;
 	}
     }
@@ -277,7 +278,7 @@ bool SimPhotFit::OneIteration(const int CurrentToDo)
 	  continue;
 	}
       int toDo = toDoMap[&v];
-      cout << v.Name() << ": " << todo_2_string(toDo) << endl;
+      //      cout << v.Name() << ": " << todo_2_string(toDo) << endl;
       v.FillAAndB(A,B,toDoMap[&v]);
     }
 
@@ -430,8 +431,8 @@ int SimPhotFit::FluxIndex(const Vignette* V) const
 }
 
 
- void SimPhotFit::DispatchOffsets(const Vect& Offsets, const double Fact,
-				  const bool Verbose)
+void SimPhotFit::DispatchOffsets(const Vect& Offsets, const double Fact,
+				 const bool Verbose)
 {
   if (nParamGal)
     {
@@ -474,7 +475,7 @@ int SimPhotFit::FluxIndex(const Vignette* V) const
       Point delta(Fact * Offsets(posIndex), Fact * Offsets(posIndex+1));
       objectPos = oldPos + delta;
       if (Verbose)
-	cout << " new position : " << objectPos << " delta " << delta << endl;
+	cout << " new position : " << ObjectPosInImage() << " delta " << delta << endl;
     }
   UpdateResiduals();
 }
@@ -504,7 +505,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
 
   ofstream lc((Dir+"lc2fit.dat").c_str());
   lc << "@INSTRUMENT MEGACAM" << endl;
-  lc << "@BAND " << RefImage()->Band() << endl;
+  lc << "@BAND " << RefImage().Band() << endl;
   lc << "@MAGSYS AB" << endl;
   lc << "@COORD_X " << posInImage.x << endl;
   lc << "@COORD_Y " << posInImage.y << endl;
@@ -575,6 +576,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
   lstream << "# varx : variance in x position (pixels) " << endl;
   lstream << "# vary : variance in y position (pixels) " << endl;
   lstream << "# varsky : variance in sky measurement " << endl;
+  lstream << "# mjd : modified julian date of the observation" << endl; 
   lstream << "#end" << endl;
 
   for (VignetteCIterator i = vignetteList.begin(); i != vignetteList.end(); ++i)
@@ -608,6 +610,8 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
 	      << setw(10) << setprecision(7) << sigPosX  << ' ' 
 	      << setw(10) << setprecision(7) << sigPosY << ' '
 	      << setw(10) << setprecision(7) << sigSky << ' '
+	      << setw(13) << setprecision(10) << v->MJD() << ' '
+
 	      << endl;
     }
 
@@ -723,7 +727,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
 	  const Vignette *v = *it;
 	  if (fluxMap.find(v) != fluxMap.end())
 	    {
-	      if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
+	      if ((toDo&FIT_FLUX)&&(v->mightFitFlux))
 		i++;
 	    }
 	}
@@ -736,7 +740,7 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
 	  const Vignette *v = *it;
 	  if (fluxMap.find(v) != fluxMap.end())
 	    {
-	      if ((toDo&FIT_FLUX)&&(v->couldFitFlux))
+	      if ((toDo&FIT_FLUX)&&(v->mightFitFlux))
 		{
 		  vm(0,i)= v->GetFlux();
 		  cout << "Flux=" << v->GetFlux() << endl; 
@@ -768,7 +772,6 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
   Stream << "#error :" << endl;
   Stream << "#sky :" << endl;
   Stream << "#skyerror :" << endl;
-  Stream << "#name : dbimage name" << endl;
   Stream << "#mjd : obs date " << endl;
   Stream << "#seeing: " << endl;
   Stream << "#exptime: " << endl;
@@ -798,6 +801,7 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
   Stream << "#chi2pdf : chi2 of PSF photometry per dof" << endl;
   Stream << "#satur : 1 if some pixels are saturated" << endl;
   Stream << "#nsatur : number of pixels  saturated" << endl;
+  Stream << "#name : dbimage name" << endl;
   Stream << "#end" <<endl;
   Stream << setprecision(12);
 }
@@ -806,7 +810,7 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
 
 void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar) const 
 {
-  const string band = RefImage()->Band();
+  const string band = RefImage().Band();
   double mag=0, mage=0;    
   if (band=="u") {mag = CStar.u; mage=CStar.ue;};
   if (band=="g") {mag = CStar.g; mage=CStar.ge;};
@@ -851,8 +855,8 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
       Stream << fittedPos.x << ' ' << fittedPos.y << ' '
 	     << sigPosX  << ' ' << sigPosY << ' '
 	     << v->GetFlux() << ' ' << sigFlux << ' '
-	     << v->GetSky() << ' ' << sigSky << ' '
-	     << dbim_name << ' ' << v->MJD() << ' ' 
+	     << v->GetSky() << ' ' << sigSky << ' ' 
+	     << v->MJD() << ' ' 
 	     << v->Seeing() << ' '
   	     << v->ExpTime() << ' '
        	     << v->PhotomRatio() << ' ' 
@@ -872,6 +876,7 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
 	     << CStar.id << ' ' 
 	     << chi2Vignette << ' ' << chi2Glob << ' '
 	     << v->has_saturated_pixels << ' ' <<  v->n_saturated_pixels << ' '
+	     << ' '<< dbim_name 
 	     << endl;
     }
 }
@@ -891,9 +896,9 @@ Mat SimPhotFit::FillNightMat() const {
       const Vignette *v = *itVig;
       if (fluxMap.find(v) != fluxMap.end())
 	{ 
-	  if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux)) 
+	  if((toDo&FIT_FLUX)&&((*itVig)->mightFitFlux)) 
 	    {
-	    mjd = (*itVig)->ri->ModifiedJulianDate();
+	    mjd = (*itVig)->ri.ModifiedJulianDate();
 	    nimages++;
 	    isinnight=false;
 	    for(unsigned int day=0;day<nightdates.size(); ++day) 
@@ -929,9 +934,9 @@ Mat SimPhotFit::FillNightMat() const {
        const Vignette *v = *itVig;
        if (fluxMap.find(v) != fluxMap.end())
 	{
-	  if((toDo&FIT_FLUX)&&((*itVig)->couldFitFlux))
+	  if((toDo&FIT_FLUX)&&((*itVig)->mightFitFlux))
 	    {
-	      mjd = (*itVig)->ri->ModifiedJulianDate();
+	      mjd = (*itVig)->ri.ModifiedJulianDate();
 	      for(unsigned int day=0;day<nightdates.size(); ++day)
 		{
 		  if(fabs(mjd-nightdates[day])<timediff)
