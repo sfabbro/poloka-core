@@ -1,6 +1,7 @@
 
 #include <string>
 #include "image.h"
+#include "fitsslice.h"
 
 /*! \file 
 
@@ -22,10 +23,14 @@ class ImageBack {
   public:
   /*! The constructor for a square Mesh (MeshStepX=MeshStepY). */
      ImageBack(Image const &SourceImage, int MeshStep, 
-	       const Image* Weight=NULL);
+	       const Image* Weight=NULL, int filter_half_width=1);
   /*! The constructor for a rectangular Mesh (MeshStepX!=MeshStepY). */
      ImageBack(Image const &SourceImage, int MeshStepX, int MeshStepY,
-	       const Image* Weight=NULL);
+	       const Image* Weight=NULL, int filter_half_width=1);
+  /*! constructor using slices */
+     // will open the images directly in slices
+     ImageBack(const string FileSourceName, int MeshStepX, int MeshStepY,
+	       const string FileWeightName, int filter_half_width=1);
 
      int Nx() const { return nx;}
      int Ny() const { return ny;}
@@ -63,11 +68,14 @@ class ImageBack {
   private :
      int meshStepX; /* in number of pixels of the source image */
      int meshStepY; /* in number of pixels of the source image */
+     int filterHalfWidth ;
      int nx,ny;
      int nxImage, nyImage;
      Image backValue;
      Image backRms;
 
      void do_it(const Image &SourceImage, const Image* Weight);
+     void do_it_slices(FitsSlice & SourceImage, FitsSlice & WeightImage);
+
 };
      

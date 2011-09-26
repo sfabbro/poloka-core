@@ -7,11 +7,16 @@
 #include "imageback.h"
 #include "imageinterpolation.h"
 
+void  Apply_Median_Filter(Image & backValue, Image & backRms, int filter_half_width) ;
+
 ImageBack::ImageBack(Image const &SourceImage, int MeshStep, 
-		     const Image*Weight) : 
+		     const Image*Weight, int filter_half_width) :
+  filterHalfWidth(filter_half_width),
      meshStepX(MeshStep) , 
      meshStepY(MeshStep) , 
      //     sourceImage(SourceImage),
+     nxImage(SourceImage.Nx()),
+     nyImage(SourceImage.Ny()),
      nx(int(ceil(double(SourceImage.Nx())/double(meshStepX)))),
      ny(int(ceil(double(SourceImage.Ny())/double(meshStepY)))),
      backValue(nx,ny),
@@ -22,10 +27,13 @@ ImageBack::ImageBack(Image const &SourceImage, int MeshStep,
 }
 
 ImageBack::ImageBack(Image const &SourceImage, int MeshStepX, 
-		     int MeshStepY, const Image* Weight) : 
+		     int MeshStepY, const Image* Weight, int filter_half_width) : 
+  filterHalfWidth(filter_half_width),
      meshStepX(MeshStepX) , 
      meshStepY(MeshStepY) , 
      //     sourceImage(SourceImage),
+     nxImage(SourceImage.Nx()),
+     nyImage(SourceImage.Ny()),
      nx(int(ceil(double(SourceImage.Nx())/double(meshStepX)))),
      ny(int(ceil(double(SourceImage.Ny())/double(meshStepY)))),
      backValue(nx,ny),
@@ -36,6 +44,25 @@ ImageBack::ImageBack(Image const &SourceImage, int MeshStepX,
 }
 
 
+#include "fitsslice.h"
+ImageBack::ImageBack(const string FileSourceName, int MeshStepX, int MeshStepY,
+	       const string FileWeightName, int filter_hw) :
+  filterHalfWidth(filter_hw), 
+     meshStepX(MeshStepX) , 
+     meshStepY(MeshStepY) ,
+     nxImage(FitsHeader(FileSourceName).KeyVal("NAXIS1")),
+     nyImage(FitsHeader(FileSourceName).KeyVal("NAXIS2")),
+     nx(int(ceil(double(FitsHeader(FileSourceName).KeyVal("NAXIS1"))/double(meshStepX)))),
+     ny(int(ceil(double(FitsHeader(FileSourceName).KeyVal("NAXIS2"))/double(meshStepY)))),
+     backValue(nx,ny),
+     backRms(nx,ny) 
+{ 
+ 
+  FitsSlice SourceImage(FileSourceName,MeshStepY,0);
+  FitsSlice WeightImage(FileWeightName,MeshStepY,0);
+
+  do_it_slices(SourceImage,WeightImage);
+}
 
 
 
@@ -186,13 +213,28 @@ static void  backguess(const Histo1d &Histo, double &mean, double &sigma)
    double qzero = Histo.Minx()+binSize*0.5;
 
    // does (fabs(sigma/(sig*binSize)-1) < 0.0) ever happen ??
+   //  mean = fabs(sig)>0.0? (fabs(sigma/(sig*binSize)-1) < 0.0 ?
+   //            qzero+mea*binSize
+   //            :(fabs((mea-med)/sig)< 0.3 ?
+   //              qzero+(2.5*med-1.5*mea)*binSize
+   //            :qzero+med*binSize))
+   //                  :qzero+mea*binSize;                   :qzero+mea*binSize;
 
-   mean = fabs(sig)>0.0? (fabs(sigma/(sig*binSize)-1) < 0.0 ?
-               qzero+mea*binSize
-                :(fabs((mea-med)/sig)< 0.3 ?
-                  qzero+(2.5*med-1.5*mea)*binSize
-                 :qzero+med*binSize))
-                       :qzero+mea*binSize;
+   // DH : M. BETOULE PATCH
+   if (fabs(sig)>0.0){
+     if (fabs((mea-med)/sig)< 0.3) // non crowded
+       {
+	 mean = qzero+mea*binSize;
+       }
+     else //crowded
+       {
+	 mean = qzero+(2.5*med-1.5*mea)*binSize; // Sextractor's approximation of the mode 
+       }
+   }
+   else
+     {
+       mean = qzero+mea*binSize;
+     }
 
    sigma = sig*binSize;
   }
@@ -246,8 +288,6 @@ static void do_one_pad(const Image &SourceImage, const Image *Weight, const Fram
 
 void ImageBack::do_it(const Image &SourceImage, const Image* Weight)
 {
-  nxImage = SourceImage.Nx();
-  nyImage = SourceImage.Ny();
 for (int j=0; j<ny; j++)
   {
   int height = (j<ny-1) ? meshStepY : SourceImage.Ny() - j *meshStepY;
@@ -263,6 +303,50 @@ for (int j=0; j<ny; j++)
     }
   }
 
+ Apply_Median_Filter(backValue, backRms, filterHalfWidth) ;
+} 
+
+
+
+
+
+
+
+
+void ImageBack::do_it_slices(FitsSlice & SourceImage, FitsSlice & WeightImage)
+{
+  // normalement,autant de slices que de ny
+  int j = 0 ;
+  do {
+  
+    int height = (j<ny-1) ? meshStepY : (nyImage - j *meshStepY);
+    if ( height != SourceImage.SliceSize() )
+      {
+	cerr << "erreur in slicing at line : " << SourceImage.ImageJ(0) <<  " computed height : " << height << " (j="<< j << " /ny= " << ny << ") slice height " << SourceImage.SliceSize() << endl ;
+      }
+    for (int i=0; i<nx; i++)
+      {
+	int width = (i<nx-1)? meshStepX : (SourceImage.Nx()- i*meshStepX);
+	int startx = i*meshStepX;
+	double mean, sigma;
+	do_one_pad(SourceImage, &WeightImage, Frame(startx, 0, startx+width, height),mean, sigma);
+	backValue(i,j) = mean;
+	backRms(i,j) = sigma;
+      }
+    j++;
+  }
+  while (SourceImage.LoadNextSlice() && WeightImage.LoadNextSlice()) ;
+  cerr << "Nslices prevues : " << j << " ny : " << ny << endl ;
+
+//
+ Apply_Median_Filter(backValue, backRms, filterHalfWidth) ;
+}
+
+
+void  Apply_Median_Filter(Image & backValue, Image & backRms, int filter_half_width)
+{
+  int nx = backValue.Nx();
+  int ny = backValue.Ny();
 // fill in bad values (where the weight is 0 on (almost) a whole pad)
  Image back2(backValue); 
   for (int j=0; j<ny; ++j)
@@ -313,9 +397,42 @@ for (int j=0; j<ny; j++)
   backValue = back2;
 
   // sextractor applies a 'median' filter on average and sigma maps (with a half width of one)
-  backValue.MedianFilter(1);
-  backRms.MedianFilter(1);
-} 
+  backValue.MedianFilter(filter_half_width);
+  backRms.MedianFilter(filter_half_width);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Image*  ImageBack::BackgroundImage(const Frame &AFrame) const
 {

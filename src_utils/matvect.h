@@ -24,10 +24,13 @@ class Mat;
 // (actually this is not compulsory with dposv (see 'man dposv') but we do it
 // for consistency).
 // You just need to fill half (n*(n+1)/2 parameters) of the matrix
-// if you have filled matrix M parameters for which y>=x (with M(x,y)=...), use UorL="L"
+// if you have filled matrix M parameters for which x>=y (with M(x,y)=...), use UorL="L"
 // else use UorL="U"
 // Matrix A is modified in this routine (also B which is at the end the solution X)
-int cholesky_solve(Mat &A, Vect &B, const char* UorL = "L");
+int cholesky_solve(Mat &A, Vect &B, const char* UorL ); // "L" <=> A(i,j)!=0 for i>=j 
+
+//! same as above but for a set of right hand sides.
+int cholesky_solve(Mat &A, Mat &B, const char* UorL);
 
 /* Inverts matrix A using the factorization done in cholesky_solve
  Uses lapack dpotri_
@@ -193,7 +196,7 @@ class Mat {
   
 
   //! call it with the same argument as cholesky_sove or cholesky_invert
-  void Symmetrize(const char* UorL = "L");
+  void Symmetrize(const char* UorL);
   
   // inverts a posdef matrix using Cholesky factorization from lapack.
   int CholeskyInvert(const char *UorL);

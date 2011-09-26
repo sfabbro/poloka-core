@@ -95,7 +95,7 @@ int cholesky_solve(Mat &A, Vect &B, const char* UorL)
     abort();
   }
   if(B.Size() != A.SizeX()) {
-    cout << "error in matvect.cc, cholesky_solve Vector B must have a dimention B.Size()=A.SizeY() and you have B.Size(),A.SizeY() = "
+    cout << "error in matvect.cc, cholesky_solve Vector B must have a dimension B.Size()=A.SizeY() and you have B.Size(),A.SizeY() = "
 	 << B.Size() << "," << A.SizeY() << endl;
     abort();
   }
@@ -117,6 +117,40 @@ int cholesky_solve(Mat &A, Vect &B, const char* UorL)
 
   return info;
 }
+
+int cholesky_solve(Mat &A, Mat &B, const char* UorL)
+{
+#ifdef FNAME
+  cout << " >  cholesky_solve" << endl;
+#endif  
+
+  if(A.SizeX() != A.SizeY() || A.SizeX()<=0) {
+    cout << "error in matvect.cc, cholesky_solve Matrix A must be symmetric and you have nx,ny = "
+	 << A.SizeX() << "," << A.SizeY() << endl;
+    abort();
+  }
+  if(B.SizeX() != A.SizeX()) {
+    cout << "error in matvect.cc, cholesky_solve Vector B must have a dimension B.SizeX()=A.SizeY() and you have B.SizeX(),A.SizeY() = "
+	 << B.SizeX() << "," << A.SizeY() << endl;
+    abort();
+  }
+
+  double *a = A.NonConstData();
+  double *b = B.NonConstData();  
+  int n = B.SizeX();
+  int nhrs = B.SizeY(), info = 0;
+  char uorl[6]; strncpy(uorl,UorL,6);
+
+  dposv_(uorl, &n, &nhrs, a, &n, b, &n, &info);
+
+  if (info != 0) 
+    cerr << " cholesky_solve(" << a << "," << b << "," << n
+	 << ") : Warning: Cholesky factorization failure . info =" 
+	 << info <<  " (>0 is not pos.def)" << endl;
+
+  return info;
+}
+
 
 //assumes that the matrix has been factorized by a call to cholesky_solve.
 int cholesky_invert(Mat &A, const char* UorL)
@@ -215,7 +249,7 @@ int symetric_diagonalize(Mat& A, Vect& EigenVals, const char* UorL)
 }
 
 
-
+#ifdef STORAGE 
 int posdef_invert(Mat &A, const char* UorL)
 {
   Vect B(A.SizeX());
@@ -224,7 +258,7 @@ int posdef_invert(Mat &A, const char* UorL)
     info = cholesky_invert(A, UorL);
   return info;
 }
-
+#endif
 
 #define DO10(A) A;A;A;A;A;A;A;A;A;A;
 
@@ -786,9 +820,8 @@ int Mat::writeASCII(ostream& Stream) const {
   Stream << setprecision(10);
   for(unsigned int j=0;j<ny;j++) {
     //Stream << "0.." << nx-1 << "," << j << ": ";
-    for(unsigned int i=0;i<nx;i++) {
-      Stream << " " << float((*this)(i,j));
-    }
+    for(unsigned int i=0;i<nx;i++)
+      Stream << " " << (*this)(i,j);
     Stream << endl;
   }
   Stream << setprecision(oldprec);
@@ -910,6 +943,7 @@ void Mat::operator *=(const double Right)
     *a *= Right;
 }
 
+/* OLD VERY SLOW
 Mat Mat::operator *(const Mat& Right) const
 {
   if(nx != Right.SizeY()) {
@@ -927,6 +961,93 @@ Mat Mat::operator *(const Mat& Right) const
     }
   }
   return res;
+}
+*/
+
+
+extern "C" {
+void dgemm_(char &transa,
+	    char &transb,
+	    int &m, // number of rows of op(A)
+	    int &n, // number of cols of op(B)
+	    int &k, // number of columns of op(a) and numb of rows of op(B)
+	    double &alpha,
+	    const double *A, // const invented from the doc...
+	    int &lda, // leading dim of A
+	    const double *B, // const invented form the doc...
+	    int &ldb,
+	    double &beta,
+	    double *C,
+	    int &ldc);
+	    
+  // returns C = alpha A*B + beta C
+  
+  // note : if A(x,y)  in blas parlance :
+  // number of rows = nx, number of columns = ny
+  // which means that the "printout" reads (!= ours)
+  // for (int i=0; i<nx; ++i)
+  //   {
+  //   for (int j=0;j<ny;++j)
+  //       cout << A(i,j) << ' ';
+  //   cout << endl;
+  //   }
+
+}
+
+
+Mat Mat::operator *(const Mat& Right) const
+{
+  if(nx != Right.ny) {
+    cout << "Mat::operator *= ERROR nx != Right.ny" << endl;
+    abort();
+  }
+  Mat ResultMat(Right.nx,ny);
+
+#define USE_DGEMM
+#ifdef USE_DGEMM
+  /* The definition chosen originally conflicts with usual definitions
+      for(unsigned int k=0;k<nx;++k) {
+	res(i,j) += (*this)(k,j)*Right(i,k);
+
+	we will get the expected behaviour from DGEMM by swapping A and B
+  */
+
+  char transa='N';
+  char transb='N';
+  int m = Right.nx; // 
+  int n = ny; //
+  int k = nx; // = Right.ny 
+  double alpha = 1;
+  int lda = Right.nx;
+  int ldb = nx;
+  double beta = 0;
+  int ldc = ResultMat.nx;
+  
+  if (Right.nx == 0) // we should throw an exception
+    {
+      std::cerr << " in matrix multiplication : Right.nx == 0 cannot work " << std::endl;
+      abort ();
+    }
+	
+
+  dgemm_(transa,transb,m,n,k,
+	 alpha, Right.data,lda, 
+	 data, ldb, 
+	 beta, ResultMat.data, ldc);
+
+#else
+  double *res = ResultMat.data;
+  for(size_t j=0;j<ResultMat.ny;++j) {
+    for(size_t i=0;i<ResultMat.nx;++i,++res) {  
+      double *left  = & data[j*nx];
+      double *right = & Right.data[i];
+      for(size_t k=0;k<nx;++k,++left,right+=Right.nx) {
+	*res += (*left)*(*right);
+      }
+    }
+  }
+#endif /*USE_DGEMM  */
+  return ResultMat;
 }
 
 Vect Mat::operator *(const Vect& Right) const
@@ -1287,9 +1408,8 @@ int Vect::writeASCII(const std::string &FileName) const
 
 int Vect::writeASCII(ostream& Stream) const {
   Stream << n << endl;
-  for(unsigned int i=0;i<n;i++) {
-    Stream << float((*this)(i)) << endl;
-  }
+  for(unsigned int i=0;i<n;i++)
+    Stream << (*this)(i) << endl;
   return 0;
 }
 

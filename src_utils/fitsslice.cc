@@ -111,6 +111,11 @@ FitsOutSlice::FitsOutSlice(const string FileName, const FitsHeader &ModelHead,
   sliceSize = SliceYSize;
   Image::allocate(nx, sliceSize);
   ySliceStart = 0;
+  if (sliceSize >= nyTotal)
+    {
+      sliceSize = nyTotal;
+      lastSlice = true;
+    }
 }
 
 int FitsOutSlice::WriteCurrentSlice()
@@ -122,6 +127,10 @@ int FitsOutSlice::WriteCurrentSlice()
   int status = write_pixels(ySliceStart, nRowWrite, data);
   /* take the part at the end (corresponding to the overlap between
      current slice and next one and place it at the beginning) */
+  //lastslice updated at the end of write_pixels
+  // if lastslice is true, then we've just written the lastslice
+  if (! LastSlice())
+    {
   int nbyte_copy = n_pix_overlap*sizeof(Pixel);
   if (nbyte_copy) memcpy(data, data + (nRowWrite-overlap)*nx, nbyte_copy);
   // clear the remainder
@@ -136,6 +145,7 @@ int FitsOutSlice::WriteCurrentSlice()
   cout << " actually written " <<  nRowWrite << " rows " << endl;
   cout << " zeroed  " <<  nbyte_zero/(nx*sizeof(Pixel)) << " rows " << endl;
 #endif
+    }
   // nRowRead differs on output for the last slice : assign the sliceSize: 
   //  sliceSize = overlap + nRowRead;
   return status;
