@@ -160,11 +160,21 @@ int main(int argc, char **argv)
 	}
       else
 	{
-	  char line[2048];
+	  char line[8192];
 	  char* remainder = NULL;
-	  while(fgets(line,2048,list))
+	  while(fgets(line,8192,list))
 	    {
-	      if (line[0] == '#' || line[0] == '@') {cout << line; continue;}
+	      if (line[0] == '#')
+		{
+		  if (strstr(line,"format"))
+		    {
+		      int format = DecodeFormat(line,"BaseStar");
+		      if (format !=2)
+			cerr << " WARNING : this code does not convert position errors ... yet. " << endl;
+		    }
+		  cout << line; continue;
+		}
+	      if (line[0] == '@') {cout << line; continue;}
 	      char *next_stuff = line;
 	      x = strtod(line, &next_stuff);
 	      if (next_stuff != line) y = strtod(next_stuff, &remainder);
