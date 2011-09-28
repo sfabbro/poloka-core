@@ -11,6 +11,7 @@
 #include <stdlib.h> // for atof
 #include <string.h>// for strlen
 #include <cstdio>
+#include "polokaexception.h"
 
 bool GlobalVal::HasKey(const string &Key) const
 {
@@ -30,6 +31,7 @@ bool GlobalVal::GenericAddKey(const string& Key, const T& Values) {
     {
       cerr << " cannot have twice the same key val in GlobalVal " << Key 
 	   << endl;
+      throw(PolokaException(" cannot have twice the same key val in GlobalVal "+Key));
       return false;
     }
     
@@ -56,6 +58,7 @@ bool GlobalVal::AddKey(const string &Key, const vector<string> &Values)
     {
       cerr << " cannot have twice the same key val in GlobalVal " << Key 
 	   << endl;
+      throw(PolokaException(" cannot have twice the same key val in GlobalVal "+Key));
       return false;
     }
   
@@ -77,6 +80,7 @@ bool GlobalVal::AddKey(const string &Key, const vector<double> &Values)
     {
       cerr << " cannot have twice the same key val in GlobalVal " << Key 
 	   << endl;
+      throw(PolokaException(" cannot have twice the same key val in GlobalVal "+Key));
       return false;
     }
   
@@ -110,7 +114,8 @@ string GlobalVal::getStringValue(const string& Key) const
   const_iterator i = find(Key);
   if (i == end())
     {
-      cerr << " could not read key " << Key << endl;
+      cerr << " could not find key " << Key << endl;
+      throw(PolokaException(" could not find key "+Key));
       return "";
     }
   else return i->second[0];
@@ -122,9 +127,8 @@ vector<string> GlobalVal::getStringValues(const string& Key) const
   const_iterator i = find(Key);
   if(i == end())
     {
-      cerr << " could not read key " << Key << endl;
-      vector<string> ret;
-      return ret;
+      cerr << " could not find key " << Key << endl;
+      throw(PolokaException(" could not find key "+Key));
     }
   return i->second;
 }
@@ -135,70 +139,94 @@ double GlobalVal::getDoubleValue(const string &Key) const
   const_iterator i = find(Key);
   if (i == end())
     {
-      cerr << " could not read key " << Key << endl;
-      return 99;
+      cerr << " could not find key " << Key << endl;
+      throw(PolokaException(" could not find key "+Key));
     }
   else return atof(i->second[0].c_str());
 }
 
 void GlobalVal::setDoubleValue(const string &Key, double val) 
 {
-  iterator i = find(Key);
-  if (i == end())
-    {
-      cerr << " could not read key " << Key << endl;
-      return ;
-    }
-  else
-    {
-      char c[100] ;
-      sprintf(c,"%f",val);
-      string sc = c ;
-      i->second[0] = c ;
-    }
-  return ;
+  vector<string>& vals=(*this)[Key];
+  vals.clear();
+  char c[100] ;
+  sprintf(c,"%f",val);
+  vals.push_back(c);
 }
 
-
-void GlobalVal::setDoubleValues(const string &Key, const vector<double>& vals) 
+void GlobalVal::setDoubleValues(const string &Key, const vector<double>& Vals) 
 {
-  iterator i = find(Key);
-  if (i == end())
-    {
-      cerr << " could not read key " << Key << endl;
-      return ;
-    }
-  else
-    {
-      i->second.clear();
-      for (size_t iv=0; iv<vals.size(); iv++) {
-	char c[100] ;
-	sprintf(c,"%f",vals[iv]);
-	string sc = c;
-	i->second.push_back(sc);
-      }
-    }
-  return ;
+  vector<string>& vals=(*this)[Key];
+  vals.clear();
+  for (size_t iv=0; iv<Vals.size(); iv++) {
+    char c[100] ;
+    sprintf(c,"%f",Vals[iv]);
+    vals.push_back(c);
+  }
 }
 
 
 vector<double> GlobalVal::getDoubleValues(const string &Key) const
 {
-  vector<double> ret;
   const_iterator i = find(Key);
   if (i == end())
     {
-      cerr << " could not read key " << Key << endl;
-      return ret;
+      cerr << " could not find key " << Key << endl;
+      throw(PolokaException(" could not find key "+Key));
     }
-  unsigned int k;
-  for(k=0;k<i->second.size();k++)
+  vector<double> ret;
+  for(unsigned int k=0;k<i->second.size();k++)
     ret.push_back(atof(i->second[k].c_str()));
   return ret;
 }
 
+void GlobalVal::AppendTo(GlobalVal & glob) const
+{
+for (const_iterator i = begin(); i != end(); ++i)
+    {
+      //      const vector<double> &values = i->second;
+      const vector<string> &values = i->second;
+      if (values.size() == 0) glob.AddKey( i->first, "") ;
+      else
+	glob.AddKey( i->first, values) ;
+    }
+}
+
+
+void GlobalVal::AppendTo(map<string, string>& globalKeys) const
+{
+for (const_iterator i = begin(); i != end(); ++i)
+    {
+      //      const vector<double> &values = i->second;
+      const vector<string> &values = i->second;
+      if (values.size() == 0) globalKeys[i->first]=""; 
+      else
+	{
+	  string l_values ;
+	  for(int ii = 0 ; ii < values.size(); ii++)
+	    l_values += " " + values[ii];
+	  globalKeys[i->first]=l_values ;
+	}
+    }
+}
+
+
+
 
 #include <sstream>
+
+void GlobalVal::Dump() const
+{
+  for (const_iterator i = begin(); i != end(); ++i)
+    {
+      const vector<string> &values = i->second;
+      //if (values.size() == 0) continue;
+      cerr << i->first;
+      for (unsigned k=0; k < values.size(); ++k) cerr << ' ' << values[k];
+      cerr << endl ;
+    }
+  return ;
+}
 
 vector<string> GlobalVal::OutputLines() const
 {
@@ -278,6 +306,7 @@ bool GlobalVal::ProcessLine(const string &Line)
   if (sscanf(s,"%s",buf)!= 1)
     {
       cerr << " could no read a key in " << Line << endl;
+      throw(PolokaException(" could no read a key in "+Line));
       return false;
     }
   s += strlen(buf);
@@ -285,12 +314,17 @@ bool GlobalVal::ProcessLine(const string &Line)
   if (HasKey(key))
     {
       cerr <<" already have a key labelled " << key << endl;
-      return false;
+      throw(PolokaException(" already have a key labelled "+key+" in line :\n"+Line));
     }
-
   vector<string> &values = (*this)[key];
   string strtmp = s;
   DecomposeString(values, strtmp, " ");
   return true;
 }
 
+ostream& operator << (ostream &S , const GlobalVal &G)
+{
+  vector<string> output(G.OutputLines());
+  for (unsigned k=0; k< output.size(); ++k) S << output[k] << endl;
+  return S;
+}

@@ -14,12 +14,13 @@
 #include <list>
 #include <vector>
 #include <map>
-
+#include <iostream>
 
 using namespace std;
 
 //! to store in files things like "Key value(s)" things.
 // what exactly does this class bring except complicating a map?
+// answer : use a map if you prefer.
 class GlobalVal : private  map<string, vector<string> > {
 public :
 
@@ -50,6 +51,9 @@ public :
   vector<double> getDoubleValues(const string& Key) const;
   void           setDoubleValues(const string &Key, const vector<double>& vals);
   vector<string> OutputLines() const;
+  void Dump() const;
+  void AppendTo(GlobalVal & glob) const ;
+  void AppendTo(map<string, string>& globalKeys) const ;
 
   bool ProcessLine(const string &Line);
 
@@ -61,6 +65,8 @@ private:
   template<typename T>
   bool GenericAddKey(const string& Key, const T& Values);
 };
+
+ostream& operator << (ostream &, const GlobalVal &G);
 
 
 

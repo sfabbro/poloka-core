@@ -1004,9 +1004,7 @@ bool GuessLinWCS(const FitsHeader &Header, TanPix2RaDec &Guess)
   cout  << " trying default GuessLinWCS" << endl;
   
   // the tel/inst specific procedure failed. try the default one ...  
-  bool ok = false;
-  if (HasLinWCS(Header)) ok = TanLinWCSFromHeader(Header,Guess);
-  if (ok) return true;
+  if (HasLinWCS(Header)) return TanLinWCSFromHeader(Header,Guess);
   cout << " failed. now trying simple shift\n";
   return ComputeLinWCS(Header, Header.ImageCenter(), GtransfoIdentity(), Guess);  
 }
