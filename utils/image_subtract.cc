@@ -8,9 +8,10 @@ static void usage(const char *progName) {
   cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
        << "PSF match and subtract DBIMAGE to first DBIMAGE\n\n"
        << "   -d: perform candidate detection on each subtraction\n"
-       << "   -f: force first DBIMAGE to be convolved even if worse seeing\n"
-       << "   -n: do not subtract, only PSF match\n"
-       << "   -o: overwrite\n";
+       << "   -o: output subtraction dbimage name (default: DBIMAGE-FIRST)\n"
+       << "   -r: first DBIMAGE will always be convolved even if worse seeing\n"
+       << "   -n: do not subtract, only perform and save PSF match\n"
+       << "   -f: overwrite\n";
   exit(EXIT_FAILURE);
 }
 
@@ -18,6 +19,7 @@ struct ImageSubtract {
 
   bool overwrite, noswap, dosub, dodetect;
   ReducedImageRef Ref;
+  string subname;
 
   ImageSubtract() : overwrite(false), noswap(false), dosub(true), dodetect(false) {}
   
@@ -35,7 +37,8 @@ struct ImageSubtract {
 	       << Im->Name() << " failed\n";
 	  
       if (!dosub) return;
-      ImageSubtraction sub(SubtractedName(Ref->Name(), Im->Name()), Ref, Im, kernfit);
+      if (subname.empty()) subname = SubtractedName(Ref->Name(), Im->Name())
+      ImageSubtraction sub(subname, Ref, Im, kernfit);
       
       if (overwrite) { 
 	if (sub.HasImage()) remove(sub.FitsName().c_str());
@@ -76,9 +79,10 @@ int main(int nargs, char **args) {
     }
     switch (arg[1]) {
     case 'd': imSubtract.dodetect = true; break;
-    case 'f': imSubtract.noswap = true; break;
+    case 'r': imSubtract.noswap = true; break;
     case 'n': imSubtract.dosub = false; break;
-    case 'o': imSubtract.overwrite = true; break;
+    case 'f': imSubtract.overwrite = true; break;
+    case 'o': imSubtract.subname = args[++i]; break;
     default : usage(args[0]);
     }
   }

@@ -18,13 +18,13 @@ static void usage(const char *progName) {
 
 struct ImageMatcher {
 
-  ImageMatcher() : doResample(true), doIntShift(false) {}
+  ImageMatcher() : doResample(true), doIntShift(false), overWrite(false) {}
 
-  bool doResample, doIntShift;
+  bool doResample, doIntShift, overWrite;
   ReducedImageRef Ref;
   GtransfoRef RefToIm, ImToRef;
 
-  void operator () (const ReducedImageRef Im) const {
+  void operator () (const ReducedImageRef Im) {
     try {
       if (*Im == *Ref) {
 	cout << " " << Im->Name() << " is same as reference, skipping\n";
@@ -42,9 +42,11 @@ struct ImageMatcher {
 	ImageResample(*Im, *ref, RefToIm, ImToRef);
       else if (doIntShift)
 	ImageIntegerShift(*Im, *ref, RefToIm);
-      else
-	cout << *FindTransfo(*Im, *ref);
-
+      else {
+	ImToRef = FindTransfo(*Im, *ref); 
+	cout << *ImToRef;
+      }
+      
     } catch (PolokaException p) {
       p.PrintMessage(cerr);
     }
