@@ -18,6 +18,7 @@ static bool SM_DecFluxMax(const StarMatch &S1, const StarMatch &S2)
   return  DecFluxMax(p1,p2);
 }
 
+
 /************************ Photom ratio estimators *******************/
 
 /*  notes:
@@ -217,11 +218,7 @@ bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R,
       double chi2Mean, chi2Med, chi2Sig;
       Dmean_median_sigma(chi2Vals, count, chi2Mean, chi2Med, chi2Sig);
       chi2Cut = chi2Med+NSigChi2Cut*chi2Sig;
-      if (chi2Cut == 0)
-	{
-	  cout << " INFO : SlowPhotomRatio finds a null chi2 cut !! seems we got twice the same list " << endl;
-	  chi2Cut = 1;
-	}
+      if (chi2Cut <1e-2) chi2Cut = 1e-2; // in case we got twice the same list as input ! 
       bool outliers = false;
       for (int k=0; k < count; ++k) if (chi2Vals[k] > chi2Cut) {outliers = true;break;}
       if (!outliers && oldCount == count && chi2Old - chi2 < 1e-3) break;
@@ -230,7 +227,7 @@ bool SlowPhotomRatio(const FluxPairList &L, const double NSigChi2Cut, double &R,
       if (outliers) niter++;
       }   while (niter < nitermax);
   delete [] chi2Vals;
-
+  
   if ( isnan(R))
     {      
       cerr  << " WARNING SlowPhotomRatio : nan value " << endl ;
@@ -326,29 +323,33 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
   MatchConditions cond;
   cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
   cond.DeltaSizeRatio = 0.1 * cond.SizeRatio;
+  // hack for big frames
+  if (Src.XSize() > 10000 && Src.YSize() > 10000) {
+    cond.NStarsL1 = 2000;
+    cond.NStarsL2 = 2000;
+  }
   cond.read(DefaultDatacards());
+  
   if (MaxOrder != -1) cond.MaxOrder = MaxOrder;
-  if (transfo) {
-    if (ListMatchCheck(SrcList, DestList, transfo, 2, cond.MinMatchRatio)) {
-      cout << " FindTransfo: refining WCS transfo\n";
-      transfo = ListMatchRefine(SrcList, DestList, transfo, cond.MaxOrder);
-    } else {
-      cout << " FindTransfo: WCS not good enough\n";
-      transfo = GtransfoRef();
-    }
+
+  if (transfo && !ListMatchCheck(SrcList, DestList, transfo, 2, cond.MinMatchRatio)) {
+    cout << " FindTransfo: WCS not good enough\n";
+    transfo = GtransfoRef();
   }
 
   if (!transfo) {
     cout << " FindTransfo: trying with combinatorial match\n";
     transfo = ListMatchCombinatorial(SrcList, DestList, cond);
-    if (transfo) {
-      cout << " FindTransfo: refining combinatorial match\n";
-      transfo = ListMatchRefine(SrcList, DestList, transfo, cond.MaxOrder);
-    } else {
-      cout << " FindTransfo: no match found\n";
-      transfo = GtransfoRef();
-    }
   }
+
+  if (transfo) {
+      cout << " FindTransfo: refining transfo\n";
+      transfo = ListMatchRefine(SrcList, DestList, transfo, cond);
+  } else {
+    cout << " FindTransfo: no match found\n";
+    transfo = GtransfoRef();
+  }
+
   return transfo;
 }
 
@@ -520,7 +521,7 @@ Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference) 
   for (ReducedImageCIterator it = ImList.begin(); it != ImList.end(); ++it) {
     const ReducedImage *im = *it;
     if (*im == *Reference) continue;
-    BaseStarList bimList; LoadForMatch(*im, bimList);
+    BaseStarList bimList; LoadForMatch(*im, bimList);    
     GtransfoRef imToref = FindTransfo(bimList, brefList, *im, *ref);
     Frame frameInRef = ApplyTransfo(im->UsablePart(), *imToref, LargeFrame);
     unionFrame += frameInRef;
