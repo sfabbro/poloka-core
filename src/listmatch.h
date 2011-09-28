@@ -11,10 +11,12 @@ class Gtransfo; class GtransfoLin;
 struct MatchConditions 
 {
   int NStarsL1, NStarsL2;
+  int MaxStarsL1, MaxStarsL2;
   int MaxTrialCount;
   double NSigmas;
   double MaxShiftX, MaxShiftY;
   double SizeRatio, DeltaSizeRatio, MinMatchRatio;
+  double Dist, MaxDist;
   int PrintLevel;
   int Algorithm;
   int MaxOrder;
@@ -85,14 +87,15 @@ GtransfoRef ListMatchCombinatorial(const BaseStarList &List1,
 GtransfoRef ListMatchRefine(const BaseStarList& List1,
 			    const BaseStarList& List2,
 			    GtransfoRef transfo, 
-			    const int maxOrder=3);
+			    const MatchConditions& Conditions=MatchConditions());
 
 //! wrapper of the two above routines
 inline GtransfoRef ListMatch(const BaseStarList& List1,
 			     const BaseStarList& List2,
-			     const int maxOrder=3) {
+			     const MatchConditions& Conditions=MatchConditions()) {
   return ListMatchRefine(List1, List2, 
-			 ListMatchCombinatorial(List1, List2), maxOrder);
+			 ListMatchCombinatorial(List1, List2,Conditions),
+			 Conditions);
 }
 
 #endif /* LISTMATCH__H */

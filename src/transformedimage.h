@@ -76,6 +76,7 @@ public:
   ImageGtransfo(const Gtransfo* TransfoFromRef, const Gtransfo* TransfoToRef, const Frame &OutputImageSize, const string &GeomRefName );
   //! the output image size is the one of the Ref. Finds the transfo(s).
   ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign,float min_match_ratio=0);
+
   //!
   ImageGtransfo();
   //!

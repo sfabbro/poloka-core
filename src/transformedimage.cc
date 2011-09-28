@@ -16,6 +16,8 @@ string TransformedName(const string &ToTransform, const string &Ref)
   return "T_"+Ref+ToTransform;
 }
 
+
+
 /****************** ImageGtransfo ***********************/
 
 #include "imagematch.h"
@@ -30,10 +32,7 @@ ImageGtransfo::ImageGtransfo(const Gtransfo *TransfoFromRef,
   geomRefName = GeomRefName;
   transfoFromRef = (TransfoFromRef) ? TransfoFromRef->Clone() : NULL ;
   transfoToRef = (TransfoToRef) ? TransfoToRef->Clone() : NULL;
-  //double xmin = max(OutputImageSize.xMin, 0.);
-  //double ymin = max(OutputImageSize.yMin, 0.);
-  //outputImageSize = Frame(xmin, ymin, xmin+OutputImageSize.Nx(), ymin+OutputImageSize.Ny());
-  outputImageSize = OutputImageSize;
+  outputImageSize = OutputImageSize; 
   scaleFactor = 1.;
   if (transfoFromRef) 
     {scaleFactor = 1./sqrt(fabs(transfoFromRef->Jacobian(outputImageSize.Nx()/2, outputImageSize.Ny()/2)));}
@@ -52,8 +51,6 @@ ImageTransfo* ImageGtransfo::Clone() const
 
 ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign,float min_match_ratio)
 {
-  //transfoFromRef = NULL;
-  //transfoToRef = NULL;
   geomRefName = Ref.Name();
   transfoFromRef = FindTransfo(Ref, ToAlign);
   if (!transfoFromRef)
@@ -79,14 +76,7 @@ ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlig
     }
 }
 
-
-
-ImageGtransfo::ImageGtransfo()
-{
-  //transfoFromRef = NULL;
-  //transfoToRef = NULL;
-  scaleFactor = 1; //? 
-}
+ImageGtransfo::ImageGtransfo() : scaleFactor(1) {}
 
 
 bool ImageGtransfo::IsValid() const
@@ -513,8 +503,9 @@ bool  TransformedImage::MakeCatalog()
   return true;
 }
 
+
 #include <apersestar.h>
-bool TransformedImage::MakeAperCat() 
+bool  TransformedImage::MakeAperCat() 
 {
   string fileName = AperCatalogName();
   if (FileExists(fileName)) return true;
@@ -628,7 +619,7 @@ bool TransformedImage::MakeSatur()
 {
   string outFileName = FitsSaturName();
   if (FileExists(outFileName)) return true;
-  cout << " Transforming satur image "<< source->Name() << endl;
+  cerr << " Transforming satur image "<< source->Name() << endl;
   string inName = source->FitsSaturName();
   if (!FileExists(inName) && !source->MakeSatur()) return false;
   FitsImage inFits(inName);
@@ -707,12 +698,13 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
       TransformedImage *alignedCurrent =
 	new TransformedImage(transformedName, *current, imTransfo);
       // create the Fits images + user requests, as doc says.
-      alignedCurrent->Execute(DoFits | ToDo);
+      alignedCurrent->Execute(DoFits | ToDo); 
       Aligned.push_back(alignedCurrent);
       delete imTransfo;
     }
   return Aligned.size();
 }
+
 
 
 /********************** TransformedImageList *************************/

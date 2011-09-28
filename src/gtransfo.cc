@@ -255,6 +255,23 @@ ostream & operator << (ostream &stream, const Gtransfo & T)
            {T.dump(stream); return stream;}
 
 
+#include <fstream>
+void Gtransfo::Write(const std::string &FileName) const
+{
+  ofstream s(FileName.c_str());
+  Write(s);
+  bool ok = !s.fail();
+  s.close();
+  if (!ok)
+    throw(PolokaException("  Gtransfo::Write, something went wrong for file " + FileName )); 
+}
+
+void Gtransfo::Write(ostream &stream) const
+{
+  throw(PolokaException(" Gtransfo::Write should never be called : miss an implementation in some derived class "));
+}
+
+
 /******************* GTransfoInverse ****************/
 /* inverse transformation, solved by iterations. Before using 
    it (probably via Gtransfo::InverseTransfo), consider 
@@ -502,6 +519,24 @@ GtransfoLin GtransfoIdentity::LinearApproximation(const Point &Where, const doub
   return result; // rely on default Gtransfolin constructor;
 }
 
+
+void GtransfoIdentity::Write(ostream &s) const
+{
+  s << "GtransfoIdentity 1" << endl;
+}
+
+
+
+
+void GtransfoIdentity::Read(istream &s)
+{
+  int format;
+  s >> format;
+  if (format != 1)
+    throw(PolokaException(" GtransfoIdentity::Read : format is not 1 " ));
+}
+
+
 /***************  GtransfoPoly **************************************/
 
 
@@ -509,9 +544,19 @@ GtransfoLin GtransfoIdentity::LinearApproximation(const Point &Where, const doub
 #include "matvect.h"
 
 //! Default transfo : identity for all degrees (>=1 )
-GtransfoPoly::GtransfoPoly(const unsigned Deg) : 
-  deg(Deg),nterms((deg+1)*(deg+2)/2)
+
+GtransfoPoly::GtransfoPoly(const unsigned Deg)
 {
+  nterms = 0;
+  SetDegree(Deg);
+}
+  
+
+void GtransfoPoly::SetDegree(const unsigned Deg)
+{
+  deg = Deg;
+  nterms = (deg+1)*(deg+2)/2;
+
   // allocate vectors, since we know their length
   monomials.reserve(nterms);
   coeffs.reserve(2*nterms);
@@ -1130,8 +1175,63 @@ GtransfoPoly  GtransfoPoly::operator*(const GtransfoPoly &Right) const
 }
 
 
+void GtransfoPoly::Write(ostream &s) const
+{
+  s << " GtransfoPoly 1"<< endl;
+  s << "degree " << deg << endl;
+  int oldprec=s.precision();
+  s << setprecision(12);
+  for (unsigned k=0;k<2*nterms; ++k)
+    s << coeffs[k] << ' ';
+  s << endl;
+  s << setprecision(oldprec);
+}
+
+void GtransfoPoly::Read(istream &s)
+{
+  int format;
+  s >> format;
+  if (format != 1)
+    throw(PolokaException(" GtransfoPoly::Read : format is not 1 " ));
+  string degree;
+  s >> degree >> deg;
+  if (degree != "degree")
+    throw(PolokaException(" GtransfoPoly::Read : expecting \"degree\" and found "+degree ));
+  SetDegree(deg);
+  for (unsigned k=0;k<2*nterms; ++k)
+    s >> coeffs[k];
+}  
 
 
+GtransfoPoly *InversePolyTransfo(const Gtransfo &Direct, const Frame &F, const double Prec)
+{
+  StarMatchList sm;
+  unsigned nx = 10;
+  double stepx = F.Nx()/(nx+1);
+  unsigned ny = 10;
+  double stepy= F.Ny()/(ny+1);
+  for (unsigned i=0 ;i<nx; ++i)
+    for (unsigned j=0; j<ny; ++j)
+      {
+	Point in((i+0.5)*stepx, (j+0.5)*stepy);
+	Point out(Direct.apply(in));
+	sm.push_back(StarMatch(out, in , NULL,NULL));
+      }
+  unsigned npairs = sm.size();
+  int maxdeg = 4;
+  int degree;
+  GtransfoPoly *poly = NULL;
+  for (degree=1; degree<=maxdeg; ++degree)
+    {
+      delete poly;
+      poly = new GtransfoPoly(degree);
+      double chi2 = poly->fit(sm);
+      if (chi2/npairs< Prec*Prec) break;
+    }
+  if (degree>maxdeg)
+    cout << " InversePolyTransfo : Reached  max degree without reaching  requested precision = " << Prec << endl;
+  return poly;
+}  
 
 
 
@@ -1705,31 +1805,32 @@ Gtransfo *UserTransfo::Clone() const
 
 /*************************************************************/
 
-#ifdef USE_ROOT
 
-ClassImp(Gtransfo);
-ClassImp(GtransfoIdentity);
-ClassImp(GtransfoLin);
-ClassImp(GtransfoPoly);
-ClassImp(GtransfoComposition);
+Gtransfo* GtransfoRead(const std::string &FileName)
+{
+  ifstream s(FileName.c_str());
+  if (!s) throw(PolokaException(" GtransfoRead : cannot open " + FileName));
+  try
+    {
+      Gtransfo *res = GtransfoRead(s);
+      s.close();
+      return res;
+    }
+  catch (PolokaException e) {
+    throw(e.message()+" in file "+FileName);}
+}
 
-/*
-RUN_ROOTCINT
-
-
-LINKDEF_CONTENT : #pragma link C++ class Gtransfo+;
-LINKDEF_CONTENT : #pragma link C++ class GtransfoLin+;
-LINKDEF_CONTENT : #pragma link C++ class GtransfoIdentity+;
-LINKDEF_CONTENT : #pragma link C++ class GtransfoPoly+;
-LINKDEF_CONTENT : #pragma link C++ class GtransfoComposition+;
-LINKDEF_CONTENT : #pragma link C++ function GtransfoCompose(const Gtransfo* Left, const Gtransfo* Right);
-LINKDEF_CONTENT : #pragma link C++ function operator << (class ostream&, const Gtransfo&);
-LINKDEF_CONTENT : #pragma link C++ function GtransfoRead(const char*, const char* ObjectName);
-*/
-
-
-#include "root_dict/gtransfodict.cc"
-#endif
-
-
+Gtransfo* GtransfoRead(istream &s)
+{
+  std::string type;
+  s >> type;
+  if (s.fail()) throw(PolokaException("GtransfoRead : could not find a Gtransfotype"));
+  if (type == "GtransfoIdentity")
+    {GtransfoIdentity* res = new GtransfoIdentity(); res->Read(s); return res;}
+  else if (type == "GtransfoPoly")
+    {GtransfoPoly* res = new GtransfoPoly(); res->Read(s); return res;}
+  else
+    throw(PolokaException(" No reader for Gtransfo type "+ type));
+}
+ 
 

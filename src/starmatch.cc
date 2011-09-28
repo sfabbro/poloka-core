@@ -201,6 +201,13 @@ void StarMatchList::SetTransfoOrder(const int Order)
     case 1 : SetTransfo(new GtransfoLin());      break;
     case 2 : SetTransfo(new GtransfoPoly(2));     break;
     case 3 : SetTransfo(new GtransfoPoly(3));      break;
+    case 4 : SetTransfo(new GtransfoPoly(4));      break;
+    case 5 : SetTransfo(new GtransfoPoly(5));      break;
+    case 6 : SetTransfo(new GtransfoPoly(6));      break;
+    case 7 : SetTransfo(new GtransfoPoly(7));      break;
+    case 8 : SetTransfo(new GtransfoPoly(8));      break;
+    case 9 : SetTransfo(new GtransfoPoly(9));      break;
+    case 10 : SetTransfo(new GtransfoPoly(10));      break;
     default : cerr << "Wrong transfo order : " << Order << endl; order = -1; return;
     }
   order = Order;

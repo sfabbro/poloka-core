@@ -243,7 +243,7 @@ class StarMatchList : public list<StarMatch> {
   //! print the matching transformation quality (transfo, chi2, residual) 
   void DumpTransfo(ostream &stream = cout) const;
 
-  ~StarMatchList() {};
+  ~StarMatchList() {/* should delete the transfo.... or use counted refs*/ };
   
   //!: without descriptor for l2tup 
    void write_wnoheader(ostream & pr=cout, const Gtransfo *T=NULL ) const ;

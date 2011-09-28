@@ -115,7 +115,6 @@ public:
   //! Derivative w.r.t parameters. Derivatives should be al least 2*NPar long. first Npar, for x, last Npar for y.
   virtual void ParamDerivatives(const Point &Where, double *Derivatives) const;
 
-#ifndef SWIG
   //! Rough inverse. 
   /*! Stored by the numerical inverter to guess starting point 
      for the trials. Just here to enable overloading. */
@@ -123,12 +122,17 @@ public:
 
   //! returns the number of parameters (to compute chi2's)
   virtual int Npar() const {return 0;}
-#endif /* SWIG */
+
+  void Write(const std::string &FileName) const;
+
+  virtual void Write(ostream &stream) const;
+  
   virtual ~Gtransfo() {};
 
 
-
 };
+
+
 
 typedef CountedRef<Gtransfo> GtransfoRef;
 
@@ -175,7 +179,12 @@ public:
     //! linear approximation.
     virtual GtransfoLin LinearApproximation(const Point &Where, 
 					    const double Step = 0.01) const;
-  
+
+  void Write(ostream &s) const;
+
+  void Read(istream &s);
+
+
     //    ClassDef(GtransfoIdentity,1)
 };
 
@@ -198,12 +207,15 @@ private:
 
   /* use vector rather than double * to avoid 
      writing copy constructor and "operator =".
-     Vect woulf work as well but introduces a dependence 
+     Vect would work as well but introduces a dependence 
      that can be avoided */
 
 public :
   //! Default transfo : identity for all degrees (>=1 ). The degree refers to the highest total power (x+y) of monomials. 
   GtransfoPoly(const unsigned Deg=1) ;
+
+  //sets the polynomial degree. 
+  void SetDegree(const unsigned Deg);
 
   void apply(const double Xin, const double Yin, 
 	     double &Xout, double &Yout) const;
@@ -267,11 +279,20 @@ public :
   //! Derivative w.r.t parameters. Derivatives should be al least 2*NPar long. first Npar, for x, last Npar for y.
   void ParamDerivatives(const Point &Where, double *Derivatives) const;
 
+
+  void Write(ostream &s) const;
+  void Read(istream &s);
+
+
 private :
   double do_the_fit(const StarMatchList &List, const Gtransfo &InTransfo,
 		    const bool UseErrors);
 
 };
+
+// approximates the inverse by a polynomial, up to required precision.
+GtransfoPoly *InversePolyTransfo(const Gtransfo &Direct, const Frame &F, const double Prec);
+
 
 
 /*=============================================================*/
@@ -556,11 +577,14 @@ class UserTransfo : public Gtransfo
 
 };
 
-//! probably obsolete. use LinearApproximation instead
-//GtransfoLin *GtransfoToLin(const Gtransfo* transfo);
+
+//! The virtual constructor from a file
+Gtransfo* GtransfoRead(const std::string &FileName);
+//! The virtual constructor from a file
+Gtransfo* GtransfoRead(istream &s);
 
 
-//#include "gtransfocomposition.h"
+
 
 
 #endif /* GTRANSFO__H */
