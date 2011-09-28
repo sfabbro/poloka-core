@@ -81,8 +81,8 @@ bool ImageSubtraction::MakeFits()
   if (FileExists(fileName)) return true;
   if (!Ref->MakeFits() ||  !New->MakeFits())
     {
-      cerr << " ERROR : for ImageSubtraction " << Name() << endl
-	   << " Could not make images of (both) subtraction terms :" << endl
+      cerr << " ImageSubtraction: " << Name()
+	   << " could not make images of (both) subtraction terms :"
 	   << Ref->Name() << " and " << New->Name() << endl;
       return false;
     }
@@ -100,7 +100,7 @@ bool ImageSubtraction::MakeFits()
   double photomRatio = KernAtCenterSum();
   if (RefIsBest())
     {
-      cout << " Subtraction: " << New->Name() 
+      cout << " ImageSubtraction: " << New->Name() 
 	   << " - Kernel*" << Ref->Name() << endl;
       {
 	FitsImage worst(New->FitsName());
@@ -117,7 +117,7 @@ bool ImageSubtraction::MakeFits()
     }
   else 
     {
-      cout << " Subtraction: " << New->Name() 
+      cout << " ImageSubtraction: " << New->Name() 
 	   << "*Kernel - " << Ref->Name() << endl;
       {
 	FitsImage best(New->FitsName());
@@ -162,9 +162,8 @@ bool ImageSubtraction::MakeFits()
   }
 
   double zero_point = Ref->AnyZeroPoint();
-  cerr << "Zero Point as taken from reference stack:" 
-       << zero_point << " propagated to sub. " << endl ;
-  SetZZZeroP(zero_point, "as taken from reference stack");  
+  cout << " ImageSubtraction: zero point taken from reference: " << zero_point << endl;
+  SetZZZeroP(zero_point, "as taken from reference");
 
   // subtract an ImageBack
   FitsImage *pweight = NULL;
@@ -172,7 +171,7 @@ bool ImageSubtraction::MakeFits()
   if (MakeWeight())
     {
       pweight = new FitsImage(FitsWeightName());
-      cout << " using weights : " << FitsWeightName() << endl;
+      cout << " ImageSubtraction: using weights : " << FitsWeightName() << endl;
     }
   int backMesh = 32;
   ImageBack b(theSubtraction, backMesh, pweight);
@@ -239,7 +238,7 @@ bool ImageSubtraction::MakeWeight()
   if (FileExists(fileName)) return true;
   if (!MakeFits()) return false; // Hard way to get the convolution kernel.
 
-  cout << " making WeightImage  " << fileName << endl;
+  cout << " ImageSubtraction: making WeightImage  " << fileName << endl;
   string datacards=DefaultDatacards();
   int subVarianceType = 0;
   int subMaskDilate = 0;
@@ -265,20 +264,20 @@ bool ImageSubtraction::MakeWeight()
   }
   
   // account for satur pixels in Best
-  if (Best()->MakeSatur())
+  if (Best()->HasSatur())
     {
       FitsImage satur(Best()->FitsSaturName());
       weightImage *= (1 - satur);
     }
   else
     {
-      cerr << " When making weight map for "<< Name() 
+      cerr << " ImageSubtraction: when making weight map for "<< Name() 
 	   << ", cannot get satur from " << Best()->Name() << endl;
     }
 
   if (subMaskSig2Noise > 0 && RefIsBest()) {
     FitsImage best(Best()->FitsName());
-    cout << " Masking pixels with S/N > " << subMaskSig2Noise << " on " << Best()->Name() << endl;
+    cout << " ImageSubtraction: Masking pixels with S/N > " << subMaskSig2Noise << " on " << Best()->Name() << endl;
     Pixel *pim = best.begin();
     Pixel skybest = Best()->BackLevel();
     for (Pixel *p=weightImage.begin() ; pim < best.end() ; ++pim, ++p)
@@ -341,13 +340,13 @@ bool ImageSubtraction::MakeWeight()
     }
   else
     {
-      cerr << " When making weight map for "<< Name() 
+      cerr << " ImageSubtraction: when making weight map for "<< Name() 
 	   << ", cannot get satur from " << Worst()->Name() << endl;
     }
 
   if (subMaskSig2Noise > 0 && !RefIsBest()) {
     FitsImage worst(Worst()->FitsName());
-    cout << " Masking pixels with S/N > " <<  subMaskSig2Noise << " on " << Worst()->Name() << endl;
+    cout << " ImageSubtraction: masking pixels with S/N > " <<  subMaskSig2Noise << " on " << Worst()->Name() << endl;
     Pixel *pim = worst.begin();
     Pixel skyworst = Worst()->BackLevel();
     for (Pixel *p=weightImage.begin() ; pim < worst.end() ; ++pim, ++p)
@@ -382,7 +381,7 @@ bool ImageSubtraction::MakeWeight()
   {
     pw = weights_worst.begin();
     Pixel threshold = eps*100; // value under which we go to zero.
-    cout << " threshold under which weight = 0 " << threshold << endl;
+    cout << " ImageSubtraction: threshold under which weight = 0 " << threshold << endl;
     pend = weights.end();
     Image mask(weights.Nx(), weights.Ny());
     Pixel *pm = mask.begin();
@@ -393,7 +392,7 @@ bool ImageSubtraction::MakeWeight()
     }
 
     if (subMaskDilate>0) {
-      cout << " Dilating bad pixels with " << subMaskDilate << " pixels\n";
+      cout << " ImageSubtraction: dilating bad pixels with " << subMaskDilate << " pixels\n";
       dilate_binary_image(mask, subMaskDilate);
       weights *= (1 - mask);
     }
@@ -430,7 +429,7 @@ bool ImageSubtraction::MakeWeight()
   // outside of this, weights are to be set to 0
   
   weights.Masking(aframe, 0.);
-  cout << " masking frame for weights " << aframe << endl;
+  cout << " ImageSubtraction: masking frame for weights " << aframe << endl;
 
   weights.PreserveZeros(); // 0 remain 0 on R/W operations
   weights.ModKey("BITPIX",16); // 16 bits are enough
@@ -448,10 +447,10 @@ bool ImageSubtraction::MakeDead()
 				  &ReducedImage::FitsDeadName, 
 				  &ReducedImage::MakeDead, FitsDeadName());
   FitsImage dead(FitsDeadName(), RW);
-  cout << " the frame for dead of " << Name() << " is " << UsablePart() << endl;
-  cout << " # of dead pixels before " << dead.SumPixels() << endl;
+  cout << " ImageSubtraction: frame for dead of " << Name() << " is " << UsablePart();
+  double presum = dead.SumPixels();
   dead.Masking(UsablePart(),1);
-  cout << " # of dead pixels after " << dead.SumPixels() << endl;
+  cout << " ImageSubtraction: ratio of masked dead pixels after masking " << dead.SumPixels()/presum << endl;
   return return_value;
 }
 
@@ -493,13 +492,13 @@ bool ImageSubtraction::MakeCosmic()
 
   FitsImage im(FitsName());
   if (!im.IsValid()) {
-    cerr << " ImageSubtraction::MakeCosmic: missing image";
+    cerr << " ImageSubtraction::MakeCosmic: missing image\n";
     return false;
   }
 
   FitsImage weight(FitsWeightName(), RW);
   if (!weight.IsValid()) {
-    cerr << " ImageSubtraction::MakeCosmic: missing weight";
+    cerr << " ImageSubtraction::MakeCosmic: missing weight\n";
     return false;
   }
   im *= weight;
@@ -557,7 +556,7 @@ bool ImageSubtraction::RunDetection(DetectionList &Detections,
   if (name == "") name =DetectionsName();
   if (!MakeFits() || !MakeWeight())
     {
-      cerr << " cannot make (sub) catalog for " << Name() 
+      cerr << " ImageSubtraction: cannot run detection for " << Name() 
 	   << " without both image and weights " << endl;
       return false;
     }
@@ -571,7 +570,7 @@ bool ImageSubtraction::RunDetection(DetectionList &Detections,
   {
     FitsImage im(FitsName());
     FitsImage w(FitsWeightName());
-    cout << Name() << " Image/Weight stat : " << ImageAndWeightError(im,w) << endl;
+    cout << " ImageSubtraction: Image/Weight " << Name() << " stat " << ImageAndWeightError(im,w) << endl;
   }
 
   // filter size is equal to seeing until we refine it
@@ -617,7 +616,7 @@ bool ImageSubtraction::RunDetection(DetectionList &Detections,
       }
       Detections.write(name);
     }
-  cout << "zero the pixel with null weight" << endl;
+  cout << " ImageSubtraction: zero the pixel with null weight" << endl;
   MaskNullWeight();
   
   return true;
