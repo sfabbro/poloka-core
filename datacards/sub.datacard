@@ -374,6 +374,10 @@
 #@DATMATCH_NL1 70
 #@DATMATCH_NL2 70
 #
+# Maximum number of stars in each list
+#@DATMATCH_MAXL1 500
+#@DATMATCH_MAXL2 500
+#
 # Number of trials for combinatorial search
 #@DATMATCH_MAXTRIAL 4
 #
@@ -401,3 +405,9 @@
 #
 # maximum polynomial order of fitting refinement
 #@DATMATCH_MAXORDER 3
+#
+# distance in pixels in a match between bright stars 
+#@DATMATCH_DIST 1
+#
+# maximum distance in pixels in a transfo between full lists
+#@DATMATCH_MAXDIST 2
