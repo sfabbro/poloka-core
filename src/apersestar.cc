@@ -178,13 +178,16 @@ Aperture AperSEStar::InterpolateFlux(const double &Radius) const
   size_t k=0;
   for (   ; k < naper; ++k)
     if (apers[k].radius > Radius) break;
+  // radius is between rk-1 and rk
   if (k == 0) return apers[0];
   if (k == naper) return apers[k-1];
-  k--;
+  //k--; why ? DH
   double x = (Radius-apers[k-1].radius)/(apers[k].radius-apers[k-1].radius);
+  assert(x>=0 && x<=1);
   Aperture aper;
   aper.radius = Radius;
   aper.flux = (1-x)*apers[k-1].flux+x*apers[k].flux;
+  aper.fother = (1-x)*apers[k-1].fother+x*apers[k].fother;
   // interpolate errors linearly because for low fluxes, it scales with radius
   aper.eflux = (1-x)*apers[k-1].eflux+x*apers[k-1].eflux;
   aper.nbad = apers[k].nbad;
@@ -491,6 +494,19 @@ ostream& operator << (ostream &stream, const Aperture &A)
 } 
 
 
+int AperSEStarList::NSuccess()
+{
+  int N = 0 ;
+  for (AperSEStarIterator i= begin(); i != end(); ++i)
+    {
+      AperSEStar &current = **i;
+      if ((current.gflag & BAD_GAUSS_MOMENTS) == 0)
+	N++;
+    }
+  return(N);
+}
+
+
 void AperSEStar::SetNeighborScores(const BaseStar &Neighbor)
 {
   neighborDist = Neighbor.Distance(*this);
@@ -558,7 +574,7 @@ void AperSEStar::read_it(fastifstream& r, const char* Format)
 {
   SEStar::read_it(r, Format);
   int format = DecodeFormat(Format, "AperSEStar");
-  if(format != 2 && format != 3) {
+  if(format != 2 && format != 3 ) {
     cerr << "AperSEstar::read_it() format: " << format << ". The current version is 2 or 3!" << endl;
     abort();
   }
@@ -658,14 +674,56 @@ int AperSEStarList::write(const std::string &FileName) const
 #include "histopeakfinder.h"
 #include "histo2d.h"
 
+double  Find_Fluxmax_Min(const AperSEStarList &List,  const double MinSN, const double frac_elim, const double histo_val_min, int verbose){
+
+  double *tab_f = new double[List.size()];
+  int n = 0 ;
+  for (AperSEStarCIterator i = List.begin(); i != List.end(); ++i)
+    {
+      const AperSEStar &s = **i;
+      if (s.gflag || s.Flag() || s.FlagBad()) continue;
+
+      if (s.IsSaturated() ) continue ;
+
+      if (sqrt(s.gmxx)<histo_val_min || sqrt(s.gmyy)<histo_val_min) continue;
+
+      if (s.flux<=0 || s.EFlux() <= 0 || s.flux< MinSN * s.EFlux()) continue;
+
+      tab_f[n] = s.Fluxmax() ;
+      n++;
+    }
+  sort(tab_f, tab_f+n);
+  int ii = int(frac_elim*n) ;
+  double fmin = tab_f[ii];
+  if (verbose > 0 )
+  cout << "In Find_Fluxmax_Min : fluxmax min for SsurN>" << MinSN << " :" << ii << "/" << n << " : " << fmin << endl ;
+  delete [] tab_f ;
+  return(fmin);
+
+}
+
 bool FindStarShapes(const AperSEStarList &List, const double MinSN,
 		    double &XSize, double &YSize, double &Corr, 
-		    StarScoresList &scores)
+		    StarScoresList &scores, const double frac_elim, const double histo_val_min, int verbose)
 {
-  Histo2d histo(30,0,10.,30,0.,10.);
+  double my_histo_val_min = 0. ;
+  if (histo_val_min >0) my_histo_val_min = histo_val_min ;
+
+  if (verbose > 0 )
+    {
+      cout << "FindStarShapes : min signal to noise : " << MinSN<< endl ;
+      cout << "FindStarShapes : fraction eliminating low surf. brightness objects :  " << frac_elim << endl ;
+      cout << "FindStarShapes : minimum x and y size in pixels : " << my_histo_val_min << endl ;
+    }
+
+  Histo2d histo(30,my_histo_val_min,10.,30,my_histo_val_min,10.);
   XSize = 0;
   YSize = 0;
   Corr = 0;
+  double flumax_min = -1 ;
+  // eliminating  frac_elim % with the lowest surface brightness 
+  if (frac_elim > 0 )
+    flumax_min = Find_Fluxmax_Min(List, MinSN, frac_elim,my_histo_val_min, verbose );
   for (AperSEStarCIterator i = List.begin(); i != List.end(); ++i)
     {
       const AperSEStar &s = **i;
@@ -678,14 +736,24 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
 	 is also poor: cut on S/N before entering into the
 	 "star clump finder".
       */
-      if (s.flux<0 || s.EFlux() < 0 || s.flux< MinSN * s.EFlux()) continue;
+      if (s.IsSaturated() ) continue ;
+
       double xx = sqrt(s.gmxx);
       double yy = sqrt(s.gmyy);
+      // to avoid a first bin populated with ccd defects and various spikes
+      if ( xx<my_histo_val_min || yy<my_histo_val_min) continue;
+
+      if (s.flux<=0 || s.EFlux() <= 0 || s.flux< MinSN * s.EFlux()) continue;
+      
+      if (s.Fluxmax() < flumax_min ) continue ;
+
+
       histo.Fill(xx,yy, s.Fluxmax());
       scores.push_back(new StarScores (xx,yy,&s));
     }
 
   size_t nobj = scores.size();
+  if (verbose) cout << " FindStarShapes : " << nobj << " objects passing the cuts " << endl;
   if (nobj<5)
     {
       cout << " FindStarShapes : only " << nobj << " objects passing the cuts " << endl;
@@ -699,7 +767,8 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
       if (k>=1) cout << " INFO : FindStarShape trying histo max # " << k << endl;
       double xMax, yMax;
       histo.MaxBin(xMax, yMax);
-      ok = HistoPeakFinder(scores, histo, xMax, yMax, ellipse);
+      ok = HistoPeakFinder(scores, histo, xMax, yMax, ellipse, verbose);
+      if(verbose) cout << "FindStarShape : shape ellipse " << ellipse << endl;
       if (!ok)
 	{
 	  cout << " FindStarShape could not parametrize a peak using HistoPeakFinder with histo max" << endl;
@@ -710,7 +779,7 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
       else break;
       histo.ZeroBin(xMax,yMax);
     }
-  cout << " shape ellipse " << ellipse << endl;
+  
   ellipse.GetCenter(XSize, YSize);
   if (!ok)
     {

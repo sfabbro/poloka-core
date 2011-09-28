@@ -123,6 +123,7 @@ class AperSEStarList : public StarList<AperSEStar>
     /*! important notice: the routine assumes that the objects of
       *this are in the provided List. */
   void SetNeighborScores(const BaseStarList &List, const double Maxdist);
+  int NSuccess();
 
   //! the standard one plus some checks
   int write(const std::string &FileName) const;
@@ -157,8 +158,13 @@ typedef CountedRef<AperSEStar> AperSEStarRef;
 
 
 class StarScoresList;
+
+double  Find_Fluxmax_Min(const AperSEStarList &List,  const double MinSN, const double frac_elim, const double histo_val_min, int verbose);
+
+
 bool FindStarShapes(const AperSEStarList &List, double MinSN, double &SizeX, 
-		    double &SizeY, double &Corr, StarScoresList &Scores);
+		    double &SizeY, double &Corr, StarScoresList &Scores, 
+		    const double frac_elim=0., const double histo_val_min=0., int verbose=0);
 
 
 #endif /* APERSESTAR__H */

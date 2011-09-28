@@ -47,7 +47,7 @@ static double sq(const double &x) { return x*x;}
 
 bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 		     const double &XGuess, const double &YGuess,
-		     Ellipse &Ell)
+		     Ellipse &Ell, int verbose)
 {
   bool ok = true;
   double xBin, yBin;
@@ -139,9 +139,13 @@ bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
     } // end if (allpos)
 #endif /* USE_FIT_TO_GUESS */
 
+
+  if (verbose > 0 )
+    {
   cout << "HistoPeakFinder :  starting iterations with xc = " << xc 
        << " yc = " << yc 
        << " w = " << wxx << ' ' << wyy << ' ' << wxy << endl;
+    }
 
   int count = 0;
   while (count < 20)

@@ -141,7 +141,7 @@ double ComputeSaturation(const Image& image)
 with a uniform value separated by 0's. we enlarge the patches
 with the same value, and put -1 in case of conflicting values */
  
-bool ConvolveSegMask(const Image &In, Image &Out, const int ExtraSize)
+bool ConvolveSegMask(const Image &In, Image &Out, const int ExtraSize, int Ny)
 {
   if (!In.SameSize(Out))
     {
@@ -166,6 +166,8 @@ bool ConvolveSegMask(const Image &In, Image &Out, const int ExtraSize)
   int ny = In.Ny();
   int b = ExtraSize; // too long a name!
   int span = 2*b+1;
+  if (Ny > 0 && Ny < ny)
+    ny = Ny ;
   for (int j=b; j<ny-b;++j)
     {
       const Pixel *pi = &In(b,j);

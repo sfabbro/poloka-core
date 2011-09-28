@@ -72,6 +72,6 @@ ostream & operator <<(ostream &s, const Ellipse &);
 class Histo2d;
 bool HistoPeakFinder(StarScoresList &List, const Histo2d &H,
 		     const double &XGuess, const double &YGuess,
-		     Ellipse &Ell);
+		     Ellipse &Ell, int verbose=0);
 
 #endif /* HISTOPEAKFINDER__H */

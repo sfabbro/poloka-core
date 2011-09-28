@@ -26,7 +26,8 @@ double ComputeSaturation(const Image& image);
 
 /*!  "Convolve" a mask image consisting of "patches" filled
 with a uniform value separated by 0's. we enlarge the patches
-with the same value, and put -1 in case of conflicting values */
-bool ConvolveSegMask(const Image &In, Image &Out, const int ExtraSize);
+with the same value, and put -1 in case of conflicting values
+Ny deals with the cases when we don't want to convolve up to the whole image height*/
+bool ConvolveSegMask(const Image &In, Image &Out, const int ExtraSize, int Ny=-1);
 
 #endif /* IMAGEUTILS__H */

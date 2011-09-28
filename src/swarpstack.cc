@@ -21,6 +21,14 @@
 
 
 
+#define SWARP_HEADER_EXT ".headforswarp"
+
+#define SWARP_COMMAND " swarp "
+//#define SWARP_COMMAND " /afs/in2p3.fr/throng/snovae/softsnls/swarp-2.17.1-with-fixes/bin/swarp "
+
+
+#define REPROCESS_WEIGHT_ONLINE_SCRIPT " $THRONG_DIR/softsnls/scripts-dh/reprocess_weight_image.csh " 
+
 
 
 /*************** SwarpCards   **************/
@@ -264,6 +272,7 @@ struct Ccd
   int chip;
   double gain;
   double sigmaBack;
+  double seeing;
   double fluxScale;
   std::string filter;
   std::string refcat;
@@ -275,6 +284,10 @@ struct Ccd
     name = R.Name();
     FitsHeader head(R.FitsName());
     gain = head.KeyVal("TOADGAIN");
+    if ( head.HasKey("GFSEEING") )
+      seeing = head.KeyVal("GFSEEING");
+    else
+      seeing = 1. ;
     chip = head.KeyVal("TOADCHIP");
     filter = string(head.KeyVal("TOADFILT"));
     refcat = string(head.KeyVal("REFCAT"));
@@ -282,7 +295,9 @@ struct Ccd
     fluxScale = FluxScale;
   }
 
-  double Weight() { return 1/(sigmaBack*sigmaBack);}
+  //double Weight() { return 1/(sigmaBack*sigmaBack);}
+  // more interesting for a true weighted average
+  double Weight() { return 1/(sigmaBack*sigmaBack*fluxScale*fluxScale*seeing*seeing);}
 
 };
 
@@ -414,6 +429,21 @@ struct Collection : public list<Shoot>
 	count ++;
       }
     return count*num/deno;
+  }
+    double AverageGain_SimpleSum()
+  {
+    int count = 0;
+    double sum_fs_over_g = 0. ;
+    for (iterator i = begin(); i!= end(); ++i)
+      {
+	Shoot &s = (*i);
+	double averageWeight = s.AverageWeight();
+	double averageGain = s.AverageGain();
+	double averageFluxScale = s.AverageFluxScale();
+	sum_fs_over_g += averageFluxScale/ averageGain;
+	count ++;
+      }
+    return count*count/sum_fs_over_g;
   }
   
   void CollectAllNames(StringList &List)
@@ -557,15 +587,42 @@ static void extract_ascii_wcs(const std::string &FitsName,
 
 
 /* on makiki/kiholo, the openfile limit was enlarged only 
-   for tcsh
+   for tcsh*/
 static int my_tcsh_system(const std::string &Command)
 {
   std::cout << " spawning command:" << std::endl << Command << std::endl;
-  return system(("/bin/tcsh -f -c \'"+Command+"\'").c_str());
+  // do not hard code path and tcsh should not be forced here but on the shell
+  //return system(("/bin/tcsh -f -c \'"+Command+"\'").c_str());
+  return system(Command.c_str());
 }
 
+void SwarpStack::Success()
+{
+  string success = "touch " + FullFileName(Dir()) + "/.success" ;
+  my_tcsh_system(success);
+  return ;
+}
 
-*/
+void SwarpStack::SetExternalHeader(const std::string &ext_header)
+{
+  string command = "cp " + ext_header + "  " + FullFileName(Dir()) + "/calibrated" + SWARP_HEADER_EXT;
+  my_tcsh_system(command);
+  return ;
+}
+  
+
+bool SwarpStack::MakeHeaderFromRef()
+{
+  bool res = false ;
+  if (photomAstromReference != NULL)
+    {
+      res = extract_ascii_head(photomAstromReference->FitsName(),
+			 photomAstromReferenceFrame, 
+			 substitute_extension(FitsName(),SWARP_HEADER_EXT)
+			 );
+    }
+  return(res);
+}
 
 bool SwarpStack::MakeFits()
 {
@@ -604,6 +661,9 @@ bool SwarpStack::MakeFits()
 	}
       // build file names for swarp input files.
       std::string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
+      std::string weightSwarpName = 
+	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
+
       if (!DecompressOrLinkImage(ri.FitsName(), imageSwarpName))
 	{
 	  std::cerr << " could not prepare " << imageSwarpName 
@@ -613,21 +673,50 @@ bool SwarpStack::MakeFits()
       inputFiles += (" "+BaseName(imageSwarpName));
       toRemove += " "+imageSwarpName;
 
-      std::string weightSwarpName = 
-	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
-      if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
+      // HACK for weight contaminated with satur mask
+      if (getenv("REPROCESS_WEIGHT_ONLINE"))
 	{
-	  std::cerr << " could not prepare " << weightSwarpName 
-		    << " for swarp " << std::endl;
-	  return false;
+	  string command_rep  = REPROCESS_WEIGHT_ONLINE_SCRIPT ;
+	  string command = command_rep + " " + ri.Dir() + " " + SwarpTmpDir()  ;
+	  cerr << "Running " << command << endl ;
+	  system(command.c_str());
+	  command = "cp " + SwarpTmpDir() + "/" + ri.Name() + "/weight.fits " + weightSwarpName ;
+	  cerr << "Running " << command << endl ;
+	  system(command.c_str());
+	  command = "rm -rf " + SwarpTmpDir() + "/" + ri.Name() ;
+	  cerr << "Running " << command << endl ;
+	  system(command.c_str());
 	}
+      else
+	if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
+	  {
+	    std::cerr << " could not prepare " << weightSwarpName 
+		      << " for swarp " << std::endl;
+	    return false;
+	    continue;
+	  }
+
+
+
+
+      inputFiles += (" "+BaseName(imageSwarpName));
+      toRemove += " "+imageSwarpName;
       toRemove += " "+weightSwarpName;
+
       // compute flux scale factor from ZP
       FitsHeader head(ri.FitsName());
       double fluxScale = 1;
       if (head.HasKey("ZP"))
 	{
-	  double thisZp = head.KeyVal("ZP"); 
+	  double thisZp = head.KeyVal("ZP");
+	  double ZP_phot  =  -1 ;
+	  if (head.HasKey("ZP_PHOT"))
+	    {
+	      thisZp  = head.KeyVal("ZP_PHOT");
+	    }
+	  else
+	    cout << "SwarpStack::MakeFits : NO ZP_PHOT key in " << ri.Name() << " using ZP key" << endl ;
+	  cout << "SwarpStack::MakeFits : original ZP_used_in_swarp " << ri.Name() << " :  " << head.KeyVal("EXTVER") << " " << thisZp << endl ; 
 	  fluxScale = pow(10.,0.4*(stackZp - thisZp));
 	}
       else
@@ -636,8 +725,8 @@ bool SwarpStack::MakeFits()
 		    << " misses a photometric zero point " << std::endl;
 	}
       // write fluxScale in a ascii header
-#define SWARP_HEADER_EXT ".headforswarp"
-      AsciiHead ah(substitute_extension(imageSwarpName,SWARP_HEADER_EXT));
+      string header_name = substitute_extension(imageSwarpName,SWARP_HEADER_EXT);
+      AsciiHead ah(header_name);
       ah.AddKey("FLXSCALE", fluxScale);
       // compute the satur level for this image 
       double this_satur = ri.Saturation();
@@ -679,8 +768,16 @@ bool SwarpStack::MakeFits()
   // weighted average stack
   
   // --nrl 02/2006 in order to deal w/ the satellites...
-  cards.AddKey("COMBINE_TYPE","MEDIAN");
+  //cards.AddKey("COMBINE_TYPE","MEDIAN");
   //  cards.AddKey("COMBINE_TYPE","WEIGHTED");
+  bool weighted_sum = false ;
+  if (getenv("WEIGHTED_AVERAGE"))
+    {
+      cards.AddKey("COMBINE_TYPE","WEIGHTED");
+      weighted_sum = true ;
+    }
+  else
+    cards.AddKey("COMBINE_TYPE","MEDIAN");
 
   // no astrometric flux rescaling 
   // (this is because Elixir does in principle the right job)
@@ -701,9 +798,142 @@ bool SwarpStack::MakeFits()
   
   
 
-  string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName 
+  string command = "cd "+SwarpTmpDir()+"; " + SWARP_COMMAND + " -c " + cardsName 
     + inputFiles;
-  if (system(command.c_str())!=0)
+  if (my_tcsh_system(command)!=0)
+    {
+      cerr <<" swarpstack: something went wrong ... " << std::endl;
+      return false;
+    }
+  // STILL have to add a few things in the header
+  {
+    FitsHeader head(FitsName(), RW);
+    StringList filtList = collection.FilterList();
+    if (filtList.size() > 1)
+      {
+	std::cout << " Image " << Name() << " is composed of different filters" 
+		  << " hope you know what you are doing" << std::endl;
+	head.AddOrModKey("FILTERS", filtList.AllEntries());
+      }
+    else head.AddOrModKey("FILTER",filtList.front());
+    StringList refcatList = collection.RefcatList();
+    if (filtList.size() > 1)
+      {
+	std::cout << " Image " << Name() << " is made from components aligned "
+		  << "\n on different astro-photometric catalogs (REFCAT key)"
+		  << "\n hope you know what you are doing" << std::endl;
+	head.AddOrModKey("REFCATS", filtList.AllEntries());
+      }
+    else head.AddOrModKey("REFCAT",refcatList.front());
+    double average_gain;
+    if (weighted_sum) 
+      average_gain = collection.AverageGain();
+    else
+       average_gain = collection.AverageGain_SimpleSum();
+    
+    head.AddOrModKey("GAIN", average_gain," averaged over the whole area, rather rough");
+    head.AddOrModKey("BACK_SUB",true);
+    head.AddOrModKey("ZP",stackZp);
+    
+    
+  }
+
+  // write the component list
+  ofstream s((Dir()+"/components.list").c_str());
+  StringList components;
+  collection.CollectAllNames(components);
+  for (StringIterator i = components.begin(); i != components.end(); ++i)
+    s << *i << std::endl;
+  s.close();
+  // write out the saturation
+  SetSaturation(saturation);
+
+  // since we got here, swarp succeeded, so cleanup resamp files
+
+  // and cleanup input files (links or actual files depending if they were compressed)
+  RemoveFiles(toRemove);
+  RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
+  return true;
+}
+
+
+bool SwarpStack::MakeFits_OnlyAdd()
+{
+  if (HasImage()) return true;
+  std ::cout << " SwarpStack::MakeFits_OnlyAdd : making " << FitsName() << std::endl;
+  /* link files in the "working directory ", and collect info about
+     input images */
+  string toRemove;
+  string inputFiles;
+  double saturation = 1e30;
+  // collect info on input stuff to assemble output header
+  Collection collection; 
+  // zero point : if there is a reference, align on it
+  double stackZp = 30;
+  // setup files for swarp input
+  for (ReducedImageIterator i=images.begin(); i!= images.end(); ++i)
+    {
+      ReducedImage &ri = **i;
+      
+      // build file names for swarp input files.
+      std::string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
+      if (!DecompressOrLinkImage(ri.FitsName(), imageSwarpName))
+	{
+	  std::cerr << " could not prepare " << imageSwarpName 
+		    << " for swarp " << std::endl;
+	  //return false;
+	  continue;
+	}
+      inputFiles += (" "+BaseName(imageSwarpName));
+      toRemove += " "+imageSwarpName;
+
+      std::string weightSwarpName = 
+	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
+      if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
+	{
+	  std::cerr << " could not prepare " << weightSwarpName 
+		    << " for swarp " << std::endl;
+	  //return false;
+	  continue;
+	}
+      toRemove += " "+weightSwarpName;
+      // we do not compute flux scale factor from ZP
+      // we compute the satur level for this image 
+      double fluxScale = 1;
+      double this_satur = ri.Saturation();
+      saturation = min(saturation,this_satur*fluxScale);
+      collection.AddCcd(ri, fluxScale);
+    }
+  // setup datacards
+  SwarpCards cards;
+  // directly write image and weight in the right place
+  cards.AddKey("IMAGEOUT_NAME",FullFileName(FitsName()));
+  cards.AddKey("WEIGHTOUT_NAME",FullFileName(FitsWeightName()));
+  cards.AddKey("HEADER_SUFFIX",SWARP_HEADER_EXT);
+  // tell swarp that weights are weights
+  cards.AddKey("WEIGHT_TYPE","MAP_WEIGHT");
+  // no resampling
+  cards.AddKey("RESAMPLE", "N");
+  // weighted average stack
+  cards.AddKey("COMBINE_TYPE","WEIGHTED");
+  cards.AddKey("FSCALASTRO_TYPE","NONE");
+  // background alredy subtracted
+  cards.AddKey("SUBTRACT_BACK","N");
+  // cleanup?
+  cards.AddKey("DELETE_TMPFILES","N");
+
+  // write cards
+  string cardsName = "default.images.swarp";
+  // write them in perm dir
+  cards.write(SwarpPermDir()+cardsName);
+  // copy them in Tmp Directory
+  cards.write(SwarpTmpDir()+cardsName);
+  
+  
+
+  string command = "cd "+SwarpTmpDir()+";" + SWARP_COMMAND + " -c " + cardsName 
+    + inputFiles;
+  if (my_tcsh_system(command.c_str())!=0)
     {
       cerr <<" swarpstack: something went wrong ... " << std::endl;
       return false;
@@ -749,8 +979,8 @@ bool SwarpStack::MakeFits()
   // since we got here, swarp succeeded, so cleanup resamp files
 
   // and cleanup input files (links or actual files depending if they were compressed)
-  //  RemoveFiles(toRemove);
-  //  RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
+    RemoveFiles(toRemove);
+    RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
   return true;
 }
 
@@ -778,6 +1008,11 @@ bool SwarpStack::MakeWeight()
 
 
 bool SwarpStack::MakeSatur()
+{
+  bool only_add = false ;
+  return(MakeSatur(only_add));
+}
+bool SwarpStack::MakeSatur(bool only_add)
 {
   if (HasSatur()) return true;
   // link files in the "working directory "
@@ -826,16 +1061,19 @@ bool SwarpStack::MakeSatur()
   cards.AddKey("FSCALASTRO_TYPE","NONE");
   cards.AddKey("SUBTRACT_BACK","N");
   cards.AddKey("DELETE_TMPFILES","N");
-  cards.AddKey("RESAMPLING_TYPE","BILINEAR"); // enough for binary masks
-
+  if (only_add)
+    cards.AddKey("RESAMPLE","N");
+  else
+    cards.AddKey("RESAMPLING_TYPE","BILINEAR"); // enough for binary masks
   string cardsName = "default.satur.swarp";
   // write them in perm dir
   cards.write(SwarpPermDir()+cardsName);
   // and make a pseudo-copy in temp dir
-  MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
+  //MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
+  cards.write(SwarpTmpDir()+cardsName);
 
-  string command = "cd "+SwarpTmpDir()+"; swarp -c " + cardsName + inputFiles;
-  if (system(command.c_str())!=0)
+  string command = "cd "+SwarpTmpDir()+ ";" + SWARP_COMMAND + " -c " + cardsName + inputFiles;
+  if (my_tcsh_system(command.c_str())!=0)
     {
       cerr <<" swarpstack: something went wrong ... " << std::endl;
       return false;
@@ -858,8 +1096,14 @@ bool SwarpStack::MakeSatur()
     } while (inOut.LoadNextSlice()); // read/write
   // remove temporary files
   remove(swarpOutName.c_str());
-  //  RemoveFiles(toRemove);
-  //  RemoveFiles(SubstitutePattern(toRemove,".satur.",".satur.resamp."));
+  RemoveFiles(toRemove);
+  if (!only_add)
+    {
+      RemoveFiles(SubstitutePattern(toRemove,".satur.",".satur.resamp."));
+      RemoveFiles(SubstitutePattern(toRemove,".satur.",".satur.resamp.weight."));
+    }
+  RemoveFiles(SubstitutePattern(toRemove,".satur.fits",".satur.headforswarp"));
+  RemoveFiles(SubstitutePattern(toRemove,".satur.fits",".image.headforswarp"));
 
   // we are done !
   return true;

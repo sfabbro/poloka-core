@@ -31,16 +31,16 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 //! From an initial first order guess, fit and refine it
 int RefineGuess(const BaseStarList &List1, const BaseStarList &List2, 
 		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One,
-		const string& image1_name="", const string& image2_name=""); //names are just for dumping results
+		const string& image1_name="", const string& image2_name="", int max_order=3); //names are just for dumping results
 
 //! calls MatchGuess, refines the guess with RefineGuess
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 
-                    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One, float min_match_ratio=0);
+                    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One, float min_match_ratio=0, int max_order=3,int N_CUT_LIST=500, int N_FRAME_LIST=300 );
 
 //! same as above but with already loaded catalogs. Use ListAndFitsCheckForMatch to lad and filter the catalog.
 /*! this routine was introduced to avoid reloading one of the catalogs when matching many images to the same reference */ 
 bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
 		    const DbImage &DbImage2, const SEStarList& SL2,
 		    CountedRef<Gtransfo> &One2Two, 
-		    CountedRef<Gtransfo>  &Two2One, float min_match_ratio=0);
+		    CountedRef<Gtransfo>  &Two2One, float min_match_ratio=0, int max_order=3,int N_CUT_LIST=500, int N_FRAME_LIST=300 );
 #endif /* IMAGEMATCH__H */

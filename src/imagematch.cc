@@ -30,8 +30,9 @@ static void KeepGoodForMatch(SEStarList &List)
   for (SEStarIterator it= List.begin(); it!=List.end(); )
     {
       SEStar *pstar =  *it ;
-      if (pstar->FlagBad() == 0 && pstar->Flag()<8   // not in bad zone, keep satur
-	  && pstar->flux/pstar->EFlux() >10
+      if (!(isnan(pstar->vx)) && !(isnan(pstar->vy)) 
+	  && (pstar->FlagBad() == 0 && pstar->Flag()<8 )  // not in bad zone, keep satur
+	  && (pstar->flux/pstar->EFlux() >10)
 	  ) ++it ;
       else it = List.erase(it); // with counted references no need to delete;
     }  
@@ -81,7 +82,7 @@ void ShiftGuess(const BaseStarList &List1, const BaseStarList &List2, CountedRef
 }
 
 void BrutalGuess(const BaseStarList &List1, const BaseStarList &List2,  CountedRef<Gtransfo> &Guess, 
-			const FitsHeader &Head1, const FitsHeader &Head2)
+		 const FitsHeader &Head1, const FitsHeader &Head2, int N_STAR_L)
 {
   cout << " BrutalGuess : starting a combinatorial match " << endl;
   double pixscale1 = Head1.KeyVal("TOADPIXS");
@@ -91,8 +92,8 @@ void BrutalGuess(const BaseStarList &List1, const BaseStarList &List2,  CountedR
   MatchConditions conditions;
   conditions.SizeRatio = pixSizeRatio;
   conditions.DeltaSizeRatio = 0.1 * conditions.SizeRatio;
-  conditions.NStarsL1 = 70;
-  conditions.NStarsL2 = 70;
+  conditions.NStarsL1 =  N_STAR_L ;
+  conditions.NStarsL2 =  N_STAR_L ;
   conditions.PrintLevel = 0;
   BaseStarList L1, L2;
   List1.CopyTo(L1); List2.CopyTo(L2);
@@ -127,13 +128,13 @@ static bool testNewTransfo(const StarMatchList* matchList, const GtransfoLin* gu
 }
 
 
-static void CutList(const SEStarList &SList, BaseStarList &BList)
+static void CutList(const SEStarList &SList, BaseStarList &BList, int N_CUT_LIST)
 {
   BList.ClearList();
   for (SEStarCIterator it=SList.begin(); it != SList.end(); ++it)
     BList.push_back(new BaseStar(**it));
   BList.FluxSort();
-  BList.CutTail(500);
+  BList.CutTail(N_CUT_LIST);
 }
 
 bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
@@ -152,6 +153,15 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
 
   double pixscale1 = Head1.KeyVal("TOADPIXS");
   double pixscale2 = Head2.KeyVal("TOADPIXS");
+
+  int Nx = Head1.KeyVal("NAXIS1");
+  int Ny = Head1.KeyVal("NAXIS2");
+  int N_STAR_L = 70 ;
+  // patch for big frames
+  if (Nx > 10000 && Ny > 10000)
+    N_STAR_L = 2000 ;
+
+
   double pixSizeRatio2 = pixscale1*pixscale1/pixscale2/pixscale2;
 
   StarMatchList *matchList = ListMatchCollect(List1, List2, One2Two, init_toldist);
@@ -184,7 +194,7 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
       if (!testNewTransfo(matchList, One2Two, pixSizeRatio2, nmatch, nmin))
 	{
 	  if(debug_match) cout << " 3 - Both above failed: try brutal combinatorial approach" << endl; 
-	  BrutalGuess(List1, List2, One2Two, Head1, Head2);
+	  BrutalGuess(List1, List2, One2Two, Head1, Head2, N_STAR_L);
 	  delete matchList;
 	  matchList = ListMatchCollect(List1, List2,One2Two , init_toldist);
 	  if (!testNewTransfo(matchList, One2Two, pixSizeRatio2, nmatch, nmin))
@@ -200,7 +210,7 @@ bool MatchGuess(const BaseStarList &List1, const BaseStarList &List2,
   else cout << " MatchGuess : found a guess with WCS \n";
   
   cout << " MatchGuess : guessed transfo : \n";
-  matchList->DumpTransfo();
+  cout << *(matchList->Transfo()) << endl << " list size : " << matchList->size() << endl;
 
   // no need to delete with countedref
   // this is included in countedref operator =
@@ -240,7 +250,8 @@ static double transfo_diff(const BaseStarList &List, const Gtransfo *T1, const G
 // increase order if transfo looks ok
 int RefineGuess(const BaseStarList &List1, const BaseStarList &List2, 
 		CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo> &Two2One,
-		const string& image1_name, const string& image2_name  // names are just for dumping results (facultative)
+		const string& image1_name, const string& image2_name  /* names are just for dumping results (facultative)*/, 
+		int max_order 
 		)
 {
   cout << " RefineGuess : starting guess with "  
@@ -250,7 +261,7 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
   int bestorder = 1;
   
 
-  cout << " RefineGuess : Will try until order 3" << endl;
+  cout << " RefineGuess : Will try until order " << max_order << endl;
   int order = 1;
   double prevChi2Red;
   size_t minToMatch = 3;
@@ -315,7 +326,7 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
       order++;
       // refine_toldist -= 0.5;
     } 
-  while (refinedMatch->size() > minToMatch && order <4);
+  while (refinedMatch->size() > minToMatch && order <= max_order);
   cout << setprecision(oldprec);
   // this dump is usefull to check if everything is ok in the log
   cout << " RefineGuess_SUMMARY_image1_image2_order_resid_nused_chi2pdf " 
@@ -333,8 +344,9 @@ int RefineGuess(const BaseStarList &List1, const BaseStarList &List2,
 
 
 static void FrameList(const SEStarList &SList, const FitsHeader &Head, 
-		      const Gtransfo *SListToHead, BaseStarList &BList)
-{
+		      const Gtransfo *SListToHead, BaseStarList &BList, int N_FRAME_LIST )
+{//HACK
+  if (N_FRAME_LIST<=0 ) N_FRAME_LIST = 300 ;
   Frame frame(Head);
   BList.ClearList();
   for (SEStarCIterator it = SList.begin(); it != SList.end(); ++it)
@@ -343,12 +355,18 @@ static void FrameList(const SEStarList &SList, const FitsHeader &Head,
 	BList.push_back(new BaseStar(**it));
     }
   BList.FluxSort();
-  BList.CutTail(300);
+  BList.CutTail(N_FRAME_LIST);
 }
 
 
+
+// N_CUT_LIST, = 500, 50000 pour big image
+// N_FRAME_LIST = 300, 10000 pour big image
+// max_order = 3, 9 pour big image
+
+
 bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2, 
-		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One, float min_match_ratio)
+		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One, float min_match_ratio,  int max_order, int N_CUT_LIST, int N_FRAME_LIST)
 {
   cout << "\n ImageListMatch : Matching " << DbImage1.Name() 
        << " and " << DbImage2.Name() << endl;
@@ -370,12 +388,17 @@ bool ImageListMatch(const DbImage &DbImage1, const DbImage &DbImage2,
       !ListAndFitsCheckForMatch(DbImage2, sl2))
     return false;
 
-  return ImageListMatch(DbImage1, sl1, DbImage2, sl2, One2Two, Two2One, min_match_ratio);
+  return ImageListMatch(DbImage1, sl1, DbImage2, sl2, One2Two, Two2One, min_match_ratio, max_order, N_CUT_LIST, N_FRAME_LIST);
 }
+
+
+// N_CUT_LIST, = 500, 50000 pour big image
+// N_FRAME_LIST = 300, 10000 pour big image
+// max_order = 3, 9 pour big image
 
 bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
 		    const DbImage &DbImage2, const SEStarList& SL2,
-		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One, float min_match_ratio)
+		    CountedRef<Gtransfo> &One2Two, CountedRef<Gtransfo>  &Two2One, float min_match_ratio, int max_order, int N_CUT_LIST, int N_FRAME_LIST )
 {
   string fitsName1 = DbImage1.FitsImageName(Calibrated);
   string fitsName2 = DbImage2.FitsImageName(Calibrated);
@@ -383,8 +406,8 @@ bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
   BaseStarList bl1,bl2;
 
   cout << " ImageListMatch : doing a first guess \n" ;
-  CutList(SL1, bl1);
-  CutList(SL2, bl2);
+  CutList(SL1, bl1, N_CUT_LIST);
+  CutList(SL2, bl2, N_CUT_LIST);
 
   // 1 - Try a bunch of method to get an initial match
   if (!MatchGuess(bl1, bl2, head1, head2, One2Two, Two2One, min_match_ratio)) 
@@ -398,13 +421,13 @@ bool ImageListMatch(const DbImage &DbImage1, const SEStarList& SL1,
     }
   
   // keep only objects in common transformed frame
-  FrameList(SL1, head2, One2Two, bl1);
-  FrameList(SL2, head1, Two2One, bl2);
+  FrameList(SL1, head2, One2Two, bl1, N_FRAME_LIST);
+  FrameList(SL2, head1, Two2One, bl2, N_FRAME_LIST);
   
   // 2 - Refine the initial match with initial full list in framed match
   cout << " ImageListMatch : refining initial guess \n" ;
   
-  RefineGuess(bl1, bl2, One2Two, Two2One, DbImage1.Name(),DbImage2.Name());
+  RefineGuess(bl1, bl2, One2Two, Two2One, DbImage1.Name(),DbImage2.Name(), max_order);
   cout << " ImageListMatch : final refined transfo : \n";
   cout << *One2Two << endl;
 
