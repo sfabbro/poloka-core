@@ -44,7 +44,7 @@ class Model
   IntPoint refPix; // integer offset
   const double overSampling;
   ImagePSF refPSF;
-  SEStarList seRef;
+  BaseStarList seRef;
   const PmStar* pmStar;
   const bool useStoredTransfos;
 

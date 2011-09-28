@@ -250,14 +250,11 @@ bool Model::FindTransfos(const RImageRef Current,
       else
 	{
 	  // minor tricks to avoid reloading the same ref catalog again and again
-	  if (seRef.size() == 0)
-	    {
-	      if (!ListAndFitsCheckForMatch(*refImage, seRef)) return false;
-	    }
-	  SEStarList seCur;
-	  if (!ListAndFitsCheckForMatch(*Current, seCur)) return false;
-	  if (!ImageListMatch(*Current, seCur, *refImage, seRef, Transfo2Ref, TransfoFromRef))
-	    return false;
+	  if (seRef.empty()) LoadForMatch(*refImage, seRef);
+	  BaseStarList seCur; LoadForMatch(*Current, seCur);
+	  Transfo2Ref = FindTransfo(seCur, seRef, *Current, *refImage);
+	  TransfoFromRef = FindTransfo(seRef, seCur, *refImage, *Current);
+	  if (!Transfo2Ref) return false;
 	}
       TheGtransfoServer.StoreTransfos(Current, refImage, Transfo2Ref, TransfoFromRef);
     }
