@@ -92,7 +92,8 @@ public :
 			   bool fond_deja_soustrait, bool sauver_fond,
 			   bool use_sigma_header);
 
-  void  FillSExtractorData_2(ReducedImage & rim_det, ForSExtractor & data);
+  void  FillSExtractorData_2(ReducedImage & rim_det, ForSExtractor & data,  
+			     bool SE_take_back_as_0);
 
   /* Recover Back eventually from mini back image and 
      re add it if desired */
@@ -101,6 +102,8 @@ RecoverBack(bool add_to_im);
   /* As indicated: enables to start from an image with ist background re-added when possible */
 bool
 ReAddBackground_and_ResetKeys();
+
+
 
 
 /* Runs SExtractor on the image and compute the seeing from
@@ -138,9 +141,8 @@ Usefull in case of artificially smoothed images
   // catalog_name : Dir()+"/sedble.list" par exemple.
   bool MakeCatalog_2images(ReducedImage & rim_det, bool overwrite, 
 			   bool weight_from_measurement_image, 
-			   string catalog_name, bool do_segmentation);
-
-  bool MakeBack(bool dosubtract);
+			   string catalog_name, bool do_segmentation, 
+			   bool SE_take_back_as_0);
 
 //! Produce the Saturated stars pixels mask, subtract the image background, detect with the SExtractor computed sigma. search the cosmics, and update catalog and weight for cosmics. No free coffee.
   virtual bool MakeCatalog();
@@ -152,7 +154,7 @@ Usefull in case of artificially smoothed images
   virtual bool MakeBack();
 
   //! Extracts stars form the AperCat
-  virtual bool MakeStarCat();
+  virtual bool MakeStarCat(bool overwrite = false, double SigToN_Min =-1);
   
 //! MakeCatalog_ImageBizarre() is for sum-images, or convolved images, for which we do not want to subtract the background map, nor compute the saturated pixels map, and for which we provide the value of the sigmabackground. overwrite is set to true.
   bool MakeCatalog_ImageBizarre(){ 
@@ -174,6 +176,9 @@ Usefull in case of artificially smoothed images
   //! produce cosmic image
   virtual bool MakeCosmic();
 
+
+  //! subtract poloka background in slices mode
+  bool SubPolokaBack_Slices(int poloka_back_mesh_sizex=-1, int poloka_back_mesh_sizey=-1,  double filter_half_width=1, bool save_back=false, bool add_mask=false, bool subtract_back=true) ;
 
   //! produce satellite image
   virtual bool MakeSatellite();
@@ -263,6 +268,9 @@ Usefull in case of artificially smoothed images
   //! wether background was subtracted or not
   bool BackSub() const;
   bool SetBackSub(const bool &Value, const string Comment="");
+  //! wether background was subtracted or not with poloka
+  bool PolokaBackSub() const;
+  bool SetPolokaBackSub(const bool &Value, const string Comment="");
 
   //! current saturation level
   double Saturation() const;
