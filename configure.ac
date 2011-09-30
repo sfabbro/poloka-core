@@ -44,7 +44,8 @@ AX_LIBSEX(, [AC_MSG_ERROR([SExtractor library could not be detected
 ])
 
 ## Check for mandatory zlib (for gztream)
-AX_CHECK_ZLIB
+AC_CHECK_LIB([z], [inflateEnd])
+AC_CHECK_HEADER([zlib.h])
 
 ## Check for optional cernlib to build
 CERNLIB=false
