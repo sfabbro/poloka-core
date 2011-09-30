@@ -17,30 +17,31 @@ static void usage(const char *progName) {
 
 struct ImageSubtract {
 
-  bool overwrite, noswap, dosub, dodetect;
+  bool overWrite, noSwap, doSub, doDetect;
   ReducedImageRef Ref;
-  string subname;
+  string subName;
 
-  ImageSubtract() : overwrite(false), noswap(false), dosub(true), dodetect(false) {}
+  ImageSubtract() : overWrite(false), noSwap(false), doSub(true), doDetect(false) {}
   
   void operator () (const ReducedImageRef Im) const {
 
     // read or redo kernel fit
     try {
-      KernelFitter kernfit(Ref, Im, noswap);
-      if (overwrite || !kernfit.ReadKernel())
+      KernelFitter kernfit(Ref, Im, noSwap);
+      if (overWrite || !kernfit.ReadKernel())
 	if (kernfit.DoTheFit())
-	  kernfit.WriteKernel(overwrite);
+	  kernfit.WriteKernel(overWrite);
 	else
 	  cerr << " match between "
 	       << Ref->Name() << " and "
 	       << Im->Name() << " failed\n";
 	  
-      if (!dosub) return;
-      if (subname.empty()) subname = SubtractedName(Ref->Name(), Im->Name())
+      if (!doSub) return;
+      string subname = subName;
+      if (subName.empty()) subname = SubtractedName(Ref->Name(), Im->Name());
       ImageSubtraction sub(subname, Ref, Im, kernfit);
       
-      if (overwrite) { 
+      if (overWrite) { 
 	if (sub.HasImage()) remove(sub.FitsName().c_str());
 	if (sub.HasWeight()) remove(sub.FitsWeightName().c_str());
 	if (sub.HasCosmic()) remove(sub.FitsCosmicName().c_str());
@@ -48,7 +49,7 @@ struct ImageSubtract {
       }
       
       sub.Execute(DoFits|DoWeight|DoCosmic);
-      if (dodetect) sub.MakeCatalog();
+      if (doDetect) sub.MakeCatalog();
     } catch (PolokaException p) {
       p.PrintMessage(cerr);
     }
@@ -78,11 +79,11 @@ int main(int nargs, char **args) {
       continue;
     }
     switch (arg[1]) {
-    case 'd': imSubtract.dodetect = true; break;
-    case 'r': imSubtract.noswap = true; break;
-    case 'n': imSubtract.dosub = false; break;
-    case 'f': imSubtract.overwrite = true; break;
-    case 'o': imSubtract.subname = args[++i]; break;
+    case 'd': imSubtract.doDetect = true; break;
+    case 'r': imSubtract.noSwap = true; break;
+    case 'n': imSubtract.doSub = false; break;
+    case 'f': imSubtract.overWrite = true; break;
+    case 'o': imSubtract.subName = args[++i]; break;
     default : usage(args[0]);
     }
   }
