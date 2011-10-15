@@ -259,7 +259,7 @@ void DicStarList::init(const string &FileName) {
 		{
 		  cout << "*******************************************************************" << endl;
 		  cout << " the file " << FileName << " does not contain a BaseStar format tag" << endl;
-		  cout << " it is not likely that the decoding of this file is going nuts. " << endl;
+		  cout << " it is very likely that the decoding of this file is going nuts. " << endl;
 		  cout << " If your file begins with x,y, flux, add \'#format BaseStar 2\' in its header. " << endl;
 		  cout << " If your file begins with x,y, sx,sy,rhoxy, flux, add \'#format BaseStar 3\' in its header. " << endl;		    
 		  cout << "*******************************************************************" << endl;

@@ -112,16 +112,24 @@ class DictFile : public list <DictFileEntry>
   bool HasKey(const string &Key) const { return dict.Locate(Key) != -1;}
   void AddKey(const string &Key);
   void RmKey(const string &Key);
+
+  GKeyMap  &GlobalKeys() { return globalKeys;}
+  const GKeyMap &GlobalKeys() const { return globalKeys;}
+
+
   bool HasGlobalKey( const string &Key) const 
     { return (globalKeys.find(Key) != globalKeys.end()); };
 
   string GlobalValue(const string &Key, const bool FatalIfAbsent = true) const;
   void RemoveGlobalKey( const string &Key);
-  void AddGlobalKey( const string &Key, const string &Val);  
+ 
+ void AddGlobalKey( const string &Key, const string &Val);  
+  void AddGlobalKeys(const GKeyMap & Keys ) ;
 
   void DumpKeys() const;
 
   bool Write(const string &FileName) const;
+  bool Write_Data(ofstream & pr) const ;
 
 };
 

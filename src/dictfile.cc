@@ -211,6 +211,38 @@ bool DictFile::Write(const string &FileName) const
   return true;
 }
 
+
+bool DictFile::Write_Data(ofstream & pr) const
+{unsigned presentSize = dict.size();
+// invert the dictionnary:
+  map<int,string> tags;
+  for (Dictionnary::const_iterator it = dict.begin(); it != dict.end(); ++it)
+    {
+      tags[it->second] = it->first; 
+      //cerr  << "tag : " << tags[it->second] << endl ;
+    }
+  // write data
+  for (const_iterator it = begin(); it != end(); ++it)
+    {
+      const DictFileEntry &entry = *it;
+      for (unsigned int i =0; i < presentSize; ++i)
+	{
+	  string val = entry.Value(tags[i]);
+	  pr << val << " " ;
+	}
+      pr << endl ;
+    }
+  return true;
+}
+
+
+void DictFile::AddGlobalKeys(const GKeyMap & Keys )
+{
+  for(GKeyMap::const_iterator it = Keys.begin() ; it != Keys.end(); it++) {
+    AddGlobalKey(it->first.c_str(),it->second.c_str() );
+  }
+}
+
 void DictFile::AddKey(const string &Key)
 {
   if (!HasKey(Key))
