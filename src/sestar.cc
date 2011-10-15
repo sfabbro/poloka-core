@@ -119,10 +119,6 @@ SEStar::Set_to_Zero()
   // y_image = y  de BaseStar
   // flux_best = flux de BaseStar  
 
-  local_seeing = 0 ;
-   aper_flux  = 0 ;
-   err_aper_flux = 0  ;
-   aper_flux_other = 0  ;
 
   xpeak = 0 ;  
   ypeak = 0 ;

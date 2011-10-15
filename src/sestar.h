@@ -252,12 +252,7 @@ private:
   // uniquement appelee par le constructeur, donc private  
 void Set_to_Zero();
 
-  // pour strocker pour test
 public :
-  double local_seeing ;
-  double aper_flux ;
-  double err_aper_flux ;
-  double aper_flux_other ;
 
 protected:
   int num ;

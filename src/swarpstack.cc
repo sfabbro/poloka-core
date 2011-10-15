@@ -284,10 +284,7 @@ struct Ccd
     name = R.Name();
     FitsHeader head(R.FitsName());
     gain = head.KeyVal("TOADGAIN");
-    if ( head.HasKey("GFSEEING") )
-      seeing = head.KeyVal("GFSEEING");
-    else
-      seeing = 1. ;
+    seeing = R.Seeing();
     chip = head.KeyVal("TOADCHIP");
     filter = string(head.KeyVal("TOADFILT"));
     refcat = string(head.KeyVal("REFCAT"));
@@ -596,6 +593,8 @@ static int my_tcsh_system(const std::string &Command)
   return system(Command.c_str());
 }
 
+
+
 void SwarpStack::Success()
 {
   string success = "touch " + FullFileName(Dir()) + "/.success" ;
@@ -670,8 +669,6 @@ bool SwarpStack::MakeFits()
 		    << " for swarp " << std::endl;
 	  return false;
 	}
-      inputFiles += (" "+BaseName(imageSwarpName));
-      toRemove += " "+imageSwarpName;
 
       // HACK for weight contaminated with satur mask
       if (getenv("REPROCESS_WEIGHT_ONLINE"))
