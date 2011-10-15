@@ -99,7 +99,7 @@ Frame ApplyTransfo(const Frame& inputframe,const Gtransfo &T, const WhichTransfo
 double ComputeSaturation(const Image& image)
 {
   double max = image.MaxValue();
-  Histo1d histo(int(max/500.), 0, max + 1 ); //HC
+  Histo1d histo(int(max/500.), 0, max + 1); //HC
   for (int j = 0; j < image.Ny() ; ++j)
     for (int i = 0; i < image.Nx() ; ++i)
       histo.Fill(image(i,j), 1 );
@@ -109,7 +109,7 @@ double ComputeSaturation(const Image& image)
   double maxcoup = X;
   int nmax = (int) max ;
   Histo1d Satur(nmax , 0 , max);
-  double Saturation=0, Sat;
+  double Saturation=max, Sat;
   int count =1, nombre =0;
   for (int l=0; l<20; l++)
     {
@@ -130,9 +130,7 @@ double ComputeSaturation(const Image& image)
           count =1;
  
         }
- 
     }
- 
   return Saturation;
 }
 
