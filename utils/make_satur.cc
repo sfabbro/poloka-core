@@ -3,7 +3,7 @@
 #include <cstdio>
 
 static void usage(const char* progname) {
-  cerr << "Usage: " << progname << " [OPTION]...[DBIMAGE}...\n"
+  cerr << "Usage: " << progname << " [OPTION]...DBIMAGE...\n"
        << "Compute saturation level and create a saturation map\n\n"
        << "    -o : overwrite\n";
   exit(EXIT_FAILURE);

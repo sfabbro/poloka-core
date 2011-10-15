@@ -186,7 +186,7 @@ int main(int argc, char ** argv)
       
       //	      cout << "pos in pix : " << pabs.x << " " << pabs.y << endl;
       
-      pabs.SetSeeing(seeing);
+      pabs.SetSESeeing(seeing);
       
       //
       // Compute the aperture fluxes for this star

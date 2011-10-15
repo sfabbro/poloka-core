@@ -472,7 +472,6 @@ int main(int argc, char **argv)
       stream << fs->Seeing() << " ";
       stream << fs->ExposureTime() << " ";
       stream << fs->photomratio << " ";
-      stream << fs->GFSeeing() << " ";
       stream << fs->SESky() << " ";
       stream << fs->SIGSky() << " ";
       stream << fs->sigscale_varflux << " ";

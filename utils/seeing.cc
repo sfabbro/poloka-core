@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     CalculeSeeingSE(datsee, sortiese, stlse, seestar);
     if(overwrite) {
       cout << redimage.Name() << " write_seeing " << sortiese.seeing << endl;
-      redimage.SetSeeing(sortiese.seeing,"Poloka Weighted Histogram Method");
+      redimage.SetSESeeing(sortiese.seeing,"Poloka Weighted Histogram Method");
     }else{
       float oldseeing = redimage.Seeing();
       cout << redimage.Name() << " old_new " << oldseeing
