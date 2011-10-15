@@ -139,10 +139,11 @@ Usefull in case of artificially smoothed images
   // pour processer 2 images : detection + mesure, en simplifie
   //weight_from_measurement_image : detection et measurement weight map = measurement weight map.
   // catalog_name : Dir()+"/sedble.list" par exemple.
-  bool MakeCatalog_2images(ReducedImage & rim_det, bool overwrite, 
+  int MakeCatalog_2images(ReducedImage & rim_det, bool overwrite, 
 			   bool weight_from_measurement_image, 
 			   string catalog_name, bool do_segmentation, 
 			   bool SE_take_back_as_0);
+
 
 //! Produce the Saturated stars pixels mask, subtract the image background, detect with the SExtractor computed sigma. search the cosmics, and update catalog and weight for cosmics. No free coffee.
   virtual bool MakeCatalog();
@@ -210,10 +211,15 @@ Usefull in case of artificially smoothed images
 
  
 
- //! basic seeing
+ //! best seeing estimation
   double Seeing() const;
   void RemoveSeeing();
   bool SetSeeing(const double &Value, const string Comment = "");
+
+  //! SExtractor seeing
+  double SESeeing() const;
+  bool SetSESeeing(const double &Value, const string Comment="");
+  void RemoveSESeeing();
 
  //! bseeing from gaussian fits to the objects+ star clump finding
   double GFSeeing() const;
