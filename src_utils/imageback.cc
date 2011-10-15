@@ -57,7 +57,7 @@ ImageBack::ImageBack(const string FileSourceName, int MeshStepX, int MeshStepY,
      backValue(nx,ny),
      backRms(nx,ny) 
 { 
- 
+  cout << "ImageBack : using image: " << FileSourceName << " weight: " << FileWeightName << endl ;
   FitsSlice SourceImage(FileSourceName,MeshStepY,0);
   FitsSlice WeightImage(FileWeightName,MeshStepY,0);
 
@@ -220,15 +220,14 @@ static void  backguess(const Histo1d &Histo, double &mean, double &sigma)
    //            :qzero+med*binSize))
    //                  :qzero+mea*binSize;                   :qzero+mea*binSize;
 
-   // DH : M. BETOULE PATCH
    if (fabs(sig)>0.0){
      if (fabs((mea-med)/sig)< 0.3) // non crowded
        {
-	 mean = qzero+mea*binSize;
+	 mean = qzero+(2.5*med-1.5*mea)*binSize;
        }
      else //crowded
        {
-	 mean = qzero+(2.5*med-1.5*mea)*binSize; // Sextractor's approximation of the mode 
+	 mean = qzero+ med*binSize; // Sextractor's approximation of the mode 
        }
    }
    else
@@ -316,6 +315,7 @@ for (int j=0; j<ny; j++)
 void ImageBack::do_it_slices(FitsSlice & SourceImage, FitsSlice & WeightImage)
 {
   // normalement,autant de slices que de ny
+  int nbad = 0 ;
   int j = 0 ;
   do {
   
@@ -331,12 +331,14 @@ void ImageBack::do_it_slices(FitsSlice & SourceImage, FitsSlice & WeightImage)
 	double mean, sigma;
 	do_one_pad(SourceImage, &WeightImage, Frame(startx, 0, startx+width, height),mean, sigma);
 	backValue(i,j) = mean;
+	if ( mean == BAD) nbad++;
 	backRms(i,j) = sigma;
       }
     j++;
   }
   while (SourceImage.LoadNextSlice() && WeightImage.LoadNextSlice()) ;
-  cerr << "Nslices prevues : " << j << " ny : " << ny << endl ;
+  cout << "ImageBack::do_it_slices Nslices : " << j << " ny : " << ny << endl ;
+  cout << "ImageBack::do_it_slices N bad pad value : " << nbad << endl ;
 
 //
  Apply_Median_Filter(backValue, backRms, filterHalfWidth) ;
@@ -358,6 +360,7 @@ void  Apply_Median_Filter(Image & backValue, Image & backRms, int filter_half_wi
 	  int nmin = 0;
 	  double val = 0;
 	  double sval = 0;
+	  int sigood=0, sjgood=0;
 	  /* could probably do it more efficiently... for the moment
 	     traverse the whole back image: it is not that large usually */
 	  for (int jgood=0; jgood<ny; ++jgood)
@@ -372,6 +375,7 @@ void  Apply_Median_Filter(Image & backValue, Image & backRms, int filter_half_wi
 		      sval = backRms(igood,jgood);
 		      nmin = 1;
 		      d2min = d2;
+		      sigood=igood ;sjgood=jgood ;
 		    }
 		  else if (d2==d2min)
 		    {
@@ -385,6 +389,10 @@ void  Apply_Median_Filter(Image & backValue, Image & backRms, int filter_half_wi
 	    {
 	      back2(i,j) = val/nmin;
 	      backRms(i,j) = sval/nmin;
+	      /*if (nmin == 1)
+		cout << "Imageback: pad(" << i << "," << j <<") value replaced by: (" <<  sigood << "," << sjgood <<")" << endl ; 
+	      else
+	      cout << "Imageback: pad(" << i << "," << j <<") value replaced by adjacent values " << endl ; */
 	    }
 	  else
 	    {
