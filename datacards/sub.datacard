@@ -154,64 +154,69 @@
 #
 #  The kernel basis
 # 1 = Alard, 2 = delta, 3 = Alard when seeing(ref)>seeing(current), delta otherwise
-@KFIT_KERNEL_BASIS 1
-#
-# Filtering bad stamps during the kernel fit (robust fitting)
-@KFIT_KERNEL_FILTERING 1
+#@KFIT_KERNEL_BASIS 3
 #
 # KFIT_SIG_GAUSS and KFIT_DEG_GAUSS only apply to Alard basis.
 # the basis used to fit is made from Pol(u,v)*Gaussian.
 #
 # sigma of gaussians (in units of the guessed kernel sigma):
-@KFIT_SIG_GAUSS 0.7 1.5 2. 
+#@KFIT_SIG_GAUSS 0.7 1.5 2. 
 #
 # corresponding degrees of polynomials:
-@KFIT_DEG_GAUSS 6 4 2
-#
-# Do we assume a uniform photom ratio (i.e. uniform kernel integral) ?
-@KFIT_UNIFORM_PHOTOM_RATIO 1
-#
-# maximum number of stamps (i.e. number of objects used to fit the kernel)
-@KFIT_MAX_STAMPS 550
-#
-# size of the kernel in number of (guessed) kernel sigma
-@KFIT_NSIG 5.
+#@KFIT_DEG_GAUSS 6 4 2
 #
 # degree of kernel spatial variations
-@KFIT_KERNVAR_DEG 2
+#@KFIT_KERNVAR_DEG 2
+#
+# Do we assume a uniform photom ratio (i.e. uniform kernel integral) ?
+#@KFIT_UNIFORM_PHOTOM_RATIO 1
+#
+# Size of the kernel in number of (guessed) kernel sigma
+#@KFIT_NSIG 4.
+#
+# Keep the basis orthogonal
+#@KFIT_ORTHOGONAL_BASIS 1
+#
+# Filtering bad stamps during the kernel fit (robust fitting)
+#@KFIT_STAMP_FILTERING 1
+#
+# maximum number of stamps (i.e. number of objects used to fit the kernel)
+#@KFIT_MAX_STAMPS 300
 #
 # degree of polynomial used to fit differential image backgrounds
 # no background at all : -1
-@KFIT_BACKVAR_DEG -1
+#@KFIT_BACKVAR_DEG -1
 #
-# degree of polynomial used to fit differential image backgrounds if fitted separatly
-@KFIT_SEPBACKVAR_DEG 2
+# degree of polynomial used to fit differential image backgrounds if fitted separately
+# no separate background fit : -1
+#@KFIT_SEPBACKVAR_DEG 2
 #
-# Keep the basis orthogonal
-@KFIT_ORTHOGONAL_BASIS 1
+# Number of iteration on weights to solve the difference image system
+# At each iteration the weight is updated with the new kernel,
+# and a differential background is computed on the subtraction
+#@KFIT_ITERATE 1
 #
 # Maximum pixel intensity for star selection in units of the frame saturation
-@KFIT_STARS_MAXSAT 0.95
+#@KFIT_STARS_MAXSAT 0.95
 #
 # Minimum signal to noise allowed for star selection
-@KFIT_STARS_MINSTN 10.
+#@KFIT_STARS_MINSTN 10.
 #
-# Maximum distance in star match (increase if doing kernel fitting without resampling)
-@KFIT_STARS_MAXDIST 1.
-
+# Maximum distance in star match (increase if doing kernel with unmatched images)
+#@KFIT_STARS_MAXDIST 1.
+#
 # Write the star list that was used to fit the kernel
 # in <worst>/kernel_from_<best>.list{,.ds9}
-@KFIT_WRITE_STARLIST 0
+#@KFIT_WRITE_STARLIST 0
 #
 # Write a relative stacked residual image of all stars used to fit the kernel
 # in  <worst>/kernel_from_<best>_resid.fits for the median stacked residual
 # and <worst>/kernel_from_<best>_chi2.fits for the full chi2
-@KFIT_WRITE_RESID 0
+#@KFIT_WRITE_RESID 0
 #
 # Write a FITS image of the kernel at 9 locations
 # will write in <worst>/kernel_from_<best>.fits
-@KFIT_WRITE_KERNEL 0
-#
+#@KFIT_WRITE_KERNEL 0
 #
 ##################    end of KernelFit #################
 ##################    ImageSubtraction  #################
