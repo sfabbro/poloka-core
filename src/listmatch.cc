@@ -882,7 +882,7 @@ static double median_distance(const StarMatchList* match, const Gtransfo* transf
 GtransfoRef ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList &List2, const MatchConditions& Conditions) {
   BaseStarList L1, L2;
   List1.CopyTo(L1); L1.FluxSort(); L1.CutTail(Conditions.MaxStarsL1);
-  List2.CopyTo(L2); L2.FluxSort(); L1.CutTail(Conditions.MaxStarsL2);
+  List2.CopyTo(L2); L2.FluxSort(); L2.CutTail(Conditions.MaxStarsL2);
 
   cout << " ListMatchCombinatorial: find match between " 
        << L1.size() << " and " << L2.size() << " stars...\n";
