@@ -241,7 +241,8 @@ static int build_variance(const Image &ImageWeight,
   CutVar = 1e8*vAverage;
 
    // is now a variance
-  add_object_noise(Star, int(Xc), int(Yc), Star->flux/Gain, VarStamp);
+  // avoid this (wrong in crowded fields, downweight higher s/n, add non-linearities, bias solution)
+  //add_object_noise(Star, int(Xc), int(Yc), Star->flux/Gain, VarStamp);
   return count;
 }
   
@@ -385,8 +386,8 @@ static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams
   //const Gtransfo* bestToWorst = FindTransfo(*best, *worst);
   const Gtransfo* bestToWorst = new GtransfoIdentity();
   const Frame worstFrame = ApplyTransfo(bestFrame, *bestToWorst);
-  AperSEStarList bestStarList(best->AperCatalogName());
-  AperSEStarList worstStarList(worst->AperCatalogName());
+  SEStarList bestStarList(best->AperCatalogName());
+  SEStarList worstStarList(worst->AperCatalogName());
   
   // check whether background was subtracted
   // TODO : check if this is useful by any mean.
@@ -402,24 +403,23 @@ static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams
   
   double saturLevBest = best->Saturation() * optParams.MaxSatur;
   double saturLevWorst = worst->Saturation() * optParams.MaxSatur;
-  double bMinBest = best->GFSeeing() * optParams.MinB;
-  double bMinWorst = worst->GFSeeing()* optParams.MinB;
-  double mindist = worst->GFSeeing()*3;
+  double bMinBest = best->Seeing() * optParams.MinB;
+  double bMinWorst = worst->Seeing()* optParams.MinB;
+  double mindist = worst->Seeing()*3;
   cout << " MakeObjectList: cuts for best,  satur bmin " << saturLevBest << " " << bMinBest << endl;
   cout << " MakeObjectList: cuts for worst, satur bmin " << saturLevWorst << " " << bMinWorst << endl;
-  FastFinder worstFinder(*AperSE2Base(&worstStarList));
+  FastFinder worstFinder(*SE2Base(&worstStarList));
 
   int n_good_for_fit_best = 0;
   
-  for (AperSEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); ++sibest) {
-    AperSEStar *sb = *sibest;
-    const AperSEStar *sw;
-    if (sb->gflag == 0 && 
-	GoodForFit(sb, saturLevBest, bMinBest, optParams.MinSigToNoise) &&
+  for (SEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); ++sibest) {
+    SEStar *sb = *sibest;
+    const SEStar *sw;
+    if (GoodForFit(sb, saturLevBest, bMinBest, optParams.MinSigToNoise) &&
 	bestFrame.InFrame(*sb) &&
 	bestFrame.MinDistToEdges(*sb) > mindist) {
       n_good_for_fit_best++;
-      sw = (AperSEStar *) worstFinder.FindClosest(bestToWorst->apply(*sb), optParams.MaxDist);
+      sw = (SEStar *) worstFinder.FindClosest(bestToWorst->apply(*sb), optParams.MaxDist);
       if (sw && GoodForFit(sw, saturLevWorst, bMinWorst, optParams.MinSigToNoise) &&
 	  worstFrame.InFrame(*sw) &&
 	  worstFrame.MinDistToEdges(*sw) > mindist) {
@@ -470,143 +470,87 @@ for (int i=0; i<nblock; ++i)
   }
  for (int i=0; i<remainder; ++i) {sum+= (*x)*(*y)*(*z); ++x; ++y;++z;}
 return sum;
-}  
+}
 
+//! resolve l.s. system ||weight_back * (best - worst + diffbackground||^2
+//! diffbackground model is bivariate polynomial
+bool FitDifferentialBackground(const Image& DiffIm, const Image& DiffWeight, const Frame& DiffFrame,
+			       const XYPower& Poly, vector<double>& DiffBack, const double& MaxRms)
+{ 
 
-bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
-{  
-
-  cout << " Kernelfit: fitting differential background separately" << endl;
-  // build a weight to fit the background on all pixels
-  // weight = 1/(var(best)+var(worst)) * masked bad pixels
-  // no factor (gain/kernel) involved, we are fitting additive components
-  FitsImage weightBack(ImPair.Best()->FitsWeightName());
-
-  // start with best image weight
-  // avoid dividing zeros
-  Pixel minVal,maxVal;
-  weightBack.MinMaxValue(&minVal, &maxVal);
-  double eps = maxVal * 1e-10;
-  weightBack += eps;
-  // now go to variances  
-  for (Pixel *p = weightBack.begin(); p < weightBack.end(); ++p) *p = 1. / *p;
-
-  // add the worst image variance
-  // block to save memory
-  {
-    FitsImage weightWorst(ImPair.Worst()->FitsWeightName());
-    weightWorst.MinMaxValue(&minVal, &maxVal);
-    eps = maxVal * 1e-10;
-    weightWorst += eps;
-    // go to variances
-    for (Pixel *pw = weightWorst.begin(); pw < weightWorst.end(); ++pw) *pw = 1. / *pw;
-    // add variances and go back to weight
-    // value under which we set weight to zero
-    eps *= 100;    
-    for (Pixel *pw = weightWorst.begin(), *p = weightBack.begin(); p < weightBack.end(); ++p, ++pw) {
-      *p = 1. / (*pw + *p);
-      if (*p < eps) *p = 0;
-    }
-  }
-
-  // mask objects and saturated pixels on the combined best+worst weight
-  const int hwidthDilate = 5;
-  if (FileExists(ImPair.Best()->FitsSegmentationName())) {
-    FitsImage seg(ImPair.Best()->FitsSegmentationName());
-    seg.Simplify(0.5,0,1);
-    // dilate seg larger to simulate convolution
-    ConvolveSegMask(seg, seg, optParams.HKernelSize+hwidthDilate);
-    weightBack *= seg;
-  }
-  if (FileExists(ImPair.Worst()->FitsSegmentationName())) {
-    FitsImage seg(ImPair.Worst()->FitsSegmentationName());
-    seg.Simplify(0.5,0,1);
-    // dilate seg larger to mask more
-    ConvolveSegMask(seg, seg, hwidthDilate);
-    weightBack *= seg;
-  }
-  // weight is now done
+  cout << " FitDifferentialBackground: degree " << Poly.Degree << endl;
   
-  // resolve l.s. system ||weight_back * (best - worst + diffbackground||^2
-  // diffbackground model is bivariate polynomial
-
-  unsigned nterms = optParams.SepBackVar.Nterms();
+  unsigned nterms = Poly.Nterms();
   Mat A(nterms,nterms);
-  Vect B(nterms);
+  Vect b(nterms);
   Vect monom(nterms);
-  diffbackground.resize(nterms);
+  DiffBack.resize(nterms);
 
-  const Image &bestImage = ImPair.BestImage();
-  const Image &worstImage = ImPair.WorstImage();
+  int ibeg = int(DiffFrame.xMin);
+  int iend = int(DiffFrame.xMax);
+  int jbeg = int(DiffFrame.yMin);
+  int jend = int(DiffFrame.yMax);
 
-  const Frame &dataFrame = ImPair.CommonFrame();
-  int ibeg = int(dataFrame.xMin);
-  int iend = int(dataFrame.xMax);
-  int jbeg = int(dataFrame.yMin);
-  int jend = int(dataFrame.yMax);
-
-  int iter = 3;
-  weightBack.MinMaxValue(&minVal, &maxVal);
-  eps = 1e-10*maxVal;
-
+  const int step = 5;
+  const double eps = DiffWeight.MaxValue() * 1e-10;
   double chi2, npix;
+  int iter = 3;
   do {
     A.Zero();
-    B.Zero();
+    b.Zero();
     // fill up matrix and vector
-    for (int j=jbeg; j<jend; j++)
-      for (int i=ibeg; i<iend; i++) {
-	Pixel weight = weightBack(i,j);
+    for (int j=jbeg; j<jend; j+= step)
+      for (int i=ibeg; i<iend; i+= step) {
+	Pixel& weight = DiffWeight(i,j);
 	if (weight<eps) continue;
-	Pixel diff = worstImage(i,j) - bestImage(i,j);
+	Pixel& diff = DiffIm(i,j);
 	for (unsigned q1=0; q1<nterms; ++q1) {
-	  monom(q1) = optParams.SepBackVar.Value(double(i), double(j), q1);
+	  monom(q1) = Poly.Value(double(i), double(j), q1);
 	  for (unsigned q2 = q1; q2<nterms; ++q2) A(q1,q2) += monom(q1)*monom(q2) * weight;
-	  B(q1) += monom(q1) * diff * weight;
+	  b(q1) += monom(q1) * diff * weight;
 	}
       }
     // symmetrize and solve
     for (int q1=0; q1<nterms; ++q1) 
       for (int q2 = q1+1; q2<nterms; ++q2) A(q2,q1) = A(q1,q2);
-    if (cholesky_solve(A,B,"U") != 0)
+    if (cholesky_solve(A, b, "U") != 0)
       return false;
 
     // hard masking pixels |resid(i,j)| > n*sigma
     chi2 = 0.;
     npix = 0.;
-    double meanresid = 0;
-    for (int j=jbeg; j<jend; j++)
-      for (int i=ibeg; i<iend; i++) {
-	Pixel weight = weightBack(i,j);
+    for (int j=jbeg; j<jend; j+=step)
+      for (int i=ibeg; i<iend; i+=step) {
+	Pixel& weight = DiffWeight(i,j);
 	if (weight<eps) continue;
 	double back = 0.0;
 	for (unsigned q=0; q<nterms; ++q)
-	  back += B(q) * optParams.SepBackVar.Value(double(i),double(j),q);
-	Pixel resid = worstImage(i,j) - bestImage(i,j) - back;
-	if (fabs(resid)*sqrt(weight) > NSig) 
-	  weightBack(i,j) = 0;
+	  back += b(q) * Poly.Value(double(i),double(j),q);
+	Pixel resid = DiffIm(i,j) - back;
+	//if (fabs(resid)*sqrt(weight) > NSig)
+	if (fabs(resid) > MaxRms)
+	  weight = 0;
 	else {
-	  chi2 += resid * resid * weight;
+	  chi2 += sqr(resid) * weight;
 	  npix++;
-	  meanresid += resid;
 	}
       }
-    cout << " KernelFit: background fit " << iter << " chi2/npix " << chi2/npix << endl;
+    cout << " FitDifferentialBackground " << iter << " chi2/npix " << chi2/npix << endl;
 
-  } while (iter--);
+  } while (--iter);
 
 #ifdef DEBUG
   if (cholesky_invert(A,"U") != 0)
     return false;
-  cout << " KernelFit: errors on first term " << chi2 / (npix - nterms) * sqrt(A(0,0)) << endl;
+  cout << " FitDifferentialBackground: errors on first term " << chi2 / (npix - nterms) * sqrt(A(0,0)) << endl;
 #endif
 
-  cout << " KernelFit: separate diff background coeffs:" << endl;
+  cout << " FitDifferentialBackground: diff back coeffs:" << endl;
   cout << " -------------------------------------------" << endl;
   cout << " ";
   for (unsigned q=0; q< nterms; ++q) { 
-    cout << B(q) << ' ';
-    diffbackground[q] = B(q);
+    cout << b(q) << ' ';
+    DiffBack[q] = b(q);
   }
   cout << endl;
   cout << " -------------------------------------------" << endl;
@@ -615,6 +559,128 @@ bool KernelFit::FitDifferentialBackground(ImagePair &ImPair, const double& NSig)
   return true;
 }
 
+static void variance_back(Image& Weight, const ReducedImageRef Im) {
+
+  // avoid dividing zeros
+  Pixel eps = Weight.MaxValue() * 1e-10;
+  Weight += eps;
+  // now go to variances  
+  Pixel *p = Weight.begin();
+  Pixel *pend = Weight.end();
+
+  if (FileExists(Im->FitsSegmentationName())) {
+    FitsImage seg (Im->FitsSegmentationName());
+    Pixel* pseg = seg.begin();
+    for ( ; p < pend; ++p, ++pseg)
+      *pseg > 0 ? *p = 1e20 : *p = 1. / *p;
+  } else {
+    for ( ; p < pend; ++p)
+      *p = 1. / *p;
+  }
+}
+
+#if 0
+bool KernelFit::FitDiffBackground(ImagePair &ImPair, const double& NSig)
+{
+  Frame diffFrame = ImPair.CommonFrame();
+
+  // best variance masked
+  Image diffWeight(ImPair.BestWeight());
+  variance_back(diffWeight, ImPair.Best());
+
+  Image diffIm;
+  if (fitDone) {
+    Image var(diffWeight);
+    VarianceConvolve(var, diffWeight);
+    ImageConvolve(ImPair.BestImage(), diffIm);
+    diffIm -= ImPair.WorstImage();
+    diffIm *= -1;
+  } else {
+    diffIm = ImPair.WorstImage() - ImPair.BestImage();
+    diffFrame.CutMargin(optParams.HKernelSize);
+  }
+
+  // worst variance masked
+  Image varWorst(ImPair.WorstWeight());
+  variance_back(varWorst, ImPair.Worst());
+
+  // add variances and go back to weight
+  double eps = 1e-10;
+  for (Pixel *p = diffWeight.begin(), *pv = varWorst.begin(); p < diffWeight.end(); ++p, ++pv) {
+    double weight = 1. / (*p + *pv);
+    weight < eps ? *p = 0 : *p = weight;
+  }
+
+  return FitDifferentialBackground(diffIm, diffWeight, diffFrame, optParams.SepBackVar, diffbackground,
+				   sqrt(sqr(ImPair.Best()->SigmaBack())+sqr(ImPair.Worst()->SigmaBack())) * NSig);
+}
+
+#endif
+
+bool KernelFit::FitDiffBackground(ImagePair &ImPair, const double& NSig)
+{  
+   
+  if (optParams.SepBackVar.Degree == -1) return false;
+
+  int nterms = optParams.SepBackVar.Nterms();
+
+  diffbackground.resize(nterms);
+
+  Mat A(nterms,nterms);
+  Vect B(nterms);
+  Vect monom(nterms);
+
+  Pixel bestMean,bestSig,worstMean,worstSig;
+  const Image &bestImage = ImPair.BestImage();
+  const Image &worstImage = ImPair.WorstImage();
+  const Frame &dataFrame = ImPair.CommonFrame();
+  bestImage.SkyLevel(dataFrame,&bestMean, &bestSig);
+  worstImage.SkyLevel(dataFrame,&worstMean, &worstSig);
+  
+  double cut1  = NSig*bestSig;
+  double cut2  = NSig*worstSig;
+
+  int ibeg,iend,jbeg,jend;
+  ibeg = int(dataFrame.xMin);
+  iend = int(dataFrame.xMax);
+  jbeg = int(dataFrame.yMin);
+  jend = int(dataFrame.yMax);
+
+  int jump = 10;
+  for (int j=jbeg ; j< jend ; j+= jump)
+  for (int i=ibeg ; i< iend ; i+= jump)
+    {
+      Pixel p1 = worstImage(i,j);
+      if (fabs(p1-bestMean) > cut1) continue;
+      Pixel p2 = bestImage(i,j);
+      if (fabs(p2-worstMean) > cut2) continue;
+      for (int q1=0; q1<nterms; ++q1)
+	{
+	  monom(q1) = optParams.SepBackVar.Value(double(i), double(j),q1);
+
+	  for (int q2 = q1; q2<nterms; ++q2) A(q1,q2) += monom(q1)*monom(q2);
+	  B(q1) += monom(q1)*(p1-p2);
+	}
+    }
+  /* symetrize */
+  for (int q1=0; q1<nterms; ++q1) 
+    for (int q2 = q1+1; q2<nterms; ++q2) A(q2,q1) = A(q1,q2); 
+  if (cholesky_solve(A,B,"U")!= 0)
+    {
+      cerr << " could not compute differential background !!!!" << endl;
+      return 0;
+    }
+  
+  cout << setprecision(10);
+  cout << " separately fitted differential background " << endl;
+  cout << " ----------------------------------------- " << endl;
+  for (int q1=0; q1< nterms; ++q1) cout << B(q1) << " " ;
+  cout << endl;
+
+  for (int q1=0; q1<nterms; ++q1)
+    diffbackground[q1] = B(q1);
+  return true;
+}
 
 
 #define OPTIMIZED /* means pushing pointers by hand ... */
@@ -1293,10 +1359,10 @@ Degrees[0] = 6; Degrees[1] = 4; Degrees[2] = 2;
 //Degrees[0] = 1; Degrees[1] = 4; Degrees[2] = 2;
 HStampSize = 15;
 HKernelSize = 9;
-MaxStamps = 1000;
+MaxStamps = 300;
 KernVar.SetDegree(2); // degree of spatial variations of the kernel 
-BackVar.SetDegree(2); //degree of spatial variations of the background
-SepBackVar.SetDegree(-1); //degree of spatial variations of the background if you want to fit it separately
+BackVar.SetDegree(-1); //degree of spatial variations of the background
+SepBackVar.SetDegree(2); //degree of spatial variations of the background if you want to fit it separately
  NSig = 4;
 UniformPhotomRatio = true;
 OrthogonalBasis = true;
@@ -1307,13 +1373,14 @@ OrthogonalBasis = true;
  MaxDist = 1.;
  string dataCardsName = DefaultDatacards();
  KernelBasis = 1;
- KernelFiltering = true;
+ StampFiltering = true;
  WriteStarList = false;
  WriteFitResid = false;
  WriteKernel = false;
+ Iterate = 1;
  if (FileExists(dataCardsName))
    {
-     cout << " KernelFit: using datacards file " << dataCardsName << endl;
+     cout << " OptParams: using datacards file " << dataCardsName << endl;
      DataCards cards(dataCardsName);
      if (cards.HasKey("KFIT_MAX_STAMPS")) {
        MaxStamps = cards.IParam("KFIT_MAX_STAMPS");
@@ -1374,14 +1441,16 @@ OrthogonalBasis = true;
        MaxDist = cards.DParam("KFIT_STARS_MAXDIST");
      if (cards.HasKey("KFIT_KERNEL_BASIS"))
        KernelBasis = cards.IParam("KFIT_KERNEL_BASIS");
-     if (cards.HasKey("KFIT_KERNEL_FILTERING"))
-       KernelFiltering = cards.IParam("KFIT_KERNEL_FILTERING");
+     if (cards.HasKey("KFIT_STAMP_FILTERING"))
+       StampFiltering = cards.IParam("KFIT_STAMP_FILTERING");
      if (cards.HasKey("KFIT_WRITE_STARLIST"))
        WriteStarList = cards.IParam("KFIT_WRITE_STARLIST");
      if (cards.HasKey("KFIT_WRITE_RESID"))
        WriteFitResid = cards.IParam("KFIT_WRITE_RESID");
      if (cards.HasKey("KFIT_WRITE_KERNEL"))
        WriteKernel = cards.IParam("KFIT_WRITE_KERNEL");
+     if (cards.HasKey("KFIT_ITERATE"))
+       Iterate = cards.IParam("KFIT_ITERATE");
    } // if (has datacards)
 }
   
@@ -1867,8 +1936,26 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 
   clock_t tstart = clock();
 
+  Mat basisTransfo;
+  BasisFill(&basisTransfo);
+
+  // allocate the convolved stamps space
+  FitWorkSpace mySpace(*this);
+  work = &mySpace;
+
+  Mat m(mSize,mSize);
+  Vect b(mSize);
+
+  vector<double> chi2s(nstamps);
+  int npixtot=0;
+  double chi2_tot=0;
+  Point center = ImPair.Best()->UsablePart().Center(); // for printouts
+
+  for (int iterWeight=1; iterWeight <= optParams.Iterate; iterWeight++) // iteration of weight and diff background update
+    {
+
   if (optParams.SepBackVar.Degree > -1) {
-    if (!FitDifferentialBackground(ImPair, 3.0))
+    if (!FitDiffBackground(ImPair))
       throw(PolokaException(" KernelFit: could not compute separately differential background"));
   }
 
@@ -1888,15 +1975,8 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
       worstImage = &ImPair.WorstImage();
     }
 
-  Mat basisTransfo;
-  BasisFill(&basisTransfo);
-
-  // allocate the convolved stamps space
-  FitWorkSpace mySpace(*this);
-  work = &mySpace;
-
-  Mat m(mSize,mSize);
-  Vect b(mSize);
+      m.Zero();
+      b.Zero();
 
   // fill the LS problem matrix and RHS vector m and b (long)
   for (StampIterator si = bestImageStamps.begin(); 
@@ -1921,10 +2001,6 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 
   //now iterate stamp filtering and refitting until all stamps are acceptable
   int dropped;
-  vector<double> chi2s(nstamps);
-  int npixtot=0;
-  double chi2_tot=0;
-  Point center = ImPair.Best()->UsablePart().Center(); // for printouts
 
   do // iterations on stamp clipping.
     {
@@ -1962,7 +2038,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
      
       // this trick is used to fit the kernel using a predefined catalog
       // of objets to compute the kernel
-      if (!optParams.KernelFiltering) break;
+      if (!optParams.StampFiltering) break;
       for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); )
 	{
 	  Stamp &stamp = *si; 
@@ -1991,6 +2067,19 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
       nstamps -= dropped;
     } 
   while (dropped != 0);   // done with stamp clipping
+
+  // update stamp weights
+  for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); ++si)
+    {
+      Stamp &stamp = *si;
+      Kernel kern;
+      KernAllocateAndCompute(kern, stamp.star->x, stamp.star->y);
+      stamp.UpdateWeight(kern);      
+    }
+
+  optParams.StampFiltering = false;
+  
+ } // done with iteration on weight/diffback updating
 
 #ifdef DEBUG
     {

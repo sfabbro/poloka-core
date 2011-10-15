@@ -124,7 +124,8 @@ public :
   bool SubtractNoise;
   double MaxSatur, MinSigToNoise, MinB, MaxDist;
   bool WriteStarList, WriteFitResid, WriteKernel;
-  bool KernelFiltering;
+  bool StampFiltering;
+  int Iterate;
 
   OptParams(); /* default values */
   void OptimizeSizes(double BestSeeing, double WorstSeeing);
@@ -159,6 +160,11 @@ class Stamp;
 class StampList;
 class Mat;
 class Vect;
+
+
+/* Fit the differential background separately from the kernel */
+bool FitDifferentialBackground(const Image& DiffIm, const Image& DiffWeight, const Frame& DiffFrame, 
+			       const XYPower& Poly, vector<double>& DiffBack, const double& MaxRms);
 
 /* The actual hanger for kernel fit data */
 
@@ -258,7 +264,7 @@ private :
 
 
 /* Fit the differential background separately from the kernel */
-  bool FitDifferentialBackground(ImagePair &ImPair, const double& NSig);
+  bool FitDiffBackground(ImagePair &ImPair, const double& NSig=3);
 
 /* simultaneously fitted differential background value */
   double BackValue(const double&x, const double &y) const; 
