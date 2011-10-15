@@ -611,14 +611,20 @@ static string PSFFileName(const ReducedImage &RI)
 
 #include <fstream>
 
-ImagePSF::ImagePSF(const ReducedImage &RI, bool RefitPSF) 
+ImagePSF::ImagePSF(const ReducedImage &RI, bool RefitPSF, const string & psffile_name) 
   : reducedImage(&RI), refitPSF(RefitPSF)
 {
   analyticPSF = NULL;
   residuals = NULL;
   nonLinearity = NULL;
   skylev = 0;
-  string psfFileName = PSFFileName(*reducedImage);
+  string psfFileName ;
+
+  if (psffile_name == "")
+     psfFileName = PSFFileName(*reducedImage);
+  else
+    psfFileName =  AddSlash(reducedImage->Dir())+ psffile_name;
+
   if (FileExists(psfFileName) && !refitPSF)
     {
       ifstream s(psfFileName.c_str());
@@ -630,9 +636,7 @@ ImagePSF::ImagePSF(const ReducedImage &RI, bool RefitPSF)
   // if we get here, either there is no PSF around or refitPSF = true
   // if there is not PSF around, we'd better fit the psf, so
   refitPSF = true; 
-  seeing = reducedImage->GFSeeing();
-  if (seeing <= 0) 
-    seeing = reducedImage->Seeing();
+  seeing = reducedImage->Seeing();
   gain = reducedImage->Gain();
   if (gain <= 0)
     throw (PolokaException(" for image "+reducedImage->Name()+", ImagePsf cannot work with negative or null gain"));
@@ -761,10 +765,10 @@ double ImagePSF::PSFValueWithParams(const double &Xc, const double &Yc,
       (*PosDer)(0) = 0;
       (*PosDer)(1) = 0;
     }
-  if (residuals)
-    {
       double dx = 0;
       double dy = 0;
+  if (residuals)
+    {
       residuals->Moments(Xc,Yc,residuals_integral, dx, dy);
       // no offsets (dx,dy) applied, see comment above.
       val += residuals->PixValue(Xc,Yc,IPix, JPix, PosDer);
@@ -785,7 +789,6 @@ double ImagePSF::PSFValueWithParams(const double &Xc, const double &Yc,
     anal_val = analyticPSF->PixValue(Xc,Yc,
 				     IPix, JPix, Params, 
 				     PosDer, ParamDer);
-
   val += (1.-residuals_integral) * anal_val;
   if (AnalyticValue) *AnalyticValue = anal_val;
 
@@ -868,8 +871,11 @@ bool ImagePSF::FitParametersVariation(PSFStarList &Stars, double MaxChi2)
 	      }
 	}
       
+
+      
+
       if (cholesky_solve(a, b, "U")!= 0)
-	{
+ 	{
 	  cout << " ImagePSF::FitParametersVariation : could not solve for PSF spatial variation " 
 	       << endl;
 	  return false;
@@ -922,8 +928,8 @@ void ImagePSF::Chi2Stat(const PSFStarList &Stars, double &mean,
   unsigned nstars = Stars.size();
   double *chi2 = new double[nstars];
   int count = 0;
-  for (PSFStarCIterator i = Stars.begin(); i != Stars.end(); ++i)
-    chi2[count++] = (*i)->PSFChi2();
+  for (PSFStarCIterator i = Stars.begin(); i != Stars.end(); ++i)     
+	chi2[count++] = (*i)->PSFChi2() ;
   Dmean_median_sigma(chi2, count, mean, median, sigma);
   // 3 is for x,y, flux
   ndof = nstars*((2*hSizeX+1)*(2*hSizeY+1) - 3 - analyticPSF->NPar());
@@ -955,12 +961,11 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
       return true;
     }
   cout << " FitPSF: we have " << Stars.size() << " stars to fit the PSF " << endl;
-  cout << " PSF half sizes = " << hSizeX << ' ' << hSizeY << endl;
+  cout << " FitPSF: PSF half sizes = " << hSizeX << ' ' << hSizeY << endl;
   analyticPSF = ChooseAnalyticPSF(Cards().analyticKind);
+
   npar = analyticPSF->NPar();
-  double seeing = reducedImage->GFSeeing();
-  if (seeing <= 0) 
-    seeing = reducedImage->Seeing();
+  double seeing = reducedImage->Seeing();
   cout << " FitPSF: seeing  = " <<  seeing <<  endl;
   Vect startParams(npar); // initial uniform params
   analyticPSF->InitParamsFromSeeing(seeing,startParams);
@@ -984,30 +989,41 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
   }
   FitsImage image(reducedImage->FitsName());
   skylev = image.KeyVal("SKYLEV");
+  cout << " FitPSF: skylev  = " <<  skylev <<  endl;
 
-  // first fit of stars.
   for (PSFStarIterator i = Stars.begin(); i != Stars.end(); )
     {
       PSFStar &s = **i;
+      double x_or = s.x ;
+      double y_or = s.y ;
       s.SetPSFParams(startParams); // used as input values by FitAllParams
-      if (s.FitAllParams(image, weight, *this)) ++i;
+      if (s.FitAllParams(image, weight, *this)) ++i;	
       else 
 	{
-	  cout << " fit failure: erasing star at " 
-	       << s.x << ' ' << s.y << ' ' << " fmax= " << s.Fluxmax() << endl;
+	  cout << "FitPSF: fit failure: erasing star at original (x,y)=( " 
+	       << x_or << " , " << y_or 
+	       << " ), fitted (x,y)=( " 
+	       << s.x << " , " << s.y 
+	       << " ) fluxmax= " 
+	       << s.Fluxmax() << endl;
 	  i = Stars.erase(i);
 	}
     }
-
+  
+  cout << " FitPSF: after first fit, keep " <<  Stars.size() <<  endl;
 
   double mean,median,sigma, chi2;
   int ndof;
   Chi2Stat(Stars, mean, median, sigma, chi2, ndof, "independent profiles");
 
   // fit a smooth variation with position in frame of analytic PSF parameters, 
-  double maxChi2 = median + Cards().nSigPSFChi2Cut * sigma;
+  double maxChi2 = median + Cards().nSigPSFChi2Cut * sigma; 
 
   PSFStarList starsCopy(Stars); // just copy pointers, not objects; 
+
+  //DEBUG check
+  //string stars_debug_name = outputDirectory + "/stars_before_spat_variation.list" ;
+  //Stars.WriteTuple(stars_debug_name.c_str());
 
   if (!FitParametersVariation(starsCopy, maxChi2))
     {
@@ -1018,6 +1034,15 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
   // Check that the found parametrization makes sense in the image corners
   bool paramsok = true;
   cout << " check parameters in the image corners" << endl;
+
+  /*double frac = 0.1 ;
+  int minx = frac*nx ;
+  int nfx = (1.-2*frac)*nx ;
+  int miny = frac*ny ;
+  int nfy = (1.-2*frac)*ny ;
+  for (double x=minx; x<nx+1; x+=nfx)
+  for (double y=miny; y<ny+1; y+=nfy)*/
+
   for (double x=0; x<nx+1; x+=nx)
   for (double y=0; y<ny+1; y+=ny)
     {
@@ -1054,6 +1079,10 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
      Since the code is there, I just disable it by setiing the degree
      to -1  */
   int nonLinDeg = -1;
+
+  if (Cards().spatialPixVarDeg < 0 )
+    cout << "No Pixel Map computation " << endl ;
+  else {
 
   for (int grand_loop=0; grand_loop<2; ++grand_loop) // 2 iterations, with outlier pixel removal in between
     {
@@ -1165,16 +1194,18 @@ bool ImagePSF::FitPSF(PSFStarList &Stars)
 	}
     }
 
+
   // Done with the fit. outputs now:
   if (Cards().lastResidualsFileName != "")
     for (unsigned k =0; k < residuals->NTerms(); ++k)
       {
-	char resFileName[64];
+	char resFileName[640];
 	sprintf(resFileName,"%s%s_%d.fits",
 		outputDirectory.c_str(),
 		CutExtension(Cards().lastResidualsFileName).c_str(),k);
 	residuals->Coeffs(k).writeFits(resFileName);
       }
+  }// end of pixels calculation
   
 
   // final output for grep in logs
@@ -1969,6 +2000,10 @@ void ImagePSF::ResidualImage(const string &ResFitsName,
   stack *= (1./Stars.size());
 }
 
+
+
+
+
 #include <fstream>
 
 void ImagePSF::ResidualTuple(const string &ResTupleName, 
@@ -2205,10 +2240,11 @@ core poloka and the PSF code
 #include "reducedimage.h"
 #include "listmatch.h"
 #include "psfstar.h"
+#include "dicstar.h"
 #include "astroutils.h" // IdentifyDeepField.
 
 bool MakePSF(const string &ImageName, const bool RefitPSF,
-	     const bool UseExternalCatalog)
+	     const bool UseExternalCatalog, const string & ExternalCatalogName)
 {
   ReducedImage *ri = new ReducedImage(ImageName);
   ReducedImageRef reducedImage = ri;
@@ -2221,7 +2257,7 @@ bool MakePSF(const string &ImageName, const bool RefitPSF,
   reducedImage->MakeAperCat();
   AperSEStarList starImageCat;
 
-  if (UseExternalCatalog)
+  if (UseExternalCatalog && ExternalCatalogName == "")
     {
       FitsHeader head(reducedImage->FitsName());
       string fieldName;
@@ -2265,13 +2301,48 @@ bool MakePSF(const string &ImageName, const bool RefitPSF,
 		    {
 		      AperSEStar *s = dynamic_cast<AperSEStar*>(&(*(i->s1)));
 		      if (s->Flag() || s->FlagBad()) continue;
+		      if (s->gflag) continue;
+		      if (s->IsSaturated() ) continue ;      
+		      if (s->flux<0 || s->EFlux() < 0 ) continue;
+
 		      starImageCat.push_back(s);
 		    }
+		  cout << " kept " << starImageCat.size() << " stars " << endl;
 		  delete matches;
 		}
 	    }
 	}
     }
+
+
+ if (UseExternalCatalog && ExternalCatalogName != "")
+    {
+      DicStarList starRefCat(ExternalCatalogName);
+      cout << ExternalCatalogName << " :  read " << starRefCat.size() << " stars " << endl;
+      BaseStarList *Lref = (BaseStarList*) & starRefCat; 
+      AperSEStarList wholeImageCat(reducedImage->AperCatalogName());
+      double dmax = 1. ;
+      CountedRef<Gtransfo> identity = new GtransfoLin(); 
+      StarMatchList *matches = ListMatchCollect(AperSE2Base(wholeImageCat), 
+						*Lref,identity, dmax );
+      cout << " found " << matches->size() << " matches " << endl;
+      for (StarMatchIterator i=matches->begin(); i != matches->end(); ++i)
+	{
+	  AperSEStar *s = dynamic_cast<AperSEStar*>(&(*(i->s1)));
+	  if (s->Flag() || s->FlagBad()) continue;
+	  if (s->gflag) continue;
+	  if (s->IsSaturated() ) continue ;      
+	  if (s->flux<0 || s->EFlux() < 0 ) continue;
+	  starImageCat.push_back(s);
+	}
+      cout << " kept " << starImageCat.size() << " stars " << endl;
+      delete matches;
+      string catName = reducedImage->StarCatalogName()+".match.list";
+      starImageCat.write(catName);
+    }
+
+
+
   if (!UseExternalCatalog || starImageCat.size() == 0)
     {
       if (!reducedImage->MakeStarCat())

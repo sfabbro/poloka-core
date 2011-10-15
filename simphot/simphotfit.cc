@@ -521,7 +521,6 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
   lc << "# seeing: " << endl;
   lc << "# exptime: " << endl;
   lc << "# phratio: photom ratio" << endl;
-  lc << "# gseeing: GFSeeing" << endl;
   lc << "# sesky: SESky" << endl;
   lc << "# sigsky: SIGSky" << endl;
   lc << "# name :" << endl;
@@ -556,7 +555,6 @@ bool SimPhotFit::Write(const string &Dir, const bool WriteVignettes, const bool 
 	 << setw(8) << setprecision(7) << v->Seeing() << ' '
 	 << setw(8) << setprecision(7) << v->ExpTime() << ' '
 	 << setw(8) << setprecision(7) << v->PhotomRatio() << ' '
-	 << setw(8) << setprecision(7) << v->GFSeeing() << ' '
 	 << setw(8) << setprecision(7) << v->SESky() << ' '
 	 << setw(8) << setprecision(7) << v->SIGSky() << ' '
 	 << dbim_name << ' '
@@ -776,7 +774,6 @@ void SimPhotFit::WriteTupleHeader(ostream &Stream, const int NStars) const
   Stream << "#seeing: " << endl;
   Stream << "#exptime: " << endl;
   Stream << "#phratio: photom ratio" << endl;
-  Stream << "#gseeing: GFSeeing" << endl;
   Stream << "#sesky: SESky" << endl;
   Stream << "#sigsky: SIGSky" << endl;
   Stream << "#mag :" << endl;
@@ -860,7 +857,6 @@ void SimPhotFit::WriteTupleEntries(ostream &Stream, const CalibratedStar &CStar)
 	     << v->Seeing() << ' '
   	     << v->ExpTime() << ' '
        	     << v->PhotomRatio() << ' ' 
-	     << v->GFSeeing() << ' '
   	     << v->SESky() << ' '
        	     << v->SIGSky() << ' '
 	     << mag << ' ' << mage << ' '

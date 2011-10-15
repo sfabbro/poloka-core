@@ -12,7 +12,6 @@ class RImageRef
   double   backLevelNoSub;
   string band;
   double exposure;
-  double gfseeing;
   double mjd;
   double seeing;
   double sigmaBack;
@@ -25,7 +24,6 @@ class RImageRef
     backLevelNoSub = ri->BackLevelNoSub();
     band = ri->Band();
     exposure = ri->Exposure();
-    gfseeing = ri->GFSeeing();
     mjd = ri->ModifiedJulianDate();
     seeing = ri->Seeing();
     sigmaBack = ri->SigmaBack();
@@ -37,7 +35,6 @@ class RImageRef
   double BackLevelNoSub() const { return backLevelNoSub;}
   string Band() const { return band;}
   double Exposure() const { return exposure;}
-  double  GFSeeing()  const { return gfseeing;}
   double  ModifiedJulianDate()  const { return mjd;}
   double  Seeing()  const { return seeing;}
   double  SigmaBack()  const { return sigmaBack;}

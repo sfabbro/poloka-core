@@ -68,7 +68,6 @@ void LightCurve::write_lc2fit(ostream& Stream) const
 	 << "#seeing: SEseeing\n"
 	 << "#exptime : exposure time\n"
 	 << "#phratio : photom ratio\n"
-	 << "#gseeing : GFseeing\n"
 	 << "#sesky : SEsky\n"
 	 << "#sigsky : SIGsky\n"
 	 << "#sigscale : sigma scale factor\n";
@@ -96,12 +95,6 @@ void LightCurve::write_lc2fit(ostream& Stream) const
       Stream << " " << fs->Seeing();
       Stream << " " << fs->ExposureTime();
       Stream << " " << fs->photomratio;
-      try {
-	Stream << " " << fs->GFSeeing();
-      } catch (PolokaException p) {
-	p.PrintMessage(cout);
-	Stream << " " << 0.;
-      }
       Stream << " " << fs->SESky();
       Stream << " " << fs->SIGSky();
       Stream << " " << fs->sigscale_varflux; 

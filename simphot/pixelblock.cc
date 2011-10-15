@@ -120,15 +120,18 @@ bool PixelBlock::WriteFits(const std::string &FileName) const
 
 #include <cmath>
 
-void GaussianFill(PixelBlock &K, const double SigX, const double SigY)
+void GaussianFill(PixelBlock &K, const double SigX, const double SigY, const double dx, const double dy)
 {
   double ax = -0.5/(SigX*SigX);
   double ay = -0.5/(SigY*SigY);
   double sum = 0;
+  double x1, y1;
   for (int y = K.ymin; y < K.ymax; ++y)
     for (int x = K.xmin; x < K.xmax; ++x)
       {
-	double val = exp(x*x*ax + y*y*ay);
+	x1 = x-dx ;
+	y1 = y-dy ;
+	double val = exp(x1*x1*ax + y1*y1*ay);
 	K(x,y) = val;
 	sum += val;
       }

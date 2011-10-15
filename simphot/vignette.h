@@ -95,7 +95,6 @@ class Vignette : public RefCount {
   double Seeing() const {return ri.Seeing();}
   double PhotomRatio() const {return photomRatio;}
   double ExpTime() const { return ri.Exposure();}
-  double GFSeeing() const {return ri.GFSeeing();}
   double SESky() const {return ri.BackLevelNoSub() ;}
   double SIGSky() const { return ri.SigmaBack();}
  private :

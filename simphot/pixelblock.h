@@ -89,7 +89,7 @@ class PixelBlock : public Array2D<PixelType>
 double ScalProd(const PixelBlock &, const PixelBlock &);
 
 
-void GaussianFill(PixelBlock &K, const double SigX, const double SigY);
+void GaussianFill(PixelBlock &K, const double SigX, const double SigY, const double dx=0, const double dy=0);
 
 
 

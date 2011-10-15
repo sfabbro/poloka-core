@@ -33,7 +33,7 @@ class ImagePSF : public RefCount {
  public :
   
   //! Constructor. RI should have been allocated via "new".
-  ImagePSF(const ReducedImage &RI, bool RefitPSF= false);
+  ImagePSF(const ReducedImage &RI, bool RefitPSF= false, const string & psffile_name="");
 
   //! half size of the PSF in pixels
   int HSizeX() const { return hSizeX;}
@@ -116,6 +116,6 @@ class ImagePSF : public RefCount {
 void SetPSFCardsFileName(const string &FileName);
 
 bool MakePSF(const string &ImageName, const bool RefitPSF = false,
-	     const bool UseExternalCatalog = true);
+	     const bool UseExternalCatalog = true, const string & ExternalCatalogName="");
 
 #endif /* IMAGEPSF__H */
