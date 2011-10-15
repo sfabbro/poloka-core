@@ -28,7 +28,7 @@ string ToadBand(const string &keyval)
   if (!called)
     {
       called = true;
-      string X = "UBVRIJHKLGYZ";
+      string X = "CUBVRIJHKLGYZ";
       char F;
       string sF;
       for (unsigned int i=0;i<X.length();i++)

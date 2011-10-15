@@ -3,6 +3,7 @@ MAINTAINERCLEANFILES = \
 	Makefile.in stamp-*
 
 EXTRA_DIST = \
+	andor.cc \
 	cfh12k.cc \
 	cfhtmos.cc \
 	ctio1p5.cc \
