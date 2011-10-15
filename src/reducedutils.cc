@@ -331,7 +331,6 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
   cond.read(DefaultDatacards());
   
   if (MaxOrder != -1) cond.MaxOrder = MaxOrder;
-
   if (transfo && !ListMatchCheck(SrcList, DestList, transfo, 2, cond.MinMatchRatio)) {
     cout << " FindTransfo: WCS not good enough\n";
     transfo = GtransfoRef();
@@ -380,7 +379,7 @@ bool PhotomRatio(const DbImage &Im, const DbImage &Ref, double& Ratio, double &E
   BaseStarList *brefList = SE2Base(&refList); 
   // hack to detect a transformed image
   if (!Im2Ref)
-    Im2Ref = ListMatch(*bimList, *brefList);
+    Im2Ref = ListMatch(*bimList, *brefList,MatchConditions(DefaultDatacards()));
   if (!Im2Ref) {
      cerr << " Error: bad match for PhotomRatio between "
 	  << Im.Name() << " and " << Ref.Name() << endl;

@@ -87,10 +87,10 @@ GtransfoRef FindWCSTransfo(const ReducedImage& Src, const ReducedImage& Dest);
 //! MaxOrder=-1 will read the maximum order from the datacard file
 GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestList,
 			const ReducedImage& Src, const ReducedImage& Dest,
-			int MaxOrder=-1);
+			const int MaxOrder=-1);
 
 //! convenient wrapper to find a Gtransfo between 2 images using the above routine
-GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest, int MaxOrder=-1);
+GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest, const int MaxOrder=-1);
 
 string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef(), const GtransfoRef RefToIm=GtransfoRef());
 string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef());
