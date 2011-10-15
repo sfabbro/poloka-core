@@ -603,10 +603,6 @@ MultiMagSEStarList::UpDate_Assoc(SEStarList &L, string band)
       mb.f_circ = sestar->Flux_circ_aper();// doit etre calcule par ailleurs
       mb.ef_circ = sestar->Eflux_circ_aper(); 
 
-      mb.seeing = sestar->local_seeing ;
-      mb.f_aper = sestar->aper_flux ;
-      mb.ef_aper =  sestar->err_aper_flux ;
-      mb.f_aper_other =  sestar->aper_flux_other ;
     }
   return true ;
 }
@@ -660,11 +656,6 @@ MultiMagSEStarList::UpDate(SEStarList &L, string band)
       mb.ef_auto = star->Eflux_auto(); 
       mb.f_circ = star->Flux_circ_aper();// doit etre calcule par ailleurs
       mb.ef_circ = star->Eflux_circ_aper();
-
-      mb.seeing = star->local_seeing ;
-      mb.f_aper = star->aper_flux ;
-      mb.ef_aper =  star->err_aper_flux ;
-      mb.f_aper_other =  star->aper_flux_other ;
 
       if ( nn < 5 )
 	{

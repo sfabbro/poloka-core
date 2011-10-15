@@ -15,8 +15,8 @@ KernelFitter::KernelFitter(const ReducedImageRef &Ref, const ReducedImageRef &Ne
 	   << Ref->Name() << " and " << New->Name() << endl;
       throw PolokaException(" Cannot fit kernel on images of different sizes ");
     }
-  double refSeeing = Ref->GFSeeing();
-  double newSeeing = New->GFSeeing();  
+  double refSeeing = Ref->Seeing();
+  double newSeeing = New->Seeing();  
   largestSeeing = (refSeeing > newSeeing) ? refSeeing : newSeeing;
   refIsBest =  (NoSwap || (refSeeing < newSeeing));
   if (refIsBest)
