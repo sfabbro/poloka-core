@@ -5,7 +5,7 @@
 #include "polokaexception.h"
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+  cerr << "Usage: " << progName << " [OPTION]...DBIMAGE...\n"
        << "PSF match and subtract DBIMAGE to first DBIMAGE\n\n"
        << "   -d: perform candidate detection on each subtraction\n"
        << "   -o: output subtraction dbimage name (default: DBIMAGE-FIRST)\n"
@@ -74,7 +74,7 @@ int main(int nargs, char **args) {
 	cerr << arg << ": not a valid dbimage\n";
 	continue;
       }
-      im->Execute(DoFits|DoCatalog|DoAperCatalog);
+      im->Execute(DoFits|DoCatalog);
       imList.push_back(im);
       continue;
     }

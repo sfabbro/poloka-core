@@ -7,7 +7,7 @@
 #include "polokaexception.h"
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+  cerr << "Usage: " << progName << " [OPTION]...DBIMAGE...\n"
        << "Match DBIMAGE to a geometric reference image (first DBIMAGE)\n\n" 
        << "   -n : no resampling, only match catalogues\n"
        << "   -i : integer shifting (no interpolation)\n"
@@ -18,13 +18,13 @@ static void usage(const char *progName) {
 
 struct ImageMatcher {
 
-  ImageMatcher() : doResample(true), doIntShift(false), overWrite(false) {}
+  ImageMatcher() : doResample(true), doIntShift(false) {}
 
-  bool doResample, doIntShift, overWrite;
+  bool doResample, doIntShift;
   ReducedImageRef Ref;
   GtransfoRef RefToIm, ImToRef;
 
-  void operator () (const ReducedImageRef Im) {
+  void operator () (const ReducedImageRef Im) const {
     try {
       if (*Im == *Ref) {
 	cout << " " << Im->Name() << " is same as reference, skipping\n";
@@ -42,11 +42,9 @@ struct ImageMatcher {
 	ImageResample(*Im, *ref, RefToIm, ImToRef);
       else if (doIntShift)
 	ImageIntegerShift(*Im, *ref, RefToIm);
-      else {
-	ImToRef = FindTransfo(*Im, *ref); 
-	cout << *ImToRef;
-      }
-      
+      else
+	cout << *FindTransfo(*Im, *ref);
+
     } catch (PolokaException p) {
       p.PrintMessage(cerr);
     }

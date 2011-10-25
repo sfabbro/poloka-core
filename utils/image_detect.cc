@@ -70,7 +70,7 @@ struct RunDetection {
 
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+  cerr << "Usage: " << progName << " [OPTION]...DBIMAGE...\n"
        << "Detect and measure point sources using adapted gaussian filter\n\n"
        << "   -r DBIMAGE: specify a reference (for matched det and subs)\n"
        << "   -m FILE   : match all detections into <file>\n"

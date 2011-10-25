@@ -34,7 +34,7 @@ int main(int nargs, char ** args) {
   }
   
   for(ReducedImageIterator it = imList.begin(); it != imList.end(); ++it) {
-    ReducedImage *current = *it;
+    ReducedImageRef current = *it;
     if (overwrite && current->HasSatur())
       remove((current->FitsSaturName()).c_str());
     current->MakeSatur();

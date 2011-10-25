@@ -13,7 +13,7 @@
 #include "imageutils.h"
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTION]... [FITS]...\n"
+  cerr << "Usage: " << progName << " [OPTION]... FITS...\n"
        << "Select and list FITS images with criteria of keys in their header\n\n"
        << "   -cal           : use dbimages (calibrated, raw)\n"
        << "   -date [MIN,MAX]: UTC date interval, format is YYYY-MM-DD or MJD\n"

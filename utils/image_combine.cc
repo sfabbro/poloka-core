@@ -5,7 +5,7 @@
 
 
 static void usage(const char *progName) {
-  cerr << "Usage: " << progName << " [OPTION]... [DBIMAGE]...\n"
+  cerr << "Usage: " << progName << " [OPTION]... DBIMAGE...\n"
        << "Combine pixels of DBIMAGE\n\n"
        << "    -m METHOD: specify the combining method:\n"
        << "            1  Weighted average (default)\n"
