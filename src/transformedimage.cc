@@ -1,6 +1,7 @@
 #include <iostream>
+#include <fstream>
+#include <iomanip>
 #include <string>
-
 
 #include "transformedimage.h"
 #include "gtransfo.h"
@@ -9,33 +10,32 @@
 #include "fileutils.h"
 #include "imageutils.h"
 #include "reducedutils.h"
+#include "allreducedimage.h"
 #include "polokaexception.h"
+#include "apersestar.h"
 
 string TransformedName(const string &ToTransform, const string &Ref)
 {
-  return "T_"+Ref+ToTransform;
+  return "T_" + Ref + "_" + ToTransform;
 }
 
 
-
-/****************** ImageGtransfo ***********************/
-
-#include "imagematch.h"
-
-
-
-ImageGtransfo::ImageGtransfo(const Gtransfo *TransfoFromRef, 
-			     const Gtransfo *TransfoToRef, 
+ImageGtransfo::ImageGtransfo(const GtransfoRef TransfoFromRef, 
+			     const GtransfoRef TransfoToRef, 
 			     const Frame &OutputImageSize, 
 			     const string &GeomRefName)
 {
   geomRefName = GeomRefName;
-  transfoFromRef = (TransfoFromRef) ? TransfoFromRef->Clone() : NULL ;
-  transfoToRef = (TransfoToRef) ? TransfoToRef->Clone() : NULL;
+  transfoFromRef = TransfoFromRef;
+  transfoToRef = TransfoToRef;
   outputImageSize = OutputImageSize; 
-  scaleFactor = 1.;
-  if (transfoFromRef) 
-    {scaleFactor = 1./sqrt(fabs(transfoFromRef->Jacobian(outputImageSize.Nx()/2, outputImageSize.Ny()/2)));}
+}
+
+double ImageGtransfo::ScaleFactor() const 
+{
+  if (transfoFromRef)
+    return 1./sqrt(fabs(transfoFromRef->Jacobian(outputImageSize.Nx()/2, outputImageSize.Ny()/2)));
+  return 1.;
 }
 
 const GtransfoRef ImageGtransfo::FromRef() const
@@ -47,37 +47,31 @@ const GtransfoRef ImageGtransfo::FromRef() const
 ImageTransfo* ImageGtransfo::Clone() const
 {
   return new ImageGtransfo(transfoFromRef, transfoToRef, outputImageSize, geomRefName);
-  }
+}
 
-ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign,float min_match_ratio)
+
+ImageGtransfo::ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign)
 {
   geomRefName = Ref.Name();
   transfoFromRef = FindTransfo(Ref, ToAlign);
   if (!transfoFromRef)
-    {
-      cerr << " Could not match lists from " << Ref.Name() << " and " <<  ToAlign.Name() << endl;
-    }
-  transfoToRef = transfoFromRef->InverseTransfo(0.01, Ref.UsablePart());
+    throw(PolokaException("ImageGtransfo: could not match lists " + Ref.Name() + " and " + ToAlign.Name()));
+
+  transfoToRef = FindTransfo(ToAlign, Ref);
   if (!transfoToRef)
-    {
-      cerr << " Could not invert list " << Ref.Name() << " and " <<  ToAlign.Name() << endl;
-    }
+    throw(PolokaException("ImageGtransfo: could not invert list " + Ref.Name() + " and " + ToAlign.Name()));
+
   outputImageSize = Ref.PhysicalSize();
   // use the same transfo as the one used to actually transform the image.
-  if (transfoFromRef)
-    {scaleFactor = 1./sqrt(fabs(transfoFromRef->Jacobian(outputImageSize.Nx()/2, outputImageSize.Ny()/2)));}
-  else scaleFactor = 1.;
-  cout << " Scale factor for rebinning = " << scaleFactor << endl;
+  double scale = ScaleFactor();
+  cout << " ImageGtransfo: scale factor for rebinning = " << scale << endl;
   double pixRatio = ToAlign.PixelSize()/Ref.PixelSize();
-  if ( fabs( pixRatio / scaleFactor - 1.) > 0.05 ) 
+  if ( fabs( pixRatio / scale - 1.) > 0.05 ) 
     { 
-      cerr << " WARNING : header pixel sizes ratio=" << pixRatio<< " doesn't match scale factor="
-	   << scaleFactor << " \n for images " << ToAlign.Name() << " and " << Ref.Name() << endl;
+      cerr << " ImageGtransfo: WARNING header pixel sizes ratio=" << pixRatio<< " doesn't match scale factor="
+	   << scale << " \n for images " << ToAlign.Name() << " and " << Ref.Name() << endl;
     }
 }
-
-ImageGtransfo::ImageGtransfo() : scaleFactor(1) {}
-
 
 bool ImageGtransfo::IsValid() const
 {
@@ -86,26 +80,20 @@ bool ImageGtransfo::IsValid() const
 
 void ImageGtransfo::dump(ostream &s) const
 {
-  s << "*** ImageGtransfo ***" << endl; 
-  s << " Geom Ref Name : " << GeomRefName() << endl;
-  s << " transfoFromRef : " << endl << *TransfoFromRef() 
-    << " transfoRoRef : " << endl << *TransfoToRef();
+  s << "*** ImageGtransfo ***" << endl
+    << " Geom Ref Name : " << GeomRefName() << endl
+    << " transfoFromRef : " << endl << *TransfoFromRef() 
+    << " transfoToRef : " << endl << *TransfoToRef();
 }
 
 /* DefaultVal could be found in Source. but this routine is also used for boolean images where 
    DefaultVal has to be 0. */
-
-#include <time.h> // for CPU printouts
 void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transformed, 
 				   const ReducedImage *Source, ReducedImage *Result, 
 				   double DefaultVal) const
 {
-#ifdef DEBUG
-  cout  << " > ImageGtransfo::TransformImage(...) " << endl;
-#endif
 
-  /* register the image */
-  clock_t tstart = clock();
+  // resample the image
   Image &transformedImage = Transformed;
   int nx_aligned = int(outputImageSize.Nx());
   int ny_aligned = int(outputImageSize.Ny());
@@ -113,30 +101,31 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
   transformedImage = GtransfoImage(Original,*transfoFromRef, int(nx_aligned),
 				   int(ny_aligned), DefaultVal, 3);
 
-  transformedImage *= (1/(scaleFactor*scaleFactor)); // account for the average Jacobian.
+   // account for the average Jacobian.
+  double scale = ScaleFactor();
+  double scale2 = scale*scale;
+  transformedImage *= 1./scale2;
   
-  /* write in the header the frame coordinates */
+  // write in the header the frame coordinates
   Frame frame(dynamic_cast<const FitsHeader&> (Original));
-  cout << " Before scaling " << frame;
-  //frame = frame.ApplyTransfo(*transfoToRef);
-  //  GtransfoLin *lintransfoToRef = GtransfoToLin(transfoToRef);
-  //  frame = frame.ApplyTransfo(*lintransfoToRef);
+  cout << " ImageGtransfo: frame before scaling " << frame;
 
-  /* it's better to do it this way due to eventual wrong third order transfo terms*/
+  // it's better to approximate a linear transfo due to eventual wrong third order transfo terms
   GtransfoLin lintransfoToRef = transfoFromRef->
-    LinearApproximation(Frame(transformedImage).Center(), 
+    LinearApproximation(Frame(transformedImage).Center(),
 			min(nx_aligned,ny_aligned)).invert();
   frame = ApplyTransfo(frame,lintransfoToRef);
   
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));
-  cout << " After scaling  " << frame;
+  cout << " ImageGtransfo: frame after scaling  " << frame;
   
-  Transformed.AddOrModKey("SCALFACT",scaleFactor,"Scaling factor when transforming");
-  Transformed.AddOrModKey("GEOREF", geomRefName, "Geometric Reference for alignment");
+  // write a few things in the resampled header
+  Transformed.AddOrModKey("SCALFACT",scale,"Scaling factor when transforming");
+  Transformed.AddOrModKey("GEOREF", geomRefName, "DbImage geometric reference for alignment");
   
-  /* The update of the WCS consists in copying the WCS of the geomRef
-     in the Transformed image, provided the first one is accurate */
+  // update of the WCS: consists of copying the WCS of the geomRef
+  // in the Transformed image, provided the first one is accurate
   {
     bool writtenOutWCS = false;
     ReducedImage geomRef(geomRefName);
@@ -161,161 +150,142 @@ void ImageGtransfo::TransformImage(const FitsImage &Original, FitsImage& Transfo
       }
     if (!writtenOutWCS)
       {
-	cout << " NO WCS in output image for " 
-	     << Transformed.FileName() << std::endl;
+	cout << " ImageGtransfo: no WCS in output image for "
+	     << Transformed.FileName() << endl;
       }
   }
   
-  // update usable part
+  // update usable frame
   frame.WriteInHeader(Transformed);
-
-  // update RA and DEC
-  //  if we copy the WCS we should not update RA and Dec
-  //  string ra = Original.KeyVal("TOADRASC");
-  //  string dec = Original.KeyVal("TOADDECL");
-  //  double epoch = Original.KeyVal("TOADEQUI");
-  //  Transformed.AddOrModKey("TOADRASC",ra.c_str(),"Modified RA after transformation");
-  // Transformed.AddOrModKey("TOADDECL",dec.c_str(),"Modified DEC after transformation");
-  // Transformed.AddOrModKey("TOADEQUI",epoch,"Modified epoch after transformation");
   
+  // update other header values
   if (Source && Result) 
     {
-      // update pixel size *scale
+      Transformed.AddOrModKey("DBSOURCE", Source->Name(), "Source DbImage before resampling");
+      // pixel size * scale
       double pixsize = Source->PixelSize();
-      Result->SetPixelSize(pixsize/scaleFactor,"Pixel size scaled after transformation");
-      double scale2 = scaleFactor*scaleFactor;
-      // update background level /scale^2
+      Result->SetPixelSize(pixsize/scale,"Pixel size scaled after transformation");
+
+      // background level /scale^2
       double backlev = Source->BackLevel();
       Result->SetBackLevel(backlev/scale2,"Background level after transformation");
       // could add at least interpolation error at this stage  
-      Result->SetFlatFieldNoise(Source->FlatFieldNoise()/scaleFactor,"Flatfield noise sigma after transformation");
-      Result->SetReadoutNoise(Source->ReadoutNoise()/scaleFactor, "Readout noise after transformation");
-      Result->SetSigmaBack(Source->SigmaBack()/scaleFactor, "Background fluctuations sigma after transformation");
-      // update sky value (!= background if sky subtracted)
+      Result->SetFlatFieldNoise(Source->FlatFieldNoise()/scale,"Flatfield noise sigma after transformation");
+      Result->SetReadoutNoise(Source->ReadoutNoise()/scale, "Readout noise after transformation");
+      Result->SetSigmaBack(Source->SigmaBack()/scale, "Background fluctuations sigma after transformation");
+      // sky value (!= background if sky subtracted)
       double skylev = Source->OriginalSkyLevel(); 
-      Result->SetOriginalSkyLevel(skylev/scale2,"Sky level after transformation");
-	
-      // update saturation level /scale^2
+      Result->SetOriginalSkyLevel(skylev/scale2,"Sky level after transformation");	
+      // saturation level /scale^2
       double origsatur = Source->OriginalSaturation();  
       Result->SetOriginalSaturation(origsatur/scale2," original saturation after transformation");
       double satur = Source->Saturation();  
       Result->SetSaturation(satur/scale2,"Saturation after transformation");
-      
-      // update seeing *scale 
+      // seeing *scale 
       double seeing = Source->Seeing();
       // assume rebinning is equivalent to convolving with a gaussian of 
       // sigma = (pixel size)/sqrt(12) = stdev of step function
       seeing = sqrt(seeing*seeing*scale2 + scale2/12);
-      cout << " Expected seeing " << seeing << endl;
+      cout << " TransformedImage: expected seeing " << seeing << endl;
       Result->SetSeeing(seeing,"seeing in pixel sigma after transformation");
       Result->SetUsablePart(frame);
     }
-  clock_t tend = clock();
-  cout << " CPU for resampling " 
-     << float(tend-tstart)/float(CLOCKS_PER_SEC) << endl;
 }
+
+static const Pixel BAD_WEIGHT = 1e-15;
 
 void ImageGtransfo::TransformWeightImage(const FitsImage &Original, 
 					 FitsImage& Transformed) const
 {
-  /* register the image */
-  clock_t tstart = clock();
+  // transform weight into variance
   Image inputWeights = Original;
-  {
-    Pixel min,max;
-    inputWeights.MinMaxValue(&min,&max);
-    cout << " " << Original.FileName() << " min, max " << min << ' ' << max << endl;
-  }
-  double eps = 1e-15;
-  inputWeights += eps; // so that it can be inverted
-  inputWeights = 1/inputWeights; // inputWeights is now a variance map
-  {
-    Pixel min,max;
-    inputWeights.MinMaxValue(&min,&max);
-    cout << " after invertion" << " min, max " << min << ' ' << max << endl;
-  }
+  Pixel minVal, maxVal;
+  inputWeights.MinMaxValue(&minVal, &maxVal);
+  cout << " ImageGtransfo: original weight   " << Original.FileName() << " min, max " << minVal << ' ' << maxVal << endl;
+  Pixel *pend = inputWeights.end();
+  for (Pixel *p = inputWeights.begin(); p < pend; ++p)
+    *p = 1./(*p + BAD_WEIGHT);
 
+  // resample the variance
   int nx_aligned = int(outputImageSize.Nx());
   int ny_aligned = int(outputImageSize.Ny());
   Image &transformedVariance = Transformed;
   transformedVariance = 
     GtransfoImage(inputWeights,*transfoFromRef, int(nx_aligned),
 			       int(ny_aligned), 0, 3, true);
-  transformedVariance *= 1./(scaleFactor*scaleFactor);
   
-  {
-    Pixel min,max;
-    transformedVariance.MinMaxValue(&min,&max);
-    cout << " after transfo" << " min, max " << min << ' ' << max << endl;
-  }
+  double scale = ScaleFactor();
 
-  // transform back to weights and put low pixels (value comparable to eps) to 0;
-  Pixel bad_pix = 10.*eps;
-  Pixel *pend = transformedVariance.end();
+  // account for Jacobian, transform back to weights and put low pixels (value comparable to BAD_WEIGHT) to 0
+  double scale2 = scale*scale;
+  Pixel maxvar = 1. / (BAD_WEIGHT*10.);
+  pend = transformedVariance.end();
   for (Pixel *p = transformedVariance.begin(); p < pend; ++p)
-    {
-      if (*p <= 0) { *p = 0; continue;} 
-      *p = 1./(*p); // come back to weights
-      if ((*p) < bad_pix) *p = 0;
-    }
+    (*p > maxvar || *p <= 0) ? *p = 0. : *p = scale2 / *p;
 
   // very important : preserves that 0 remain 0 after FITS write/read
   Transformed.PreserveZeros(); 
+  Transformed.MinMaxValue(&minVal, &maxVal);
+  cout << " ImageGtransfo: transformed weight " << Original.FileName() << " min, max " << minVal << ' ' << maxVal << endl;
 
-  {
-    Pixel min,max;
-    Transformed.MinMaxValue(&min,&max);
-    cout << Transformed.FileName() << " min, max " << min << ' ' << max << endl;
-  }
-  
-
-  /* write in the header the frame coordinates */
+  // write in the header the frame coordinates
   Frame frame(dynamic_cast<const FitsHeader&> (Original));
-  cout << " Before scaling " << frame;
-  //frame = frame.ApplyTransfo(*transfoToRef);
-  //  GtransfoLin *lintransfoToRef = GtransfoToLin(transfoToRef);
-  //  frame = frame.ApplyTransfo(*lintransfoToRef);
+  cout << " ImageGtransfo: frame before scaling " << frame;
 
-  /* it's better to do it this way due to eventual wrong third order transfo terms*/
+  // it's better to approximate a linear transfo due to eventual wrong third order transfo terms
   GtransfoLin lintransfoToRef = transfoFromRef->
     LinearApproximation(Point(nx_aligned/2, ny_aligned/2), 
 			min(nx_aligned,ny_aligned)).invert();
   frame = ApplyTransfo(frame,lintransfoToRef);
-
+  
   // watch it does not go outside image  
   frame *= Frame(dynamic_cast<const Image&> (Transformed));
-  cout << " After scaling  " << frame;
+  cout << " ImageGtransfo: frame after scaling  " << frame;
+  
+  // write a few things in the resampled header
+  Transformed.AddOrModKey("SCALFACT", scale, "Scaling factor when transforming");
 
-  Transformed.AddOrModKey("SCALFACT",scaleFactor,"Scaling factor when transforming");
-
-  // Whould in fact update the WCS with a linear approximation 
-  // if (HasWCS(Transformed)) RemoveWCS(Transformed)
-
-  // update usable part
-  frame.WriteInHeader(Transformed);
-
-  /* The update of the WCS consists in copying the WCS of the geomRef
-     in the Transformed image, provided the first one is accurate.
-     Use the WCS of ref Image, because weights may not have a WCS ? */
-
-  ReducedImage geomRef(geomRefName);
-  if (geomRef.IsValid() && geomRef.HasImage())
-    {
-      FitsHeader geomHead(geomRef.FitsName());
-      CopyWCS(geomHead, Transformed);
-    }
-
-  clock_t tend = clock();
-  cout << " CPU for resampling weights " 
-     << float(tend-tstart)/float(CLOCKS_PER_SEC) << endl;
+  
+  // update of the WCS: consists of copying the WCS of the geomRef
+  // in the Transformed image, provided the first one is accurate
+  {
+    bool writtenOutWCS = false;
+    ReducedImage geomRef(geomRefName);
+    if (geomRef.IsValid() && geomRef.HasImage() && geomRef.XSize() == nx_aligned && geomRef.YSize() == ny_aligned)
+      {
+	FitsHeader geomHead(geomRef.FitsName());
+	writtenOutWCS = CopyWCS(geomHead, Transformed);
+      }
+    else
+      {
+	GtransfoRef wcsSource = WCSFromHeader(Original);
+	if (wcsSource)
+	  {
+	    GtransfoRef outWCS = GtransfoCompose(wcsSource, transfoFromRef);
+	    TanPix2RaDec *tanWCS = dynamic_cast<TanPix2RaDec *>((Gtransfo*)outWCS);
+	    if (tanWCS)
+	      {
+		TanWCS2Header(Transformed, *tanWCS);
+		writtenOutWCS = true;
+	      }
+	  }
+      }
+    if (!writtenOutWCS)
+      {
+	cout << " ImageGtransfo: no WCS in output image for "
+	     << Transformed.FileName() << endl;
+      }
+  }
+  
+  // update usable frame
+  frame.WriteInHeader(Transformed);  
 }
-
-
 
 void ImageGtransfo::TransformBoolImage(const FitsImage &Original, FitsImage& Transformed) const
 {
-  /* register the image */
+  // use the routine above to resample and update header
   TransformImage(Original, Transformed, NULL, NULL, 0.);
+  // keep it binary
   Transformed.Simplify(0.1);
   Transformed.ModKey("BITPIX",8);
 }
@@ -324,14 +294,14 @@ void ImageGtransfo::TransformBoolImage(const FitsImage &Original, FitsImage& Tra
    It does however 3 different things :
    - transform coordinates (and there are untransformed coordinates) .....
    - crop the list to the transformed frame
-   - scale a few scores
-*/
+   - scale a few scores */
 void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Transformed) const
 {
   Transformed.clear();
   Catalog.CopyTo(Transformed);
   Transformed.ApplyTransfo(*transfoToRef);
-  double scale2 = scaleFactor*scaleFactor;
+  double scale = ScaleFactor();
+  double scale2 = scale*scale;
   for (SEStarIterator it=Transformed.begin(); it!=Transformed.end(); )
     {
       SEStar *star = *it;
@@ -342,18 +312,17 @@ void ImageGtransfo::TransformCatalog(const SEStarList &Catalog, SEStarList &Tran
 	}
       star->Fluxmax() /= scale2;
       star->Fond() /= scale2;
-      star->Fwhm() *= scaleFactor;
-      star->Kronradius() *= scaleFactor;
+      star->Fwhm() *= scale;
+      star->Kronradius() *= scale;
       star->Isoarea() *= scale2;
       star->Mxx() *= scale2;
       star->Myy() *= scale2;
       star->Mxy() *= scale2;
-      star->A() *= scaleFactor;
-      star->B() *= scaleFactor;
+      star->A() *= scale;
+      star->B() *= scale;
       ++it;
     }
 }
-
 
 void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSEStarList &Transformed) const
 {
@@ -362,7 +331,8 @@ void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSESt
   Transformed.clear();
   Catalog.CopyTo(Transformed);
   Transformed.ApplyTransfo(*transfoToRef);
-  double scale2 = scaleFactor*scaleFactor;
+  double scale = ScaleFactor();
+  double scale2 = scale*scale;
   for (AperSEStarIterator it=Transformed.begin(); it != Transformed.end(); )
     {
       AperSEStar *star = *it;
@@ -373,20 +343,20 @@ void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSESt
 	}
       star->Fluxmax() /= scale2;
       star->Fond() /= scale2;
-      star->Fwhm() *= scaleFactor;
-      star->Kronradius() *= scaleFactor;
+      star->Fwhm() *= scale;
+      star->Kronradius() *= scale;
       star->Isoarea() *= scale2;
       star->Mxx() *= scale2;
       star->Myy() *= scale2;
       star->Mxy() *= scale2;
-      star->A() *= scaleFactor;
-      star->B() *= scaleFactor;
-      star->neighborDist *= scaleFactor;
+      star->A() *= scale;
+      star->B() *= scale;
+      star->neighborDist *= scale;
       star->gmxx *= scale2;
       star->gmyy *= scale2;
       star->gmxy *= scale2;
       for (vector<Aperture>::iterator sit=star->apers.begin(); sit != star->apers.end(); ++sit) {
-	sit->radius *= scaleFactor;
+	sit->radius *= scale;
 	sit->ncos = int(ceil(sit->ncos*scale2));
       }
       ++it;
@@ -396,194 +366,213 @@ void ImageGtransfo::TransformAperCatalog(const AperSEStarList &Catalog, AperSESt
   double ndist  = glob.getDoubleValue("MAXNEIGHBOR_DIST");
   vector<double> rads = glob.getDoubleValues("RADIUS");
   vector<double> shapes = glob.getDoubleValues("STARSHAPE");
-  glob.setDoubleValue("SEEING", seeing*scaleFactor);
-  glob.setDoubleValue("MAXNEIGHBOR_DIST", ndist*scaleFactor);
-  for (size_t i=0; i<rads.size(); ++i) rads[i] *= scaleFactor;
-  for (size_t i=0; i<shapes.size(); ++i) shapes[i] *= scaleFactor;
+  glob.setDoubleValue("SEEING", seeing*scale);
+  glob.setDoubleValue("MAXNEIGHBOR_DIST", ndist*scale);
+  for (size_t i=0; i<rads.size(); ++i) rads[i] *= scale;
+  for (size_t i=0; i<shapes.size(); ++i) shapes[i] *= scale;
   glob.setDoubleValues("RADIUS", rads);
   glob.setDoubleValues("STARSHAPE", shapes);
 }
 
-
-
-
-ImageGtransfo::~ImageGtransfo()
-{
-
-}
-
-
-
-/********************* TransformedImage ************************************************/
 void TransformedImage::init(const ReducedImage &Source,
 			    const ImageTransfo *Transfo) 
 {
   source = Source.Clone();
-  sourceName = Source.Name();
   transfo = Transfo->Clone();
 }
 
 TransformedImage::TransformedImage(const string &TransformedName, 
 				   const ReducedImage &Source,
 				   const ImageTransfo *Transfo) 
-       : ReducedImage(TransformedName)
+  : ReducedImage(TransformedName)
 {
-#ifdef DEBUG
-  cout << " > TransformedImage::TransformedImage(...) TransformedName = " 
-       << TransformedName
-       << endl;
-#endif
-
   init(Source,Transfo);
   // should we call Create by default here? answer : yes as a trial
   Create("here");
 }
 
-
+TransformedImage::TransformedImage(const TransformedImage &Original)
+  : ReducedImage(Original.Name())
+{
+  this->init(*Original.source, Original.transfo);
+}
 
 
 TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 {
+  ReducedImageRef ref;
+  if (HasImage())
+    {
+      FitsHeader head(FitsName());
+      string refName = head.KeyVal("GEOREF");
+      ref = ReducedImageNew(refName);
+      string sourceName = head.KeyVal("DBSOURCE");
+      source = ReducedImageNew(sourceName);
+     }
+  if (!ref || !source)
+    {
+      vector<string> dbNames;
+      DecomposeString(dbNames, Name,"_");
+       if (dbNames.size() == 3)
+	{
+	  ref = ReducedImageNew(dbNames[1]);
+	  source = ReducedImageNew(dbNames[2]);
+	}
+      else if (dbNames.size() == 2 && ref)
+	{
+	  RemovePattern(dbNames[1],ref->Name());
+	  source = ReducedImageNew(dbNames[1]);
+	}
+      else
+	{
+	  throw(PolokaException("TransformedImage: no way to read existing "+ Name));
+	}
+    }
+  // wont work with other ImageTransfo than ImageGtransfo (there's none yet anyway)
+  transfo = new ImageGtransfo(*ref,*source);
 }
 
 
+ReducedImageRef TransformedImage::Clone() const
+{
+  return new TransformedImage(Name(), *source, transfo);
+}
 
 void TransformedImage::dump(ostream& s) const
 {
   s << "**** TransformedImage : " << Name() << endl;
-  s << " source name : " <<  SourceName() << endl;
-  transfo->dump(s);
+  if (source)
+    s << " source name : " <<  source->Name() << endl;
+  if (transfo)
+    transfo->dump(s);
 }
 
 
-const  ImageGtransfoRef TransformedImage::IMAGEGTransfo() const
+const ImageGtransfoRef TransformedImage::IMAGEGTransfo() const
 { 
   // is the stored transfo an  ImageGtransfo ?
   const ImageGtransfo *test = transfo; 
-  if (!test) { cerr << "Dynamic cast failed in TransformedImage::GTransfo " << endl ; return ImageGtransfoRef();} // ie NULL
+  if (!test)
+    throw(PolokaException("TransformedImage: dynamic cast failed in IMAGEGtransfo"));
   ImageGtransfoRef gref(test);
   return(gref);
 }
 
 
-const Gtransfo* TransformedImage::FromRef() const
+const GtransfoRef TransformedImage::FromRef() const
 {
   const ImageGtransfoRef gref = IMAGEGTransfo();
-  if (gref == NULL ) return NULL;
+  if (gref == NULL ) return GtransfoRef();
   return gref->FromRef();
 }
 
-#ifdef STORAGE
-//ReducedImageRef TransformedImage::GeometricReference()
-//{
-//  const ImageGtransfoRef gref = IMAGEGTransfo();
-//  if (gref == NULL ) return CountedRef<ReducedImage>(); // soit = NULL
-//  geomRef = ReducedImageRead(gref->GeomRefName());
-/  return geomRef;
-//}
 
-//string TransformedImage::GeomRefName() const
-//{
-//   const ImageGtransfoRef gref = IMAGEGTransfo();
-//  if (gref == NULL) return NULL;
-//  return (gref->GeomRefName());
-//}
-#endif
-
-bool  TransformedImage::MakeCatalog() 
+bool TransformedImage::MakeCatalog() 
 {
-  string fileName = ReducedImage::CatalogName();
-  if (FileExists(fileName)) return true;
+  string outFileName = CatalogName();
+  if (FileExists(outFileName)) return true;
 
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasCatalog() && !source->MakeCatalog())
+    throw(PolokaException("TransformedImage: cannot make catalog for " + Name()));
+ 
   SEStarList inList(source->CatalogName());
   SEStarList outList;
-  cout << " Transforming SExtractor catalog from "<< source->Name() << endl;
+  cout << " TransformedImage: transforming SExtractor catalog of "<< source->Name() << endl;
   transfo->TransformCatalog(inList,outList);
-  outList.write(fileName);
+  outList.write(outFileName);
   return true;
 }
 
-
-#include <apersestar.h>
-bool  TransformedImage::MakeAperCat() 
+bool TransformedImage::MakeAperCat() 
 {
-  string fileName = AperCatalogName();
-  if (FileExists(fileName)) return true;
+  string outFileName = AperCatalogName();
+  if (FileExists(outFileName)) return true;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasAperCatalog() && !source->MakeAperCat())
+    throw(PolokaException("TransformedImage: cannot make aper catalog for " + Name()));
 
   AperSEStarList inList(source->AperCatalogName());
   AperSEStarList outList;
-  cout << " Transforming aperture catalog from "<< source->Name() << endl;
+  cout << " TransformedImage: transforming aperture catalog of "<< source->Name() << endl;
   transfo->TransformAperCatalog(inList, outList);
-  outList.write(fileName);
+  outList.write(outFileName);
   return true;
 }
 
 bool TransformedImage::MakeStarCat() 
 {
-  string fileName = StarCatalogName();
-  if (FileExists(fileName)) return true;
+  string outFileName = StarCatalogName();
+  if (FileExists(outFileName)) return true;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasStarCatalog() && !source->MakeStarCat())
+    throw(PolokaException("TransformedImage: cannot make star catalog for " + Name()));
 
   AperSEStarList inList(source->StarCatalogName());
   AperSEStarList outList;
-  cout << " Transforming star aperture catalog from "<< source->Name() << endl;
+  cout << " TransformedImage: transforming star aperture catalog from "<< source->Name() << endl;
   transfo->TransformAperCatalog(inList, outList);
-  outList.write(fileName);
+  outList.write(outFileName);
   return true;
 }
 
 bool TransformedImage::MakeFits() 
 {
-#ifdef DEBUG
-  cout << " > TransformedImage::MakeFits() " << endl;
-#endif
-  string fileName = FitsName();
-  if (FileExists(fileName)) return true;
-  cout << " Transforming image "<< source->Name() << endl;
+  string outFileName = FitsName();
+  if (FileExists(outFileName)) return true;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasImage() && !source->MakeFits())
+    throw(PolokaException("TransformedImage: cannot make fits for " + Name()));
+
+  cout << " TransformedImage: transforming calibrated image of "<< source->Name() << endl;
   FitsImage inFits(source->FitsName());
-  FitsImage outFits(fileName, (FitsHeader &) inFits);
-  cout << " ============================= " << endl;
+  FitsImage outFits(outFileName, (FitsHeader &) inFits);
   double defaultVal = source->BackLevel();
-  cout << " Default value for outside frame " << defaultVal << endl;
+  cout << " TransformedImage: default value for outside frame " << defaultVal << endl;
   transfo->TransformImage(inFits, outFits, source, this, defaultVal);
-  cout << " TransformedImage is produced. Updating parameters. " << endl;  
   return true;
 }
 
 bool TransformedImage::MakeWeight() 
 {
-  string fileName = FitsWeightName();
-  if (FileExists(fileName)) return true;
-  cout << " Transforming weight image "<< source->Name() << endl;
-  if (!source->HasWeight() && ! source->MakeWeight())
-    {
-      cerr <<" cannot make weight for " << Name() << endl;
-      return false;
-    }
+  string outFileName = FitsWeightName();
+  if (FileExists(outFileName)) return true;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasWeight() && !source->MakeWeight())
+    throw(PolokaException("TransformedImage: cannot make weight for " + Name()));
+
+  cout << " TransformedImage: transforming weight image of "<< source->Name() << endl;
   FitsImage inFits(source->FitsWeightName());
-  FitsImage outFits(fileName, (FitsHeader&) inFits);
+  FitsImage outFits(outFileName, (FitsHeader&) inFits);
   transfo->TransformWeightImage(inFits, outFits);
-  {
-    FitsImage im(FitsName());
-    cout << " " << Name() << " Image/Weight stat :" << ImageAndWeightError(im, outFits) << endl;
-  }
+
   return true;
 }
 
-
-
 // not easy to make a routine that does the right thing  for the 3 Make{Fits,Satur,Dead}
-#include "allreducedimage.h"
-
 bool TransformedImage::MakeDead()
 {
   string outFileName = FitsDeadName();
   if (FileExists(outFileName)) return true;
-  cout << " Transforming dead image "<< source->Name() << endl;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasDead() && !source->MakeDead())
+    throw(PolokaException("TransformedImage: cannot make dead for " + Name()));
+
+  cout << " TransformedImage: transforming dead image of "<< source->Name() << endl;
   string inName = source->FitsDeadName();
-  if (!FileExists(inName) && !source->MakeDead()) return false;
   FitsImage inFits(inName);
   FitsImage outFits(outFileName,(FitsHeader&) inFits);
-// TODO : pass 'this' as argument to modify e.g. seeing
   transfo->TransformBoolImage(inFits, outFits); 
   return true;
 }
@@ -592,12 +581,16 @@ bool TransformedImage::MakeCosmic()
 {
   string outFileName = FitsCosmicName();
   if (FileExists(outFileName)) return true;
-  cout << " Transforming cosmic image "<< source->Name() << endl;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasCosmic() && !source->MakeCosmic())
+    throw(PolokaException("TransformedImage: cannot make cosmic for " + Name()));
+
+  cout << " TransformedImage: transforming cosmic image of "<< source->Name() << endl;
   string inName = source->FitsCosmicName();
-  if (!FileExists(inName) && !source->MakeCosmic()) return false;
   FitsImage inFits(inName);
   FitsImage outFits(outFileName,  (FitsHeader &) inFits);
-// TODO : pass 'this' as argument to modify e.g. seeing
   transfo->TransformBoolImage(inFits, outFits); 
   return true;
 }
@@ -605,12 +598,17 @@ bool TransformedImage::MakeSatellite()
 {
   string outFileName = FitsSatelliteName();
   if (FileExists(outFileName)) return true;
-  cout << " Transforming satellite image "<< source->Name() << endl;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasSatellite() && !source->MakeSatellite())
+    throw(PolokaException("TransformedImage: cannot make satellite for " + Name()));
+
+
+  cout << " TransformedImage: transforming satellite image of "<< source->Name() << endl;
   string inName = source->FitsSatelliteName();
-  if (!FileExists(inName) && !source->MakeSatellite()) return false;
   FitsImage inFits(inName);
   FitsImage outFits(outFileName,  (FitsHeader &) inFits);
-// TODO : pass 'this' as argument to modify e.g. seeing
   transfo->TransformBoolImage(inFits, outFits); 
   return true;
 }
@@ -619,44 +617,24 @@ bool TransformedImage::MakeSatur()
 {
   string outFileName = FitsSaturName();
   if (FileExists(outFileName)) return true;
-  cerr << " Transforming satur image "<< source->Name() << endl;
+
+  if (!source || !transfo)
+    throw(PolokaException("TransformedImage: need both source and transfo to produce " + outFileName));
+  if (!source->HasSatur() && !source->MakeSatur())
+    throw(PolokaException("TransformedImage: cannot make satur for " + Name()));
+
+  cout << " TransformImage: transforming satur image of "<< source->Name() << endl;
   string inName = source->FitsSaturName();
-  if (!FileExists(inName) && !source->MakeSatur()) return false;
   FitsImage inFits(inName);
   FitsImage outFits(outFileName, (FitsHeader&) inFits);
-// TODO : pass 'this' as argument to modify e.g. seeing
   transfo->TransformBoolImage(inFits, outFits); 
   return true;
 }
 
 
-TransformedImage::TransformedImage(const TransformedImage &Original) :
-  ReducedImage(Original.Name())
-{
-  this->init(*Original.source, Original.transfo);
-}
-
-
-ReducedImage *TransformedImage::Clone() const
-{
-  return new TransformedImage(Name(), *source, transfo);
-}
-
-
-TransformedImage::~TransformedImage()
-{
-}
-
-
-/******************* utilities ***********************/
-
 int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, 
-		ReducedImageList &Aligned, const int ToDo, bool use_wcs, float min_match_ratio)
+		ReducedImageList &Aligned, const int ToDo, bool WcsOnly)
 {
-#ifdef DEBUG
-  cout << " > ImagesAlign(...) " << endl;
-#endif
-
   Aligned.clear();
   for (ReducedImageCIterator ri = ToAlign.begin(); ri != ToAlign.end(); ++ri)
     {
@@ -664,7 +642,7 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
       string currentName = current->Name();
       if (!current->IsValid())
 	{
-	  cerr << "ImagesAlign: was " << currentName << " actually produced ?? " << endl;
+	  cerr << "ImagesAlign: was " << currentName << " actually produced ?" << endl;
 	  continue;
         }
       if (*current == Reference) {
@@ -682,46 +660,26 @@ int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference,
 
       ImageGtransfo *imTransfo = 0;
 
-      if (use_wcs) {
-	GtransfoRef wcs_reference = WCSFromHeader(Reference.FitsName());
-	GtransfoRef wcs_current = WCSFromHeader(current->FitsName());
-	Frame frame_reference = Reference.UsablePart();
-	Frame frame_current = current->UsablePart();
-	
-	GtransfoRef direct = GtransfoCompose(wcs_reference->InverseTransfo(0.01,frame_reference),wcs_current);
-	GtransfoRef invert = GtransfoCompose(wcs_current->InverseTransfo(0.01,frame_current),wcs_reference);
-	imTransfo = new ImageGtransfo(invert,direct,frame_reference, Reference.Name());
-      }else{
-	imTransfo = new ImageGtransfo(Reference,*current,min_match_ratio);
-      }
+      if (WcsOnly)
+	{
+	  GtransfoRef wcs_reference = WCSFromHeader(Reference.FitsName());
+	  GtransfoRef wcs_current = WCSFromHeader(current->FitsName());
+	  Frame frame_reference = Reference.UsablePart();
+	  Frame frame_current = current->UsablePart();	  
+	  GtransfoRef direct = GtransfoCompose(wcs_reference->InverseTransfo(0.01,frame_reference),wcs_current);
+	  GtransfoRef invert = GtransfoCompose(wcs_current->InverseTransfo(0.01,frame_current),wcs_reference);
+	  imTransfo = new ImageGtransfo(invert,direct,frame_reference, Reference.Name());
+	}
+      else
+	{
+	  imTransfo = new ImageGtransfo(Reference, *current);
+	}
       
-      TransformedImage *alignedCurrent =
-	new TransformedImage(transformedName, *current, imTransfo);
+      TransformedImage *alignedCurrent = new TransformedImage(transformedName, *current, imTransfo);
       // create the Fits images + user requests, as doc says.
-      alignedCurrent->Execute(DoFits | ToDo); 
+      alignedCurrent->Execute(DoFits | ToDo);
       Aligned.push_back(alignedCurrent);
       delete imTransfo;
     }
   return Aligned.size();
 }
-
-
-
-/********************** TransformedImageList *************************/
-//template class ImageList<TransformedImage>;
-
-
-#ifdef USE_ROOT
-
-ClassImp(TransformedImage);
-
-/*
-RUN_ROOTCINT
-LINKDEF_CONTENT : #pragma link C++ class ImageGtransfo+;
-LINKDEF_CONTENT : #pragma link C++ class ImageTransfo+;
-LINKDEF_CONTENT : #pragma link C++ class TransformedImage+;
-*/
-
-#include "root_dict/transformedimagedict.cc"
-
-#endif /* USE_ROOT */

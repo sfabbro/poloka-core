@@ -12,107 +12,107 @@
 class Image;
 class FitsImage;
 
-/* a (virtual) class for generic image transformation */
-
+//! a (virtual) class for generic image transformation
 class ImageTransfo : public RefCount
 {
- protected:
-    string SourceName();
-  public :
+  
+public :
 
-//!
+  //! checks validity
   virtual bool IsValid() const = 0;
-
-//! applies the transfo to the image.
+  
+  //! applies the transfo to the image.
   virtual void TransformImage(const FitsImage &Source, FitsImage& Transformed,
 			      const ReducedImage *RSource, 
 			      ReducedImage *Result, double DefaultVal = 0) const = 0;
 
-//! applies the transfo to the image. accounts for the fact that the image actually conatins weights
+  //! applies the transfo to the image. accounts for the fact that the image actually conatins weights
   virtual void TransformWeightImage(const FitsImage &Source, 
 				    FitsImage& Transformed) const = 0;
-
-
-
-//! applies the transfo to the image.
+  
+  //! applies the transfo to the image.
   virtual void TransformBoolImage(const FitsImage &Source, 
 				  FitsImage& Transformed) const = 0;
 
-//! applies the transfo to the list
+  //! applies the transfo to the list
   virtual void TransformCatalog(const SEStarList &Catalog, 
 				SEStarList &Transformed) const = 0;
-
+  
   //! applies the transfo to the list
   virtual void TransformAperCatalog(const AperSEStarList &Catalog, 
 				    AperSEStarList &Transformed) const = 0;
-
     
-  //!  
+  //! makes a copy (probably useless with counted ref)
   virtual ImageTransfo* Clone() const = 0;
 
-  //!
+  //! standard printing
   virtual void dump(ostream &s = cout) const = 0;
 
-  virtual ~ImageTransfo() {} ;
-
+  virtual ~ImageTransfo() {}
 };
 
 typedef CountedRef<ImageTransfo> ImageTransfoRef;
 
 
-/*! geometric transfo of a reduced image.  */
-
+//! geometric transfo of a reduced image
 class ImageGtransfo : public ImageTransfo {
- private:
-  string geomRefName; 
+
+private:
+
+  string geomRefName;
   GtransfoRef transfoFromRef;
   GtransfoRef transfoToRef;
-  double scaleFactor; // 1d scale factor (== sqrt(jacobian))
   Frame outputImageSize; // the frame on which we want the input image to be resampled.
   
 public:
 
   //!
-  ImageGtransfo(const Gtransfo* TransfoFromRef, const Gtransfo* TransfoToRef, const Frame &OutputImageSize, const string &GeomRefName );
+  ImageGtransfo(const GtransfoRef TransfoFromRef, const GtransfoRef TransfoToRef, const Frame &OutputImageSize, const string &GeomRefName);
+
   //! the output image size is the one of the Ref. Finds the transfo(s).
-  ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign,float min_match_ratio=0);
+  ImageGtransfo(const ReducedImage &Ref, const ReducedImage& ToAlign);
 
   //!
-  ImageGtransfo();
+  ImageGtransfo() {}
+
   //!
-  const GtransfoRef TransfoFromRef() const {return transfoFromRef;}
+  ~ImageGtransfo() {}
+
   //!
-  const GtransfoRef TransfoToRef() const {return transfoToRef;}
+  const GtransfoRef TransfoFromRef() const { return transfoFromRef; }
+
+  //!
+  const GtransfoRef TransfoToRef() const { return transfoToRef; }
+
   //!
   const GtransfoRef FromRef() const;
 
-  //!
-  string GeomRefName() const { return geomRefName;}
+  //! geometric DbImage reference
+  string GeomRefName() const { return geomRefName; }
 
-  //!
-  virtual void  dump(ostream &s = cout)const ;
+  //! print basic info
+  virtual void  dump(ostream &s = cout) const;
 
   //! the one that transforms the image and update header.
   void TransformImage(const FitsImage &Source, FitsImage& Transformed, 
 		      const ReducedImage *RSource, ReducedImage *Result, 
 		      double DefaultVal = 0) const ;
 
-  //! Transforms a weight image.
+  //! transforms a weight image.
   void TransformWeightImage(const FitsImage &Source, FitsImage& Transformed) const;
+
   //! transforms a bool Image
   void TransformBoolImage(const FitsImage &Source, FitsImage& Transformed) const ;
+
+  //! transforms sextractor catalog
   void TransformCatalog(const SEStarList &Catalog, SEStarList &Transformed) const;
+
+  //! transforms aperture catalog
   void TransformAperCatalog(const AperSEStarList &Catalog, AperSEStarList &Transformed) const;
 
-
-
   bool IsValid() const;
-  double ScaleFactor() const {return scaleFactor;}
+  double ScaleFactor() const;
   ImageTransfo* Clone() const;
-  // bool Write(const string &Name) const;
-  
-  ~ImageGtransfo();
-
 
 };
 
@@ -120,49 +120,51 @@ typedef CountedRef<ImageGtransfo> ImageGtransfoRef;
 
 
 //! class that operates the transformation of a ReducedImage (image(s) + list) 
-/*! As for other descendants of ReducedImage, the actual computations occur
-when you request the name of a data file (e.g. FitsName()).
-To geometrically align a set of images on the same reference, use
-  ImagesAlign(). If you want to sum them, uses ImagesAlignAndSum() */
+//! As for other descendants of ReducedImage, the actual computations occur
+//!  when you request the name of a data file (e.g. FitsName()).
 class TransformedImage : public ReducedImage {
+
 private:
+
   ImageTransfoRef transfo;
-  string sourceName;
-  ReducedImageRef source;  //!
-  //ReducedImageRef geomRef; //!
+  ReducedImageRef source;
   void init(const ReducedImage &Source,const ImageTransfo *Transfo);
 
+public :
 
-  public :
   //! to create a new TransformedImage, or locate an existing one.
   /*! If you want to align A on B, the typical constructor call will be:
     TransformedImage(NewName, A, &ImageGtransfo(B,A));
-    To align a set of images on the same reference, use ImagesAlign().
-    
-  */
+    To align a set of images on the same reference, use ImagesAlign(). */
   TransformedImage(const string &Name, const ReducedImage &Source, const ImageTransfo *Transfo);
 
   //! assumes that the TransformedImage already exists
-    TransformedImage(const string &Name);
+  TransformedImage(const string &Name);
 
   //! empty constructor for persistence
-  TransformedImage(){};
+  TransformedImage() {}
 
-  virtual const string  TypeName() const { return "TransformedImage";}
+  TransformedImage(const TransformedImage &Original);
+
+  ~TransformedImage() {}
+
+  ReducedImageRef Clone() const;
+
+  virtual const string  TypeName() const { return "TransformedImage"; }
 
   //! Original (untransformed) image name
-  string  SourceName() const { return sourceName;}
+  string  SourceName() const { return source->Name(); }
 
   //! involved transformation.
-  const ImageTransfoRef Transfo() const {return transfo;};
+  const ImageTransfoRef Transfo() const { return transfo; }
 
   //! Gtransfo from reference to transformed image. Assumes that ImageTransfo is an ImageGtransfo.
-  const Gtransfo* FromRef() const;
+  const GtransfoRef FromRef() const;
 
-//! ImageGtransfo from reference to transformed image. Assumes that ImageTransfo is an ImageGtransfo.
-  const  ImageGtransfoRef IMAGEGTransfo() const ;
+  //! ImageGtransfo from reference to transformed image. Assumes that ImageTransfo is an ImageGtransfo.
+  const  ImageGtransfoRef IMAGEGTransfo() const;
 
-
+  //! standard dump
   virtual void dump(ostream& s = cout) const;
 
   virtual bool MakeFits() ;
@@ -174,32 +176,16 @@ private:
   virtual bool MakeCosmic();
   virtual bool MakeSatellite();
   virtual bool MakeWeight();
-  ReducedImage* Clone() const;
-  TransformedImage(const TransformedImage &Original);
-  
-  // void SetTranfo(ImageTransfo *transfo);
-  // TransformedImage(string &ImageTransfoName, ReducedImage &Source, string Name); 
-  ~TransformedImage();
 
+  string TransfoFileName() const { return Dir()+"/imagetransfo.dat"; }
 };
-
-#include "imagelist.h"
-//! a handy typedef
-//#ifdef STORAGE : en storage jusque la parce que
-// les routines genre ImageSum manipulent des ReducedImageList
-// et non des TransformedImageList.
-typedef ImageList<TransformedImage> TransformedImageList;
-typedef TransformedImageList::iterator       TransformedImageIterator;
-typedef TransformedImageList::const_iterator TransformedImageCIterator;
-//#endif
 
 //! To standardize transformed image names
 string TransformedName(const string &ToTransform, const string &Ref);    
 
 // ! Geometrically align images on a given reference. The image is done by default, and eventually more according to ToDo.
 /*! ToDo may be constructed using the tags DoFits DoCatalog DoDead DoSatur, e.g. provide
-   DoCatalog|DoDead to get catalog and dead frame on top of the default image itself. */
-
-int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, ReducedImageList &Aligned, const int ToDo,bool use_wcs=false,float min_match_ratio=0);
+  DoCatalog|DoDead to get catalog and dead frame on top of the default image itself. */
+int ImagesAlign(const ReducedImageList &ToAlign, const ReducedImage &Reference, ReducedImageList &Aligned, const int ToDo, bool WcsOnly=false);
 
 #endif /*  TRANSFORMEDIMAGE__H */
