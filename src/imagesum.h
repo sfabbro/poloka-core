@@ -111,7 +111,7 @@ public :
   bool MakeDead();
   bool MakeSatur();
   bool MakeWeight();
-  ReducedImage *Clone() const;
+  ReducedImageRef Clone() const;
 
   void dump(ostream & s = cout) const;
 

@@ -52,7 +52,7 @@ class SubImage : public ReducedImage {
   bool MakeCatalog();
   bool MakeAperCat();
   //! 
-  ReducedImage *Clone() const { return new SubImage(*this);};
+  ReducedImageRef Clone() const { return new SubImage(*this);};
 
 };
 

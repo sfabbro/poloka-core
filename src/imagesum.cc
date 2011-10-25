@@ -277,7 +277,7 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
   Create("here");
 }
 
-ReducedImage* ImageSum::Clone() const
+ReducedImageRef ImageSum::Clone() const
 {
   return new ImageSum(*this);
 }

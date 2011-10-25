@@ -33,14 +33,14 @@ ImageSubtraction::ImageSubtraction(const string &Name,  const ReducedImageRef  R
   Create("here");
 }
 
-ReducedImage *ImageSubtraction::Clone() const
+ReducedImageRef ImageSubtraction::Clone() const
 {
   /* this routine should be useless. I don't know why it is here ... */
   /* 
   ReducedImage *clone = new ImageSubtraction(*this);
   return clone;
   */
-  return NULL;
+  return ReducedImageRef();
 }
 
 static double sqr(double x) { return x*x;}
@@ -173,7 +173,7 @@ bool ImageSubtraction::MakeFits()
       pweight = new FitsImage(FitsWeightName());
       cout << " ImageSubtraction: using weights : " << FitsWeightName() << endl;
     }
-  int backMesh = 32;
+  int backMesh = 64;
   ImageBack b(theSubtraction, backMesh, pweight);
   if (pweight) delete pweight;
 

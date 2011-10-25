@@ -62,7 +62,7 @@ class ImageSubtraction : public ReducedImage, public KernelFitter {
     string CatalogName()  const { return DetectionsName(); }
     
     //!
-    ReducedImage *Clone() const;
+    ReducedImageRef Clone() const;
 
     string AllCandidateCatalogName() const { return AddSlash(Dir())+"allcand.list";}
 

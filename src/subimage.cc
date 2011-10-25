@@ -28,7 +28,7 @@ SubImage::SubImage(const string& Name, const string &LargeImageName,
   largeImageName = LargeImageName;
   ReducedImage large(LargeImageName);
   ReducedImage small(SmallImageName);
-  GtransfoRef small2Large = FindWCSTransfo(small, large);
+  GtransfoRef small2Large = FindTransfoFromWCS(small, large);
   if (!small2Large) small2Large = FindTransfo(small, large);
   if (!small2Large) {
     cerr << " SubImage::SubImage could not find a match from "
