@@ -96,9 +96,15 @@ public:
   
   void dump(ostream & stream = cout) const;
   
+  void read(istream & stream = cin);
+
   //! allows \verbatim cout << frame; \endverbatim.
   friend ostream & operator<<(ostream &stream, const Frame &Right) 
           { Right.dump(stream); return stream;};
+
+  //! allows \verbatim cin >> frame; \endverbatim.
+  friend istream & operator >> (istream &stream, Frame &Right) 
+          { Right.read(stream); return stream; }
   
 private:
   void order();

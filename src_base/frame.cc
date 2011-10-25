@@ -193,3 +193,9 @@ void  Frame::dump(ostream & stream) const
 	 << " xmax ymax " << xMax << ' ' << yMax << endl;
 }
 
+void Frame::read(istream& stream) 
+{
+  string dummy;
+  stream >> dummy >> dummy >> xMin >> yMin
+	 >> dummy >> dummy >> xMax >> yMax;
+}
