@@ -90,12 +90,8 @@ GtransfoRef ListMatchRefine(const BaseStarList& List1,
 			    const MatchConditions& Conditions=MatchConditions());
 
 //! wrapper of the two above routines
-inline GtransfoRef ListMatch(const BaseStarList& List1,
-			     const BaseStarList& List2,
-			     const MatchConditions& Conditions=MatchConditions()) {
-  return ListMatchRefine(List1, List2, 
-			 ListMatchCombinatorial(List1, List2,Conditions),
-			 Conditions);
-}
+GtransfoRef ListMatch(const BaseStarList& List1,
+		      const BaseStarList& List2,
+		      MatchConditions Conditions=MatchConditions());
 
 #endif /* LISTMATCH__H */

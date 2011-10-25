@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include "reducedutils.h"
 #include "starmatch.h"
 #include "listmatch.h"
@@ -280,7 +282,7 @@ static bool ListMatchCheck(const BaseStarList& Src, const BaseStarList& Dest,
   return (ngood > nmin);
 }
 
-GtransfoRef FindWCSTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
+GtransfoRef FindTransfoFromWCS(const ReducedImage& Src, const ReducedImage& Dest) {
 
   GtransfoRef src2dest;
   FitsHeader hsrc(Src.FitsName());
@@ -290,64 +292,117 @@ GtransfoRef FindWCSTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
   GtransfoRef wsrc = WCSFromHeader(hsrc);
   GtransfoRef wdest = WCSFromHeader(hdest);
   
-  if (wsrc && wdest) {
-    Frame fsrc = Src.UsablePart();
-    Frame fdest = Dest.UsablePart();
-    src2dest = GtransfoCompose(wdest->InverseTransfo(0.01, fdest), wsrc);
-  }
+  if (wsrc && wdest)
+    src2dest = GtransfoCompose(wdest->InverseTransfo(0.001, Dest.UsablePart()), wsrc);
+
   return src2dest;
 }
 
-GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest, int MaxOrder) {
-
-  if (Src == Dest) {
-    cout << " FindTransfo: same image: " << Src.Name() << " returning identity\n";
-    return new GtransfoIdentity();
-  }
-    
-  BaseStarList bsrcList;  LoadForMatch(Src, bsrcList);
-  BaseStarList bdestList; LoadForMatch(Dest, bdestList);
-
-  return FindTransfo(bsrcList, bdestList, Src, Dest, MaxOrder);  
-}
-
 GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestList,
-			const ReducedImage& Src, const ReducedImage& Dest,
-			int MaxOrder) {
-
+			const ReducedImage& Src, const ReducedImage& Dest) {
+  
   cout << " FindTransfo: " 
        << Src.Name() << " (" << SrcList.size() << " stars) to " 
        << Dest.Name() << " (" << DestList.size() << " stars)\n";
-  cout << " FindTransfo: trying with WCS's...\n";
-  GtransfoRef transfo = FindWCSTransfo(Src, Dest);
+
   MatchConditions cond;
   cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
   cond.DeltaSizeRatio = 0.1 * cond.SizeRatio;
+
   // hack for big frames
   if (Src.XSize() > 10000 && Src.YSize() > 10000) {
     cond.NStarsL1 = 2000;
     cond.NStarsL2 = 2000;
   }
+  // change conditions with file
   cond.read(DefaultDatacards());
   
-  if (MaxOrder != -1) cond.MaxOrder = MaxOrder;
-  if (transfo && !ListMatchCheck(SrcList, DestList, transfo, 2, cond.MinMatchRatio)) {
+  GtransfoRef transfo;
+  
+  cout << " FindTransfo: trying with WCS's\n";
+  GtransfoRef transfoWcs = FindTransfoFromWCS(Src, Dest);
+  if (transfoWcs && !ListMatchCheck(SrcList, DestList, transfoWcs, cond.MaxDist, cond.MinMatchRatio))
     cout << " FindTransfo: WCS not good enough\n";
-    transfo = GtransfoRef();
-  }
+  else
+    transfo = transfoWcs;
 
   if (!transfo) {
-    cout << " FindTransfo: trying with combinatorial match\n";
+    cond.MaxDist = 4;
+    cout << " FindTransfo: trying with a combinatorial match\n";
     transfo = ListMatchCombinatorial(SrcList, DestList, cond);
   }
 
   if (transfo) {
-      cout << " FindTransfo: refining transfo\n";
-      transfo = ListMatchRefine(SrcList, DestList, transfo, cond);
+    cond.MaxDist = 2;
+    cout << " FindTransfo: refining transfo\n";
+    transfo = ListMatchRefine(SrcList, DestList, transfo, cond);
   } else {
-    cout << " FindTransfo: no match found\n";
+    cout << " FindTransfo: no transfo found\n";
     transfo = GtransfoRef();
   }
+
+  return transfo;
+}
+
+GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
+
+  cout << " FindTransfo: transfo from " << Src.Name() << " to " << Dest.Name();
+
+  if (Src == Dest) {
+    cout << " found identity\n";
+    return new GtransfoIdentity();
+  }
+
+  string transfoFileName = GtransfoName(Dest, Src);
+
+  if (FileExists(transfoFileName)) {
+    cout << " found an existing transfo\n";
+    return GtransfoRead(transfoFileName);
+  }
+
+  GtransfoRef transfoWcs = FindTransfoFromWCS(Src, Dest);
+  if (FileExists(transfoFileName+".wcsonly")) {
+    cout << " will use match between WCS\n";
+    return transfoWcs;
+  }
+
+  if (transfoWcs)
+    cout << " found a WCS match\n";
+  else
+    cout << endl;
+
+  MatchConditions cond;
+  cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
+  cond.DeltaSizeRatio = 0.1 * cond.SizeRatio;
+
+  // hack for big frames
+  if (Src.XSize() > 10000 && Src.YSize() > 10000) {
+    cond.NStarsL1 = 2000;
+    cond.NStarsL2 = 2000;
+  }
+  // change match conditions with user values last
+  cond.read(DefaultDatacards());
+
+  BaseStarList srcList;  LoadForMatch(Src, srcList);
+  BaseStarList destList; LoadForMatch(Dest, destList);
+
+  GtransfoRef transfo;
+
+  if (transfoWcs && ListMatchCheck(srcList, destList, transfoWcs, cond.MaxDist, cond.MinMatchRatio)) {
+    cout << " FindTransfo: refining WCS composition\n";
+    transfo = ListMatchRefine(srcList, destList, transfoWcs, cond);
+  } else {
+    cout << " FindTransfo: search for combinatorial match\n";
+    transfo = ListMatch(srcList, destList, cond);
+  }
+
+  // only write existing writing routines
+  if (dynamic_cast<GtransfoIdentity*>((Gtransfo*)transfo) || dynamic_cast<GtransfoPoly*>((Gtransfo*)transfo))
+    transfo->Write(transfoFileName);
+
+  // just touch the file if wcs is the best one
+  if (transfo == transfoWcs)
+    ofstream t((transfoFileName+".wcsonly").c_str());
 
   return transfo;
 }
@@ -517,6 +572,7 @@ Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference) 
 
   BaseStarList brefList; LoadForMatch(*ref, brefList);
   Frame unionFrame(ref->UsablePart());
+
   for (ReducedImageCIterator it = ImList.begin(); it != ImList.end(); ++it) {
     const ReducedImage *im = *it;
     if (*im == *Reference) continue;
@@ -525,6 +581,7 @@ Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference) 
     Frame frameInRef = ApplyTransfo(im->UsablePart(), *imToref, LargeFrame);
     unionFrame += frameInRef;
   }
+
   // make an integer frame to avoid resampling1
   unionFrame.xMin = floor(unionFrame.xMin);
   unionFrame.yMin = floor(unionFrame.yMin);
@@ -556,21 +613,12 @@ string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const Gtra
   { 
     ReducedImageRef resampledIm = ReducedImageNew(resampledName);
     if (resampledIm && resampledIm->IsValid() && resampledIm->Execute(ToTransform(Im))) {
-      cout << " ImageResample: " << resampledName << " already produced\n";
+      cout << " ImageResample: " << resampledName << " is done\n";
       return resampledName;
     }
   }
 
-  GtransfoRef imToRef = ImToRef;
-  if (!imToRef) imToRef = FindTransfo(Im, Ref);
-  GtransfoRef refToIm = RefToIm;
-  if (!refToIm) refToIm = imToRef->InverseTransfo(0.001, Ref.UsablePart());
-  cout << " Transfo from " << Im.Name() << " to " << Ref.Name() << endl;
-  cout << *imToRef;
-  ImageGtransfo *imTransfo = new ImageGtransfo(refToIm,
-					       imToRef,
-					       Ref.PhysicalSize(),
-					       Ref.Name());
+  ImageGtransfo *imTransfo = new ImageGtransfo(Ref, Im);
   TransformedImage imResampled(resampledName, Im, imTransfo);
   if (!imResampled.Execute(ToTransform(Im)))
     throw PolokaException(" Failed to produce " + resampledName);
@@ -578,9 +626,14 @@ string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const Gtra
   return resampledName;
 }
 
-static string ShiftedName(const string &ToShift, const string &Ref)
+string GtransfoName(const DbImage& Ref, const DbImage& Src)
 {
-  return "S_" + Ref + ToShift;
+  return Src.Dir() + "/gtransfo_to_" + Ref.Name() + ".dat";
+}
+
+string ShiftedName(const string &ToShift, const string &Ref)
+{
+  return "S_" + Ref + "_" + ToShift;
 }
 
 static double sign(const double& x) {
@@ -609,14 +662,14 @@ string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const 
   cout << " Transfo from " << Im.Name() << " to " << Ref.Name() << endl;
   cout << *imToRef;
 
-  ImageGtransfo *imShift = new ImageGtransfo(refToIm,
-					     imToRef,
-					     Ref.PhysicalSize(),
-					     Ref.Name());
+  ImageGtransfoRef imShift = new ImageGtransfo(refToIm,
+					       imToRef,
+					       Ref.PhysicalSize(),
+					       Ref.Name());
   TransformedImage imShifted(shiftedName, Im, imShift);
   if (!imShifted.Execute(ToTransform(Im)))
     throw PolokaException(" Failed to produce " + shiftedName);
-  delete imShift;
+
   delete imToRef;
   return shiftedName;
 }

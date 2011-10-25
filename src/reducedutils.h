@@ -5,8 +5,10 @@
 #include "reducedimage.h"
 #include "sestar.h"
 #include "gtransfo.h"
+#include "listmatch.h"
 
-class StarMatchList;
+string GtransfoName(const DbImage& Ref, const DbImage& Src);
+string ShiftedName(const string &ToShift, const string &Ref);
 
 //! arrange and copy a list of ReducedImage into different sets of images
 void ArrangeByInstBandNight(const ReducedImageList &ImList, vector<ReducedImageList> &ImageSets);
@@ -80,17 +82,15 @@ void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference
 void LoadForMatch(const ReducedImage& Im, BaseStarList& BList, const double& MinSN=15);
 
 //! convenient wrapper to find a Gtransfo between 2 images only based on WCS information
-GtransfoRef FindWCSTransfo(const ReducedImage& Src, const ReducedImage& Dest);
+GtransfoRef FindTransfoFromWCS(const ReducedImage& Src, const ReducedImage& Dest);
 
 //! wrapper for lists to call matching routines
 //! tries: 1. WCS composition 2. Combinatorics then refines
-//! MaxOrder=-1 will read the maximum order from the datacard file
 GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestList,
-			const ReducedImage& Src, const ReducedImage& Dest,
-			const int MaxOrder=-1);
+			const ReducedImage& Src, const ReducedImage& Dest);
 
 //! convenient wrapper to find a Gtransfo between 2 images using the above routine
-GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest, const int MaxOrder=-1);
+GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest);
 
 string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef(), const GtransfoRef RefToIm=GtransfoRef());
 string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef());

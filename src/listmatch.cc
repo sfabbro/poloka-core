@@ -914,25 +914,23 @@ GtransfoRef ListMatchCombinatorial(const BaseStarList &List1, const BaseStarList
 }
 
 GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2,
-			    GtransfoRef transfo,  const MatchConditions& Conditions) {
+			    GtransfoRef bestTransfo,  const MatchConditions& Conditions) {
 
-  if (!transfo) { return GtransfoRef(); }
-
-  const double nSigmas = 3.;  // k-sigma clipping on residuals
+  if (!bestTransfo) { return GtransfoRef(); }
 
   // initialize
   BaseStarList L1, L2;
   {
-    StarMatchList *bigMatch = ListMatchCollect(List1, List2, transfo, 10); 
+    StarMatchList *bigMatch = ListMatchCollect(List1, List2, bestTransfo, 10); 
     for (StarMatchCIterator it=bigMatch->begin(); it!=bigMatch->end(); ++it) {
       L1.push_back(it->s1);
       L2.push_back(it->s2);
     }
     delete bigMatch;
   }
-  StarMatchList *fitMatch = ListMatchCollect(L1, L2, transfo, Conditions.MaxDist);
-  double bestChi2 = ComputeChi2(*fitMatch, *transfo) / fitMatch->size();
-  double bestDisp, bestMed = median_distance(fitMatch, transfo, bestDisp);
+  StarMatchList *fitMatch = ListMatchCollect(L1, L2, bestTransfo, Conditions.MaxDist);
+  double bestChi2 = ComputeChi2(*fitMatch, *bestTransfo) / fitMatch->size();
+  double bestDisp, bestMed = median_distance(fitMatch, bestTransfo, bestDisp);
   size_t oldp = cout.precision();
   cout << resetiosflags(ios::scientific)
        << setiosflags(ios::fixed)
@@ -956,7 +954,7 @@ GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2
     do { // loop on transfo diff
       // fit on the short lists
       fitMatch->SetTransfoOrder(fitOrder);
-      fitMatch->RefineTransfo(nSigmas);
+      fitMatch->RefineTransfo(Conditions.NSigmas);
       transDiff = transfo_diff(fitList1, fitMatch->Transfo(), fitTransfo);
       fitTransfo = fitMatch->Transfo()->Clone();
       delete fitMatch;
@@ -971,14 +969,17 @@ GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2
     cout << " ListMatchRefine: order " << fitOrder
 	 << " resid "  << setw(6) << setprecision(4) << fitMed
 	 << " (" << setprecision(4) << fitDisp << ")"
-	 << " #match " << fitMatch->size() 
+	 << " #match " << fitMatch->size()
 	 << endl;
+    // perform F-test to diagnostic whether this order was significantly better
+    //double fitFtest = (bestChi2 - fitChi2) / fitChi2 * fitMatch->Dof() /(fitMatch->Transfo()->Npar() - bestTransfo->Npar());
+    //if (fitChi2>0 && fitTest > 10) {
     if (fitChi2>0 && ((fitChi2 - bestChi2) < 0.005*bestChi2) && fitDisp < bestDisp) {
       bestOrder = fitOrder;
       bestChi2 = fitChi2;
       bestMed = fitMed;
       bestDisp = fitDisp;
-      transfo = fitMatch->Transfo()->Clone();
+      bestTransfo = fitMatch->Transfo()->Clone();
     }
     nStarsMin = fitMatch->Transfo()->Npar();
   }  // end loop on transfo order
@@ -988,18 +989,12 @@ GtransfoRef ListMatchRefine(const BaseStarList& List1, const BaseStarList& List2
     cout << " ListMatchRefine: kept transfo of order " << bestOrder << endl;
   else
     cout << " ListMatchRefine: kept initial transfo as best transfo\n";
-  return transfo;
+  return bestTransfo;
 }
 
-/*
-RUN_ROOTCINT
-LINKDEF_CONTENT : #pragma link C++ class MatchConditions-;
-LINKDEF_CONTENT : #pragma link C++ function MatchSearchRotShift(BaseStarList&, BaseStarList&, const MatchConditions&)
-LINKDEF_CONTENT : #pragma link C++ function MatchSearchRotShiftFlip(BaseStarList&, BaseStarList&, const MatchConditions&)
-LINKDEF_CONTENT : #pragma link C++ function ListMatchCollect(const BaseStarList&, const BaseStarList&, const Gtransfo *Guess, const double);
-*/
-
-#ifdef USE_ROOT
-#include "root_dict/listmatchdict.cc"
-#endif /* USE_ROOT */
-
+GtransfoRef ListMatch(const BaseStarList& List1, const BaseStarList& List2, MatchConditions Conditions) {
+  Conditions.MaxDist = 4;
+  GtransfoRef transfo = ListMatchCombinatorial(List1, List2, Conditions);
+  Conditions.MaxDist = 2;
+  return ListMatchRefine(List1, List2, transfo, Conditions);
+}
