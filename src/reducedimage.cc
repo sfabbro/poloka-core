@@ -32,7 +32,7 @@ ReducedImage::ReducedImage(const string &Name) : DbImage(Name)
 } 
 
 
-ReducedImage *ReducedImage::Clone() const
+ReducedImageRef ReducedImage::Clone() const
 {
   string storedTypeName = TypeName();
   if (TypeName() != storedTypeName)
@@ -316,9 +316,54 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
 #include "apersestar.h"
 
 
+// produce a miniback
 bool ReducedImage::MakeBack() {
-  if (FileExists(FitsBackName())) return true;
-  return SubPolokaBack_Slices(-1, -1, 1, false, false, false);
+  if (FileExists(FitsBackName()) || FileExists(FitsMiniBackName())) return true;
+
+  // this routine is not reliable, produces too many files and is slow 
+  //return SubPolokaBack_Slices(-1, -1, 1, false, false, false);
+
+  int border = 5;
+  DataCards cards(DefaultDatacards());
+  FitsImage *weight =0;
+  if (FileExists(FitsSegmentationName())) {
+    READ_IF_EXISTS(border,"POLOKA_BACK_OBJECT_MASK_BORDER",IParam);    
+    cout << " convolving object mask with bordersize = " << border << endl;
+    FitsImage seg(FitsSegmentationName());
+    //ConvolveSegMask(seg, seg, border);
+    seg.Simplify(1);
+    dilate_binary_image(seg, border);
+    // build a weight image with objects masked
+    if (HasWeight()) weight = new FitsImage(FitsWeightName());
+    for (Pixel *ps=seg.begin(), *pw=weight->begin(); ps < seg.end(); ++ps,++pw) {
+      if (*ps > 0) *pw=0;
+    }
+  }
+  // read mesh size from datacards
+  int meshx = 256, meshy = 256;
+  if (cards.HasKey("POLOKA_BACK_MESH_SIZE"))
+    meshx = meshy = cards.IParam("POLOKA_BACK_MESH_SIZE");
+  else
+    {
+      READ_IF_EXISTS(meshx,"POLOKA_BACK_MESH_SIZEX", IParam);
+      meshy = meshx;
+      READ_IF_EXISTS(meshy,"POLOKA_BACK_MESH_SIZEY", IParam);
+    }
+  // simple  isn't it?
+  cout << " MakeBack: computing background with mesh = " 
+       << meshx << ',' << meshy << endl;
+  FitsImage im(FitsName());	 
+  ImageBack back(im, meshx, meshy, weight);
+  if (weight) delete weight;
+
+  // save the mini back
+  FitsImage miniBack(FitsMiniBackName(), back.BackValue());
+  miniBack.AddOrModKey("SEXBKGSX", meshx);
+  miniBack.AddOrModKey("SEXBKGSY", meshy);
+  miniBack.AddOrModKey("BITPIX",-32);
+  miniBack.AddOrModKey("EXTRAPIX", border," by how many pixels we enlarged the segmentation");
+  miniBack.AddCommentLine("Poloka Computed Miniback (class ImageBack)");
+  return true;
 }
 
 
@@ -514,7 +559,9 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 	      READ_IF_EXISTS(poloka_back_object_mask_border,"POLOKA_BACK_OBJECT_MASK_BORDER",IParam);
 	      
 	      cout << " convolving object mask with bordersize = " << poloka_back_object_mask_border << endl;
-	      ConvolveSegMask(*segmentationMask, *segmentationMask, poloka_back_object_mask_border);
+	      //ConvolveSegMask(*segmentationMask, *segmentationMask, poloka_back_object_mask_border);
+	      segmentationMask->Simplify(1);
+	      dilate_binary_image(*segmentationMask, poloka_back_object_mask_border);
 	      {
 		string cvName = CutExtension(segmentationMask->FileName())
 		  +".cv."+FileExtension(segmentationMask->FileName());
@@ -770,6 +817,7 @@ bool ReducedImage::MakeAperCat()
   cout << " Entering MakeAperCat() for " << Name () << endl;
 
   SEStarList seList(CatalogName());
+  MakeBack();
   if (seList.size() == 0)
     {
       cout << " empty SExtractor catalog for " << Name() 
@@ -827,7 +875,6 @@ bool ReducedImage::MakeAperCat()
     slices.AddFile(FitsName());
 
     if (!bool(slices[0]->KeyVal("BACK_SUB"))) {
-      MakeBack();
       miniBack = new FitsImage(FitsMiniBackName());
       back_meshx = miniBack->KeyVal("SEXBKGSX");
       back_meshy = miniBack->KeyVal("SEXBKGSY");
@@ -1973,13 +2020,13 @@ double ReducedImage::GFSeeing() const
   throw PolokaException(" GFSeeing requested but absent both from fit image and apercat :"+Name());
 }
 
-REMOVE_ROUTINE(Seeing, "SEEING");
-SET_ROUTINE(Seeing, double, "SEEING");
+REMOVE_ROUTINE(Seeing, "PKASEEING");
+SET_ROUTINE(Seeing, double, "PKASEEING");
 
 double ReducedImage::Seeing() const
 {
   FitsHeader head(FitsName());
-  if (head.HasKey("SEEING")) return double(head.KeyVal("SEEING"));
+  if (head.HasKey("PKASEEING")) return double(head.KeyVal("PKASEEING"));
   if (head.HasKey("GFSEEING")) return double(head.KeyVal("GFSEEING"));
   GlobalVal glob(AperCatalogName());
   if (glob.HasKey("SEEING")) return glob.getDoubleValue("SEEING");

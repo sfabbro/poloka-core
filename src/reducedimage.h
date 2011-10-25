@@ -44,6 +44,10 @@ class ForSExtractor;
    
 */
 
+class ReducedImage;
+typedef CountedRef<ReducedImage> ReducedImageRef;
+
+
 //class Gtransfo;
 class ReducedImage : public DbImage
 {
@@ -78,6 +82,8 @@ public :
   bool HasSatellite() const {return(FileExists(FitsSatelliteName()));}
   bool HasWeight() const {return(FileExists(FitsWeightName()));}
   bool HasBad() const {return(FileExists(FitsBadName()));}
+  bool HasSegmentation() const {return(FileExists(FitsSegmentationName()));}
+  bool HasStarCatalog() const {return(FileExists(StarCatalogName()));}
 
 //! not const because it may actually compute the image and other things (for derived class)
   string FitsName()  const { return FitsImageName(Calibrated);}
@@ -437,7 +443,7 @@ Usefull in case of artificially smoothed images
   double MultiplyGain();
 
   //!
-  virtual ReducedImage* Clone() const;
+  virtual ReducedImageRef Clone() const;
 
 #ifdef USE_ROOT
 #ifndef SWIG
@@ -468,9 +474,6 @@ Usefull in case of artificially smoothed images
   void operator = (const ReducedImage&); // same comment
   
 };
-
-typedef CountedRef<ReducedImage> ReducedImageRef;
-
 
 //! to Reload an already existing ReducedImage
 //ReducedImageRef ReducedImageRead(const char *Name);
