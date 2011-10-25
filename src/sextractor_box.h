@@ -92,7 +92,7 @@ SEStarListMake_2(const ForSExtractor & shortdata,
 Image *BackFromMiniBack(Image const & minib, int Nx, int Ny, 
 			int back_meshx, int back_meshy);
 
-
+bool SubtractMiniBack(Image& Im, const string& minibackfile);
 
 
 

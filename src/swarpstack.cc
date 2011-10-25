@@ -9,6 +9,7 @@
 #include "fitsimage.h"
 #include "fitsslice.h"
 #include "wcsutils.h"
+#include "sextractor_box.h"
 
 #ifdef TODO
 
@@ -662,12 +663,33 @@ bool SwarpStack::MakeFits()
       std::string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
       std::string weightSwarpName = 
 	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
-
-      if (!DecompressOrLinkImage(ri.FitsName(), imageSwarpName))
+      
+      std::string tmpimage;
+      remove(imageSwarpName.c_str());
+      std::string decompImage = DecompressImageIfNeeded(ri.FitsName(), imageSwarpName, tmpimage);
+      if (decompImage.empty())
 	{
 	  std::cerr << " could not prepare " << imageSwarpName 
 		    << " for swarp " << std::endl;
 	  return false;
+	}
+      if (decompImage == ri.FitsName() && ri.BackSub() && 
+	  !MakeRelativeLink(ri.FitsName(), imageSwarpName))
+	{
+	  std::cerr << " could not prepare " << imageSwarpName 
+		    << " for swarp " << std::endl;
+	  return false;
+	}
+      else if (decompImage == ri.FitsName())
+	{
+	  ImageCopy(ri.FitsName(), imageSwarpName, true);
+	}
+      if (!ri.BackSub())
+	{
+	  cout << " Subtracting background for " << ri.Name() << endl;
+	  FitsImage im(imageSwarpName,RW);
+	  ri.MakeBack();
+	  SubtractMiniBack(im, ri.FitsMiniBackName());
 	}
 
       // HACK for weight contaminated with satur mask
