@@ -1,7 +1,7 @@
 # Default configuration file for DbImage's
 # Copy this file and set it to the DBCONFIG environment variable
 
-#
+# mind the space around the :
 ImagePath
 {
 here : .
@@ -21,12 +21,15 @@ CatalogPath
 # .fits : regular fits image
 # .fz : rice compressed fits image
 # .fits.gz gzip compression
-# mind the spaces aournd { and }
+# mind the spaces around { and }
+
 ImageNames
 {
 #default if not overwritten:
-  { calibrated.fits satur.fits weight.fits }
-#for the ImageSum class
-#  ImageSum { calibrated.fits satur.fits  weight.fits }
-#  TransformedImage { calibrated.fits satur.fits weight.fits }
+  { calibrated.fz satur.fits.gz weight.fits }
+#  ImageSum { calibrated.fz satur.fits.gz  weight.fits }
+#  TransformedImage { calibrated.fz satur.fits.gz weight.fits }
+#  SwarpStack { calibrated.fz satur.fits.gz weight.fits }
+#  SubImage { calibrated.fz satur.fits.gz weight.fits }
+#  ImageSubtraction { calibrated.fz satur.fits.gz weight.fits }
 }
