@@ -48,8 +48,8 @@ struct ImageSubtract {
 	if (FileExists(sub.DetectionsName())) remove(sub.DetectionsName().c_str());
       }
       
-      sub.Execute(DoFits|DoWeight|DoCosmic);
-      if (doDetect) sub.MakeCatalog();
+      sub.Execute(DoFits|DoWeight);
+      if (doDetect) { sub.MakeCosmic(); sub.MakeCatalog(); }
     } catch (PolokaException p) {
       p.PrintMessage(cerr);
     }
