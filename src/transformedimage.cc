@@ -425,11 +425,12 @@ TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 	}
       else
 	{
-	  throw(PolokaException("TransformedImage: no way to read existing "+ Name));
+	  cerr << " TransformedImage: " << Name << " is an old transformedimage, no persistence\n";
 	}
     }
   // wont work with other ImageTransfo than ImageGtransfo (there's none yet anyway)
-  transfo = new ImageGtransfo(*ref,*source);
+  if (ref && source)
+    transfo = new ImageGtransfo(*ref,*source);
 }
 
 
