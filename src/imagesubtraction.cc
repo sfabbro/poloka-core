@@ -97,7 +97,7 @@ bool ImageSubtraction::MakeFits()
      - Important point : the same trick has to be applied to the variance computation. 
      use subblocks in the following code to get rid ASAP of temporary images
   */
-  double photomRatio = KernAtCenterSum();
+  double photomRatio = PhotomRatio();
   if (RefIsBest())
     {
       cout << " ImageSubtraction: " << New->Name() 
@@ -110,6 +110,7 @@ bool ImageSubtraction::MakeFits()
 	FitsImage best(Ref->FitsName());
 	Image convBest(best.Nx(), best.Ny());
 	ImageConvolve(best,convBest);
+	AddBackground(convBest);
 	theSubtraction -= convBest;
       }
       double factor = 1./photomRatio; // "*" is far faster than "/"
@@ -122,6 +123,7 @@ bool ImageSubtraction::MakeFits()
       {
 	FitsImage best(New->FitsName());
 	ImageConvolve(best,theSubtraction);
+	AddBackground(theSubtraction);
       }
       {
 	FitsImage worst(Ref->FitsName());
@@ -409,7 +411,7 @@ bool ImageSubtraction::MakeWeight()
 
   if (RefIsBest())
     {
-      weightImage *= sqr(KernAtCenterSum());
+      weightImage *= sqr(PhotomRatio());
     }
 
 

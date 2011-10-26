@@ -70,8 +70,8 @@ struct XYPower  /* to handle and compute things like x**n*y**m */
   void ApplyToImage(Image &I, const double& Factor, const vector<double> &ParamVal) const;
 
   /* default constructor: Value(x,y,0) will return 1. */
-  XYPower() : scale(1) { SetDegree(0); }
-  XYPower(const int Degree) : scale(1) { SetDegree(Degree); }
+  XYPower() : scale(100) { SetDegree(0); }
+  XYPower(const int Degree) : scale(100) { SetDegree(Degree); }
   void SetDegree(const int Degree);
   ~XYPower() {};
   
@@ -204,12 +204,11 @@ public :
 
   bool FitDone() const { return fitDone;}
 
-  //! Photometric Ratio
-  double KernAtCenterSum() const { return kernAtCenterSum;}
-
-  //! the same
-  //! Photometric Ratio
-  double PhotomRatio() const { return kernAtCenterSum;}
+  //! photometric ratio
+  double PhotomRatio() const {
+    if (fitDone) return kernAtCenterSum;
+    return 1;
+  }
 
 
   double Chi2() const { return chi2;}
@@ -225,8 +224,9 @@ public :
 
 
   void ImageConvolve(const Image &In, Image &Out,int UpdateKernStep = 100);
-
   void VarianceConvolve(const Image &Source, Image &Out, int UpdateKern = 100);
+
+  void AddBackground(Image& Im) const;
 
   //!
   void read(const std::string &FileName);
