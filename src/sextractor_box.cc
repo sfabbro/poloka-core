@@ -187,6 +187,17 @@ sex_proc(const AllForSExtractor & data,
   strcpy(prefs.nnw_name,data.SexNNWName.c_str() );
   strcpy(prefs.filter_name,data.SexFilterName.c_str());
 
+  int nchecks = 0;
+  size_t namesize;
+  if ((namesize = strlen(data.FitsSegmentationName.c_str())) != 0 )
+    {
+      prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
+      strcpy(prefs.check_name[nchecks], data.FitsSegmentationName.c_str() );
+      cout << "Segmentation image requested " << data.FitsSegmentationName << endl;
+      prefs.check_type[nchecks] = CHECK_SEGMENTATION;
+      nchecks++;
+    }
+
   if (data.back_type_manual)
     {
       prefs.back_type[0]=BACK_ABSOLUTE;
@@ -196,10 +207,8 @@ sex_proc(const AllForSExtractor & data,
     }
   else
     {
-      int nchecks = 0;
       /* just a simple comment: SExtractor actually free's the prefs.check_name.
 	 so if you free them a second time, a (usualy delayed) crash should happen */
-      size_t namesize;
       if ((namesize=strlen(data.FitsBackName.c_str())) != 0)
 	{
 	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
@@ -212,14 +221,6 @@ sex_proc(const AllForSExtractor & data,
 	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
 	  strcpy(prefs.check_name[nchecks], data.FitsMiniBackName.c_str() );
 	  prefs.check_type[nchecks] = CHECK_MINIBACKGROUND;
-	  nchecks++;
-	}
-      if ((namesize = strlen(data.FitsSegmentationName.c_str())) != 0 )
-	{  
-	  prefs.check_name[nchecks] = (char *)calloc(namesize+2,1);
-	  strcpy(prefs.check_name[nchecks], data.FitsSegmentationName.c_str() );
-	  cout << "Segmentation image requested " << data.FitsSegmentationName << endl;
-	  prefs.check_type[nchecks] = CHECK_SEGMENTATION;
 	  nchecks++;
 	}
       prefs.ncheck_name = nchecks ;
