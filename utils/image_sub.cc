@@ -70,7 +70,7 @@ int main(int nargs, char **args)
       const KernelFit& kernelFit = sub;
       kernelFit.write(outputfilename);
 
-      phoratio = sub.KernAtCenterSum();
+      phoratio = sub.PhotomRatio();
       chi2 = sub.Chi2();
       nstars = sub.NStampsUsed();
       nparams = sub.NParams();
