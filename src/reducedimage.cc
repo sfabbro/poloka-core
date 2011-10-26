@@ -318,7 +318,9 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
 
 // produce a miniback
 bool ReducedImage::MakeBack() {
-  if (FileExists(FitsBackName()) || FileExists(FitsMiniBackName())) return true;
+  if (FileExists(FitsMiniBackName()) ||
+      (BackSub()) && !FileExists(FitsMiniBackName()))
+    return true;
 
   // this routine is not reliable, produces too many files and is slow 
   //return SubPolokaBack_Slices(-1, -1, 1, false, false, false);
