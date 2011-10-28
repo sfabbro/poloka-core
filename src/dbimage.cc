@@ -807,7 +807,8 @@ string DbImage::GetFileName(const char* WhichFile) const
   if (strcmp(WhichFile,"fringe")==0) return FitsFringeName();
   if (strcmp(WhichFile,"psf")==0) return ImagePsfName(DaophotPsf);
   if (strcmp(WhichFile,"dark")==0)    return FitsDarkName();
-  if (strcmp(WhichFile,"dir")==0) return directory;
+  // directory names in standard unix tools assume no trailing slashes
+  if (strcmp(WhichFile,"dir")==0) return directory.substr(0, directory.size()-1);
   if (strcmp(WhichFile,"usno")==0) return ImageMatchUsnoName();
   if (strcmp(WhichFile,"weight")==0) return FitsWeightName();
   return "";
