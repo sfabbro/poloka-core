@@ -133,24 +133,54 @@ int main(int nargs, char **args) {
   for (int i=1; i<nargs; ++i) {
     char *arg = args[i];
 
+    // options
     // images
-    if (arg[0] != '-') {
+    if (arg[0] == '-') {
+      arg++;
+      if (strcmp(arg,"cal") == 0) { 
+	imSelect.withDbImages = true; 
+	continue; 
+      }
+      if (strcmp(arg,"band") == 0) {
+	imSelect.expList.push_back(string("TOADBAND == ")+args[++i]);
+	continue; 
+      }
+      if (strcmp(arg,"chip") == 0) {
+	imSelect.expList.push_back(string("TOADCHIP == ")+args[++i]);
+	continue;
+      }
+      if (strcmp(arg,"s") == 0) {
+	imSelect.expList.push_back(args[++i]);
+	continue;
+      }
+      if (strcmp(arg,"date") == 0) {
+	datestr = args[++i];
+	continue;
+      }
+      if (strcmp(arg,"ref") == 0) {
+	refstr = args[++i];
+	continue;
+      }
+      if (strcmp(arg,"area") == 0) {
+	imSelect.minArea = atof(args[++i]);
+	continue;
+      }
+      if (strcmp(arg,"rad") == 0) {
+	radius = atof(args[++i])/60./* convert to deg */;
+	continue; 
+      }
+      if (strcmp(arg,"ra") == 0) {
+	rastr  = args[++i];
+	continue;
+      }
+      if (strcmp(arg,"dec") == 0) {
+	decstr = args[++i];
+	continue;
+      }
+    } else {
       toSelect.push_back(arg);
       continue;
     }
-
-    // options
-    arg++;
-    if (strcmp(arg,"cal"))  { imSelect.withDbImages = true; continue; }
-    if (strcmp(arg,"band")) { imSelect.expList.push_back(string("TOADBAND == ")+args[++i]); continue; }
-    if (strcmp(arg,"chip")) { imSelect.expList.push_back(string("TOADCHIP == ")+args[++i]); continue; }
-    if (strcmp(arg,"s"))    { imSelect.expList.push_back(args[++i]); continue; }
-    if (strcmp(arg,"date")) { datestr = args[++i]; continue; }
-    if (strcmp(arg,"ref"))  { refstr = args[++i]; continue; }
-    if (strcmp(arg,"area")) { imSelect.minArea = atof(args[++i]); continue; }
-    if (strcmp(arg,"rad"))  { radius = atof(args[++i])/60./* convert to deg */; continue; }
-    if (strcmp(arg,"ra"))   { rastr  = args[++i]; continue; }
-    if (strcmp(arg,"dec"))  { decstr = args[++i]; continue; }
     
     // unrecognized option
     usage(args[0]);      
