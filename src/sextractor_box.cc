@@ -846,6 +846,26 @@ bool SubtractMiniBack(Image& Im, const string& MiniBackFile)
   return true;
 }
 
+bool AddMiniBack(Image& Im, const string& MiniBackFile)
+{
+  
+  FitsImage miniback(MiniBackFile);
+  int meshx = 64;
+  int meshy = 64;
+  if (miniback.HasKey("SEXBKGSX") && miniback.HasKey("SEXBKGSY")) {
+    meshx = miniback.KeyVal("SEXBKGSX");
+    meshy = miniback.KeyVal("SEXBKGSY");
+  } else {
+    cerr << " No key SEXBKGSX and SEXBKGSY in MiniBack header for "
+	 << MiniBackFile << ". Can't build Back Image. " << endl;
+    return false;
+  }
+  Image *back = BackFromMiniBack(miniback, Im.Nx(), Im.Ny(), meshx, meshy);
+  Im += *back;
+  delete back;
+  return true;
+}
+
 
 
 #ifdef OFF_T_CFITSIO

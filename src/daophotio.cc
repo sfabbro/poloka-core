@@ -7,6 +7,7 @@
 #include "daophotio.h"
 #include "reducedutils.h"
 #include "gtransfo.h"
+#include "sextractor_box.h"
 
 int DaoFileNumber(const DaoCatalogEnum FileType) {
   switch (FileType) {      
@@ -510,19 +511,22 @@ void Sex2Dao(const string& SexName, const string& DaoName) {
 
 void DaoSetup(ReducedImage& Im, const string& Dir) {
   
-  string imname = (Dir.empty()? CutExtension(Im.FitsName()) : Dir + "/" + Im.Name());
+  string imname = (Dir.empty()? Im.Dir() + "daoimage" : AddSlash(Dir) + Im.Name());
+
+  SEStarList stars(Im.CatalogName());
+  // daophot does not read compressed files
+  // and has problem decoding some cfht 16 bits image
+  FitsImage im(Im.FitsName());
+  FitsImage daoim(imname + ".fits", im, im);
+  daoim.SetWriteAsFloat();
 
   // add sky if subtracted
-  float sky = 0;
   if (Im.BackSub()) {
-    sky = Im.OriginalSkyLevel();
-    cout << " DaoSetup: adding sky if necessary to " << Im.FitsName() << endl;
-    string dbfits = Im.FitsName() + ".sav";
-    CopyFile(Im.FitsName(), dbfits);
-    if (Im.HasBack() || Im.HasMiniBack())
-      Im.ReAddBackground_and_ResetKeys();
-    else { //imagesum and others
-      FitsImage daoim(Im.FitsName(), RW);
+    float sky = Im.OriginalSkyLevel();
+    if (Im.HasMiniBack()) {
+      cout << " DaoSetup: re-adding subtracted sky to " << Im.Name() << endl;
+      AddMiniBack(daoim, Im.FitsMiniBackName());
+    } else { // imagesum and others
       float rms;
       float gain = Im.Gain();
       float rdnoise = Im.ReadoutNoise();
@@ -535,28 +539,19 @@ void DaoSetup(ReducedImage& Im, const string& Dir) {
       if (sky < rms*rms)
 	sky = (rms*rms*gain*gain - rdnoise*rdnoise) / gain;
       daoim += sky;
-      daoim.ModKey("SATURLEV", Im.OriginalSaturation(), "Saturation level corrected from sky subtraction");
-      daoim.RmKey("BACK_SUB");
-      daoim.RmKey("BACKLEV");
-      daoim.RmKey("SEXSKY");
-      daoim.RmKey("SEXSIGMA");
-    }    
-    rename(Im.FitsName().c_str(), string(imname+".fits").c_str());
-    rename(dbfits.c_str(), Im.FitsName().c_str());
-  } else {
-    MakeRelativeLink(Im.FitsName(), imname + ".fits");
-  }
-
-  // add sky to stars as well
-  SEStarList stars;
-  if (stars.empty()) {
-    stars.read(Im.CatalogName());
+    }
+    daoim.ModKey("SATURLEV", Im.OriginalSaturation(), "Saturation level corrected from sky subtraction");
+    daoim.RmKey("BACK_SUB");
+    daoim.RmKey("BACKLEV");
+    daoim.RmKey("SEXSKY");
+    daoim.RmKey("SEXSIGMA");
+    // add sky to stars as well
     for (SEStarIterator it = stars.begin(); it != stars.end(); ++it)
       (*it)->Fond() += sky;
   }
-  
+
   cout << " DaoSetup: writing lists and option files in " << (Dir.empty() ? Im.Dir() : Dir) << endl;
-  ofstream daostream(string(imname + ".als").c_str());
+  ofstream daostream((imname + ".als").c_str());
   write_dao_header<AllstarAls>(daostream, Im);
   write_dao_starlist<AllstarAls>(daostream, stars); 
   daostream.close();

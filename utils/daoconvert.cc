@@ -2,15 +2,15 @@
 
 static void usage(char *progName) {
   cerr << progName
-       << " <dbimage> <daofile>: transform <dbimage> star list to a daophot star list with proper header<\n"
-       << "  -s <sexfile> <daofile>: transform <sexfile> to <daofile> (does not need dbimage))\n"
-       << "  -r <daofile> <sexfile>: reverse (does not need dbimage)\n"
-       << "  -m <daofile> <sexfile>: merge daophot star list into a sextractor one (with star match)\n";
+       << " DBIMAGE DAOFILE: transform a catalog in DBIMAGE to a DAOPHOT one\n"
+       << "  -s SEXFILE DAOFILE: transform a SExtractor file to a DAOPHOT file (does not need dbimage)\n"
+       << "  -r DAOFILE SEXFILE: reverse (does not need dbimage)\n"
+       << "  -m DAOFILE SEXFILE: merge a DAOPHOT catalog into a SExtractor one (with star match)\n";
 }
 
 int main(int argc, char **argv) {
 
-  if (argc < 3) {  usage(argv[0]); return EXIT_FAILURE; }
+  if (argc < 3) { usage(argv[0]); return EXIT_FAILURE; }
 
   string src,dest;
 

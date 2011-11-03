@@ -93,7 +93,7 @@ Image *BackFromMiniBack(Image const & minib, int Nx, int Ny,
 			int back_meshx, int back_meshy);
 
 bool SubtractMiniBack(Image& Im, const string& minibackfile);
-
+bool AddMiniBack(Image& Im, const string& MiniBackFile);
 
 
 #endif /* SEXTRACTOR_BOX__H */

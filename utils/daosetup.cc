@@ -2,8 +2,9 @@
 #include "daophotio.h"
 
 static void usage(char *progName) {
-  cerr << progName << " <dbimage(s)>:  setup a DbImage(s) to run DAOPHOT:\n"
-       << " -d <dir>: write in <dir> instead of the dbimage directory\n"
+  cerr << progName << "[OPTION] DBIMAGE...\n"
+       << "Setup a DBIMAGE to run DAOPHOT:\n"
+       << " -d DIR: write in directory DIR instead of the dbimage directory\n"
        << " - write <dbimage>.fits with sky level added\n"
        << " - write daophot.opt, allstar.opt, photo.opt standard daophot option files\n"
        << " - write <dbimage>.als from se.list\n";
