@@ -30,9 +30,11 @@ libtoadsflat_la_LIBADD = \
 	$(top_builddir)/src_base/libtoadsbase.la \
 	$(top_builddir)/src_utils/libtoadsutils.la
 
-bin_PROGRAMS = correlation defringe fringefinder trim
+LDADD = libtoadsflat.la \
+	$(top_builddir)/src_base/libtoadsbase.la \
+	$(top_builddir)/src_utils/libtoadsutils.la
 
-LDADD = libtoadsflat.la
+bin_PROGRAMS = correlation defringe fringefinder trim
 
 correlation_SOURCES = correlation.cc
 defringe_SOURCES = defringe.cc

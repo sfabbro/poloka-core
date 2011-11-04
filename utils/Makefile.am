@@ -40,7 +40,10 @@ bin_PROGRAMS = \
 	daosetup daoconvert makesub make_satur addstars magellan_to_poloka \
 	fitsfix
 
-LDADD = $(top_builddir)/src/libtoads.la
+LDADD = $(top_builddir)/src/libtoads.la \
+	$(top_builddir)/src_base/libtoadsbase.la \
+	$(top_builddir)/src_utils/libtoadsutils.la \
+	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEX_LIBS@
 
 header_SOURCES = header.cc
 astrom_SOURCES = astrom.cc
@@ -74,7 +77,7 @@ skylev_SOURCES = skylev.cc
 sum_images_SOURCES = sum_images.cc
 valid_fits_SOURCES = valid_fits.cc
 make_lightcurve_SOURCES = make_lightcurve.cc
-make_lightcurve_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la
+make_lightcurve_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/libtoadspsf.la
 rustine_for_fringe_SOURCES = rustine_for_fringe.cc
 assign_SOURCES = assign.cc
 dbls_SOURCES = dbls.cc
@@ -89,7 +92,7 @@ wrapswarp_SOURCES = wrapswarp.cc
 compute_SOURCES = compute.cc
 enlargeimage_SOURCES = enlargeimage.cc
 calibrate_SOURCES = calibrate.cc
-calibrate_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la
+calibrate_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/libtoadspsf.la
 coordfromimage_SOURCES = coordfromimage.cc
 enlargedead_SOURCES = enlargedead.cc
 mask2dead_SOURCES = mask2dead.cc
@@ -102,7 +105,7 @@ zpfitter_SOURCES = zpfitter.cc
 calibrationhacker_SOURCES = calibrationhacker.cc
 basicaperture_SOURCES = basicaperture.cc
 calibratefixedpos_SOURCES = calibratefixedpos.cc
-calibratefixedpos_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la
+calibratefixedpos_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/libtoadspsf.la
 flatfield_SOURCES = flatfield.cc
 flatfield_LDADD = $(LDADD) $(top_builddir)/flat/libtoadsflat.la
 makepsf_SOURCES = makepsf.cc
