@@ -1,26 +1,26 @@
 There are two ways to compile and install poloka. You may use either 
   - autoconf/automake
-  - waf 
+  - waf (buggy)
 
 
 Install (autotools)
 ===================
    * install libsex
-     $ wget http://astrowww.phys.uvic.ca/~seb/libsex-2.4.4.2.tar.gz
-     $ tar xf libsex-2.4.4.2.tar.gz
-     $ cd libsex-2.4.4.2
+     $ wget http://astrowww.phys.uvic.ca/~seb/poloka/libsex-2.4.4.3.tar.gz
+     $ tar xf libsex-2.4.4.3.tar.gz
+     $ cd libsex-2.4.4.3
      $ ./configure --prefix=<myprefix> && make && make install
      
    * install cfitsio
-     $ wget http://astrowww.phys.uvic.ca/~seb/cfitsio-3.270.tar.gz
-     $ tar xf cfitsio-3.270.tar.gz
-     $ cd cfitsio-3.270
+     $ wget http://astrowww.phys.uvic.ca/~seb/cfitsio-3.280.tar.gz
+     $ tar xf cfitsio-3.280.tar.gz
+     $ cd cfitsio-3.280
      $ ./configure --prefix=<myprefix> && make && make install
 
    * install poloka
-     $ wget http://astrowww.phys.uvic.ca/~seb/poloka-0.6.0.tar.gz
-     $ tar xf poloka-0.6.0.tar.gz
-     $ cd poloka-0.6.0
+     $ wget http://astrowww.phys.uvic.ca/~seb/poloka/poloka-0.7.0.tar.gz
+     $ tar xf poloka-0.7.0.tar.gz
+     $ cd poloka-0.7.0
      $ export PKG_CONFIG_PATH=<myprefix>/lib/pkgconfig:${PKG_CONFIG_PATH}
      $ ./configure --prefix=<myprefix> && make && make install
 
@@ -29,6 +29,7 @@ See README.autotools if you want to develop with autotools.
 
 Install (waf)
 =============
+You need to have access to the git repository. Then:
 
  (*) install sex and cfitsio first
      $ git clone snova1.in2p3.fr:/home/frogshome/git/sex.git 

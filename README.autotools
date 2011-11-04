@@ -16,15 +16,15 @@ Quick setup instructions
  
   1. Install libsex
 
-   $ wget http://astrowww.phys.uvic.ca/~seb/libsex-2.4.4.2.tar.gz
-   $ tar xf libsex-2.4.4.2.tar.gz && cd libsex-2.4.4.2	
+   $ wget http://astrowww.phys.uvic.ca/~seb/poloka/libsex-2.4.4.3.tar.gz
+   $ tar xf libsex-2.4.4.3.tar.gz && cd libsex-2.4.4.3
    $ ./configure --prefix=${DIR}
    $ make -j <ncpu> ; make install
 
  2. Install cfitsio
 
-   $ wget http://astrowww.phys.uvic.ca/~seb/cfitsio-3.270.tar.gz
-   $ tar xf cfitsio-3.270.tar.gz && cd cfitsio-3.270
+   $ wget http://astrowww.phys.uvic.ca/~seb/cfitsio-3.280.tar.gz
+   $ tar xf cfitsio-3.280.tar.gz && cd cfitsio-3.280
    $ ./configure --prefix=${DIR} --disable-static
    $ make -j <ncpu> ; make install
 
@@ -85,10 +85,10 @@ Some developer information for using autotools
 
 * One way to build your stuff in multiple architectures:
 
-      $ tar xf poloka-0.6.0.tar.gz
+      $ tar xf poloka-0.7.0.tar.gz
       $ mkdir poloka-build-x86
       $ cd poloka-build-x86
-      $ ../poloka-0.6.0/configure --libdir=${HOME}/lib32 --bindir=${HOME}/bin32
+      $ ../poloka-0.7.0/configure --libdir=${HOME}/lib32 --bindir=${HOME}/bin32
       $ make -j <ncpu> && make install
 
 * Rolling a poloka release
