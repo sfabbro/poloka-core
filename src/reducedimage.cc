@@ -1428,13 +1428,38 @@ bool ReducedImage::MakeWeight()
   if (updatevar)
     {
       //fill with the inverse of the sky variance
-      double s = newvariance / oldvariance ;
-      weights *= s ; 
-      weights.AddOrModKey("VARPIXS",true," this weight accounts for sky variance");
-      weights.AddOrModKey("INVERVAR",newvariance );
-      cout << "accounting for sky variance in  " << FitsWeightName() 
-	   << " old, new variance^-1: " <<  oldvariance << " " 
-	   << newvariance << endl;
+      // variance = we have a back map + readout
+      if (FileExists(FitsBackName()))
+	{
+	  FitsImage back(FitsBackName());
+	  (Image&) weights = (Image&) back;
+	  weights += sq(ReadoutNoise());
+	}
+      else if (FileExists(FitsMiniBackName()))
+	{
+	  FitsImage miniback(FitsMiniBackName());
+	  int meshx = 64;
+	  int meshy = 64;
+	  if (miniback.HasKey("SEXBKGSX") && miniback.HasKey("SEXBKGSY"))
+	    {
+	      meshx = miniback.KeyVal("SEXBKGSX");
+	      meshy = miniback.KeyVal("SEXBKGSY");
+	    }
+	  Image* back = BackFromMiniBack(miniback, XSize(), YSize(), meshx, meshy);
+	  (Image&) weights = *back;
+	  weights += sq(ReadoutNoise());
+	  delete back;
+	}
+      else
+	{
+	  double s = newvariance / oldvariance ;
+	  weights *= s ; 
+	  weights.AddOrModKey("VARPIXS",true," this weight accounts for sky variance");
+	  weights.AddOrModKey("INVERVAR",newvariance );
+	  cout << "accounting for sky variance in  " << FitsWeightName() 
+	       << " old, new variance^-1: " <<  oldvariance << " " 
+	       << newvariance << endl;
+	}
     }
   if (adddead && HasDead())
     {
