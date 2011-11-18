@@ -172,7 +172,7 @@ SEStar::dumpn(ostream& s) const
   s << " y : " << y ;
   s << " flux : " << flux ;
   s << " Fluxmax : " << Fluxmax() ;
-  s << " EFlux : " << EFlux() ;
+  s << " EFlux : " << eflux ;
   s << " Fond : " << Fond() ;
   s << " Flux_auto : " << Flux_auto() ;
   s << " Eflux_auto : " << Eflux_auto() ;
@@ -220,7 +220,6 @@ SEStar::writen(ostream& s)  const
 
   BaseStar::writen(s);
   s << Fluxmax()  << " " ;
-  s << EFlux()   << " " ; 
   s << Fond()  << " " ;
   s << Flux_auto ()  << " " ;
   s << Eflux_auto()   << " " ;
@@ -261,7 +260,9 @@ SEStar::read_it(fastifstream& r, const char * Format)
 {
   BaseStar::read_it(r, Format);
   r >> Fluxmax()  ;
-  r >> EFlux()   ; 
+  int format = DecodeFormat(Format, "SEStar");
+  if (format <= 6)
+    r >> EFlux()   ; 
   r >> Fond()  ;
   r >> Flux_auto ()  ;
   r >> Eflux_auto()   ;
@@ -281,7 +282,6 @@ SEStar::read_it(fastifstream& r, const char * Format)
   r >> Flag() ; 
   r >> FlagBad() ; 
   r >> Cstar()  ;
-  int format = DecodeFormat(Format, "SEStar");
   if (format >=1)
     {
     r >> Xtrunc()  ; 
@@ -335,7 +335,6 @@ std::string SEStar::WriteHeader_(ostream & pr, const char *i) const
   if (i== NULL) i= "";
   string baseStarFormat =  BaseStar::WriteHeader_(pr, i);
   pr    << "# fluxmax"<< i <<" : Peak pixel value above background " << endl
-	<< "# eflux"<< i <<" : RMS error for  flux " << endl 
 	<< "# fond"<< i <<" :  background " << endl 
         << "# faper"<< i <<" : Flux within a Kron-like elliptical aperture. The radius is Kron-Radius (see krad param.)" << endl 
 	<< "# efaper"<< i <<" : RMS error for  faper " << endl 
@@ -374,7 +373,7 @@ std::string SEStar::WriteHeader_(ostream & pr, const char *i) const
 
 /* 1 is the current format id for SEStars (when being written) it must correspond
 to the right behaviour of the read routine ( and match what write does ! ) */
-return baseStarFormat + " SEStar 6 ";
+return baseStarFormat + " SEStar 7 ";
 }
 
 
@@ -808,7 +807,7 @@ void RoughStarFinder(const SEStarList &In, double &Fwhm,
     {
       const SEStar &s = **i;
       if (s.Flag() !=0 || s.FlagBad() != 0) continue;
-      if (s.flux < 10*s.EFlux()) continue; // no resolution on shape
+      if (s.flux < 10*s.eflux) continue; // no resolution on shape
       double xx = s.Fwhm();
       double yy = log(s.flux/s.Fluxmax());
       histo.Fill(xx,yy, s.Fluxmax());

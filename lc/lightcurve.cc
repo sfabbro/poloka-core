@@ -88,7 +88,7 @@ void LightCurve::write_lc2fit(ostream& Stream) const
 	continue;
       lcp.modifiedjulianday = fs->ModifiedJulianDate();
       lcp.flux = fs->flux;
-      lcp.eflux = sqrt(fs->varflux);
+      lcp.eflux = fs->eflux;
       //lcp.computemag(elixir_zp);
       lcp.zeropoint = elixir_zp;
       Stream << lcp;
@@ -257,10 +257,10 @@ void LightCurveList::write(const string& filename) const
 	<< setprecision(4) << setw(11) << it->Ref->y << ' '
 	<< setprecision(4) << setw(11) << it->Ref->flux << ' '
 	<< setprecision(4) << setw(11) << it->Ref->sky << ' '
-	<< setprecision(7) << setw(9) << it->Ref->varx << ' '
-	<< setprecision(7) << setw(9) << it->Ref->vary << ' '
-	<< setprecision(7) << setw(9) << it->Ref->covxy << ' '
-	<< setprecision(6) << setw(13) << it->Ref->varflux << ' '
+	<< setprecision(7) << setw(9) << it->Ref->vx << ' '
+	<< setprecision(7) << setw(9) << it->Ref->vy << ' '
+	<< setprecision(7) << setw(9) << it->Ref->vxy << ' '
+	<< setprecision(6) << setw(13) << it->Ref->eflux*it->Ref->eflux << ' '
 	<< setprecision(6) << setw(13) << it->Ref->varsky << ' '
 	<< setprecision(2) << setw(12) << it->totflux << ' '
 	<< setprecision(2) << setw(12) << it->totsky << ' '

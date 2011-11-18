@@ -257,8 +257,8 @@ int main(int argc, char **argv)
       stream << fs->x << " ";
       stream << fs->y << " ";
       stream << fs->flux << " ";
-      if(fs->varflux>0)
-	stream << sqrt(fs->varflux) << " ";
+      if(fs->eflux>0)
+	stream << fs->eflux << " ";
       else
 	stream << 0 << " ";
       stream << fs->sky << " ";

@@ -43,16 +43,16 @@ class BaseStar : public FatPoint, public RefCount
 {
 
   public : // si quelqu'un connait un moyen efficace d'eviter ca...
-double flux; 
+  double flux,eflux; 
 
 
   public:
- BaseStar(){x=0;y=0;flux=0;};
+  BaseStar(){x=0;y=0;flux=0; eflux=0;}
   //! constructor
- BaseStar(double xx, double yy, double ff) : FatPoint(xx,yy), flux(ff) 
-  {};
- BaseStar(const Point &a_point, double a_flux) : FatPoint(a_point), flux(a_flux)
-  {};
+  BaseStar(const double& xx, const double& yy, const double& ff, const double& eff=0.) 
+  : FatPoint(xx,yy), flux(ff), eflux(eff) {}
+  BaseStar(const Point &a_point, const double&ff, const double& eff=0.) 
+    : FatPoint(a_point), flux(ff), eflux(eff) {}
 
   //! access stuff.
   double X() const { return x;}

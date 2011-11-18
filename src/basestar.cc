@@ -35,7 +35,14 @@ void BaseStar::read_it(fastifstream & rd, const char *format)
  int formatValue = 0;
  if (format) 
    formatValue = DecodeFormat(format,"BaseStar");
- if (formatValue == 3)
+ if (formatValue == 4)
+   {
+     rd >> x >> y >> vx >> vy >> vxy >> flux >> eflux;
+     vxy *= (vx*vy);
+     vx *= vx;
+     vy *= vy;
+   }
+ else if (formatValue == 3)
    {
      rd >> x >> y >> vx >> vy >> vxy >> flux;
      /* write sig(x) sig(y), rho ... */
@@ -59,6 +66,7 @@ unsigned NValsBaseStar(const char *Format)
   int formatValue = DecodeFormat(Format, "BaseStar");
   if (formatValue <= 2) return 3;
   if (formatValue == 3) return 6;
+  if (formatValue == 4) return 7;
   return 0;
 }
 
@@ -80,8 +88,9 @@ string BaseStar::WriteHeader_(ostream & stream, const char*i) const
 	 << "# sx"<< i <<" : x position r.m.s " << endl
 	 << "# sy"<< i <<" : y position r.m.s " << endl
 	 << "# rhoxy"<< i <<" : xy correlation " << endl
-	 << "# flux"<< i <<" : flux in image ADUs" << endl ;
-  return " BaseStar 3 "; 
+	 << "# flux"<< i <<" : flux in image ADUs" << endl
+	 << "# eflux"<< i <<" : std dev of flux in image ADUs" << endl ;
+  return " BaseStar 4 "; 
 }
 
 void BaseStar::WriteHeader(ostream & stream) const
@@ -108,7 +117,8 @@ void BaseStar::writen(ostream &s) const
   double sy = sqrt(vy);
   s << x << ' ' << y << ' ' 
     << sx << ' ' << sy << ' ' << vxy/sx/sy << ' ' 
-    << flux << ' ' ;
+    << flux << ' ' 
+    << eflux << ' ';
 }
 
 

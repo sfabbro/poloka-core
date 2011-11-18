@@ -14,7 +14,7 @@ class DaoStar : public BaseStar {
   DaoStar();
 
   size_t num;
-  double eflux, sky, esky, skyskew, sharp, round, chi;
+  double sky, esky, skyskew, sharp, round, chi;
   int flag, iter;
   vector<double> apers, eapers;
 

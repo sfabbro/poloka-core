@@ -22,7 +22,6 @@ class PSFStar : public BaseStar {
 
 
  protected :
-  double eflux;
   double fluxmax;
   double psfX, psfY;
   double psfChi2;
@@ -47,7 +46,7 @@ class PSFStar : public BaseStar {
 		    const ImagePSF &PSF);
 
   bool FitStarParams(const Image &I, const Image &W, 
-		     const ImagePSF &PSF);
+		     const ImagePSF &PSF, bool FixPos = false);
 
 
   void SetPSFParams(const Vect &PSFParams);

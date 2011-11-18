@@ -5,18 +5,16 @@
 #include "photstar.h"
 
 PhotStar::PhotStar()
-  : BaseStar(0,0,0), sky(0.), varflux(0.), varx(0.), vary(0.), 
-    covxy(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
+  : BaseStar(0,0,0), sky(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
 {has_saturated_pixels = false;n_saturated_pixels = 0 ; image_seeing=0;}
 
 PhotStar::PhotStar(const BaseStar &BStar)
-  : BaseStar(BStar), sky(0.), varflux(0.), varx(0.), vary(0.), 
-    covxy(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
+  : BaseStar(BStar), sky(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
 {has_saturated_pixels = false; n_saturated_pixels = 0 ;image_seeing=0;}
 
 PhotStar::PhotStar(const SEStar &SStar)
-  : BaseStar(SStar), sky(SStar.Fond()), varflux(SStar.EFlux()*SStar.EFlux()),
-    varx(0.), vary(0.), covxy(0.), varsky(0.), photomratio(1.), sigscale_varflux(-1)
+  : BaseStar(SStar), sky(SStar.Fond()), 
+    varsky(0.), photomratio(1.), sigscale_varflux(-1)
 {has_saturated_pixels = false; n_saturated_pixels = 0 ;image_seeing=0;}
 
 void PhotStar::writen(ostream &Stream) const
@@ -25,10 +23,6 @@ void PhotStar::writen(ostream &Stream) const
   BaseStar::writen(Stream); 
   Stream << ' ' 
 	 << sky     << ' '
-	 << varflux << ' '
-	 << varx    << ' '
-	 << vary    << ' '
-	 << covxy   << ' '
 	 << varsky; 
   Stream << ' ' 
 	 << image_seeing     << ' '
@@ -69,8 +63,7 @@ PhotStar* PhotStar::read(istream & Stream, const char *Format)
 void PhotStar::dumpn(ostream &Stream) const
 {
   BaseStar::dumpn(Stream);
-  Stream << " sky " << sky << " varflux " << varflux << " varx " << varx << " vary " << vary 
-	 << " covxy " << covxy << " varsky " << varsky;
+  Stream << " sky " << sky << " varsky " << varsky;
 }
 
 string PhotStar::WriteHeader_(ostream & Stream, const char* Num) const
@@ -78,19 +71,15 @@ string PhotStar::WriteHeader_(ostream & Stream, const char* Num) const
   if (!Num) Num = "";
   const string baseStarFormat = BaseStar::WriteHeader_(Stream,Num);
   Stream << "# sky"     << Num << " : mean sky value per pixel" << endl 
-	 << "# varflux" << Num << " : variance of measured flux" << endl
-	 << "# varx"    << Num << " : variance in x position (pixels)" << endl 
-	 << "# vary"    << Num << " : variance in y position (pixels)" << endl 
-	 << "# covxy"   << Num << " : covariance in x and y position (pixels)" << endl 
-	 << "# varsky"  << Num << " : variance in sky measurement" << endl;
-  
-  Stream << "# seeing"     << Num << " : image seeing " << endl
+	 << "# seeing"     << Num << " : image seeing " << endl
 	 << "# phratio" << Num << " : initial image photometric ratio " << endl
 	 << "# sigscale"    << Num << " : flux variance rescaling factor" << endl ;
 
   
-  // return baseStarFormat + "PhotStar 0 ";
-  return baseStarFormat + "PhotStar 1 "; // on ajoute le write de photomratio et de sigscale et de seing
+  // 1: add photomratio, sigscale, seeing
+  // 2: remove all varflux and var pos, now in basestar
+  
+  return baseStarFormat + "PhotStar 2 ";
 }
 
 // Force instanciation

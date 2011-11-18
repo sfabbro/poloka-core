@@ -1615,7 +1615,7 @@ bool SimFit::GetCovariance()
     {
       if ((fit_flux) && (*it)->FitFlux) {
 	// (*it)->Star->varflux = sigscale * PMat(fluxind,fluxind++); // DO NOT USE THIS
-	(*it)->Star->varflux = sigscale * PMat(fluxind,fluxind);
+	(*it)->Star->eflux = sqrt(sigscale * PMat(fluxind,fluxind));
 	(*it)->Star->sigscale_varflux = sigscale ;
 	fluxind++;
       }
@@ -1628,13 +1628,13 @@ bool SimFit::GetCovariance()
 
   if (fit_pos)
     {
-      VignetRef->Star->varx  = sigscale * PMat(xind,xind);
-      VignetRef->Star->vary  = sigscale * PMat(yind,yind);
-      VignetRef->Star->covxy = sigscale * PMat(xind,yind);
+      VignetRef->Star->vx  = sigscale * PMat(xind,xind);
+      VignetRef->Star->vy  = sigscale * PMat(yind,yind);
+      VignetRef->Star->vxy = sigscale * PMat(xind,yind);
       for (SimFitVignetIterator it=begin(); it != end(); ++it) {
-	(*it)->Star->varx  = sigscale * PMat(xind,xind);
-	(*it)->Star->vary  = sigscale * PMat(yind,yind);
-	(*it)->Star->covxy = sigscale * PMat(xind,yind);
+	(*it)->Star->vx  = sigscale * PMat(xind,xind);
+	(*it)->Star->vy  = sigscale * PMat(yind,yind);
+	(*it)->Star->vxy = sigscale * PMat(xind,yind);
       }
     }
   
@@ -1682,7 +1682,7 @@ bool SimFit::DoTheFit(int MaxIter, double epsilon)
     FatalError("DoTheFit set all fluxes to zero before quitting because of failure");
     for (SimFitVignetIterator it=begin(); it != end() ; ++it) {
       (*it)->Star->flux = 0;
-      (*it)->Star->varflux = 0;
+      (*it)->Star->eflux = 0;
     }    
     return false;
   }
