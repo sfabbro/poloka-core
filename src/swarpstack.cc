@@ -689,7 +689,7 @@ bool SwarpStack::MakeFits()
 	  cout << " Subtracting background for " << ri.Name() << endl;
 	  FitsImage im(imageSwarpName,RW);
 	  ri.MakeBack();
-	  SubtractMiniBack(im, ri.FitsMiniBackName());
+	  SubtractBack(ri);
 	}
 
       // HACK for weight contaminated with satur mask

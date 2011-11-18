@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+
+#include "imageutils.h"
 #include "fitsimage.h"
 #include "histo1d.h"
 
@@ -105,46 +107,7 @@ double SetOverscan(FitsHeader &Head)
 
 static void SetSaturation(FitsImage &Im)
 {
-  float maxVal = Im.MaxValue(); 
-  
-  double saturation = maxVal, sat;
-  double scale = 50.0;
-  int loop = 0;
-  while (saturation==maxVal && loop<2)
-    {
-      loop++;
-      scale *= 10.0;
-      Histo1d histo(int(maxVal/scale), 0, maxVal + 1 ); //HC
-      for (int j = 0; j < Im.Ny() ; ++j)
-	for (int i = 0; i < Im.Nx() ; ++i)
-	  {
-	    histo.Fill(Im(i,j), 1 ); // HC
-	  }
-      
-      double xMax;
-      double maxContent = histo.MaxBin(xMax);
-      double maxcoup = xMax;
-      int count =1, bestMaxCount =0;
-      for (int l=0; l<20; l++)
-	{
-	  histo.ZeroBins(maxVal*0.05*l, maxVal*0.05*(l+1));
-	  sat = xMax;
-	  maxContent = histo.MaxBin(xMax);
-	  if (sat == xMax)
-	    {
-	      count++;
-	      if (count >= bestMaxCount && sat != maxcoup)
-		{ 
-		  bestMaxCount = count;
-		  saturation = sat;
-		}
-	    }
-	  else 
-	    {
-	      count = 1;
-	    }
-	}
-    }
+  double saturation = ComputeSaturation(Im);
   // WARNING WELLDEPTH CAN CHANGE
   double welldepth = 65536.;
   if (Im.HasKey("WELLDEPT")) welldepth = Im.KeyVal("WELLDEPT");

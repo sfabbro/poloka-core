@@ -13,27 +13,43 @@ public:
       return new VltHawki;
     return NULL;
   }
-  
+
   SIMPLE_TRANSLATOR(TOADPZPT,"ZP");
 
-  //  SIMPLE_TRANSLATOR(TOADPIXS,"HIERARCH ESO INS PIXSCALE");
-  SIMPLE_TRANSLATOR(TOADPIXS,"PIXSCALE");
+  SIMPLE_TRANSLATOR(TOADPIXS,"HIERARCH ESO INS PIXSCALE");
+  // SIMPLE_TRANSLATOR(TOADPIXS,"PIXSCALE");
   SIMPLE_TRANSLATOR(TOADUTIM,"UTC");
+  // SIMPLE_TRANSLATOR(TOADRDON,"HIERARCH ESO DET CHIP RON");
+  // SIMPLE_TRANSLATOR(TOADGAIN,"HIERARCH ESO DET CHIP GAIN");
+
+  TRANSLATOR_DEC(TOADAIRM) {
+    float am = 0.5*(float(Head.KeyVal("HIERARCH ESO TEL AIRM START")) +
+		    float(Head.KeyVal("HIERARCH ESO TEL AIRM END")));
+    return FitsKey("TOADAIRM",am);
+  }
+
+  TRANSLATOR_DEC(TOADEXPO) {
+    float exptime = int(Head.KeyVal("HIERARCH ESO DET NDIT")) * 
+      float(Head.KeyVal("HIERARCH ESO DET DIT"));
+    return FitsKey("TOADEXPO",exptime);
+  }
+
 
   TRANSLATOR_DEC(TOADFILT) {
     string tmp;
 
-    /*    
-    if ( string(Head.KeyVal("HIERARCH ESO INS FILT1 NAME")) != "OPEN" )
-      tmp =  string(Head.KeyVal("HIERARCH ESO INS FILT1 NAME"));
-    if ( string(Head.KeyVal("HIERARCH ESO INS FILT2 FILTER")) != "OPEN" )
-      tmp =  tmp + " " + string(Head.KeyVal("HIERARCH ESO INS FILT2 NAME"));
-    */
-    
+    /*
     if ( string(Head.KeyVal("FILTER1")) != "OPEN" )
       tmp =  string(Head.KeyVal("FILTER1"));
     if ( string(Head.KeyVal("FILTER2")) != "OPEN" )
       tmp =  tmp + " " + string(Head.KeyVal("FILTER2"));
+    */
+    if ( string(Head.KeyVal("HIERARCH ESO INS FILT1 NAME")) != "OPEN" ) {
+      tmp =  string(Head.KeyVal("HIERARCH ESO INS FILT1 NAME"));
+    }
+    if ( string(Head.KeyVal("HIERARCH ESO INS FILT2 NAME")) != "OPEN" ) {
+      tmp =  tmp + " " + string(Head.KeyVal("HIERARCH ESO INS FILT2 NAME"));
+    }
 
     return FitsKey("TOADFILT", tmp);
   }

@@ -318,13 +318,14 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
 
 // produce a miniback
 bool ReducedImage::MakeBack() {
-  if (FileExists(FitsMiniBackName()) ||
-      (BackSub()) && !FileExists(FitsMiniBackName()))
+  if (FileExists(FitsMiniBackName()) || FileExists(FitsBackName()) 
+      || (BackSub()) && !FileExists(FitsMiniBackName()) && !FileExists(FitsBackName()))
     return true;
 
-  // this routine is not reliable, produces too many files and is slow 
-  //return SubPolokaBack_Slices(-1, -1, 1, false, false, false);
+  // SubÅpolokaBack_slices is not reliable, produces many big useless files and is slow 
+  // return SubPolokaBack_Slices(-1, -1, 1, false, false, false);
 
+  // use SExtractor routines to produce a miniback
   int border = 5;
   DataCards cards(DefaultDatacards());
   FitsImage *weight =0;
@@ -2835,8 +2836,41 @@ int ToTransform(const ReducedImage& Im) {
 
 
   
+bool SubtractBack(ReducedImage& Im)
+{
+  // already subtracted
+  if (Im.BackSub()) return true;
+  
+  // make a background if it not present
+  if (!Im.MakeBack())
+    return false;
 
+  // we have a background file, subtract it
+  if (FileExists(Im.FitsBackName()))
+    {
+      FitsParallelSlices slices(50);
+      int nx = Im.XSize();
+      slices.AddFile(Im.FitsName());
+      slices.AddFile(Im.FitsBackName());
+      for (int j=0; j<slices.SliceSize(); j++) 
+	{
+	  Pixel *pim = slices[0]->begin();
+	  Pixel *pback = slices[1]->begin();
+	  Pixel *pend = slices[0]->end();
+	  for ( ; pim < pend; pim++, pback++)
+	    *pim++ -= *pback++;
+	}
+      return true;
+    }
 
+  // nothing left, use miniback
+  if (!FileExists(Im.FitsMiniBackName()))
+    return false;
+
+  FitsImage image(Im.FitsName(), RW);
+  return SubtractMiniBack(image, Im.FitsMiniBackName());
+}
+  
 bool ReducedImage::SubPolokaBack_Slices(int poloka_back_mesh_sizex, 
 					int poloka_back_mesh_sizey, 
 					double filter_half_width, bool save_back, 

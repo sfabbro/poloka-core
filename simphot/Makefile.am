@@ -53,7 +53,10 @@ libtoadssimphot_la_LIBADD = \
 	$(top_builddir)/src/libtoads.la \
 	$(top_builddir)/psf/libtoadspsf.la
 
-LDADD = libtoadssimphot.la
+LDADD = libtoadssimphot.la \
+	$(top_builddir)/src/libtoads.la \
+	$(top_builddir)/src_utils/libtoadsutils.la \
+	$(top_builddir)/psf/libtoadspsf.la
 
 check_PROGRAMS =  testlc testpsf
 bin_PROGRAMS = mklc

@@ -538,5 +538,6 @@ bool BoolImageAnd(ReducedImageList &List,
 #endif
 
 int ToTransform(const ReducedImage& Im);
+bool SubtractBack(ReducedImage& Im);
 
 #endif /* REDUCEDIMAGE__H */
