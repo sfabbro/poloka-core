@@ -1,22 +1,30 @@
 #include <iostream>
 #include <string>
-#include <math.h>
+#include <cmath>
+#include <iomanip>
 
+#include "fastifstream.h"
+#include "vutils.h"
+#include "fastfinder.h"
+#include "reducedimage.h"
+#include "wcsutils.h"
+#include "gtransfo.h"
+#include "sestar.h"
 #include "toadscards.h"
 #include "fitsimage.h"
 #include "convolution.h"
 #include "detection.h"
 #include "frame.h"
+#include "fileutils.h"
+#include "datacards.h"
 
 static double sqr(double x){return x*x;}
 
 #ifndef M_PI
-#define     M_PI            3.14159265358979323846  /* pi */
+#define M_PI 3.14159265358979323846
 #endif
 
-//#define DEBUG
-
-struct DatDet{
+struct DatDet {
   double nRadAper;
   double nRadWeight;
   double nSigDet;
@@ -32,12 +40,9 @@ struct DatDet{
   void Print(ostream & s=cout) const ;
 };
 
-#include "fileutils.h" // for FileExists
-#include "datacards.h"
-
 DatDet::DatDet(const string &DatacardsFileName)
 {
-  //default val
+  // default values
   nRadAper = 2.5; // i.e. intg. radius of aperture = 1FWHM
   nRadWeight = 1.6 * nRadAper;
   nRadBad = 2.;
@@ -73,20 +78,20 @@ DatDet::DatDet(const string &DatacardsFileName)
     }
   else
     {
-      cerr << " Cannot read " << DatacardsFileName << endl;
+      cerr << " DatDet: cannot read " << DatacardsFileName << endl;
     }
   if ( nbackSideMax == 0)
-    nbackSideMin = 0 ;
+    nbackSideMin = 0;
   else
     {
-      if ( nbackSideMax <nbackSideMin ) swap(nbackSideMin,nbackSideMax);
-      if ( nbackSideMin < nRadWeight) // min rad max OR min max rad
+      if (nbackSideMax < nbackSideMin) swap(nbackSideMin,nbackSideMax);
+      if (nbackSideMin < nRadWeight) // min rad max OR min max rad
 	{
-	  cerr << "Inner Size of annulus to compute back > radius for weighted flux " << endl ;
+	  cerr << " DatDet: inner size of annulus to compute back > radius for weighted flux\n";
 	  nbackSideMin = nRadWeight; // min=rad max OR max rad=min
-	  if ( nbackSideMax < nRadWeight) // max rad=min
+	  if (nbackSideMax < nRadWeight) // max rad=min
 	    {
-	      cerr << "Outer Size of annulus to compute back < radius for weighted flux, modifying annulus radii values" << endl ;
+	      cerr << " DatDet: outer size of annulus to compute back < radius for weighted flux, fixing...\n";
 	      nbackSideMax = 2.*nRadWeight; // rad=min max=2.*rad
 	    }
 	}
@@ -113,52 +118,35 @@ void DatDet::Print(ostream & s) const
   s  << " ********** end of DatDet ************ " << endl;
 }
 
-
-
-// ----------------------------------- 
-// ------ utility routines ------
-// ----------------------------------- 
-
-static bool IsLocalMax( Image const & img , int x , int y , int half_square_size)
+static bool is_local_max(const Image& img, int x, int y, int half_size)
 {
-  int tx = img.Nx() ;
-  int ty = img.Ny() ;
-  float val=0;
-  if ( ( x > 0 ) && ( x < tx ) &&
-       ( y > 0 ) && ( y < ty ) )
+  int nx = img.Nx();
+  int ny = img.Ny();
+  Pixel val = 0;
+  if (x > 0 && x < nx && y > 0 && y < ny)
     val = img(x,y);
-  int i , j ;
   
-  for (i=-half_square_size; i<=half_square_size; i++)
-    for (j=-half_square_size; j<=half_square_size; j++)
+  for (int j=-half_size; j<=half_size; j++)
+    for (int i=-half_size; i<=half_size; i++)
       {
-	if ((i==0) && (j==0)) continue;
-	int xx = x + i ;
-	int yy = y + j ;
-	if ( ( xx > 0 ) && ( xx < tx ) &&
-	     ( yy > 0 ) && ( yy < ty ) )
-	  if (img(xx,yy)>val) 
-	    return false;
+	if (i==0 && j==0) continue;
+	int xx = x + i;
+	int yy = y + j;
+	if (xx > 0 && xx < nx && yy > 0 && yy < ny && img(xx,yy) > val)
+	  return false;
       }
   return true;
 }
 
 
-/****************** DetectionProcess *********************/
-
-#define PrintDatacards 1
-#define PrintCuts 2
-
-
+#define PRINT_DATACARDS 1
+#define PRINT_CUTS 2
 
 DetectionProcess::DetectionProcess(const string &ImageName, 
 				   const string &WeightName, 
-				   const double Seeing, const double SigFilter)
+				   const double& Seeing, const double& SigFilter)
 {
   
-#ifdef DEBUG
-  cout << "DetectionProcess::DetectionProcess" << endl;
-#endif
   seeing = Seeing;
   sigFilter = SigFilter;
   weightName = WeightName;
@@ -170,22 +158,17 @@ DetectionProcess::DetectionProcess(const string &ImageName,
 
   cvImageNormalizedSig = 0;
   cvImageNormalizedMean = 0;
-  /* in principle this one is useless since there is a call in all
-     public service routines (with proper print instructions) */
+  // in principle this one is useless since there is a call in all
+  // public service routines (with proper print instructions)
   SetCuts(); 
 }
 
 
 void DetectionProcess::SetCuts(const int ToPrint)
 {
-  
-#ifdef DEBUG
-  cout << "DetectionProcess::SetCuts" << endl;
-#endif
-
-  //collect cuts in datacards
+  // collect cuts in datacards
   DatDet datdet(DefaultDatacards());
-  if (ToPrint & PrintDatacards) datdet.Print();
+  if (ToPrint & PRINT_DATACARDS) datdet.Print();
   radAper = seeing * datdet.nRadAper;
   radWeight = seeing *datdet.nRadWeight;
   nSig = datdet.nSig;
@@ -194,18 +177,16 @@ void DetectionProcess::SetCuts(const int ToPrint)
   minDistDouble = datdet.nMinDistDouble * seeing;
   radBackMin = datdet.nbackSideMin * seeing;
   radBackMax = datdet.nbackSideMax * seeing;
-  if (ToPrint & PrintCuts)
+  if (ToPrint & PRINT_CUTS)
     {
-      cout << " cuts for image " << imageName << endl;
-      cout << " hopefully cutting detections at  " 
-	   << nSigDet << " then " << nSig << " sigmas " << endl;
-      cout << " radAper = " << radAper << endl;
-      cout << " radWeight = " << radWeight << endl;
-      cout << " radBad = " << radBad << endl;
-      cout << " min dist between 2 det " << minDistDouble << endl;
-      cout << " annulus inner/outer radii for back estimation = " 
-	   << radBackMin << " / " <<  radBackMax << endl;
-      cout << " ******************************" << endl;
+      cout << " DetectionProcess: cuts for image " << imageName << ":\n"
+	   << "   threshold (sigmas) = " << nSigDet << " then " << nSig << endl
+	   << "   radAper = " << radAper << endl
+	   << "   radWeight = " << radWeight << endl
+	   << "   radBad = " << radBad << endl
+	   << "   minDistDouble = " << minDistDouble << endl
+	   << "   inner/outer radii = " << radBackMin << " / " <<  radBackMax 
+	   << endl;
     }
 }
 
@@ -216,7 +197,6 @@ DetectionProcess::~DetectionProcess()
   if (weight) delete weight;
 }
 
-
 static void print_stat(const Image &Im, const string &Mess)
 {
   Pixel mean, sigma;
@@ -226,8 +206,6 @@ static void print_stat(const Image &Im, const string &Mess)
   cout << Mess << "  m,s: "  << mean << ' ' << sigma 
        << " min " << min << " max " << max << endl;
 }
-
-
 
 
 //TO DO : test this routine on synthetic noise data, compute analytically
@@ -273,7 +251,6 @@ This expression is very however different from what I coded in a first attempt:
       sum(psf * image)/ sum(psf^2)
       -----------------
    sqrt(sum(psf^2 / weights)) / [sum(psf^2)]^2
-
 */
 
 void DetectionProcess::ImagesConvolve()
@@ -284,11 +261,10 @@ void DetectionProcess::ImagesConvolve()
      of this routine. We do not follow this memory saving approach for now.
   */
   imagecv = new Image(*image);
+
   // read the weights
   Image weightcv;
-  { /* take a copy of the image to delete the FitsImage (and close the file)
-       immediately after reading */
-
+  {
     FitsImage w(weightName);
     weightcv = w;
   }
@@ -297,19 +273,17 @@ void DetectionProcess::ImagesConvolve()
   Image kernel = ConvoleGauss1D1D(*imagecv, sigFilter, sigFilter, 
 				  /*prec = */ 1.e-3);
 
-  // in principe the kernel is normalized, but who nows how software evolves:
-  double fact = 1./kernel.SumPixels();
+  // in principe the kernel is normalized, but who knows how software evolves:
+  Pixel fact = 1. / kernel.SumPixels();
   *imagecv *= fact;
 
-  // done for the numerator.
-
-  //denominator
+  // denominator
   Image kernweight = ConvoleGauss1D1D(weightcv, sigFilter/sqrt(2.), 
-				    sigFilter/sqrt(2.), 
-				    1.e-3);
+				      sigFilter/sqrt(2.), 
+				      1.e-3);
 
-  /* there is an issue here: the convolution routines normalize the kernel.
-     We want :
+  /* there is an issue here: the convolution routines normalize the kernel
+     We want:
      psf^2 %*% weights / [sum (psf)]^2
      and we get 
      psf^2 %*% weights / sum (psf ^ 2)
@@ -318,19 +292,15 @@ void DetectionProcess::ImagesConvolve()
      with the caveat that kernweight == psf^2 
   */
 
-
-  print_stat(weightcv , " weight after conv");
-
+  print_stat(weightcv , " DetectionProcess: weight after conv");
   fact = kernweight.SumPixels();
   kernweight.ApplyFun(sqrt);
   fact /= sqr(kernweight.SumPixels());
   weightcv *= fact;
-
-  print_stat(weightcv , " weight after conv+norm");
-
+  print_stat(weightcv , " DetectionProcess: weight after conv+norm");
   // we now have the numerator and denominator of expression (2)
 
-// compute the frame in which the convolution was actually computed.
+  // compute the frame in which the convolution was actually computed.
   Frame imFrame(*imagecv);
   int xMarginSize = max(kernel.Nx(), kernweight.Nx())/2;
   int yMarginSize = max(kernel.Ny(), kernweight.Ny())/2;
@@ -351,10 +321,10 @@ void DetectionProcess::ImagesConvolve()
   // compute expression (2)
   Pixel *pw = weightcv.begin();
   Pixel *pend = imagecv->end();
-  for (Pixel *p = imagecv->begin(); p < pend; ++p, ++pw) 
+  for (Pixel *p = imagecv->begin(); p < pend; ++p, ++pw)
     {
       if (*p == 0) continue;
-      if (*pw == 0) { *p = defaultVal; continue;}
+      if (*pw == 0) { *p = defaultVal; continue; }
       (*p) /= (*pw);
     }
 
@@ -362,29 +332,26 @@ void DetectionProcess::ImagesConvolve()
   imagecv->Masking(imFrame, defaultVal);
 
   //compute noise
-   cvImageNormalizedSig = ImageAndWeightError(*imagecv, weightcv);
+  cvImageNormalizedSig = ImageAndWeightError(*imagecv, weightcv);
   // should be around 1....
-  cout << "normalizedSig of convolved image " <<  cvImageNormalizedSig << endl;
+  cout << " DetectionProcess: normalizedSig of convolved image " <<  cvImageNormalizedSig << endl;
   // write it somewhere for later use
   SaveNormalizedSig();
-
   
   // normalize imagecv : imagecv *= sqrt(weightcv);
   weightcv.ApplyFun(sqrt);
   *imagecv *= weightcv;
 
   // write image for studies 
-  if (getenv ("SAVECV")) { FitsImage toto("savecv.fits",*imagecv);}
+  if (getenv ("SAVECV")) { FitsImage toto("savecv.fits",*imagecv); }
   
   Pixel mean, sig;
   imagecv->SkyLevel(imFrame, &mean, &sig);
   cvImageNormalizedMean = mean;
-  cout << " compute the mean and sigma of img*sqrt(weight) : "  
+  cout << " DetectionProcess: compute the mean and sigma of img*sqrt(weight) : "
        << mean << ' ' << sig << endl;
   
 }
-
-
 
 #define NORMALIZED_SIG_KEY "NORMSIG"
 
@@ -405,17 +372,17 @@ bool DetectionProcess::GetNormalizedSig()
   else return false;
 }
 
-    
-
 void DetectionProcess::FirstDetections(DetectionList &List) const
 {
   Pixel threshold = cvImageNormalizedMean + nSigDet *  cvImageNormalizedSig;
   int radLocmax = int(radAper*0.5)+1;
-  for (int j=0; j<image->Ny(); ++j)
-    for (int i=0; i<image->Nx(); ++i)
+  int nx = imagecv->Nx();
+  int ny = imagecv->Ny();
+  for (int j=0; j<ny; ++j)
+    for (int i=0; i<nx; ++i)
       {
 	if ((*imagecv)(i,j) > threshold 
-	    && IsLocalMax(*imagecv, i, j, radLocmax))
+	    && is_local_max(*imagecv, i, j, radLocmax))
 	  {
 	    List.push_back(new Detection(double(i), double(j),(*imagecv)(i,j) ));
 	    // save the original sig2Noise
@@ -426,11 +393,11 @@ void DetectionProcess::FirstDetections(DetectionList &List) const
 }
 	  
 
-
+// gaussian centroiding
 void DetectionProcess::DetectionPosition(Detection &Det) const
 {
-  int tx = image->Nx() ;
-  int ty = image->Ny() ;
+  int nx = image->Nx() ;
+  int ny = image->Ny() ;
   int d = (int) (floor(radWeight+1));
   double rad_weight2 = sqr(radWeight) ;
   double rad_bad2 = sqr(radBad);
@@ -452,8 +419,8 @@ void DetectionProcess::DetectionPosition(Detection &Det) const
 	  int xu = ix + l ; 
 	  int yu = iy + m ;
 	  double r2=sqr(double(xu) - Det.x) + sqr(double(yu)-Det.y);
-	  if ( ( xu < tx ) &&  (xu >= 0 ) &&
-	       ( yu < ty ) &&  (yu >= 0 ) && (r2 <rad_weight2) )
+	  if ( ( xu < nx ) &&  (xu >= 0 ) &&
+	       ( yu < ny ) &&  (yu >= 0 ) && (r2 <rad_weight2) )
 	    {
 	      double val = (*image)(xu,yu)- back ;
 	      double localWeight = (*weight)(xu,yu);
@@ -483,7 +450,6 @@ void DetectionProcess::DetectionPosition(Detection &Det) const
   return; 
 }
 
-
 void DetectionProcess::RefineDetectionPosition(Detection &Det) const
 {
   int count=0;
@@ -506,11 +472,8 @@ void DetectionProcess::RefineDetectionPosition(Detection &Det) const
 // computes everything but the position
 void DetectionProcess::SetDetectionScores(Detection &Det) const
 {
-#ifdef DEBUG
-  //cout << "DetectionProcess::SetDetectionScores" << endl;
-#endif
-  int tx = image->Nx();
-  int ty = image->Ny();
+  int nx = image->Nx();
+  int ny = image->Ny();
   int d = (int) ((radWeight + 1.));
   double rad_weight2 = sqr(radWeight);
   double rad_aper2 = sqr(radAper);
@@ -541,8 +504,8 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
 	  double dx = xu - Det.x;
 	  double dy = yu - Det.y;
           double dist2 = sqr(dx) + sqr(dy);
-          if ( ( xu < tx ) &&  (xu >= 0 )&&
-               ( yu < ty ) &&  (yu >= 0 ))
+          if ( ( xu < nx ) &&  (xu >= 0 )&&
+               ( yu < ny ) &&  (yu >= 0 ))
             { 
 	      const double localWeight = (*weight)(xu, yu);
 	      const double val = (*image)(xu,yu)- back;
@@ -583,13 +546,13 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
     {
       Det.flux = flux*sumPsf/fluxWeight;
       //      Det.eFlux^2 = sqr(sumPsf)/fluxWeight;
-      Det.eFlux = sumPsf/sqrt(fluxWeight);
+      Det.eflux = sumPsf/sqrt(fluxWeight);
       // The above formula assumes that the pixels are uncorrelated,
       // which is wrong. Correct by the average factor:
-      Det.eFlux *= cvImageNormalizedSig;
-      Det.sig2Noise = Det.flux/Det.eFlux;
+      Det.eflux *= cvImageNormalizedSig;
+      Det.sig2Noise = Det.flux/Det.eflux;
     }
-  else Det.eFlux = -1;
+  else Det.eflux = -1;
   if (flux != 0)
     { // no need to account for sumPSf != 1
       Det.vx = varXX/sqr(flux);
@@ -607,13 +570,11 @@ void DetectionProcess::SetDetectionScores(Detection &Det) const
   Det.NBad() = bad;
 }
 
-#include "vutils.h" // for FarrayMedian
-
 double DetectionProcess::LocalImageBackground(const int i, const int j) const
 {
    if (radBackMax == 0) return 0;
-  int tx = image->Nx();
-  int ty = image->Ny();
+  int nx = image->Nx();
+  int ny = image->Ny();
 
   static Pixel *pixels = NULL;
   static int stampSize = 0; // the size with which it was reserved
@@ -635,8 +596,8 @@ double DetectionProcess::LocalImageBackground(const int i, const int j) const
 	  if (dist2 < distCut2) continue;
           int xu = i + l ;
           int yu = j + m ;
-          if ( ( xu < tx ) &&  (xu >= 0 )&&
-               ( yu < ty ) &&  (yu >= 0 ))
+          if ( ( xu < nx ) &&  (xu >= 0 )&&
+               ( yu < ny ) &&  (yu >= 0 ))
             { 
 	      double localWeight = (*weight)(xu, yu);
 	      if (localWeight == 0) continue;
@@ -648,12 +609,11 @@ double DetectionProcess::LocalImageBackground(const int i, const int j) const
 }
 
 
-static bool IgnoreIt(const BaseStar *star )
+static bool ignore_star(const BaseStar *star )
 {
   return (star->flux == 0);
 }
 
-#include "fastfinder.h"
 /* The new cleaner routine uses the fastfinder.  It looks for the
 nearest star from the current star, if the neighbour is in the cut
 radius and have a flux greater than the currrent star, then the
@@ -661,9 +621,9 @@ current star is set to zero and then deleted from the list. This trick
 is needed because the fastfinder cannot accomodate stars which
 disappear.*/
 
-static void CleanDetectionList(DetectionList & stl, double delta)
+static void CleanDetectionList(DetectionList & stl, const double& delta)
 {
-  cout << " Cut radius for double detection " << delta << endl;
+  cout << " CleanDetectionList: cut radius for duplicates " << delta << endl;
   // sort and copy of the list for old cleaner
   stl.FluxSort() ;
   
@@ -677,7 +637,7 @@ static void CleanDetectionList(DetectionList & stl, double delta)
       double KeepFlux = star->flux;
       star->flux = 0;
       bool keep_it = true;
-      const BaseStar *neighbour = finder.FindClosest(*star, delta, &IgnoreIt); 
+      const BaseStar *neighbour = finder.FindClosest(*star, delta, &ignore_star); 
       if ( neighbour != NULL)
 	{
 	  if ( star->flux < neighbour->flux)
@@ -709,14 +669,14 @@ void DetectionProcess::FluxFromPos(const Point &Where, double &Flux)
 
 void DetectionProcess::DoDetection(DetectionList &List)
 {
-  cout << " starting detection on " << imageName << endl;
-  SetCuts(PrintDatacards + PrintCuts);
+  cout << " DetectionProcess: starting detection on " << imageName << endl;
+  SetCuts(PRINT_DATACARDS + PRINT_CUTS);
   ImagesConvolve();
   FirstDetections(List);
   // do not nee any longer imagecv
   delete imagecv; imagecv = NULL;
 
-  cout << " number of raw detections " << List.size() << endl;
+  cout << " DetectionProcess: number of raw detections " << List.size() << endl;
 
 
   //need weight
@@ -732,7 +692,7 @@ void DetectionProcess::DoDetection(DetectionList &List)
 	i = List.erase(i);
       else ++i;
     }
-  cout << " number after position refinement and removal of drifters " 
+  cout << " DetectionProcess: number after position refinement and removal of drifters " 
        << List.size() << endl;
 
   // clean stuff that contains pixels with null weight
@@ -743,12 +703,12 @@ void DetectionProcess::DoDetection(DetectionList &List)
       else ++i;
     }
 
-  cout << " number of detections after removal of bad " << List.size() << endl;
+  cout << " DetectionProcess: number of detections after removal of bad " << List.size() << endl;
 
   // remove identical stuff.
   CleanDetectionList(List, minDistDouble);
 
-  cout << " number of detections after removal of neighbours " 
+  cout << " DetectionProcess: number of detections after removal of neighbours "
        << List.size() << endl;
   
   // fill the scores
@@ -762,9 +722,8 @@ void DetectionProcess::DoDetection(DetectionList &List)
 	i = List.erase(i);
       else ++i;
     }
-  cout << " number of detections after cut on S/N : " 
+  cout << " DetectionProcess: number of detections after cut on S/N : " 
        << List.size() << endl;
-
 }
 
 
@@ -775,18 +734,18 @@ void DetectionProcess::DetectionScoresFromPositions(const BaseStarList & Pos,
   /* we need a value for cvImageNormalizedSig
      if the image alread had a detection  run on it it is in the header,
      if not, we have to compute it */
-  cout << " starting addressed detection on " << imageName << endl;
-  cout << "  number of given positions :" << Pos.size() << endl;
-  SetCuts(PrintCuts);
+  cout << " DetectionProcess: starting addressed detection on " << imageName << endl;
+  cout << " DetectionProcess: number of given positions :" << Pos.size() << endl;
+  SetCuts(PRINT_CUTS);
   if (!GetNormalizedSig())
     {
-      cout << " have to convolve image to get the actual noise " << endl;
+      cout << " DetectionProcess: have to convolve image to get the actual noise " << endl;
       ImagesConvolve();
       if (imagecv) delete imagecv; imagecv = NULL;
     }
   else
     {
-      cout << " Normalized sigma of convolved images " 
+      cout << " DetectionProcess: normalized sigma of convolved images " 
 	   << cvImageNormalizedSig << endl;
     }
 
@@ -804,22 +763,16 @@ void DetectionProcess::DetectionScoresFromPositions(const BaseStarList & Pos,
     }
   if (Pos.size() != Out.size())
     {
-      cerr << " ERROR : Serious bug in DetectionScoresFromPositions " << endl
+      cerr << " DetectionProcess: ERROR in DetectionScoresFromPositions " << endl
 	   << " input and output list have different sizes " 
 	   << Pos.size() << ' ' << Out.size() << endl;
     }
 }
       
-
-#include "reducedimage.h"
-#include "wcsutils.h"
-#include "gtransfo.h"
-#include "sestar.h"
-
 void DetectionProcess::SetScoresFromRef(DetectionList &List, 
 					const ReducedImage &Ref)
 {
-  SetCuts(PrintCuts);
+  SetCuts(PRINT_CUTS);
   SEStarList RefList(Ref.CatalogName());
   FastFinder finder(*SE2Base(&RefList));
   GtransfoRef Pix2RaDec = WCSFromHeader(imageName);
@@ -852,15 +805,9 @@ void DetectionProcess::SetScoresFromRef(DetectionList &List,
     }
 }
 
-
-
-/************************ Detection *******************************/
-
-
-Detection::Detection(const double X, const double Y, const double Flux) 
+Detection::Detection(const double& X, const double& Y, const double& Flux)
   : BaseStar(X,Y,Flux)
 {
-  eFlux = 0;
   sig2Noise = 0;
   aperFlux = 0;
   sig2NoiseCv = 0;
@@ -885,15 +832,13 @@ Detection::Detection(const double X, const double Y, const double Flux)
   localback = 0. ;
 }
 
-
-#include "fastifstream.h"
-
 void Detection::read_it(fastifstream& r, const char * Format)
 {
   int format = DecodeFormat(Format, "Detection");
   BaseStar::read_it(r, Format);
-  r >> eFlux 
-    >> sig2Noise 
+  if (format<4) // moved flux uncertainty into BaseStar
+    r >> eflux;
+  r >> sig2Noise 
     >> aperFlux 
     >> sig2NoiseCv 
     >> xs >> ys;
@@ -925,7 +870,6 @@ void Detection::read_it(fastifstream& r, const char * Format)
     r >> localback ;
 }
 
-
 Detection* Detection::read(fastifstream& r, const char* Format)
 {
   //awful stuff (we do not have a persistence system..)
@@ -945,21 +889,15 @@ Detection* Detection::read(fastifstream& r, const char* Format)
     }
 }
 
-std::string Detection::WriteHeader_(ostream & stream, const char*i) const
+string Detection::WriteHeader_(ostream & stream, const char*i) const
 {
   if (i==NULL) i = "";
   string baseStarFormat =  BaseStar::WriteHeader_(stream, i);
-  stream << "# eflux"<< i <<" : flux error" << endl
-	 << "# sig2noi"<< i <<" : " << endl
+  stream << "# sig2noi"<< i <<" : " << endl
   	 << "# apflux"<< i <<" : aperture flux" << endl
   	 << "# s2ncv"<< i <<" : sig2noise at detection" << endl
 	 << "# xs" << i << " : x detection position " << endl
 	 << "# ys" << i << " : y detection position " << endl
-    /* position variance now in BaseStar (FatPoint indeed)
-  	 << "# varxx"<< i <<" : pos variance" << endl
-  	 << "# varyy"<< i <<" : pos variance" << endl
-  	 << "# varxy"<< i <<" : pos variance" << endl
-    */
   	 << "# area"<< i <<" : number of pixels used in aperflux" << endl
   	 << "# nbad"<< i <<" : number of bad pixels use in flux" << endl
 	 << "# distbad" << i << " : distance to nearest bad pix" << endl
@@ -977,25 +915,20 @@ std::string Detection::WriteHeader_(ostream & stream, const char*i) const
 	 << "# yobj"<<i<<" : y pos of nearest object " << endl
 	 << "# fobjref"<<i<<" : flux of nearest object " << endl
 	 << "# distobj"<<i<<" : distance to nearest object " << endl
-    //	 << "# fwhmref" <<i << " : FWHM of the nearest object"  << endl
-    // << "# shaperef" << i << " : -2.5*log10(flux/fluxmax) of the nearest objet" << endl
 	 << "# back"<<i<<" : local background " << endl
 	      
     ;
-  /*
-    format == 3 means that varXX, varYY, and varXY just disappear : 
-    we now use the ones in BAseStar (FatPoint indeed) */
-  return baseStarFormat + " Detection 3 "; 
+  // format >= 3 means that varXX, varYY, and varXY just disappear : 
+  //  we now use the ones in FatPoint
+  // format >= 4 eflux is in BaseStar
+  return baseStarFormat + " Detection 4 "; 
 }
-
-#include <iomanip>
 
 void Detection::writen(ostream &s) const 
 {
   ios::fmtflags  old_flags =  s.flags();
   BaseStar::writen(s);
-  s  << eFlux << ' ' //27
-    << sig2Noise << ' ' 
+  s << sig2Noise << ' ' 
     << aperFlux << ' ' 
     << sig2NoiseCv << ' ' 
     << xs << ' ' << ys << ' '
@@ -1021,6 +954,46 @@ void Detection::writen(ostream &s) const
   s.flags(old_flags);
 }
 
+bool ImageDetect(ReducedImage& Im, 
+		 DetectionList &Detections,
+		 const ReducedImage* Ref,
+		 const BaseStarList* Positions,
+		 bool FixedPos)
+{
+  if (!Im.MakeFits() || !Im.MakeWeight())
+    {
+      cerr << " ImageDetect: cannot run on " << Im.Name() 
+	   << " without both image and weight\n";
+      return false;
+    }
+
+  // filter size is equal to seeing until we refine it
+  if (Positions)
+    {
+	DetectionProcess detectionProcess(Im.FitsName(), Im.FitsWeightName(), 
+					  Im.Seeing(), Im.Seeing());
+	detectionProcess.DetectionScoresFromPositions(*Positions, Detections, FixedPos);
+    }
+  else
+    { 
+	DetectionProcess detectionProcess(Im.FitsName(), Im.FitsWeightName(), 
+					  Im.Seeing(), Im.Seeing());
+	detectionProcess.DoDetection(Detections);	
+    }
+  
+  // Fill in the Detection's block that concerns a reference
+  //  - flux on the ref under the SN (measured in the same conditions
+  //  as the SN (this is why we use the sub Seeing() rather the ref.Seeing())
+  //  - nearest object
+  if (Ref) 
+    {
+      DetectionProcess refDet(Ref->FitsName(), Ref->FitsWeightName(), 
+			      Im.Seeing(), Im.Seeing());
+      refDet.SetScoresFromRef(Detections, *Ref);
+    }
+
+  return true;
+}
   
 
 #include "starlist.cc"
@@ -1031,10 +1004,7 @@ BaseStarList *Detection2Base(DetectionList *D)
   return (BaseStarList *) D;
 }
 
-
-/************* MatchedDetection ***************/
-
-std::string MatchedDetection::WriteHeader_(ostream & stream, 
+string MatchedDetection::WriteHeader_(ostream & stream, 
 					   const char*i) const
 {
   
@@ -1095,8 +1065,6 @@ bool MatchedDetection::CompatiblePosition(const double &DistMax) const
   return true;
 }
 
-/************** MatchedDetectionList *************/
-
 MatchedDetectionList::MatchedDetectionList(const DetectionList &L)
 {
   for (DetectionCIterator i = L.begin(); i!=L.end(); ++i)
@@ -1108,7 +1076,7 @@ bool MatchedDetectionList::OneToOneAssoc(const string &ImageName,
 {
   if (size() != L.size())
     {
-      cerr << " Cannot associate 1 to 1 detections from " << ImageName
+      cerr << " MatchedDetectionList: cannot associate 1 to 1 detections from " << ImageName
 	   << " because existing list has a different size " << endl;
       return false;
     }
@@ -1125,9 +1093,8 @@ bool MatchedDetectionList::OneToOneAssoc(const string &ImageName,
 void MatchedDetectionList::ApplyCuts()
 {
   DatDet datdet(DefaultDatacards());
-  cout << "On MatchedDetectionList (" << size() << ") :" <<  endl;
-  cout << " appliying compatibility cut on partial subs : "
-       <<" factor =" << datdet.compFactor << endl;
+  cout << " MatchedDetectionList: appliying compatibility cut on partial subs factor =" 
+       << datdet.compFactor << endl;
   for (MatchedDetectionIterator i = begin(); i != end(); )
     {
       MatchedDetection &md = **i;
@@ -1136,10 +1103,8 @@ void MatchedDetectionList::ApplyCuts()
 	else ++i;
     }
   
-  cout << "New size of MatchedDetectionList : " << size() <<  endl;
+  cout << " MatchedDetectionList: new size " << size() <<  endl;
 }  
-
 
 #include "starlist.cc"
 template class StarList<MatchedDetection>; // to instantiate
-

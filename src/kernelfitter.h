@@ -17,6 +17,7 @@ class KernelFitter : public KernelFit
 
  public :
   KernelFitter(const ReducedImageRef &Ref, const ReducedImageRef &New, const bool NoSwap = false);
+  KernelFitter(const string& FileName);
 
   int DoTheFit();
   bool RefIsBest() const { return refIsBest;}
