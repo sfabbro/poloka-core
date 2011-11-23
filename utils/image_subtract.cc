@@ -9,9 +9,9 @@ static void usage(const char *progName) {
        << "PSF match and subtract DBIMAGE to first DBIMAGE\n\n"
        << "   -d: perform candidate detection on each subtraction\n"
        << "   -o: output subtraction dbimage name (default: DBIMAGE-FIRST)\n"
-       << "   -r: first DBIMAGE will always be convolved even if worse seeing\n"
-       << "   -n: do not subtract, only perform and save PSF match\n"
-       << "   -f: overwrite\n";
+       << "   -r: first DBIMAGE will always be convolved\n"
+       << "   -n: do not subtract, PSF match only\n"
+       << "   -f: overwrite\n\n";
   exit(EXIT_FAILURE);
 }
 
@@ -21,7 +21,8 @@ struct ImageSubtract {
   ReducedImageRef Ref;
   string subName;
 
-  ImageSubtract() : overWrite(false), noSwap(false), doSub(true), doDetect(false) {}
+  ImageSubtract()
+    : overWrite(false), noSwap(false), doSub(true), doDetect(false) {}
   
   void operator () (const ReducedImageRef Im) const {
 
@@ -32,7 +33,7 @@ struct ImageSubtract {
 	if (kernfit.DoTheFit())
 	  kernfit.WriteKernel(overWrite);
 	else
-	  cerr << " match between "
+	  cerr << " ImageSubtract: kernel fit between "
 	       << Ref->Name() << " and "
 	       << Im->Name() << " failed\n";
 	  
@@ -42,12 +43,11 @@ struct ImageSubtract {
       ImageSubtraction sub(subname, Ref, Im, kernfit);
       
       if (overWrite) { 
+	// TODO to remove whole directory
 	if (sub.HasImage()) remove(sub.FitsName().c_str());
 	if (sub.HasWeight()) remove(sub.FitsWeightName().c_str());
-	if (sub.HasCosmic()) remove(sub.FitsCosmicName().c_str());
-	if (FileExists(sub.DetectionsName())) remove(sub.DetectionsName().c_str());
+	if (sub.HasCatalog()) remove(sub.CatalogName().c_str());
       }
-      
       sub.Execute(DoFits|DoWeight);
       if (doDetect) { sub.MakeCosmic(); sub.MakeCatalog(); }
     } catch (PolokaException p) {
@@ -71,7 +71,7 @@ int main(int nargs, char **args) {
     if (arg[0] != '-') {
       ReducedImageRef im = ReducedImageNew(arg);
       if (!im || !im->IsValid()) { 
-	cerr << arg << ": not a valid dbimage\n";
+	cerr << args[0] << ": " << arg << "is not a valid dbimage\n";
 	continue;
       }
       im->Execute(DoFits|DoCatalog);

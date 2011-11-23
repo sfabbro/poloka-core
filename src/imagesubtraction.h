@@ -4,71 +4,63 @@
 #include "reducedimage.h"
 #include "fileutils.h"
 #include "kernelfitter.h"
-#include "detection.h" /* for DetectionList */
-/*! \file */
- 
+#include "detection.h"
 
 string SubtractedName(const string &RefName, const string &NewName);
     
-//! For subtracting images using the Alard kernel fit technique. A basic assumption: Ref and New are already geometrically aligned.
-
-
+//! For subtracting images using the Alard kernel fit technique
+//! A basic assumption: Ref and New are already geometrically aligned
 class ImageSubtraction : public ReducedImage, public KernelFitter {
- private:
+
   ReducedImageRef Ref, New;
 
  public :
-    //! the constructor takes a copy of both ReducedImage.
-  ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage, const bool NoSwap = false);
+  //! the constructor takes a copy of both ReducedImage.
+  ImageSubtraction(const string &Name, const ReducedImageRef RefImage,
+		   const ReducedImageRef NewImage, const bool NoSwap = false);
+  
+  //! as above but uses kernel found by other means. used for fakes SN
+  ImageSubtraction(const string &Name, const ReducedImageRef RefImage,
+		   const ReducedImageRef NewImage, const KernelFitter &Kfit);
 
-    //! as above but uses kernel found by other means. used for fakes SN
-    ImageSubtraction(const string &Name, const ReducedImageRef RefImage, const ReducedImageRef NewImage, const KernelFitter &);
+  //! constuctor to read a produced subtraction
+  ImageSubtraction(const string &Name);
 
-    virtual const string  TypeName() const { return "ImageSubtraction";}
+  virtual const string  TypeName() const { return "ImageSubtraction"; }
 
-    bool MakeFits() ;
+  //! produces the subtracted image
+  bool MakeFits() ;
+  
+  //! produces a weight with both ref and new counted for
+  bool MakeWeight();
+  
+  //! carry out the detection. Default is matched filter plus aperture photometry.
+  bool MakeCatalog();
 
-    //! 
-    bool MakeWeight();
+  //! do cosmic but do not flag detection, only update weight
+  bool MakeCosmic();
 
-    //! carry out the detection. Default is matched filter plus apreture photometry.
-    bool MakeCatalog();
-    //! do cosmic but do not flag detection, only update weight
-    bool MakeCosmic();
-    // ! Dead frame is the OR of Ref and New dead frames.
-    bool MakeDead();
-    //!  Satur frame is the OR of Ref and New satur frames.
-    bool MakeSatur();
-    //!  Mask the saturation on the subtraction
-    bool MaskSatur();
-    //!  Mask null weights on the subtraction
-    bool MaskNullWeight();
+  // ! Dead frame is the OR of Ref and New dead frames.
+  bool MakeDead();
 
-    bool RunDetection(DetectionList &Detections,
-		      const BaseStarList* Positions = NULL,string name = "",bool fixed_pos = false );
-#ifdef STORAGE
-    //!  DeadAndSatur frame is the OR of Ref and New dead and satur frames.
-    bool MakeDeadAndSatur();
-#endif /* STORAGE */
-    //!  Name of the candidates list
-    string CandName() const;
-    string AllCandName() const;
-    string CandCutName() const;
-    string CandScanName() const;
-    string CandCutScanName() const;
+  //!  Satur frame is the OR of Ref and New satur frames.
+  bool MakeSatur();
 
-    string DetectionsName() const { return Dir()+"det.list";}
-    string MatchedCatName() const { return Dir()+"matcheddet.list";}
-    string CatalogName()  const { return DetectionsName(); }
-    
-    //!
-    ReducedImageRef Clone() const;
+  //!  Mask the saturation on the subtraction
+  bool MaskSatur();
 
-    string AllCandidateCatalogName() const { return AddSlash(Dir())+"allcand.list";}
+  //!  Mask null weights on the subtraction
+  bool MaskNullWeight();
+  
+  string MatchedCatName() const { return Dir() + "matcheddet.list"; }
+  string CatalogName() const { return Dir() + "det.list"; }
+  string PsfCatalogName() const { return Dir() + "psfdet.list"; }
+  string KernelName() const { return Dir() + "kernel.dat"; }
 
-
+  //! useless clone
+  ReducedImageRef Clone() const;
 };
 
 typedef CountedRef<ImageSubtraction> ImageSubtractionRef;
 
-#endif /* IMAGESUBTRACTION__H */
+#endif // IMAGESUBTRACTION__H

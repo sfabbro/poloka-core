@@ -506,9 +506,9 @@ implement it. We could merge the FitStarParams and FitPSFParams
 routines by providing a routine in ImagePSF that does both PSFValue
 and PSFValueWithParams.*/
 bool PSFStar::FitStarParams(const Image &I, const Image &W, 
-			    const ImagePSF &PSF)
+			    const ImagePSF &PSF, bool FixPos)
 {
-  return do_the_fit(I,W,PSF, /* Fitpos */ true, false);
+  return do_the_fit(I,W,PSF, !FixPos, false);
 }
   
 #ifdef STORAGE
@@ -623,7 +623,6 @@ void PSFStarList::WriteTuple(const string &FileName, const Gtransfo* Wcs, const 
   file << "# ypsf : ypsf" << endl;
   file << "# ex : expsf" << endl;
   file << "# ey : eypsf" << endl;
-  file << "# eflux : e psf flux" << endl;
   file << "# covxy : " << endl;
   file << "# covxf : " << endl;
   file << "# covyf : " << endl;
@@ -710,7 +709,6 @@ string PSFStar::WriteHeader_(ostream &s, const char* i) const
 {
   if (i== NULL) i= "";
   string baseStarFormat =  BaseStar::WriteHeader_(s, i);
-  s << "# eflux"<< i <<" : Flux uncertainty " << endl;  
   s << "# fluxmax"<< i <<" : Peak pixel value above background " << endl;
   s << "# psfx" << i << " : " << endl;
   s << "# psfy" << i << " : " << endl;
@@ -723,14 +721,15 @@ string PSFStar::WriteHeader_(ostream &s, const char* i) const
   char names[4] = "fxy";
   for (unsigned k=0; k<3; ++k)
     for (unsigned l=0; l<=k; ++l) s << "#cov" << names[k]<<names[l]<<i << " : "<< endl; 
-  return baseStarFormat+" PSFStar 1";
+  // PSFStar 2: eflux is now in BaseStar
+  return baseStarFormat+" PSFStar 2";
 }
 
 
 void PSFStar::writen(ostream &s) const
 {
   BaseStar::writen(s);
-  s << eflux << ' ' << fluxmax << ' '
+  s << fluxmax << ' '
     << psfX << ' ' << psfY << ' ' 
     << psfChi2 << ' ';
   unsigned npar = psfParams.size();
@@ -757,11 +756,13 @@ void PSFStar::read_it(fastifstream& Rd, const char *Format)
   int formatValue = 0;
   if (Format) 
     formatValue = DecodeFormat(Format,"PSFStar");
-  if (formatValue == 1)
+  if (formatValue == 1 || formatValue == 2)
     {
       BaseStar::read_it(Rd , Format);
       unsigned npar;
-      Rd >> eflux >> fluxmax >> psfX >> psfY >> psfChi2 >> npar;
+      if (formatValue < 2)
+	Rd >> eflux;
+      Rd >> fluxmax >> psfX >> psfY >> psfChi2 >> npar;
       psfParams.allocate(npar);
       for (unsigned k=0; k <npar ; ++k)  Rd >> psfParams(k);
       psfParamsWeight.allocate(npar,npar);

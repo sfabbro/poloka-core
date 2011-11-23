@@ -148,8 +148,6 @@ static void extract_pixels(DImage &Target, const Image &image,
 }
 
 #include "apersestar.h"
-
-
 Stamp::Stamp(const BaseStar *Star, const Image& image, const int HBestSize, const int HWorstSize)
   : xc(int(round(Star->x))), yc(int(round(Star->y))), nActivePix(0), star(Star)
 {
@@ -2334,15 +2332,6 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   StoreScore("kfit","hksize",optParams.HKernelSize);
   StoreScore("kfit","hssize",optParams.HStampSize);
   
-  // there are historical scripts that grep this line in the log :
-  cout << "PsfMatch_SUMMARY_best_worst_kernelphotomratio_sextractorratio_nstamps_chi2/dof "
-       << ImPair.Best()->Name() << ' ' << ImPair.Worst()->Name() << ' ' 
-       << kernAtCenterSum << ' ' 
-       << sexPhotomRatio << ' '
-       << nstamps << ' ' 
-       << Chi2() << ' ' 
-       << endl;
-
   clock_t tend = clock();
   cout << " KernelFit: CPU used " <<  float(tend- tstart)/float(CLOCKS_PER_SEC) << endl;
   return 1;

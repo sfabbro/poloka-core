@@ -45,8 +45,8 @@ void VignetPhot::Aperture()
     }
 
   if (sumwf <= 0.) return;
-  Star->flux    = sumf / sumwf;
-  Star->varflux =   1. / sumwf;
+  Star->flux  = sumf / sumwf;
+  Star->eflux = sqrt(1. / sumwf);
 
 }
 
@@ -107,16 +107,16 @@ void VignetPhot::Photometry()
       }
   
   if (sumwf <= 0.) return;
-  Star->flux    = sumf / sumwf;
-  Star->varflux =   1. / sumwf;
+  Star->flux  = sumf / sumwf;
+  Star->eflux = sqrt(1. / sumwf);
   
   // compute variance position only if significative flux
   if (fabs(Star->flux) > 0.)
     {
       double det = sqr(Star->flux) * (sumx2*sumy2 - sqr(sumxy)); 
-      Star->varx  = sumx2 / det;
-      Star->vary  = sumy2 / det;
-      Star->covxy = sumxy / det;
+      Star->vx  = sumx2 / det;
+      Star->vy  = sumy2 / det;
+      Star->vxy = sumxy / det;
     }
 }
 

@@ -714,7 +714,7 @@ int Sub::ExpectedMagLim()
 void Sub::RunDetection()
 {
   DetectionList detsOnGlobal;
-  GlobalSub->RunDetection(detsOnGlobal);
+  ImageDetect(*GlobalSub, detsOnGlobal, RefStack);
   cout << " Numbers of Detection on  " <<  GlobalSubName() << " : " << detsOnGlobal.size() << endl ;
   if (AllNew.size() == 1) return; // no need to redo the same thing
   BaseStarList *positions = Detection2Base(&detsOnGlobal);
@@ -723,7 +723,7 @@ void Sub::RunDetection()
     {
       ImageSubtraction* partialSub = AllNew[k].sub;
       DetectionList partialDet;
-      partialSub->RunDetection(partialDet, positions);
+      ImageDetect(*partialSub, partialDet, RefStack, positions);
       matchedDetections.OneToOneAssoc(partialSub->Name(), partialDet);
     }
   matchedDetections.ApplyCuts();

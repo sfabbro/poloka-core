@@ -450,8 +450,8 @@ int main(int argc, char **argv)
       stream << fs->x << " ";
       stream << fs->y << " ";
       stream << fs->flux << " ";
-      if(fs->varflux>0)
-	stream << sqrt(fs->varflux) << " ";
+      if(fs->eflux>0)
+	stream << fs->eflux << " ";
       else
 	stream << 0 << " ";
       stream << fs->sky << " ";
@@ -459,12 +459,12 @@ int main(int argc, char **argv)
 	stream << sqrt(fs->varsky) << " ";
       else
 	stream << 0 << " ";
-      if(fs->varx>0)
-	stream << sqrt(fs->varx) << " ";
+      if(fs->vx>0)
+	stream << sqrt(fs->vx) << " ";
       else
 	stream << 0 << " ";
-      if(fs->vary>0)
-	stream << sqrt(fs->vary) << " ";
+      if(fs->vy>0)
+	stream << sqrt(fs->vy) << " ";
       else
 	stream << 0 << " ";
       stream << dbim_name << " ";

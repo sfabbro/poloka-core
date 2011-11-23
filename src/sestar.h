@@ -63,7 +63,7 @@ public:
     double Y_Peak() const {return ypeak;}
 
   //! RMS error for BEST flux 
-  double EFlux() const {return e_flux;}
+  double EFlux() const {return eflux;}
 
 
   //! Peak flux **above background**
@@ -166,7 +166,7 @@ double Eflux_petro() const {return e_flux_petro;}
 
   double& X_Peak()  {return xpeak;}
   double& Y_Peak()  {return ypeak;}
-  double& EFlux()  {return e_flux;}
+  double& EFlux()  {return eflux;}
   double& Fluxmax()  {return fluxmax;}
   double& Fond()  {return fond;}
   double& Flux_auto()  {return flux_auto;}
