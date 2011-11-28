@@ -1432,9 +1432,9 @@ bool ReducedImage::MakeWeight()
       // variance = we have a back map + readout
       if (FileExists(FitsBackName()))
 	{
-	  FitsImage back(FitsBackName());
-	  (Image&) weights = (Image&) back;
-	  weights += sq(ReadoutNoise());
+	  FitsImage var(FitsBackName());
+	  var += sq(ReadoutNoise());
+	  (Image&) weights *= 1. / (Image&) var;
 	}
       else if (FileExists(FitsMiniBackName()))
 	{
@@ -1446,10 +1446,10 @@ bool ReducedImage::MakeWeight()
 	      meshx = miniback.KeyVal("SEXBKGSX");
 	      meshy = miniback.KeyVal("SEXBKGSY");
 	    }
-	  Image* back = BackFromMiniBack(miniback, XSize(), YSize(), meshx, meshy);
-	  (Image&) weights = *back;
-	  weights += sq(ReadoutNoise());
-	  delete back;
+	  Image* var = BackFromMiniBack(miniback, XSize(), YSize(), meshx, meshy);
+	  *var += sq(ReadoutNoise());
+	  (Image&) weights *= 1. / (Image&) var;
+	  delete var;
 	}
       else
 	{
