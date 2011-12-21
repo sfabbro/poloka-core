@@ -1432,9 +1432,12 @@ bool ReducedImage::MakeWeight()
       // variance = we have a back map + readout
       if (FileExists(FitsBackName()))
 	{
-	  FitsImage var(FitsBackName());
-	  var += sq(ReadoutNoise());
-	  (Image&) weights *= 1. / (Image&) var;
+	  FitsImage back(FitsBackName());
+	  Pixel ron2 = sq(ReadoutNoise());
+	  Pixel invgain = Gain() > 0 ? 1./Gain() : 1;
+	  Pixel *pback = back.begin();
+	  for (Pixel *pw = weights.begin(); pw != weights.end(); ++pw, ++pback)
+	    *pback > 0 ? *pw *= 1. / (ron2 + *pback * invgain) : *pw = 0.;
 	}
       else if (FileExists(FitsMiniBackName()))
 	{
@@ -1446,10 +1449,13 @@ bool ReducedImage::MakeWeight()
 	      meshx = miniback.KeyVal("SEXBKGSX");
 	      meshy = miniback.KeyVal("SEXBKGSY");
 	    }
-	  Image* var = BackFromMiniBack(miniback, XSize(), YSize(), meshx, meshy);
-	  *var += sq(ReadoutNoise());
-	  (Image&) weights *= 1. / (Image&) var;
-	  delete var;
+	  Image* back = BackFromMiniBack(miniback, XSize(), YSize(), meshx, meshy);
+	  Pixel ron2 = sq(ReadoutNoise());
+	  Pixel invgain = Gain() > 0 ? 1./Gain() : 1;
+	  Pixel *pback = back->begin();
+	  for (Pixel *pw = weights.begin(); pw != weights.end(); ++pw, ++pback)
+	    *pback > 0 ? *pw *= 1. / (ron2 + *pback * invgain) : *pw = 0.;
+	  delete back;
 	}
       else
 	{

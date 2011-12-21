@@ -822,6 +822,9 @@ Detection::Detection(const double& X, const double& Y, const double& Flux)
   mxx = 0; 
   myy = 0;
   mxy = 0;
+  psfchi2 = 0;
+  vxflux = 0;
+  vyflux = 0;
   //
   ra = dec = 0;
   vRaRa =  vDecDec = vRaDec = 0;
@@ -847,8 +850,10 @@ void Detection::read_it(fastifstream& r, const char * Format)
   r >> area 
     >> nBad 
     >> distBad 
-    >> mxx >> myy >> mxy
-    >> ra >> dec 
+    >> mxx >> myy >> mxy;
+  if (format>4)
+    r >> psfchi2 >> vxflux >> vyflux;
+  r >> ra >> dec 
     >> vRaRa >> vDecDec >> vRaDec
     >> fluxRef
     >> prctInc
@@ -904,6 +909,9 @@ string Detection::WriteHeader_(ostream & stream, const char*i) const
     	 << "# mxx"<< i <<" : shape param" << endl 
     	 << "# myy"<< i <<" : shape param" << endl 
     	 << "# mxy"<< i <<" : shape param" << endl
+	 << "# psfchi2"<< i <<" : psf chi2" << endl
+	 << "# vxflux"<< i <<" : cov x flux" << endl
+	 << "# vyflux"<< i <<" : cov y flux" << endl
 	 << "# ra"<< i <<" : RA" << endl
 	 << "# dec"<< i <<" : dec" << endl
 	 << "# vrara" << i<<" : var(ra)" << endl
@@ -921,7 +929,8 @@ string Detection::WriteHeader_(ostream & stream, const char*i) const
   // format >= 3 means that varXX, varYY, and varXY just disappear : 
   //  we now use the ones in FatPoint
   // format >= 4 eflux is in BaseStar
-  return baseStarFormat + " Detection 4 "; 
+  // format >= 5 means we add scores from psf fit: psfchi2 vxflux vyflux
+  return baseStarFormat + " Detection 5 "; 
 }
 
 void Detection::writen(ostream &s) const 
@@ -939,7 +948,8 @@ void Detection::writen(ostream &s) const
     << area << ' ' 
     << nBad << ' ' 
     << distBad << ' ' 
-     << mxx << ' ' << myy << ' ' << mxy << ' '; // 13 14 15
+    << mxx << ' ' << myy << ' ' << mxy << ' ' // 13 14 15
+    << psfchi2 << ' ' << vxflux << ' ' << vyflux << ' ';
   int prec = s.precision();
   s << setprecision(10);
   s << ra << ' ' << dec << ' ';

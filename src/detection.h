@@ -3,6 +3,8 @@
 
 #define NO_PERS
 #include <string>
+#include <vector>
+#include "stringlist.h"
 #include "basestar.h"
 
 class fastifstream;
@@ -21,6 +23,11 @@ class Detection : public BaseStar {
   double myy;// shape param
   double mxy;// shape param
 
+  // Scores from a PSF fit (computed outside detection.cc)
+  double psfchi2;
+  double vxflux;
+  double vyflux;
+
   // Reference related scores
   double ra;
   double dec;
@@ -31,7 +38,7 @@ class Detection : public BaseStar {
   double fluxObjRef; // flux of nearest object
   double distObjRef; // distance to the latter  
   double localback ; // local background as computed by detector
- 
+
   //! temporary, for IO's
   void read_it(fastifstream& r, const char* Format);
 
@@ -176,9 +183,6 @@ bool ImageDetect(ReducedImage& Im,
 		 const BaseStarList* Positions=0,
 		 bool FixedPos=false);
 
-#include <vector>
-
-  
 class MatchedDetection : public Detection {
 
   vector<DetectionRef> others;
@@ -196,8 +200,6 @@ class MatchedDetection : public Detection {
   void writen(ostream &s) const ;
 };
 
-
-#include "stringlist.h"
 
 class MatchedDetectionList : public StarList<MatchedDetection> {
 

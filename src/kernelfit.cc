@@ -20,6 +20,7 @@
 #include "imageutils.h"
 #include "reducedutils.h" // for MedianPhotomRatio
 #include "fastfinder.h"
+#include "imageback.h"
 
 static const Pixel BAD_WEIGHT = 1e-10;
 
@@ -485,7 +486,7 @@ for (int i=0; i<nblock; ++i)
 return sum;
 }
 
-//! resolve l.s. system ||weight_back * (best - worst + diffbackground||^2
+//! resolve l.s. system ||weight_diff * (worst - best - diffbackground)||^2
 //! diffbackground model is bivariate polynomial
 bool FitDifferentialBackground(const Image& DiffIm, Image& DiffWeight, const Frame& DiffFrame,
 			       const XYPower& Poly, vector<double>& DiffBack, const double& NSig, int Step=5)
@@ -578,6 +579,14 @@ bool FitDifferentialBackground(const Image& DiffIm, Image& DiffWeight, const Fra
 #endif
 
   return true;
+}
+
+// subtract an ImageBack
+void ComputeDifferentialBackground(Image& DiffIm, Image& DiffWeight, const Frame& DiffFrame, int BackMesh) {
+  ImageBack back(DiffIm, BackMesh, &DiffWeight);  
+  Image *diffBack = back.BackgroundImage();
+  DiffIm -= *diffBack;
+  delete diffBack;
 }
 
 static void variance_mask_seg(Image& Weight, const Image& Seg) {
