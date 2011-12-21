@@ -64,11 +64,6 @@ struct ImageSelector {
     : mjdMin(-1), minArea(20), withDbImages(false),
       refHead(0), radecFrame(0) {}
 
-  ~ImageSelector() {
-    if (refHead) delete refHead;
-    if (radecFrame) delete radecFrame;
-  }
-
   void operator () (const string& imname) const {
     string fitsname = imname;
     // get the FITS file
@@ -91,9 +86,10 @@ struct ImageSelector {
       
     // decode ref matching
     bool filter_ref = true;
-    if (refHead)
+    if (refHead) {
+      cout << imname << ": " <<  Arcmin2Overlap(*refHead, head) << endl;
       filter_ref = (Arcmin2Overlap(*refHead, head) >= minArea);
-
+    }
     // decode radius
     bool filter_rad = true;
     if (radecFrame) {
@@ -237,6 +233,9 @@ int main(int nargs, char **args) {
   }
 
   for_each(toSelect.begin(), toSelect.end(), imSelect);
+
+  if (imSelect.refHead) delete imSelect.refHead;
+  if (imSelect.radecFrame) delete imSelect.radecFrame;
 
   return EXIT_SUCCESS;
 }

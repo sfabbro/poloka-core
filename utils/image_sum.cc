@@ -109,7 +109,7 @@ int main(int nargs, char **args)
   else 
     {
       ImagesAlignAndSum(toSum, geoRef, sumName, 
-			DoFits | DoCatalog | DoAperCatalog | DoWeight | DoSatur, 
+			DoFits | DoCatalog | DoWeight | DoSatur, 
 			&phoRef, weightMethod, stackMethod);
     }
 
