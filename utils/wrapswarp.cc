@@ -2,23 +2,26 @@
 #include <iostream>
 #include <fstream>
 
+#include "allreducedimage.h"
 #include "swarpstack.h"
 
-static void usage(const std::string &ProgName)
+static void usage(const char* ProgName)
 {
-  std::cerr << ProgName << " -o <outName> [-r <RefName>] [-c cardsName] [-i dbimlist] dbimages..." 
-	    << std::endl;
-  std::cerr << "          when a ref is provided, the output image is geometrically aligned with ref " << std::endl;
-  exit(1);
+  cerr << ProgName << " [OPTION]... -o DBIMAGE DBIMAGE...\n" 
+       << "Wrapper around SWarp\n"
+       << "     -r DBIMAGE : specify a astrometric/photometric reference\n"
+       << "     -c FILE    : use a SWarp configuration file\n"
+       << "     -i FILE    : give a file with a list of DBIMAGEs\n";
+  exit(EXIT_FAILURE);
 }
 
 int main(int nargs, char **args)
 {
   ReducedImageList ril;
-  std::string outName;
-  std::string cardsName;
-  std::string dbimlist;
-  ReducedImage *ref = NULL;
+  string outName;
+  string cardsName;
+  ReducedImageRef ref;
+
   for (int i=1; i<nargs; ++i)
     {
       char *arg = args[i];
@@ -26,62 +29,63 @@ int main(int nargs, char **args)
 	{
 	  switch (arg[1]) 
 	    {
-	    case 'r' : ++i; ref = new ReducedImage(args[i]); break;
-	    case 'o' : ++i; outName = args[i]; break;
-	    case 'c' : ++i; cardsName = args[i]; break;
-	    case 'i' : ++i; dbimlist = args[i]; break;
-	    default : usage(args[0]);
+	    case 'r': 
+	      {
+		ref = ReducedImageNew(args[++i]); 
+		if (ref && !ref->HasImage())
+		  {
+		    cerr << " the ref image " << ref->Name() << " does not have a fits image\n";
+		    return EXIT_FAILURE;
+		  }
+	      }
+	      break;
+	    case 'o': outName = args[++i]; break;
+	    case 'c': cardsName = args[++i]; break;
+	    case 'i': 
+	      {
+		ifstream ifs(args[++i]);
+		if (ifs.is_open()) 
+		  {
+		    while (ifs.good())
+		      {
+			string line;
+			getline(ifs, line);
+			if (line.empty() || line[0] == '#') continue; 
+			ReducedImageRef ri = ReducedImageNew(args[i]);
+			if (ri->IsValid()) ril.push_back(ri);
+			else cerr << " not a valid dbimage: " << arg << endl;
+		      }
+		    ifs.close();
+		  }
+	      }
+	      break;
+	    default: usage(args[0]);
 	    }
 	  continue;
 	}
       else
 	{
-	  ReducedImage *ri = new ReducedImage(args[i]);
+	  ReducedImageRef ri = ReducedImageNew(args[i]);
 	  if (ri->IsValid()) ril.push_back(ri);
-	  else
-	    {
-	      std::cerr <<" cannot find " << args[i] << std::endl;
-	      delete ri;
-	    }
+	  else cerr << " not a valid dbimage: " << arg << endl;
 	}
     }
   
-  if(dbimlist!="") 
+
+  if (ril.empty())
     {
-      char buff[512];
-      ifstream ifs(dbimlist.c_str());
-      while(ifs.good()) {
-	ifs.getline(buff,512);
-	ReducedImage* ri = new ReducedImage(buff);
-	if(ri->IsValid())
-	  ril.push_back(ri);
-	else {
-	  std::cerr << " cannot find " << buff << std::endl;
-	  delete ri;
-	}
-      }
+      cerr << " no input images provided " << endl;
+      return EXIT_FAILURE;
     }
 
-  if (ref && !ref->HasImage())
+  if (outName.empty())
     {
-      std::cerr << " the ref image " << ref->Name() << " does not have a fits image !!" 
-		<< std::endl;
-      exit(1);
+      cerr << " no output name provided " << endl;
+      return EXIT_FAILURE;
     }
-  if (ril.size() == 0)
-    {
-      std::cerr << " no input images provided " << std::endl;
-      usage(args[0]);
-    }
-  if (outName == "")
-    {
-      std::cerr << " No output name provided " << std::endl;
-      usage(args[0]);
-    }
-
-  if (cardsName  != "") SetSwarpCardsName(cardsName);
+  
+  if (!cardsName.empty()) SetSwarpCardsName(cardsName);
     
-
   Frame frame;
   if (ref) frame = ref->PhysicalSize();
 
@@ -89,5 +93,6 @@ int main(int nargs, char **args)
   ss.MakeFits();
   ss.MakeSatur();
   ss.MakeCatalog();
+
   return EXIT_SUCCESS;
 }
