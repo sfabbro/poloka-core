@@ -47,29 +47,29 @@ using namespace std;
 struct SwarpCards :  public list<pair<string,string> > 
 {
 
-  typedef std::list<std::pair<std::string,std::string> >::iterator KeyIterator;
+  typedef list<pair<string,string> >::iterator KeyIterator;
 
   typedef list<pair<string,string> >::const_iterator KeyCIterator;
   
 
-  KeyCIterator Where(const std::string &Key)  const
+  KeyCIterator Where(const string &Key)  const
     {
       KeyCIterator i = begin();
       for ( ; i!=end(); ++i) if (i->first == Key) break;
       return i;
     }
 
-  KeyIterator Where(const std::string &Key)
+  KeyIterator Where(const string &Key)
     {
       KeyIterator i = begin();
       for ( ; i!=end(); ++i) if (i->first == Key) break;
       return i;
     }
 
-  bool HasKey(const std::string &Key) const { return (Where(Key) != end());}
+  bool HasKey(const string &Key) const { return (Where(Key) != end());}
 
 
-  std::string KeyLine(const std::string &KeyName) const
+  string KeyLine(const string &KeyName) const
   {
     KeyCIterator i = Where(KeyName);
     if (i != end())
@@ -79,29 +79,29 @@ struct SwarpCards :  public list<pair<string,string> >
     return "";
   }
 
-  bool RmKey(const std::string &Key)
+  bool RmKey(const string &Key)
   {
     KeyIterator i = Where(Key);
     if (i != end()) { erase(i); return true;}
     return false;
   }
 
-  void AddKey(const std::string &Key, const std::string &Val)
+  void AddKey(const string &Key, const string &Val)
   { push_back(pair<string,string>(Key,Val));}
     
 
-  bool write(const std::string &FileName);
+  bool write(const string &FileName);
 
 };
 
-static std::string SwarpCardsDefaultName;
+static string SwarpCardsDefaultName;
 
-bool SetSwarpCardsName(const std::string &Name)
+bool SetSwarpCardsName(const string &Name)
 {
   SwarpCardsDefaultName = Name;
   if (!FileExists(SwarpCardsDefaultName))
     {
-      std::cerr << " cannot find " << SwarpCardsDefaultName << std::endl;
+      cerr << " SetSwarpCardsName: cannot find " << SwarpCardsDefaultName << endl;
       return false;
     }
   // try them right now
@@ -112,7 +112,7 @@ bool SetSwarpCardsName(const std::string &Name)
 
 static SwarpCards *DefaultSwarpCardsKeys = NULL;
 
-void AddSwarpDefaultKey(const std::string &Key, const std::string &Value)
+void AddSwarpDefaultKey(const string &Key, const string &Value)
 {
   if (!DefaultSwarpCardsKeys) DefaultSwarpCardsKeys = new SwarpCards;
   // last call wins:
@@ -121,15 +121,15 @@ void AddSwarpDefaultKey(const std::string &Key, const std::string &Value)
 }
 
 
-bool SwarpCards::write(const std::string &FileName)
+bool SwarpCards::write(const string &FileName)
 {
-  std::string comment;
-  std::string removed;
+  string comment;
+  string removed;
   bool ok = true;
   
   if (SwarpCardsDefaultName  != "" && !FileExists(SwarpCardsDefaultName))
     {
-      std::cout << " cannot find " << SwarpCardsDefaultName << ", resorting to swarp internal defaults" << std::endl;
+      cout << " SwarpCards: cannot find " << SwarpCardsDefaultName << ", resorting to swarp internal defaults" << endl;
       comment = "# could not open "+SwarpCardsDefaultName;
     }
   else if (FileExists(SwarpCardsDefaultName))
@@ -146,14 +146,14 @@ bool SwarpCards::write(const std::string &FileName)
 	  char second_word[256];
 	  if (sscanf(p,"%s %s",first_word,second_word)!=2) 
 	    {
-	      std::cout << " don't understand line " << std::endl 
-			<< line << std::endl;
-	      std::cout << " non standard file for swarp " 
-			<<  SwarpCardsDefaultName << std::endl;
+	      cerr << " SwarpCards: don't understand line " << endl 
+			<< line << endl;
+	      cerr << " SwarpCards: non standard file for swarp " 
+			<<  SwarpCardsDefaultName << endl;
 	      ok = false;
 	      continue;
 	    }
-	  std::string key = string(first_word);
+	  string key = string(first_word);
 	  if (HasKey(key))
 	    {
 	      removed += "#"+KeyLine(key)+"\n";
@@ -205,10 +205,10 @@ typedef enum {WCSKEYS, NAXIS} FitsGroup;
 class AsciiHead : public FitsHeader
 {
 private :
-  std::string asciiName;
+  string asciiName;
 
 public :
-  AsciiHead(const std::string &FileName) : FitsHeader("mem://",RW)
+  AsciiHead(const string &FileName) : FitsHeader("mem://",RW)
   { 
     asciiName = FileName;
     // by default we put mandatory fits keys into a newly created header
@@ -253,7 +253,7 @@ public :
     ofstream s(asciiName.c_str());
     FitsHeader &head = *this;
     s << head;
-    s<< "END     "<< std::endl;
+    s<< "END     "<< endl;
     s.close();
     /* because cfitsio complains when a file gets closed without
        SIMPLE, BITPIX, NAXIS ,..., but does not check when deleting,
@@ -269,15 +269,15 @@ public :
 //! a ccd in an image
 struct Ccd
 {
-  std::string name;
+  string name;
   int chip;
   double gain;
   double sigmaBack;
   double seeing;
   double fluxScale;
-  std::string filter;
-  std::string refcat;
-  //  std::string acqFileName;
+  string filter;
+  string refcat;
+  //  string acqFileName;
   
 
   Ccd(const ReducedImage &R, const double FluxScale)
@@ -306,7 +306,7 @@ bool CcdCompareChip(const Ccd&C1, const Ccd&C2)
 }
 
 //! the ensemble of ccd's of a given shoot
-struct Shoot : public std::list<Ccd> // use list for sort
+struct Shoot : public list<Ccd> // use list for sort
 {
   int odo;
 
@@ -316,7 +316,7 @@ struct Shoot : public std::list<Ccd> // use list for sort
 
 
   // assumes that all ccds from a shoot have the same filter!
-  std::string Filter() const
+  string Filter() const
   {
     return front().filter;
   }
@@ -353,10 +353,10 @@ struct Shoot : public std::list<Ccd> // use list for sort
 
   
   // to assemble names like 123456o[00-02,04-35] : does not work (yet?)
-  std::string CompactName()
+  string CompactName()
   {
     sort(CcdCompareChip);
-    std::string result;
+    string result;
     if (size() == 1) return front().name;
     iterator i= begin(); ++i;
     int startchip = i->chip;
@@ -484,17 +484,17 @@ struct Collection : public list<Shoot>
 
 /*********************** class SwarpStack ***********************/
 
-const std::string SwarpStack::SwarpTmpDir()
+const string SwarpStack::SwarpTmpDir()
 {
   if (tmpDir == "")
     {
       char *dir = getenv("IMAGE_TMP_DIR");
       if (dir) tmpDir = AddSlash(string(dir));
       else tmpDir = FullFileName(StandardPath(SwarpPermDir()));
-      cout << "SwarpPermDir() " << SwarpPermDir() << endl;
-      cout << "StandardPath(SwarpPermDir()) " << StandardPath(SwarpPermDir()) 
+      cout << " SwarpStack: SwarpPermDir " << SwarpPermDir() << endl;
+      cout << " SwarpStack: StandardPath(SwarpPermDir()) " << StandardPath(SwarpPermDir()) 
 	   << endl;
-      cout << " for image " << Name() << ", using " << tmpDir
+      cout << " SwarpStack: for image " << Name() << ", using " << tmpDir
 	   << " to write temporary images " << endl;
     }
   return tmpDir;
@@ -521,7 +521,7 @@ SwarpStack::SwarpStack(const string &Name, const ReducedImageList &Images,
 
 SwarpStack::SwarpStack(const string &Name) : ReducedImage(Name) {}
 
-static string build_file_name(const std::string &Format, const std::string &AName)
+static string build_file_name(const string &Format, const string &AName)
 {
   char link_name[1024];
   sprintf(link_name,Format.c_str(),AName.c_str());
@@ -530,8 +530,8 @@ static string build_file_name(const std::string &Format, const std::string &ANam
 
 // substitute_extension("toto.fits.gz","xa")="toto.fits.xa"
 // this is different from SubstituteExtension.
-static string substitute_extension(const std::string &Original, 
-			   const std::string &NewExtension)
+static string substitute_extension(const string &Original, 
+			   const string &NewExtension)
 {
   const char *dot = strrchr(Original.c_str(),'.');
   unsigned int dotpos = (dot)? dot-Original.c_str(): Original.size();
@@ -539,9 +539,9 @@ static string substitute_extension(const std::string &Original,
   return Original.substr(0,dotpos)+NewExtension;  
 }
 
-bool extract_ascii_head(const std::string &InputHeadName,
+bool extract_ascii_head(const string &InputHeadName,
 		       const Frame &SubFrame,
-		       const std::string AsciiFileName)
+		       const string AsciiFileName)
 {
   /*
   FitsHeader modified(InputHeadName+frame_to_string(SubFrame));
@@ -574,8 +574,8 @@ bool extract_ascii_head(const std::string &InputHeadName,
   return true;
 }
 
-static void extract_ascii_wcs(const std::string &FitsName, 
-			      const std::string &AsciiFileName)
+static void extract_ascii_wcs(const string &FitsName, 
+			      const string &AsciiFileName)
 {
   AsciiHead ah(AsciiFileName);
   FitsHeader head(FitsName);
@@ -584,9 +584,9 @@ static void extract_ascii_wcs(const std::string &FitsName,
 }
 
 
-static int my_system(const std::string &Command)
+static int my_system(const string &Command)
 {
-  std::cout << " spawning command:" << std::endl << Command << std::endl;
+  cout << " SwarpStack: spawning command:" << endl << Command << endl;
   /* on makiki/kiholo, the openfile limit was enlarged only 
      for tcsh*/
   // do not hard code path and tcsh should not be forced here but directly on the shell
@@ -602,7 +602,7 @@ void SwarpStack::Success()
   return ;
 }
 
-void SwarpStack::SetExternalHeader(const std::string &ext_header)
+void SwarpStack::SetExternalHeader(const string &ext_header)
 {
   string command = "cp " + ext_header + "  " + FullFileName(Dir()) + "/calibrated" + SWARP_HEADER_EXT;
   my_system(command);
@@ -658,7 +658,7 @@ bool SubtractBack(const string & FitsFile, ReducedImage& Im)
 bool SwarpStack::MakeFits()
 {
   if (HasImage()) return true;
-  std ::cout << " SwarpStack::MakeFits : making " << FitsName() << std::endl;
+  std ::cout << " SwarpStack: making " << FitsName() << endl;
   /* link files in the "working directory ", and collect info about
      input images */
   string toRemove;
@@ -673,8 +673,8 @@ bool SwarpStack::MakeFits()
       FitsHeader head(photomAstromReference->FitsName());
       if (head.HasKey("ZP")) stackZp = head.KeyVal("ZP");
       else
-	std::cerr << " cannot align photometrically on " << photomAstromReference->Name() 
-		  << " because we don't find it's zero point " << std::endl;
+	cerr << " SwarpStack: cannot align photometrically on " << photomAstromReference->Name() 
+		  << " because we don't find it's zero point " << endl;
     }
 
   // setup files for swarp input
@@ -685,30 +685,30 @@ bool SwarpStack::MakeFits()
       SEStarList seList(ri.CatalogName());
       if (seList.size() < 10)
 	{
-	  std::cout << " SwarpStack::MakeFits : ignoring input image " << ri.Name() 
+	  cout << " SwarpStack: ignoring input image " << ri.Name() 
 		    << " because it only has " << seList.size() << " objects in catalog" 
-		    << std::endl;
+		    << endl;
 	  continue;
 	}
       // build file names for swarp input files.
-      std::string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
-      std::string weightSwarpName = 
+      string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
+      string weightSwarpName = 
 	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
       
-      std::string tmpimage;
+      string tmpimage;
       remove(imageSwarpName.c_str());
-      std::string decompImage = DecompressImageIfNeeded(ri.FitsName(), imageSwarpName, tmpimage);
+      string decompImage = DecompressImageIfNeeded(ri.FitsName(), imageSwarpName, tmpimage);
       if (decompImage.empty())
 	{
-	  std::cerr << " could not prepare " << imageSwarpName 
-		    << " for swarp " << std::endl;
+	  cerr << " SwarpStack: could not prepare " << imageSwarpName 
+		    << " for swarp " << endl;
 	  return false;
 	}
       if (decompImage == ri.FitsName() && ri.BackSub() && 
 	  !MakeRelativeLink(ri.FitsName(), imageSwarpName))
 	{
-	  std::cerr << " could not prepare " << imageSwarpName 
-		    << " for swarp " << std::endl;
+	  cerr << " SwarpStack: could not prepare " << imageSwarpName 
+		    << " for swarp " << endl;
 	  return false;
 	}
       else if (decompImage == ri.FitsName())
@@ -717,7 +717,7 @@ bool SwarpStack::MakeFits()
 	}
       if (!ri.BackSub())
 	{
-	  cout << " Subtracting background for " << ri.Name() << endl;
+	  cout << " SwarpStack: subtracting background for " << ri.Name() << endl;
 	  SubtractBack(imageSwarpName, ri);
 	}
 
@@ -726,20 +726,20 @@ bool SwarpStack::MakeFits()
 	{
 	  string command_rep  = REPROCESS_WEIGHT_ONLINE_SCRIPT ;
 	  string command = command_rep + " " + ri.Dir() + " " + SwarpTmpDir()  ;
-	  cerr << "Running " << command << endl ;
+	  cout << " SwarpStack: Running " << command << endl ;
 	  system(command.c_str());
 	  command = "cp " + SwarpTmpDir() + "/" + ri.Name() + "/weight.fits " + weightSwarpName ;
-	  cerr << "Running " << command << endl ;
+	  cout << " SwarpStack: Running " << command << endl ;
 	  system(command.c_str());
 	  command = "rm -rf " + SwarpTmpDir() + "/" + ri.Name() ;
-	  cerr << "Running " << command << endl ;
+	  cout << " SwarpStack: Running " << command << endl ;
 	  system(command.c_str());
 	}
       else
 	if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
 	  {
-	    std::cerr << " could not prepare " << weightSwarpName 
-		      << " for swarp " << std::endl;
+	    cerr << " SwarpStack: could not prepare " << weightSwarpName 
+		      << " for swarp " << endl;
 	    return false;
 	    continue;
 	  }
@@ -763,14 +763,14 @@ bool SwarpStack::MakeFits()
 	      thisZp  = head.KeyVal("ZP_PHOT");
 	    }
 	  else
-	    cout << "SwarpStack::MakeFits : NO ZP_PHOT key in " << ri.Name() << " using ZP key" << endl ;
-	  cout << "SwarpStack::MakeFits : original ZP_used_in_swarp " << ri.Name() << " :  " << head.KeyVal("EXTVER") << " " << thisZp << endl ; 
+	    cout << " SwarpStack: no ZP_PHOT key in " << ri.Name() << " using ZP key" << endl ;
+	  cout << " SwarpStack: original ZP_used_in_swarp " << ri.Name() << " :  " << head.KeyVal("EXTVER") << " " << thisZp << endl ; 
 	  fluxScale = pow(10.,0.4*(stackZp - thisZp));
 	}
       else
 	{
-	  std::cerr << " ERROR : SwarpStack::MakeFits : image " << ri.Name() 
-		    << " misses a photometric zero point " << std::endl;
+	  cerr << " SwarpStack: image " << ri.Name() 
+		    << " misses a photometric zero point " << endl;
 	}
       // write fluxScale in a ascii header
       string header_name = substitute_extension(imageSwarpName,SWARP_HEADER_EXT);
@@ -851,7 +851,7 @@ bool SwarpStack::MakeFits()
     + "; popd";
   if (my_system(command)!=0)
     {
-      cerr <<" swarpstack: something went wrong ... " << std::endl;
+      cerr <<" SwarpStack: something went wrong spawing swarp" << endl;
       return false;
     }
   // STILL have to add a few things in the header
@@ -860,17 +860,17 @@ bool SwarpStack::MakeFits()
     StringList filtList = collection.FilterList();
     if (filtList.size() > 1)
       {
-	std::cout << " Image " << Name() << " is composed of different filters" 
-		  << " hope you know what you are doing" << std::endl;
+	cout << " SwarpStack: image " << Name() << " is composed of different filters" 
+		  << " hope you know what you are doing" << endl;
 	head.AddOrModKey("FILTERS", filtList.AllEntries());
       }
     else head.AddOrModKey("FILTER",filtList.front());
     StringList refcatList = collection.RefcatList();
     if (filtList.size() > 1)
       {
-	std::cout << " Image " << Name() << " is made from components aligned "
+	cout << " SwarpStack: image " << Name() << " is made from components aligned "
 		  << "\n on different astro-photometric catalogs (REFCAT key)"
-		  << "\n hope you know what you are doing" << std::endl;
+		  << "\n hope you know what you are doing" << endl;
 	head.AddOrModKey("REFCATS", filtList.AllEntries());
       }
     else head.AddOrModKey("REFCAT",refcatList.front());
@@ -892,7 +892,7 @@ bool SwarpStack::MakeFits()
   StringList components;
   collection.CollectAllNames(components);
   for (StringIterator i = components.begin(); i != components.end(); ++i)
-    s << *i << std::endl;
+    s << *i << endl;
   s.close();
   // write out the saturation
   SetSaturation(saturation);
@@ -909,7 +909,7 @@ bool SwarpStack::MakeFits()
 bool SwarpStack::MakeFits_OnlyAdd()
 {
   if (HasImage()) return true;
-  std ::cout << " SwarpStack::MakeFits_OnlyAdd : making " << FitsName() << std::endl;
+  std ::cout << " SwarpStack: only adding to produce " << FitsName() << endl;
   /* link files in the "working directory ", and collect info about
      input images */
   string toRemove;
@@ -925,23 +925,23 @@ bool SwarpStack::MakeFits_OnlyAdd()
       ReducedImage &ri = **i;
       
       // build file names for swarp input files.
-      std::string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
+      string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
       if (!DecompressOrLinkImage(ri.FitsName(), imageSwarpName))
 	{
-	  std::cerr << " could not prepare " << imageSwarpName 
-		    << " for swarp " << std::endl;
+	  cerr << " SwarpStack: could not prepare " << imageSwarpName 
+		    << " for swarp " << endl;
 	  //return false;
 	  continue;
 	}
       inputFiles += (" "+BaseName(imageSwarpName));
       toRemove += " "+imageSwarpName;
 
-      std::string weightSwarpName = 
+      string weightSwarpName = 
 	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
       if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
 	{
-	  std::cerr << " could not prepare " << weightSwarpName 
-		    << " for swarp " << std::endl;
+	  cerr << " SwarpStack: could not prepare " << weightSwarpName 
+		    << " for swarp " << endl;
 	  //return false;
 	  continue;
 	}
@@ -985,7 +985,7 @@ bool SwarpStack::MakeFits_OnlyAdd()
     + "; popd";
   if (my_system(command)!=0)
     {
-      cerr <<" swarpstack: something went wrong ... " << std::endl;
+      cerr <<" SwarpStack: something went wrong spawning swarp " << endl;
       return false;
     }
   // STILL have to add a few things in the header
@@ -994,17 +994,17 @@ bool SwarpStack::MakeFits_OnlyAdd()
     StringList filtList = collection.FilterList();
     if (filtList.size() > 1)
       {
-	std::cout << " Image " << Name() << " is composed of different filters" 
-		  << " hope you know what you are doing" << std::endl;
+	cout << " SwarpStack: image " << Name() << " is composed of different filters" 
+		  << " hope you know what you are doing" << endl;
 	head.AddOrModKey("FILTERS", filtList.AllEntries());
       }
     else head.AddOrModKey("FILTER",filtList.front());
     StringList refcatList = collection.RefcatList();
     if (filtList.size() > 1)
       {
-	std::cout << " Image " << Name() << " is made from components aligned "
+	cout << " SwarpStack: image " << Name() << " is made from components aligned "
 		  << "\n on different astro-photometric catalogs (REFCAT key)"
-		  << "\n hope you know what you are doing" << std::endl;
+		  << "\n hope you know what you are doing" << endl;
 	head.AddOrModKey("REFCATS", filtList.AllEntries());
       }
     else head.AddOrModKey("REFCAT",refcatList.front());
@@ -1021,7 +1021,7 @@ bool SwarpStack::MakeFits_OnlyAdd()
   StringList components;
   collection.CollectAllNames(components);
   for (StringIterator i = components.begin(); i != components.end(); ++i)
-    s << *i << std::endl;
+    s << *i << endl;
   s.close();
   // write out the saturation
   SetSaturation(saturation);
@@ -1045,7 +1045,7 @@ bool SwarpStack::MakeCatalog()
 
 bool SwarpStack::MakeDead()
 {
-  cerr << " SwarpStack::MakeDead() still to be implemented " << std::endl; 
+  cerr << " SwarpStack: MakeDead not implemented" << endl; 
   return false;
   
 }
@@ -1066,25 +1066,25 @@ bool SwarpStack::MakeSatur(bool only_add)
 {
   if (HasSatur()) return true;
   // link files in the "working directory "
-  std::cout << " Making satur image for " << Name() << std::endl;
+  cout << " SwarpStack: making satur image for " << Name() << endl;
 
   /* we need the header to align our satur frame on it */
   if (!HasImage()) MakeFits(); 
 
 
-  std::string toRemove;
-  std::string inputFiles;
+  string toRemove;
+  string inputFiles;
   for (ReducedImageIterator i=images.begin(); i!= images.end(); ++i)
     {
       ReducedImage &ri = **i;
-      std::string inputSatur = ri.FitsSaturName();
-      std::string swarpInput = build_file_name(SwarpTmpDir()+"%s.satur.fits",
+      string inputSatur = ri.FitsSaturName();
+      string swarpInput = build_file_name(SwarpTmpDir()+"%s.satur.fits",
 					       ri.Name());
-      std::string swarpHead = substitute_extension(swarpInput,SWARP_HEADER_EXT);
+      string swarpHead = substitute_extension(swarpInput,SWARP_HEADER_EXT);
       if (!DecompressOrLinkImage(inputSatur,swarpInput))
 	{
-	  std::cerr << " could not prepare " << inputSatur << " for swarp " 
-		    << std::endl;
+	  cerr << " SwarpStack: could not prepare " << inputSatur << " for swarp " 
+		    << endl;
 	  return false;
 	}
       inputFiles += " "+BaseName(swarpInput);
@@ -1093,7 +1093,7 @@ bool SwarpStack::MakeSatur(bool only_add)
       extract_ascii_wcs(ri.FitsName(), swarpHead);
     }
 
-  std::string swarpOutName =  SwarpTmpDir()+"satur32.fits";
+  string swarpOutName =  SwarpTmpDir()+"satur32.fits";
   // extract the header of the calibrated.fits
   extract_ascii_wcs(FitsName(), substitute_extension(swarpOutName,SWARP_HEADER_EXT));
 
@@ -1127,7 +1127,7 @@ bool SwarpStack::MakeSatur(bool only_add)
     + "; popd";
   if (my_system(command)!=0)
     {
-      cerr <<" swarpstack: something went wrong ... " << std::endl;
+      cerr <<" SwarpStack: something went wrong spawning swarp" << endl;
       return false;
     }
   /* we have to process the output, first to quantize it (0 or 1) to
