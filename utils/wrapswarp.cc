@@ -51,7 +51,7 @@ int main(int nargs, char **args)
 			string line;
 			getline(ifs, line);
 			if (line.empty() || line[0] == '#') continue; 
-			ReducedImageRef ri = ReducedImageNew(args[i]);
+			ReducedImageRef ri = ReducedImageNew(line);
 			if (ri->IsValid()) ril.push_back(ri);
 			else cerr << " not a valid dbimage: " << arg << endl;
 		      }
