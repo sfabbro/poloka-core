@@ -365,7 +365,7 @@ void DbConfigExample()
 << "#default if not overwritten:" << endl
 << "  { satur.fits.gz }" << endl
 << "#for the ImageSum class" << endl
-<< "  ImageSum { satur.fz }" << endl
+<< "  ImageSum { calibrated.fits }" << endl
 << "  TransformedImage { calibrated.fits satur.fits.gz }" << endl
  << "}" << endl
  ;
@@ -593,10 +593,9 @@ void DbConfigFile::init_image_names()
   AddNewImageName("","satur","satur.fits.gz");
 
   // swarp writes in 32 bits, so no Rice compression
-  AddNewImageName("SwarpStack","calibrated","calibrated.fits");
+  AddNewImageName("SwarpStack","calibrated","calibrated.fits");  
   AddNewImageName("SwarpStack","weight","weight.fits");
-  //use satur.fz because it enables an efficient subimage extraction
-  AddNewImageName("SwarpStack","satur","satur.fz");
+  // no rice for satur, gz does it faster and just as good, without header pbs
 }
 
 /* returns the filename, from stored instructions, that come
