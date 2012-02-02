@@ -584,29 +584,28 @@ static void extract_ascii_wcs(const std::string &FitsName,
 }
 
 
-/* on makiki/kiholo, the openfile limit was enlarged only 
-   for tcsh*/
-static int my_tcsh_system(const std::string &Command)
+static int my_system(const std::string &Command)
 {
   std::cout << " spawning command:" << std::endl << Command << std::endl;
-  // do not hard code path and tcsh should not be forced here but on the shell
+  /* on makiki/kiholo, the openfile limit was enlarged only 
+     for tcsh*/
+  // do not hard code path and tcsh should not be forced here but directly on the shell
   //return system(("/bin/tcsh -f -c \'"+Command+"\'").c_str());
   return system(Command.c_str());
 }
 
 
-
 void SwarpStack::Success()
 {
   string success = "touch " + FullFileName(Dir()) + "/.success" ;
-  my_tcsh_system(success);
+  my_system(success);
   return ;
 }
 
 void SwarpStack::SetExternalHeader(const std::string &ext_header)
 {
   string command = "cp " + ext_header + "  " + FullFileName(Dir()) + "/calibrated" + SWARP_HEADER_EXT;
-  my_tcsh_system(command);
+  my_system(command);
   return ;
 }
   
@@ -622,6 +621,38 @@ bool SwarpStack::MakeHeaderFromRef()
 			 );
     }
   return(res);
+}
+
+
+bool SubtractBack(const string & FitsFile, ReducedImage& Im)
+{
+
+  Im.MakeBack();
+
+  // we have a background file
+  if (FileExists(Im.FitsBackName()))
+    {
+      FitsParallelSlices slices(50);
+      int nx = Im.XSize();
+      slices.AddFile(FitsFile);
+      slices.AddFile(Im.FitsBackName());
+      for (int j=0; j<slices.SliceSize(); j++) 
+	{
+	  Pixel *pim = slices[0]->begin();
+	  Pixel *pback = slices[1]->begin();
+	  Pixel *pend = slices[0]->end();
+	  for ( ; pim < pend; pim++, pback++)
+	    *pim++ -= *pback++;
+	}
+      return true;
+    }
+
+  // we don't: use miniback
+  if (!FileExists(Im.FitsMiniBackName()))
+    return false;
+
+  FitsImage image(FitsFile, RW);
+  return SubtractMiniBack(image, Im.FitsMiniBackName());
 }
 
 bool SwarpStack::MakeFits()
@@ -687,9 +718,7 @@ bool SwarpStack::MakeFits()
       if (!ri.BackSub())
 	{
 	  cout << " Subtracting background for " << ri.Name() << endl;
-	  FitsImage im(imageSwarpName,RW);
-	  ri.MakeBack();
-	  SubtractBack(ri);
+	  SubtractBack(imageSwarpName, ri);
 	}
 
       // HACK for weight contaminated with satur mask
@@ -817,9 +846,10 @@ bool SwarpStack::MakeFits()
   
   
 
-  string command = "cd "+SwarpTmpDir()+"; " + SWARP_COMMAND + " -c " + cardsName 
-    + inputFiles;
-  if (my_tcsh_system(command)!=0)
+  string command = "pushd " + SwarpTmpDir() + ";" 
+    + SWARP_COMMAND + " -c " + cardsName  + inputFiles
+    + "; popd";
+  if (my_system(command)!=0)
     {
       cerr <<" swarpstack: something went wrong ... " << std::endl;
       return false;
@@ -870,8 +900,8 @@ bool SwarpStack::MakeFits()
   // since we got here, swarp succeeded, so cleanup resamp files
 
   // and cleanup input files (links or actual files depending if they were compressed)
-  RemoveFiles(toRemove);
-  RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
+  //RemoveFiles(toRemove);
+  //RemoveFiles(SubstitutePattern(toRemove,".image.",".image.resamp."));
   return true;
 }
 
@@ -950,9 +980,10 @@ bool SwarpStack::MakeFits_OnlyAdd()
   
   
 
-  string command = "cd "+SwarpTmpDir()+";" + SWARP_COMMAND + " -c " + cardsName 
-    + inputFiles;
-  if (my_tcsh_system(command.c_str())!=0)
+  string command = "pushd " + SwarpTmpDir() + ";" 
+    + SWARP_COMMAND + " -c " + cardsName + inputFiles 
+    + "; popd";
+  if (my_system(command)!=0)
     {
       cerr <<" swarpstack: something went wrong ... " << std::endl;
       return false;
@@ -1091,8 +1122,10 @@ bool SwarpStack::MakeSatur(bool only_add)
   //MakeRelativeLink(SwarpPermDir()+cardsName, SwarpTmpDir()+cardsName);
   cards.write(SwarpTmpDir()+cardsName);
 
-  string command = "cd "+SwarpTmpDir()+ ";" + SWARP_COMMAND + " -c " + cardsName + inputFiles;
-  if (my_tcsh_system(command.c_str())!=0)
+  string command = "pushd " + SwarpTmpDir() + ";" 
+    + SWARP_COMMAND + " -c " + cardsName + inputFiles 
+    + "; popd";
+  if (my_system(command)!=0)
     {
       cerr <<" swarpstack: something went wrong ... " << std::endl;
       return false;
@@ -1104,15 +1137,17 @@ bool SwarpStack::MakeSatur(bool only_add)
 				FitsSaturName());
   // BITPIX, BSCALE, BZERO are copied by default from in to out
   // So overwrite them here:
-  inOut.out.AddOrModKey("BITPIX",8);
-  inOut.out.AddOrModKey("BSCALE",1); 
-  inOut.out.AddOrModKey("BZERO",0);
   do
     {
       Image &out = inOut.out; // handler
       out = inOut.in; // copy
       out.Simplify(0.1); // simplify
     } while (inOut.LoadNextSlice()); // read/write
+
+  inOut.out.AddOrModKey("BITPIX",8);
+  inOut.out.AddOrModKey("BSCALE",1); 
+  inOut.out.AddOrModKey("BZERO",0);
+
   // remove temporary files
   remove(swarpOutName.c_str());
   RemoveFiles(toRemove);
