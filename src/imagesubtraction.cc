@@ -325,12 +325,14 @@ bool ImageSubtraction::MakeWeight()
   if (subMaskSig2Noise > 0 && RefIsBest())
     {
       FitsImage bestFits(Best()->FitsName());
+      FitsImage bestWeightFits(Best()->FitsWeightName());
       cout << " ImageSubtraction: Masking pixels with S/N > " 
 	   << subMaskSig2Noise << " on " << Best()->Name() << endl;
       Pixel *pim = bestFits.begin();
+      Pixel *pwb = bestWeightFits.begin();
       Pixel back = Best()->BackLevel();
-      for (Pixel *pw=subWeightImage.begin() ; pw < pend ; ++pim, ++pw)
-	if ((*pim-back) * sqrt(*pw) >= subMaskSig2Noise) *pw = 0;
+      for (Pixel *pws=subWeightImage.begin() ; pws < pend ; ++pim, ++pws, ++pwb)
+	if ((*pim-back) * sqrt(*pwb) >= subMaskSig2Noise) *pws = 0;
     }
   
   // add a small constant to weights so that variances of 
@@ -403,9 +405,10 @@ bool ImageSubtraction::MakeWeight()
       cout << " ImageSubtraction: masking pixels with S/N > "
 	   << subMaskSig2Noise << " on " << Worst()->Name() << endl;
       Pixel *pim = worstFits.begin();
+      Pixel *pww = worstWeightImage.begin();
       Pixel back = Worst()->BackLevel();
-      for (Pixel *pw=subWeightImage.begin() ; pw < pend ; ++pim, ++pw)
-	if ((*pim-back) * sqrt(*pw) >= subMaskSig2Noise) *pw = 0;
+      for (Pixel *pws=subWeightImage.begin() ; pws < pend ; ++pim, ++pws, ++pww)
+	if ((*pim-back) * sqrt(*pww) >= subMaskSig2Noise) *pws = 0;
     }
 
   // add a small constant to weights so that variances of 
