@@ -18,7 +18,7 @@ AM_CPPFLAGS = \
 bin_PROGRAMS = \
 	header astrom changekey checker dbimstat \
 	dead_correction elixir_to_toads \
-        findsatellite \
+        findsatellite shiftswarp \
         image_select image_stats image_sum \
         lbl2toads maglimeval make_catalog \
         make_cosmic make_dead joinlist make_weight \
@@ -43,7 +43,7 @@ bin_PROGRAMS = \
 LDADD = $(top_builddir)/src/libtoads.la \
 	$(top_builddir)/src_base/libtoadsbase.la \
 	$(top_builddir)/src_utils/libtoadsutils.la \
-	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEX_LIBS@
+	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@
 
 header_SOURCES = header.cc
 astrom_SOURCES = astrom.cc
@@ -103,6 +103,7 @@ modelpsf_SOURCES = modelpsf.cc
 modelpsf_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/libtoadspsf.la
 zpfitter_SOURCES = zpfitter.cc
 calibrationhacker_SOURCES = calibrationhacker.cc
+shiftswarp_SOURCES = shiftswarp.cc
 basicaperture_SOURCES = basicaperture.cc
 calibratefixedpos_SOURCES = calibratefixedpos.cc
 calibratefixedpos_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/libtoadspsf.la
