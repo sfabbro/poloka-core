@@ -88,7 +88,7 @@ int main(int nargs, char **args) {
   ss.MakeSatur();
   ss.MakeCatalog();
 
-  ifstream ifs(fileName);
+  ifs.open(fileName);
   if (ifs.is_open()) {
     char c;
     while (ifs >> c) {
