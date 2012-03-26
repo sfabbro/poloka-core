@@ -12,7 +12,7 @@ static void usage(const char *progName) {
        << "   -n : no resampling, only match catalogues\n"
        << "   -i : integer shifting (no interpolation)\n"
        << "   -t x y: translation parameters\n"
-       << "   -u : union of all frames instead of intersection\n";
+       << "   -u : union of all frames instead of intersection\n\n";
   exit(EXIT_FAILURE);
 }
 
@@ -26,22 +26,24 @@ struct ImageMatcher {
 
   void operator () (const ReducedImageRef Im) const {
     try {
-      if (*Im == *Ref) {
+      if (Ref && *Im == *Ref) {
 	cout << " " << Im->Name() << " is same as reference, skipping\n";
 	return;
       }
       ReducedImageRef ref = Ref;
       // ugly hack: ref bigger than 3X image, extract subimage
-      if (Ref->XSize()*Ref->YSize() > 3*Im->XSize()*Im->YSize()) {
+      if (Ref && Ref->XSize()*Ref->YSize() > 3*Im->XSize()*Im->YSize()) {
 	cout << " " << Ref->Name() << " is a big image, will extract a sub image using rough match\n";
 	ref = new SubImage("Sub_" + Ref->Name() + "_" + Im->Name(), Ref->Name(), Im->Name(), 50);
 	ref->Execute(DoFits|DoCatalog);
       }
 
-      if (doResample)
+      if (doResample && ref)
 	ImageResample(*Im, *ref, RefToIm, ImToRef);
-      else if (doIntShift)
+      else if (doIntShift && ref)
 	ImageIntegerShift(*Im, *ref, RefToIm);
+      else if (doResample)
+	ImageResample(*Im, RefToIm, ImToRef);
       else
 	cout << *FindTransfo(*Im, *ref);
 
@@ -55,11 +57,6 @@ struct ImageMatcher {
 int main(int nargs, char **args) {
 
   if (nargs < 2) usage(args[0]); 
-
-  if (nargs == 2) {
-    cerr << args[0] << " error: need at least 2 images";
-    return EXIT_FAILURE;    
-  }
 
   bool doUnion = false;
   ReducedImageList imList;
@@ -91,6 +88,16 @@ int main(int nargs, char **args) {
     }
   }
 
+  if (imList.empty()) {
+    cerr << args[0] << " error: need at least 1 image";
+    return EXIT_FAILURE;
+  }
+
+  if (imList.size() == 1 && !imMatcher.ImToRef) {
+    cerr << args[0] << " error: need at least a reference and an image";
+    return EXIT_FAILURE;
+  }
+
   if (doUnion) {
     string unionRefName = "U_" + imList.front()->Name();
     ReducedImageRef unionRef = ReducedImageNew(unionRefName);
@@ -102,10 +109,11 @@ int main(int nargs, char **args) {
       MakeUnionRef(imList, *imList.front(), unionRefName);
       imMatcher.Ref = ReducedImageNew(unionRefName);
     }
-  } else
+    imList.pop_front();
+  } else if (!imMatcher.ImToRef && !imMatcher.RefToIm) {
     imMatcher.Ref = imList.front();
-
-  imList.pop_front();
+    imList.pop_front();
+  }
 
   for_each(imList.begin(), imList.end(), imMatcher);
 

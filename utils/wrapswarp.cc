@@ -9,17 +9,17 @@ static void usage(const char* ProgName)
 {
   cerr << ProgName << " [OPTION]... -o DBIMAGE DBIMAGE...\n" 
        << "Wrapper around SWarp\n"
+       << "     -o DBIMAGE : output stack DBIMAGE\n"
        << "     -r DBIMAGE : specify a astrometric/photometric reference\n"
-       << "     -c FILE    : use a SWarp configuration file\n"
-       << "     -i FILE    : give a file with a list of DBIMAGEs\n";
+       << "     -c FILE    : specify a SWarp configuration file instead of default\n"
+       << "     -i FILE    : file with a list of DBIMAGEs instead of argument list\n\n";
   exit(EXIT_FAILURE);
 }
 
 int main(int nargs, char **args)
 {
   ReducedImageList ril;
-  string outName;
-  string cardsName;
+  string outName, cardsName;
   ReducedImageRef ref;
 
   for (int i=1; i<nargs; ++i)
@@ -70,7 +70,7 @@ int main(int nargs, char **args)
 	  else cerr << " not a valid dbimage: " << arg << endl;
 	}
     }
-  
+
 
   if (ril.empty())
     {
@@ -85,7 +85,7 @@ int main(int nargs, char **args)
     }
   
   if (!cardsName.empty()) SetSwarpCardsName(cardsName);
-    
+
   Frame frame;
   if (ref) frame = ref->PhysicalSize();
 
