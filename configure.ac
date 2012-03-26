@@ -1,6 +1,6 @@
 ## Initialization 
 AC_PREREQ(2.59)
-AC_INIT(poloka, 0.7.0_git, [poloka team])
+AC_INIT(poloka, 0.8.0, [poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src_base/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -38,9 +38,9 @@ AX_CFITSIO(, [AC_MSG_ERROR([cfitsio library could not be detected
 ])
 
 ## Check for mandatory SExtractor repacked library
-AX_LIBSEX(, [AC_MSG_ERROR([SExtractor library could not be detected 
+AX_LIBSEXTRACTOR(, [AC_MSG_ERROR([SExtractor library could not be detected 
 *** Please install libsex or use the options:
-*** --with-sex-includedir and --with-sex-libdir.])
+*** --with-sextractor-includedir and --with-sextractor-libdir.])
 ])
 
 ## Check for mandatory zlib (for gztream)
