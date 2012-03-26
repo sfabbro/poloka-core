@@ -275,7 +275,8 @@ static bool ListMatchCheck(const BaseStarList& Src, const BaseStarList& Dest,
     delete match;
     return false;
   }
-  size_t nmin = size_t(min(Src.size(), Dest.size()) * MinMatch);
+  size_t nmin = 100;
+  nmin = min(size_t(min(Src.size(), Dest.size()) * MinMatch), nmin);
   cout << " ListMatchCheck: min stars to match = " << nmin << endl;
   size_t ngood = StarMatchCheck(match);
   delete match;
@@ -346,7 +347,7 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
 
 GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
 
-  cout << " FindTransfo: transfo from " << Src.Name() << " to " << Dest.Name();
+  cout << " FindTransfo: " << Src.Name() << " to " << Dest.Name();
 
   if (Src == Dest) {
     cout << " found identity\n";
@@ -576,7 +577,7 @@ Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference) 
   for (ReducedImageCIterator it = ImList.begin(); it != ImList.end(); ++it) {
     const ReducedImage *im = *it;
     if (*im == *Reference) continue;
-    BaseStarList bimList; LoadForMatch(*im, bimList);    
+    BaseStarList bimList; LoadForMatch(*im, bimList);
     GtransfoRef imToref = FindTransfo(bimList, brefList, *im, *ref);
     Frame frameInRef = ApplyTransfo(im->UsablePart(), *imToref, LargeFrame);
     unionFrame += frameInRef;
@@ -618,7 +619,41 @@ string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const Gtra
     }
   }
 
-  ImageGtransfo *imTransfo = new ImageGtransfo(Ref, Im);
+  ImageGtransfo *imTransfo;
+  if (ImToRef && RefToIm) {
+    imTransfo = new ImageGtransfo(RefToIm,
+				  ImToRef,
+				  Ref.UsablePart(),
+				  Ref.Name());
+  } else {
+    imTransfo = new ImageGtransfo(Ref, Im);
+  }
+  TransformedImage imResampled(resampledName, Im, imTransfo);
+  if (!imResampled.Execute(ToTransform(Im)))
+    throw PolokaException(" Failed to produce " + resampledName);
+  delete imTransfo;
+  return resampledName;
+}
+
+string ImageResample(const ReducedImage& Im, const GtransfoRef ImToResampled, const GtransfoRef ResampledToIm) {
+  string resampledName = "T_" + Im.Name();
+  {
+    ReducedImageRef resampledIm = ReducedImageNew(resampledName);
+    if (resampledIm && resampledIm->IsValid() && resampledIm->Execute(ToTransform(Im))) {
+      cout << " ImageResample: " << resampledName << " is done\n";
+      return resampledName;
+    }
+  }
+
+  Frame origFrame = Im.UsablePart();
+  Frame projectedFrame = ApplyTransfo(origFrame,
+				      ImToResampled->LinearApproximation(origFrame.Center()));
+  // add 5 pixels margin around
+  projectedFrame.CutMargin(-5);
+  ImageGtransfo *imTransfo = new ImageGtransfo(ResampledToIm,
+					       ImToResampled,
+					       projectedFrame,
+					       Im.Name());
   TransformedImage imResampled(resampledName, Im, imTransfo);
   if (!imResampled.Execute(ToTransform(Im)))
     throw PolokaException(" Failed to produce " + resampledName);

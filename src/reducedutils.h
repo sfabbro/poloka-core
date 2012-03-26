@@ -93,6 +93,7 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
 GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest);
 
 string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef(), const GtransfoRef RefToIm=GtransfoRef());
+string ImageResample(const ReducedImage& Im, const GtransfoRef ImToRef, const GtransfoRef RefToIm);
 string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef=GtransfoRef());
 
 #endif // REDUCEDUTILS__H
