@@ -5,7 +5,6 @@
 
 #include "stringlist.h"
 #include "swarpstack.h"
-#include "sestar.h"
 #include "fitsimage.h"
 #include "fitsslice.h"
 #include "wcsutils.h"
@@ -658,7 +657,7 @@ bool SubtractBack(const string & FitsFile, ReducedImage& Im)
 bool SwarpStack::MakeFits()
 {
   if (HasImage()) return true;
-  std ::cout << " SwarpStack: making " << FitsName() << endl;
+  cout << " SwarpStack: making " << FitsName() << endl;
   /* link files in the "working directory ", and collect info about
      input images */
   string toRemove;
@@ -681,15 +680,6 @@ bool SwarpStack::MakeFits()
   for (ReducedImageIterator i=images.begin(); i!= images.end(); ++i)
     {
       ReducedImage &ri = **i;
-      // check catalog size (to remove e.g. non working CCD03 images)
-      SEStarList seList(ri.CatalogName());
-      if (seList.size() < 10)
-	{
-	  cout << " SwarpStack: ignoring input image " << ri.Name() 
-		    << " because it only has " << seList.size() << " objects in catalog" 
-		    << endl;
-	  continue;
-	}
       // build file names for swarp input files.
       string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
       string weightSwarpName = 
