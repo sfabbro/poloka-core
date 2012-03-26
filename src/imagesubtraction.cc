@@ -284,7 +284,7 @@ bool ImageSubtraction::MakeWeight()
   string datacards = DefaultDatacards();
   int subVarianceType = 0;
   int subMaskDilate = 0;
-  double subMaskSig2Noise = -1;
+  double subMaskSatur = 1;
     
   if (FileExists(datacards))
     {
@@ -293,8 +293,8 @@ bool ImageSubtraction::MakeWeight()
 	subVarianceType = cards.IParam("SUB_VARIANCE_TYPE");
       if (cards.HasKey("SUB_MASK_DILATE"))
 	subMaskDilate = cards.IParam("SUB_MASK_DILATE");
-      if (cards.HasKey("SUB_MASK_SIG2NOISE"))
-	subMaskSig2Noise = cards.DParam("SUB_MASK_SIG2NOISE");
+      if (cards.HasKey("SUB_MASK_SATUR"))
+	subMaskSatur = cards.DParam("SUB_MASK_SATUR");
     }
     
   FitsHeader refHead(Ref->FitsName());
@@ -321,18 +321,16 @@ bool ImageSubtraction::MakeWeight()
 
   const Pixel *pend = subWeightImage.end();
 
-  // weight down to zero high S/N pixels if requested
-  if (subMaskSig2Noise > 0 && RefIsBest())
+  // weight down to zero pixels close to satur on best image
+  if (subMaskSatur < 1 && RefIsBest())
     {
       FitsImage bestFits(Best()->FitsName());
-      FitsImage bestWeightFits(Best()->FitsWeightName());
-      cout << " ImageSubtraction: Masking pixels with S/N > " 
-	   << subMaskSig2Noise << " on " << Best()->Name() << endl;
+      cout << " ImageSubtraction: Masking pixels at " 
+	   << subMaskSatur*100 << "% of saturation from " << Best()->Name() << endl;
       Pixel *pim = bestFits.begin();
-      Pixel *pwb = bestWeightFits.begin();
-      Pixel back = Best()->BackLevel();
-      for (Pixel *pws=subWeightImage.begin() ; pws < pend ; ++pim, ++pws, ++pwb)
-	if ((*pim-back) * sqrt(*pwb) >= subMaskSig2Noise) *pws = 0;
+      Pixel satur = Best()->Saturation() * subMaskSatur;
+      for (Pixel *pw=subWeightImage.begin() ; pw < pend ; ++pim, ++pw)
+	if (*pim >= satur) *pw = 0;
     }
   
   // add a small constant to weights so that variances of 
@@ -399,16 +397,16 @@ bool ImageSubtraction::MakeWeight()
 	   << ", cannot get satur from " << Worst()->Name() << endl;
     }
 
-  if (subMaskSig2Noise > 0 && !RefIsBest())
+  if (subMaskSatur > 0 && !RefIsBest())
     {
       FitsImage worstFits(Worst()->FitsName());
       cout << " ImageSubtraction: masking pixels with S/N > "
-	   << subMaskSig2Noise << " on " << Worst()->Name() << endl;
+	   << subMaskSatur << " on " << Worst()->Name() << endl;
       Pixel *pim = worstFits.begin();
       Pixel *pww = worstWeightImage.begin();
       Pixel back = Worst()->BackLevel();
       for (Pixel *pws=subWeightImage.begin() ; pws < pend ; ++pim, ++pws, ++pww)
-	if ((*pim-back) * sqrt(*pww) >= subMaskSig2Noise) *pws = 0;
+	if ((*pim-back) * sqrt(*pww) >= subMaskSatur) *pws = 0;
     }
 
   // add a small constant to weights so that variances of 
@@ -485,9 +483,9 @@ bool ImageSubtraction::MakeWeight()
   // shrink the frame
   aframe.CutMargin(bandx, bandy); 
   cout << " ImageSubtraction: masking frame for weights " << aframe << endl;
-  subWeightImage.Masking(aframe, 0.);
+  //subWeightImage.Masking(aframe, 0.);
   subWeightFits.PreserveZeros(); // 0 remain 0 on R/W operations
-  subWeightFits.ModKey("BITPIX",16); // 16 bits are enough
+  //subWeightFits.ModKey("BITPIX",16); // 16 bits are enough
 
   return true;
 }

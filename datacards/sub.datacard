@@ -230,9 +230,9 @@
 # Dilate the bad pixels by a given radius on the weight map
 @SUB_MASK_DILATE 0
 #
-# Zero weight all pixel above SUB_MASK_SIG2NOISE * r.m.s.(ref)
+# Zero weight all pixel above SUB_MASK_SATUR * SATURATION
 # to avoid bright stars residuals from Poisson noise, -1 does not mask
-@SUB_MASK_SIG2NOISE -1
+@SUB_MASK_SATUR 1
 #
 # Uncoment this to your file name to produce quality check n-tuple 
 #@SUB_QUALI_TUPLE qual.list
