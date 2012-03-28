@@ -1127,16 +1127,16 @@ bool SwarpStack::MakeSatur(bool only_add)
 				FitsSaturName());
   // BITPIX, BSCALE, BZERO are copied by default from in to out
   // So overwrite them here:
+  inOut.out.AddOrModKey("BITPIX",8);
+  inOut.out.AddOrModKey("BSCALE",1); 
+  inOut.out.AddOrModKey("BZERO",0);
+
   do
     {
       Image &out = inOut.out; // handler
       out = inOut.in; // copy
       out.Simplify(0.1); // simplify
     } while (inOut.LoadNextSlice()); // read/write
-
-  inOut.out.AddOrModKey("BITPIX",8);
-  inOut.out.AddOrModKey("BSCALE",1); 
-  inOut.out.AddOrModKey("BZERO",0);
 
   // remove temporary files
   remove(swarpOutName.c_str());
