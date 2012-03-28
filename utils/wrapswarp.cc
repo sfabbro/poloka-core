@@ -18,6 +18,9 @@ static void usage(const char* ProgName)
 
 int main(int nargs, char **args)
 {
+
+  if (nargs <= 1) usage(args[0]);
+
   ReducedImageList ril;
   string outName, cardsName;
   ReducedImageRef ref;
@@ -48,10 +51,10 @@ int main(int nargs, char **args)
 		  {
 		    while (ifs.good())
 		      {
-			string line;
-			getline(ifs, line);
-			if (line.empty() || line[0] == '#') continue; 
-			ReducedImageRef ri = ReducedImageNew(line);
+			string name;
+			ifs >> name;
+			if (name.empty() || name[0] == '#') continue;
+			ReducedImageRef ri = ReducedImageNew(name);
 			if (ri->IsValid()) ril.push_back(ri);
 			else cerr << " not a valid dbimage: " << arg << endl;
 		      }
