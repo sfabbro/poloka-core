@@ -9,4 +9,4 @@ Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ltoadsbase -ltoadsutils -ltoads -ltoadspsf -ltoadslc -ltoadssimphot
 Libs.private: @LIBS@
 Cflags: -I${includedir}
-Requires: sex cfitsio
+Requires: sextractor cfitsio
