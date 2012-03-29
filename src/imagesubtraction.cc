@@ -119,13 +119,14 @@ bool ImageSubtraction::MakeFits()
   if (solution.empty()) DoTheFit();
 
   // build the subtracted image
-  FitsHeader href(Ref->FitsName());
-  FitsImage subFits(fileName, href);
+  FitsHeader hnew(New->FitsName());
+  FitsImage subFits(fileName, hnew);
   Image &subImage = subFits;
 
   // by convention the subtraction photometric scale is the same as the ref
   //  - photomRatio is New/Ref
-  //  - Important point : the same trick has to be applied to the variance computation. 
+  //  - Important point : the same trick has to be applied to the variance computation.
+  // convention changed: now subtraction is always on new (photomratio is still new/ref)
   double photomRatio = PhotomRatio();
   if (RefIsBest())
     {
@@ -142,8 +143,9 @@ bool ImageSubtraction::MakeFits()
 	AddBackground(bestImageConv);
 	subImage -= bestImageConv;
       }
-      Pixel factor = 1./photomRatio; // "*" is far faster than "/"
-      subImage *= factor;
+      // "*" is far faster than "/"
+      //Pixel factor = 1./photomRatio;
+      //subImage *= factor;
     }
   else 
     {
@@ -158,11 +160,16 @@ bool ImageSubtraction::MakeFits()
 	FitsImage worstFits(Ref->FitsName());
 	subImage -= worstFits;
       }
+      // "*" is far faster than "/"
+      Pixel factor = 1./photomRatio;
+      subImage *= factor;
     }
   // force floating point values (not sure it is useful)
   subFits.AddOrModKey("KERNREF", Best()->Name(), " name of the seeing reference image");
+  subFits.AddOrModKey("SUBREF", Ref->Name(), " name of the ref image");
+  subFits.AddOrModKey("SUBNEW", New->Name(), " name of the new image");
   subFits.AddOrModKey("KERNCHI2", Chi2(), " chi2/dof of the kernel fit");
-  subFits.AddOrModKey("PHORATIO", photomRatio, " photometric ratio with KERNREF");
+  subFits.AddOrModKey("PHORATIO", photomRatio, "flux = PHORATIO * flux(KERNREF)");
   double mjd= New->ModifiedJulianDate();
   subFits.AddOrModKey("MJD-OBS", mjd,"Modified Julian Date");
 
@@ -211,15 +218,17 @@ bool ImageSubtraction::MakeFits()
   SetSeeing(LargestSeeing());
   SetBackLevel(0.0); // by construction
   SetSaturation(Worst()->Saturation()," worst image saturation");
-  SetSigmaBack(sqrt(sqr(Best()->SigmaBack()*photomRatio) + sqr(Worst()->SigmaBack())));
-  SetReadoutNoise(sqrt(sqr(photomRatio*Best()->ReadoutNoise()) + sqr(Worst()->ReadoutNoise())));
+  double factor=1;
+  if (!RefIsBest()) factor=1/photomRatio;
+  SetSigmaBack(sqrt(sqr(Best()->SigmaBack()*photomRatio) + sqr(Worst()->SigmaBack()))*factor);
+  SetReadoutNoise(sqrt(sqr(photomRatio*Best()->ReadoutNoise()) + sqr(Worst()->ReadoutNoise()))*factor);
   SetUsablePart(CommonFrame());
-  SetOriginalSkyLevel(photomRatio * Best()->OriginalSkyLevel() + Worst()->OriginalSkyLevel()
+  SetOriginalSkyLevel((photomRatio*Best()->OriginalSkyLevel() + Worst()->OriginalSkyLevel())*factor
 		      ," sum of sky levels of the subtraction terms");
 
-  double zero_point = Ref->AnyZeroPoint();
-  cout << " ImageSubtraction: zero point taken from reference: " << zero_point << endl;
-  SetZZZeroP(zero_point, "as taken from reference");
+  //double zero_point = Ref->AnyZeroPoint();
+  //cout << " ImageSubtraction: zero point taken from reference: " << zero_point << endl;
+  //SetZZZeroP(zero_point, "as taken from reference");
   
   return true;
 }
@@ -373,7 +382,7 @@ bool ImageSubtraction::MakeWeight()
       for (SEStarCIterator it=bestList.begin(); it != bestList.end(); ++it)
 	if ((*it)->Fluxmax() > minfmax) add_model_noise(*it, gain, subWeightImage);
     } 
-  else 
+  else
     {
       cout << " ImageSubtraction: no Poisson noise from objects\n";
     }
@@ -403,7 +412,7 @@ bool ImageSubtraction::MakeWeight()
   if (subMaskSatur > 0 && !RefIsBest())
     {
       FitsImage worstFits(Worst()->FitsName());
-      cout << " ImageSubtraction: masking pixels with S/N > "
+      cout << " ImageSubtraction: masking pixels with satur > "
 	   << subMaskSatur << " on " << Worst()->Name() << endl;
       Pixel *pim = worstFits.begin();
       Pixel *pww = worstWeightImage.begin();
@@ -471,7 +480,8 @@ bool ImageSubtraction::MakeWeight()
   // correctly normalized only if New was convolved (and
   // photometrically matched to ref by the kernel fit).  Apply the same
   // factor as the one applied to the image
-  if (RefIsBest())
+  // convention has changed: units of New, so image unchanged
+  if (!RefIsBest())
     {
       subWeightImage *= sqr(PhotomRatio());
     }
