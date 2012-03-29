@@ -162,7 +162,10 @@ bool ImageSubtraction::MakeFits()
   // force floating point values (not sure it is useful)
   subFits.AddOrModKey("KERNREF", Best()->Name(), " name of the seeing reference image");
   subFits.AddOrModKey("KERNCHI2", Chi2(), " chi2/dof of the kernel fit");
-  subFits.AddOrModKey("PHORATIO", photomRatio, " photometric ratio with KERNREF"); 
+  subFits.AddOrModKey("PHORATIO", photomRatio, " photometric ratio with KERNREF");
+  double mjd= New->ModifiedJulianDate();
+  subFits.AddOrModKey("MJD-OBS", mjd,"Modified Julian Date");
+
   // subtract an ImageBack
   FitsImage *pweight = NULL;  
   if (MakeWeight())
@@ -176,10 +179,10 @@ bool ImageSubtraction::MakeFits()
   subImage -= *back ;
   delete back;
   subFits.AddOrModKey("BACK_SUB", true, 
-		       pweight? " subtracted weighed background" :
+		      pweight? " subtracted weighed background" :
 		      " subtracted unweighted background");
-  subFits.AddOrModKey("BACKMESH", backMesh, 
-		       " mesh size used for back computation ");
+  subFits.AddOrModKey("BACKMESH", backMesh,
+		      " mesh size used for back computation ");
 
   if (pweight)
     {
