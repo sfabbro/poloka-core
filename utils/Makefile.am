@@ -18,7 +18,7 @@ AM_CPPFLAGS = \
 bin_PROGRAMS = \
 	header astrom changekey checker dbimstat \
 	dead_correction elixir_to_toads \
-        findsatellite shiftswarp \
+        findsatellite shiftswarp image_zp \
         image_select image_stats image_sum \
         lbl2toads maglimeval make_catalog \
         make_cosmic make_dead joinlist make_weight \
@@ -126,6 +126,8 @@ simple_zpfitter_SOURCES = simple_zpfitter.cc
 satellite_trajectory_SOURCES = satellite_trajectory.cc
 merge_headers_SOURCES = merge_headers.cc
 image_combine_SOURCES = image_combine.cc
+image_zp_SOURCES = image_zp.cc
+image_zp_LDADD = $(LDADD) $(top_builddir)/psf/libtoadspsf.la
 image_subtract_SOURCES = image_subtract.cc
 image_detect_SOURCES = image_detect.cc
 image_match_SOURCES = image_match.cc
