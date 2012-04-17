@@ -90,10 +90,9 @@ struct ImageAddStar {
     GtransfoRef wcs = rim->RaDecToPixels();
     string outfile = rim->Dir() + "planted.fits";
     CopyFile(rim->FitsName(), outfile);
-    FitsImage image(outfile,RW);
-    //FitsHeader header(rim->FitsName());
-    //FitsImage image(outfile,header);
+    FitsImage image(outfile, RW);
     double zp = rim->AnyZeroPoint();
+
     for (BaseStarCIterator it=stars.begin(); it != stars.end(); ++it) {
       const BaseStar* s = *it;
       double flux = pow(10,0.4*(zp - s->flux));
@@ -101,14 +100,17 @@ struct ImageAddStar {
       wcs->apply(s->x, s->y, x, y);
       int istart, jstart, iend, jend;
       psf.StampLimits(x, y, istart, iend, jstart, jend);
-      if ((istart<iend) && (jstart<jend))
-	cout << " planting source: " << x << " " << y << " " << flux << endl;
-      for (int i=istart; i<iend; ++i)
-	for (int j=jstart; j<jend; ++j) {	  
-	  double val = flux * psf.PSFValue(x, y, i, j);
-	  image(i,j) += val + random_poisson(val);
-	}
-    }
+      if ((istart<iend) && (jstart<jend)) {
+	double counts=0;
+	for (int i=istart; i<iend; ++i)
+	  for (int j=jstart; j<jend; ++j) {	  
+	    double val = flux * psf.PSFValue(x, y, i, j);
+	    val += random_poisson(val);
+	    image(i,j) += val;
+	    counts += val;
+	  }
+	cout << " planting source: " << x << " " << y << " " << flux << " " << counts << endl;
+      }
   }
 };
 
