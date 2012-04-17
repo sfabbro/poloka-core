@@ -92,7 +92,11 @@ struct ImageAddStar {
     CopyFile(rim->FitsName(), outfile);
     FitsImage image(outfile, RW);
     double zp = rim->AnyZeroPoint();
-
+    double gain = rim->Gain();
+    double sig2 = rim->SigmaBack();
+    sig2 *= sig2;
+    cout << " Planting sources with zeropoint = " << zp << endl;
+    cout << " # x y flux s/n mag\n";
     for (BaseStarCIterator it=stars.begin(); it != stars.end(); ++it) {
       const BaseStar* s = *it;
       double flux = pow(10,0.4*(zp - s->flux));
@@ -101,16 +105,18 @@ struct ImageAddStar {
       int istart, jstart, iend, jend;
       psf.StampLimits(x, y, istart, iend, jstart, jend);
       if ((istart<iend) && (jstart<jend)) {
-	double counts=0;
+	double signal = 0;
 	for (int i=istart; i<iend; ++i)
-	  for (int j=jstart; j<jend; ++j) {	  
-	    double val = flux * psf.PSFValue(x, y, i, j);
-	    val += random_poisson(val);
-	    image(i,j) += val;
-	    counts += val;
+	  for (int j=jstart; j<jend; ++j) {	
+	    double adu = flux * psf.PSFValue(x, y, i, j);
+	    signal += adu;
+	    image(i,j) += random_poisson(adu*gain)/gain;
 	  }
-	cout << " planting source: " << x << " " << y << " " << flux << " " << counts << endl;
+	//double noise = sqrt(signal + );
+	//cout << " x " << " << y << "  << flux << " " 
+	//     << signal/noise <<  " " << s->flux << endl;
       }
+    }
   }
 };
 
