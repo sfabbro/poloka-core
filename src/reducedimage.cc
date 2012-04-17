@@ -2001,33 +2001,13 @@ REMOVE_ROUTINE(ZZZeroP,"ZPTOADS")
 
 
 double ReducedImage::AnyZeroPoint() const
-{
-  
-  if ( HasZZZeroP() )
-    {
-      cerr << "AnyZeroPoint for image : " << FitsName() 
-	   << " uses internal TOADS zero point ZZZeroP. " << endl ;
-      return ( ZZZeroP() );
-    }
-
-  if ( HasZP() )
-    {
-      cerr << "AnyZeroPoint for image : " << FitsName() 
-	   << " uses ZP key. " << endl ;
-      return ( ZP() );
-    }
-
-  if ( HasZP0() )
-    {
-      cerr << "AnyZeroPoint for image : " << FitsName() 
-	   << " uses ZP0 key. " << endl ;
-      return ( ZP0() );
-    }
-
-  cerr << "No regular Zero Point (ZP or ZP0) in image " 
-       << FitsName() << ", will use what I can (TOADPZPT) " << endl ;
-  return (Zerop());
-    
+{ 
+  FitsHeader head(FitsName());
+  if (head.HasKey("ZP_PHOT")) return double(head.KeyVal("ZP_PHOT"));
+  if (head.HasKey("ZPTOADS")) return double(head.KeyVal("ZPTOADS"));
+  if (head.HasKey("ZP")) return double(head.KeyVal("ZP"));
+  if (head.HasKey("ZP0")) return double(head.KeyVal("ZP0"));
+  return double(head.KeyVal("TOADPZPT"));
 }
 
 
