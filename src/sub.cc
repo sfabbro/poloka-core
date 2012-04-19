@@ -611,7 +611,10 @@ int Sub::DoIt()
       if ( stack.original_sub == NULL )
 	{
 	  cout <<" Building Subtraction " << stack.SubName() << endl ;
-	  stack.sub = new ImageSubtraction(stack.SubName(), RefStack, stack.newStack, convolveRef);
+	  KernelFitter kernfit(RefStack, stack.newStack,convolveRef);
+	  if (!kernfit.ReadKernel() && kernfit.DoTheFit())
+	    kernfit.WriteKernel();
+	  stack.sub = new ImageSubtraction(stack.SubName(), RefStack, stack.newStack, kernfit);
 	}
       else
 	{
@@ -647,7 +650,12 @@ int Sub::DoIt()
 	 GlobalNew->Execute(DoFits + DoCatalog + DoAperCatalog);
 
       if (Original_Sub == NULL ) // kernel fit wasn't done before
-	GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, GlobalNew, convolveRef);
+	{
+	  KernelFitter kernfit(RefStack, GlobalNew,convolveRef);
+	  if (!kernfit.ReadKernel() && kernfit.DoTheFit())
+	    kernfit.WriteKernel();
+	  GlobalSub = new ImageSubtraction(GlobalSubName(), RefStack, GlobalNew, kernfit);
+	}
       else
 	{
 	  cout << " Using a previous KernelFit to build " 
