@@ -1,6 +1,6 @@
 #include <cmath>
-#include <cstdlib> // srand                                                     
-#include <ctime>   // time                                                      
+#include <cstdlib>
+#include <ctime>
 
 #include "allreducedimage.h"
 #include "basestar.h"
@@ -105,16 +105,30 @@ struct ImageAddStar {
       int istart, jstart, iend, jend;
       psf.StampLimits(x, y, istart, iend, jstart, jend);
       if ((istart<iend) && (jstart<jend)) {
+	Image star(iend-istart, jend-jstart);
 	double signal = 0;
+	double norm = 0;
+	double vmin = 0;
 	for (int i=istart; i<iend; ++i)
-	  for (int j=jstart; j<jend; ++j) {	
-	    double adu = flux * psf.PSFValue(x, y, i, j);
+	  for (int j=jstart; j<jend; ++j) {
+	    double p = psf.PSFValue(x, y, i, j);
+	    double adu = flux * p;
 	    signal += adu;
-	    image(i,j) += random_poisson(adu*gain)/gain;
+	    double signal_poisson = random_poisson(adu*gain)/gain;
+	    norm += signal_poisson;
+	    star(i-istart,j-jstart) = signal_poisson;
+	    vmin += p*p / (adu/gain + sig2);
 	  }
-	//double noise = sqrt(signal + );
-	//cout << " x " << " << y << "  << flux << " " 
-	//     << signal/noise <<  " " << s->flux << endl;
+	// make sure total(added signal) = flux after adding poisson noise
+	norm = signal / norm;
+	for (int i=istart; i<iend; ++i)
+	  for (int j=jstart; j<jend; ++j)
+	    image(i,j) += norm * star(i-istart,j-jstart);
+
+	cout << x << " " << y
+	     << " " << flux
+	     << " " << signal*sqrt(vmin)
+	     << " " << s->flux << endl;
       }
     }
   }
