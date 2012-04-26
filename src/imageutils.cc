@@ -98,8 +98,8 @@ Frame ApplyTransfo(const Frame& inputframe,const Gtransfo &T, const WhichTransfo
 
 double ComputeSaturation(const Image& image)
 {
-  double max = image.MaxValue();
-  Histo1d histo(int(max/500.), 0, max + 1); //HC
+  double maxval = image.MaxValue();
+  Histo1d histo(int(maxval/500.), 0, maxval + 1); //HC
   for (int j = 0; j < image.Ny() ; ++j)
     for (int i = 0; i < image.Nx() ; ++i)
       histo.Fill(image(i,j), 1 );
@@ -107,13 +107,11 @@ double ComputeSaturation(const Image& image)
   double X;
   double Y = histo.MaxBin(X);
   double maxcoup = X;
-  int nmax = (int) max ;
-  Histo1d Satur(nmax , 0 , max);
-  double Saturation=max, Sat;
+  double Saturation=maxval, Sat;
   int count =1, nombre =0;
   for (int l=0; l<20; l++)
     {
-      histo.ZeroBins(max*0.05*l, max*0.05*(l+1)); 
+      histo.ZeroBins(maxval*0.05*l, maxval*0.05*(l+1));
       Sat = X;
       Y = histo.MaxBin(X);
       if (Sat == X)
