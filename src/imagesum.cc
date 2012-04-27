@@ -1,10 +1,7 @@
-
 #include <iostream>
 #include <iomanip>
-
 #include <string>
 #include <cmath>
-#include <stdio.h> // for remove(const char*)
 
 #include "fitsimage.h"
 #include "reducedimage.h"
@@ -14,9 +11,9 @@
 #include "vutils.h"
 #include "imagesum.h"
 #include "reducedutils.h"
+#include "photoratio.h"
 
-
-static double sqr(const double &a) { return a*a;}
+static double sqr(const double &a) { return a*a; }
 
 static bool IsAlignedWith(const ReducedImage& One, const ReducedImage& Two) {
   FitsHeader h1(One.FitsName());
@@ -41,14 +38,10 @@ Component::Component(ReducedImage *RI, const double &PhotomRatio,
 		     const WeightingMethod weightingMethod) 
   :  backVar(0.), seeing(2.5), globalWeight(1.), averageWeight(1.), Ri(RI)
 {
-  /* do not take a clone, nor delete it in the destructor. 
-     Clone it in ImageSum constructor and delete it in ImageSum destructor;
-  */
-  // backval = Ri->BackLevel();
   backVar = sqr(Ri->SigmaBack());
   if (backVar == 0) // sigmaBackRed missing :  compute it the hard way
     {
-      cout << " Did not find Sigma back in image " << Ri->Name() 
+      cout << " Component: did not find Sigma back in image " << Ri->Name() 
 	   << ", compute it the hard way " << endl;
       FitsImage image(Ri->FitsName());
       float backRed, sigBackRed;
@@ -60,15 +53,6 @@ Component::Component(ReducedImage *RI, const double &PhotomRatio,
   photomRatio = PhotomRatio; /* of this one w.r.t the same reference for 
 				all involved images.*/
   SetGlobalWeights(weightingMethod);
-  reducedImageName = Ri->Name();
-  hasDead    = FileExists(Ri->FitsDeadName());
-  hasSatur   = FileExists(Ri->FitsSaturName());
-  hasCosmic  = FileExists(Ri->FitsCosmicName());
-  hasWeight  = FileExists(Ri->FitsWeightName());
-}
-
-Component::~Component()
-{
 }
 
 void  Component::SetGlobalWeights(const WeightingMethod weightingMethod)
@@ -97,7 +81,7 @@ void  Component::SetGlobalWeights(const WeightingMethod weightingMethod)
       photomRatio = 1.;
       break;
     default:
-      cerr << " the provided WeightingMethod :" << weightingMethod 
+      cerr << " Component: the provided WeightingMethod :" << weightingMethod 
 	   << " is unknown " << endl;
       globalWeight = 0.;
       break;
@@ -105,16 +89,13 @@ void  Component::SetGlobalWeights(const WeightingMethod weightingMethod)
 }
 
 
-class PixVal
-{
-public:
+struct PixVal {
   double pixVal; // p
   double fluxVal; // f
   double localWeight; // w 
   double globalWeight; // w'
   double totalWeight; // w*w'
-  double pixVar; // Var(p). Sometimes, it is != to 1/w 
-                 //(depending on stacking options)
+  double pixVar; // Var(p). Sometimes, it is != to 1/w (stacking options)
   double photomRatio; // phi
   bool keep;
 };
@@ -126,7 +107,7 @@ void Component::dump(ostream &s) const
   int oldprec = s.precision();
   s << setprecision(6);
   s << "Component from " << Ri->Name() << " : " 
-   << "backVar =" << backVar 
+    << "backVar =" << backVar 
     << " seeing = " << seeing 
     << " photomratio = " << photomRatio 
     << " globalweight = " << globalWeight 
@@ -142,44 +123,61 @@ void Component::dump(ostream &s) const
 #include "toadscards.h"
 
 struct DatStack {
+
   WeightingMethod weightingMethod;
   StackingMethod stackingMethod;
+  PhotoRatioMethod scalingMethod;
 
   DatStack(const string &DatacardsFileName);
   void Print(ostream& s=cout)const;
 };
 
-#define WEIGHTING_METHOD "WEIGHTING_METHOD"
-#define STACKING_METHOD "STACKING_METHOD"
+const string WEIGHTING_METHOD = "WEIGHTING_METHOD";
+const string STACKING_METHOD = "STACKING_METHOD";
+const string PHOTOSCALING_METHOD = "PHOTOSCALING_METHOD";
+const string BACKGROUND_METHOD = "BACKGROUND_METHOD";
 
 DatStack::DatStack(const string &DatacardsFileName)
 {
   weightingMethod = ExtendedSourceOptimal;
   stackingMethod = WeightedAverage;
+  scalingMethod = TotalLeastSquares;
+
   if (FileExists(DatacardsFileName))
     {
       DataCards cards(DatacardsFileName);
+
       if (cards.HasKey(WEIGHTING_METHOD))
 	weightingMethod = (WeightingMethod) cards.IParam(WEIGHTING_METHOD);
-      else cerr << " using old fashioned datacards : miss " 
-		<< WEIGHTING_METHOD;
+      else 
+	cerr << " DatStack: using old fashioned datacards : missing " 
+	     << WEIGHTING_METHOD;
       
       if (cards.HasKey(STACKING_METHOD))
 	stackingMethod = (StackingMethod) cards.IParam(STACKING_METHOD);
-      else cerr << " using old fashioned datacards : miss " 
-		<< STACKING_METHOD;
+      else
+	cerr << " DatStack: using old fashioned datacards : missing " 
+	     << STACKING_METHOD;
+
+      if (cards.HasKey(PHOTOSCALING_METHOD))
+	scalingMethod = (PhotoRatioMethod) cards.IParam(PHOTOSCALING_METHOD);
+      else
+	cerr << " DatStack: using old fashioned datacards : missing " 
+	     << PHOTOSCALING_METHOD;
+
     }
   else
     {
-      cerr << "Cannot read " << DatacardsFileName << endl;
+      cerr << " DatStack: cannot read " << DatacardsFileName << endl;
     }
 }
 
 
 void DatStack::Print(ostream& s) const
 {
-  s << "weighting method : " << weightingMethod << endl;
-  s << "stacking method : " << stackingMethod << endl;
+  s << "weighting method : " << weightingMethod << endl
+    << "stacking method : " << stackingMethod << endl
+    << "photoscaling method : " << scalingMethod << endl;
 }
 
 
@@ -188,90 +186,89 @@ void DatStack::Print(ostream& s) const
 ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
 		   const ReducedImage *PhotomReference,
 		   const WeightingMethod AWMethod, 
-		   const StackingMethod ASMethod) :
-  ReducedImage(AName)
+		   const StackingMethod ASMethod,
+		   const PhotoRatioMethod APMethod)
+ : ReducedImage(AName)
 {
+
   DatStack datstack(DefaultDatacards());
+
   if (AWMethod == WUnSet)
     weightingMethod = datstack.weightingMethod;
-  else weightingMethod = AWMethod;
+  else
+    weightingMethod = AWMethod;
 
   if (ASMethod == SUnSet)
     stackingMethod = datstack.stackingMethod;
-  else stackingMethod = ASMethod;
+  else
+    stackingMethod = ASMethod;
 
-  cout << " Constructing " << Name() << endl;
-  cout << "# of images provided " << Images.size() << endl;
+  if (APMethod == PUnSet)
+    scalingMethod = datstack.scalingMethod;
+  else
+    scalingMethod = APMethod;
 
-  if (Images.size() == 0) return;
+  cout << " ImageSum: constructing " << Name() << endl
+       << " ImageSum: " << Images.size() << " of images provided\n";
+
+  if (Images.empty()) return;
 
   double total_weight = 0;
 
-  // devise photometric reference
   const ReducedImage *photomReference = PhotomReference;
-  GtransfoRef transfo2PhoRef;
-  if (!photomReference) {
-    photomReference = Images.front();
-    transfo2PhoRef = new GtransfoIdentity();
-  }
+  if (!photomReference) photomReference = Images.front();
   photomReferenceName = photomReference->Name();
   zero_point_ref = photomReference->AnyZeroPoint();
-  cout << " using " << photomReferenceName << " as photom reference " << endl;
+  cout << " ImageSum: " << photomReferenceName << " is photometric reference\n";
 
   for (ReducedImageIterator i = Images.begin(); i!= Images.end(); ++i)
     {
       ReducedImage *ri = *i;
       bool ok = true ;
-      if (! FileExists(ri->FitsName()))
+      if (!ri->HasImage())
 	{
-	  cout << " Building " <<ri->FitsName() << endl ;
-	  ok =  ri->MakeFits(); 
+	  cout << " ImageSum: building missing " << ri->FitsName() << endl;
+	  ok =  ri->MakeFits();
 	}
       if (!ok) continue ;
-      double phRatio=1;
-      // no need of catalogues when summing without photometric scaling
-      if (weightingMethod != NoGlobalWeighting && weightingMethod != NoWeightsAtAll) {	
-	if (!ri->HasCatalog()) {
-	  cout << " Building " << ri->CatalogName() << endl ;
-	  ok =  ri->MakeCatalog();
-	}
-	if (!transfo2PhoRef && AreAligned(*ri, *photomReference))
-	  transfo2PhoRef = new GtransfoIdentity();
+      double phRatio = 1;
+      if (weightingMethod != NoGlobalWeighting && 
+	  weightingMethod != NoWeightsAtAll) {
 	double err;
-	ok = PhotomRatio(*ri, *photomReference, phRatio, err, transfo2PhoRef);
+	phRatio = PhotoRatio(*ri, *photomReference, err, 0, scalingMethod);
       }
       if (!ok) continue;
       Component current(ri, phRatio, weightingMethod);
       current.dump();
       components.push_back(current);
-      //components.push_back(Component(ri,phRatio, weightingMethod));
 
       total_weight += components.back().globalWeight;
     }
-  unsigned nComponents = components.size();
 
-  if (!nComponents)
+  if (components.empty())
     {
-      cerr << " Error : no components to assemble ImageSum " << Name() << endl;
-      cerr << " Giving up " << endl;
+      cerr << " ImageSum: no components to build ImageSum " << Name() << endl
+	   << " ImageSum: giving up\n";
       return;
     }      
+  size_t nComponents = components.size();
   total_weight /= double(nComponents);
   /* normalize weights. This is just esthetical because the 
      result should not depend on a global factor applied to weights */
   if (total_weight == 0) 
     {
-      cerr << " we have images to assemble ImageSum named \""<< Name() 
-	   << "\", but they all have a null weight ... giving up " << endl;
+      cerr << " ImageSum: we have images to build "<< Name() 
+	   << ", but they all have a null weight ... giving up\n";
+      return;
     }
-  for (unsigned k=0; k<nComponents; ++k) 
+  for (size_t k=0; k<nComponents; ++k) 
     {
       components[k].globalWeight /= total_weight;
       //components[k].dump();
     }
 
-  if (components.size() == 0)
-    cout << " constructed ImageSum ("<< Name() 
+  if (components.empty())
+    cerr << " ImageSum: constructed ImageSum ("<< Name() 
 	 << ") without anything to sum " << endl;
   //  cerr << " Now creating Dbimage " << endl;
   Create("here");
@@ -290,7 +287,7 @@ ImageSum::ImageSum(const string &Name) : ReducedImage(Name)
 
 void ImageSum::dump(ostream &s) const
 {
-  s<< " ImageSum \"" << Name() << "\" : made from ";
+  s << " ImageSum \"" << Name() << "\" : made from ";
   for (ComponentCIterator i=components.begin(); i != components.end(); ++i)  
     s << (*i).Ri->Name() << ' ';
   s << endl;
@@ -312,8 +309,12 @@ string name_of_stackingMethod(const StackingMethod stackingMethod)
       return "Median";
       break;
 
+    case AdaptiveWeightedAverage : 
+      return "AdaptiveWeightedAverage";
+      break;
+
     default :
-      cerr << "stacking method " << stackingMethod 
+      cerr << " stacking method: " << stackingMethod 
 	   << " is out of bounds " << endl;
     }
   return " ";
@@ -340,7 +341,7 @@ string name_of_weightingMethod(const WeightingMethod weightingMethod)
       break;
 
     default :
-      cerr << "weighting method " << weightingMethod 
+      cerr << " weighting method " << weightingMethod 
 	   << " is out of bounds " << endl;
     }
   return " ";
@@ -494,6 +495,32 @@ static void clipped_weighted_average(PixVal *Values, const int Npix,
   flux_and_weight(Values, Npix, Flux, WeightFlux);
 }
 
+// continuous thresholding: update the weight function
+// weight = weight / ( 1 + weight*resid^2)
+// to allow to deweight high residuals
+// this routine assumes that 1/localWeight is the variance of rawVal.
+static void adaptive_weighted_average(PixVal *Values, const int Npix, 
+				      double &Flux, double &WeightFlux)
+{
+  // initial guess is median
+  normval_weighted_median(Values, Npix, Flux, WeightFlux);
+  double *origWeight = new double[Npix];
+  for (int i=0; i< Npix; ++i) {
+    PixVal *value = Values+i;
+    origWeight[i] = value->localWeight;
+  }
+  int iter = 0, maxIter=5;
+  do {
+    double *pw = origWeight;
+    for (int i=0; i< Npix; ++i, ++pw) {
+      PixVal *value = Values+i;
+      value->localWeight = *pw / (1. + sqr(value->fluxVal-Flux) * value->localWeight);
+    }
+    flux_and_weight(Values, Npix, Flux, WeightFlux);
+  } while (iter++ < maxIter);
+  delete [] origWeight;
+}
+
 #include "fitsslice.h"
 #include <time.h>
  
@@ -512,7 +539,7 @@ bool ImageSum::MakeFits()
       MakeRelativeLink(components.front().Ri->FitsWeightName().c_str(), FitsWeightName().c_str());
       return true;
     }
-  cout <<" entering image stacking for " << Name() << endl;
+  cout <<" ImageSum: entering image stacking for " << Name() << endl;
   clock_t tstart = clock();
   FitsParallelSlices imageSlices(20);
   FitsParallelSlices *weightSlices = NULL;
@@ -521,16 +548,16 @@ bool ImageSum::MakeFits()
   if (weightingMethod != NoWeightsAtAll)
     weightSlices = new FitsParallelSlices(20);
   
-  cout << " stacking using  " 
+  cout << " ImageSum: stacking using  " 
        << name_of_stackingMethod(stackingMethod) << endl
        << " with weighting scheme : " 
        << name_of_weightingMethod(weightingMethod) << endl;
 
   PixVal *pixValues = new PixVal[components.size()];
   
-  cout << " setting up components" << endl;
+  cout << " ImageSum: setting up components" << endl;
   double averageWeightSum = 0;
-  for (unsigned k=0; k < components.size(); ++k)
+  for (size_t k=0; k < components.size(); ++k)
     {
       ReducedImage &ri = *(components[k].Ri);
       ri.MakeFits();
@@ -552,7 +579,7 @@ bool ImageSum::MakeFits()
 	}
       else
 	{
-	  cerr << " Do not use weight image for " 
+	  cerr << " ImageSum: do not use weight image for " 
 	       << components[k].Ri->Name() << endl ;
 	  average_local_weight = 1;
 	}
@@ -561,20 +588,21 @@ bool ImageSum::MakeFits()
                                     *components[k].photomRatio;
       averageWeightSum += components[k].averageWeight;
     }
-  /* Not sure this is meaningfull because there are attributes 
-     which add up, and attributes which average (seeing) */
-  if (averageWeightSum) for (unsigned k=0; k < components.size(); ++k)
+
+  // Not sure this is meaningful because there are attributes 
+  // which add up, and attributes which average (seeing)
+  if (averageWeightSum) for (size_t k=0; k < components.size(); ++k)
       components[k].averageWeight /= averageWeightSum;
 
   Image stackImage(components[0].Ri->XSize(), components[0].Ri->YSize());
   Image weightImage(stackImage);
 
-  int numberOfImages = components.size();
+  size_t numberOfImages = components.size();
   int nx = stackImage.Nx();
   int ny = stackImage.Ny();
 
   // set up done : loop on pixels
-  cout << " Start looping on pixels " << endl;
+  cout << " ImageSum: start looping on pixels " << endl;
   do
     {
       for (int j=0; j < imageSlices.SliceSize(); ++j) 
@@ -582,12 +610,12 @@ bool ImageSum::MakeFits()
 
 	  int j_image = imageSlices.ImageJ(j);
 	  if (j_image >= ny)
-	    cout << " CATASTROPHE :j_image >= ny " << j_image 
+	    cout << " ImageSum: CATASTROPHE :j_image >= ny " << j_image 
 		 << ' ' << ny << endl; 
 	  for (int i=0; i< nx; ++i)
 	    { 
 	      int npix = 0;
-	      for (int k = 0; k<numberOfImages; ++k) 
+	      for (size_t k = 0; k<numberOfImages; ++k) 
 		{
 		  /* there are quantities initialized here which do not vary 
 		     from pixel to pixel. They are anyway (re) initialised
@@ -638,6 +666,10 @@ bool ImageSum::MakeFits()
 		  normval_weighted_median(pixValues, npix, 
 					  stackVal, weightVal);
 		}
+	      else if (stackingMethod == AdaptiveWeightedAverage)
+		{
+		  adaptive_weighted_average(pixValues, npix, stackVal, weightVal);
+		}
 	      stackImage(i, j_image) = stackVal;
 	      weightImage(i, j_image) = weightVal;
 	    }
@@ -650,7 +682,7 @@ bool ImageSum::MakeFits()
   delete [] pixValues;
 
   clock_t tend = clock();
-  cout << " CPU for stacking " 
+  cout << " ImageSum: CPU for stacking " 
        << float(tend-tstart)/float(CLOCKS_PER_SEC) << endl;
   {
     FitsHeader headRef(components[0].Ri->FitsName());
@@ -661,7 +693,7 @@ bool ImageSum::MakeFits()
     weightFits.PreserveZeros(); 
   }
   FitsHeaderFill();
-  cout << Name() << " Image/Weight stat : " 
+  cout << " ImageSum: " << Name() << " Image/Weight stat : " 
        << ImageAndWeightError(stackImage, weightImage) << endl;
   return true;
 }
@@ -690,9 +722,9 @@ void ImageSum::FitsHeaderFill()
   double deno_gain = 0;
   // string componentsNames;
 
-  for (unsigned int k=0; k<components.size(); ++k)
+  for (size_t k=0; k<components.size(); ++k)
     {
-      cout << " Component #" << k << endl;
+      cout << " ImageSum: Component #" << k << endl;
       Component &component = components[k];
       component.dump();
       ReducedImage* redIm = component.Ri;
@@ -749,7 +781,7 @@ void ImageSum::FitsHeaderFill()
 
   // Upadte the usable part of the image
   //  SetUsablePart(intersection);
-  cout << " Setting the header " << endl;
+  cout << " ImageSum: setting the header " << endl;
   SetSeeing(seeing);
   SetBackLevel(backLevel);
   double sigmaBack = sqrt(backVar);
@@ -793,7 +825,7 @@ void ImageSum::FitsHeaderFill()
    if (zero_point_ref>0)
     {
       // par construction, sum alignee sur ref photom
-      cerr << "Point zero for stack " << Name() << " : " 
+      cout << " ImageSum: zero point for stack " << Name() << " : " 
 	   << zero_point_ref << endl ;
       SetZZZeroP(zero_point_ref, "computed from ref for stack");
     }
@@ -805,7 +837,7 @@ void ImageSum::FitsHeaderFill()
   // add history lines instead of a key. It crashed with long names... 
   // I suspect the string capacity holding with g++<3.2
   head.AddHistoryLine("DbImage names of components");
-  for (unsigned int k=0; k<components.size(); ++k)
+  for (size_t k=0; k<components.size(); ++k)
     head.AddHistoryLine(components[k].Ri->Name());
     
 }
@@ -876,7 +908,7 @@ bool ImageSum::MakeStarCat()
 bool ImageSum::MakeDead()
 {
   if (FileExists(FitsDeadName())) return true;
-  cout << " making Dead image for " << Name() << endl;
+  cout << " ImageSun: making Dead image for " << Name() << endl;
   if (components.size() == 1)
     {
       MakeRelativeLink(components.front().Ri->FitsDeadName().c_str(),
@@ -891,7 +923,7 @@ bool ImageSum::MakeDead()
 bool ImageSum::MakeSatur()
 {
   if (FileExists(FitsSaturName())) return true;
-  cout << " making Satur image for " << Name() << endl;
+  cout << " ImageSum: making Satur image for " << Name() << endl;
   if (components.size() == 1)
     {
       string name = components.front().Ri->FitsSaturName();
@@ -912,10 +944,6 @@ bool ImageSum::MakeSatur()
 		     &ReducedImage::MakeSatur, FitsSaturName());
 }
 
-ImageSum::~ImageSum()
-{
-}
-
 
 /*****************************************************************************/
 //! Align (on Reference) and sum images. ToDo can be constructed using DoFits 
@@ -925,7 +953,8 @@ ImageSum* ImagesAlignAndSum(const ReducedImageList &ToSum,
 			    const string &SumName, const int ToDo,
 			    const ReducedImage *PhotomReference,
 			    const WeightingMethod AWMethod, 
-			    const StackingMethod ASMethod)
+			    const StackingMethod ASMethod,
+			    const PhotoRatioMethod APMethod)
 
 {
   ReducedImageList transformedImages;
@@ -934,7 +963,7 @@ ImageSum* ImagesAlignAndSum(const ReducedImageList &ToSum,
   //sum
   if (count == 0) return NULL;
   ImageSum *sum;
-  sum = new ImageSum(SumName, transformedImages, PhotomReference, AWMethod, ASMethod);
+  sum = new ImageSum(SumName, transformedImages, PhotomReference, AWMethod, ASMethod, APMethod);
   sum->Execute(DoFits | ToDo);
   
   return sum;
@@ -950,11 +979,11 @@ bool ImagesAlignAndSum(const vector<string> &ToSum,
   ReducedImageList reducedImages;
   if (!geomRef.IsValid())
     {
-      cerr << "ImagesAlignAndSum : was " << Reference 
+      cerr << " ImagesAlignAndSum : was " << Reference 
 	   << " actually produced ?? " << endl;
       return false;
     }
-  for (unsigned int i=0; i<ToSum.size() ; ++i)
+  for (size_t i=0; i<ToSum.size() ; ++i)
     {
       /* I guess I should refer to the ReducedImage via the virtual 
 	 constructor (ReducedImageNew) rather than the real one. 
@@ -965,7 +994,7 @@ bool ImagesAlignAndSum(const vector<string> &ToSum,
       ReducedImage *current = new ReducedImage(currentName);
       if (!current->IsValid())
 	{
-	  cerr << "ImagesAlignAndSum : was " << currentName 
+	  cerr << " ImagesAlignAndSum : was " << currentName 
 	       << " actually produced ?? " << endl;
 	  continue;
         }
@@ -974,7 +1003,10 @@ bool ImagesAlignAndSum(const vector<string> &ToSum,
   ReducedImage *result = ImagesAlignAndSum(reducedImages, Reference, 
 					   SumName, ToDo);
   if (result) delete result;
-  else cerr << " ImagesAlignAndSum: failure" << endl;
+  else {
+    cerr << " ImagesAlignAndSum: failure" << endl;
+    return false; 
+  }
   return true;
 }
 

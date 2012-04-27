@@ -18,7 +18,7 @@
 #include "fitsimage.h"
 #include "imagepair.h"
 #include "imageutils.h"
-#include "reducedutils.h" // for MedianPhotomRatio
+#include "photoratio.h"
 #include "fastfinder.h"
 #include "imageback.h"
 
@@ -1990,13 +1990,17 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   if (worstSeeing>bestSeeing) {
     PolGaussKern(guess, sqrt(sqr(worstSeeing) - sqr(bestSeeing)), 0, 0);
     guess *= 1./guess.sum();
-    if (optParams.KernelBasis == 3) optParams.KernelBasis = 1;
+    if (optParams.KernelBasis == 3)
+      if (worstSeeing>1.5*bestSeeing)
+	optParams.KernelBasis = 1;
+      else
+	optParams.KernelBasis = 2;
   } else { // use delta
     SetDelta(guess);
     if (optParams.KernelBasis == 3) optParams.KernelBasis = 2;
   }
 
-  double sexPhotomRatio = 1./MedianPhotomRatio(matchList);
+  double err, sexPhotomRatio = 1./MedianPhotoRatio(matchList, err);
   guess *=  sexPhotomRatio;
   cout << " KernelFit: initial photom ratio " << sexPhotomRatio << endl;
   StampList bestImageStamps(ImPair, matchList, optParams.HStampSize, guess, optParams.MaxStamps);

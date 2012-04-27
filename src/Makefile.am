@@ -57,6 +57,7 @@ src_include_HEADERS = \
 	matchexception.h \
 	multimagstar.h \
 	nstarmatch.h \
+	photoratio.h \
 	quali_box.h \
 	reducedimage.h \
 	reducedutils.h \
@@ -114,6 +115,7 @@ libtoads_la_SOURCES = \
 	multimagstar.cc \
 	nstarmatch.cc \
 	quali_box.cc \
+	photoratio.cc \
 	reducedimage.cc \
 	reducedutils.cc \
 	scorescollection.cc \
