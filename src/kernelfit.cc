@@ -232,7 +232,7 @@ static int build_variance(const Image &ImageWeight,
 
    // is now a variance
   // avoid this (wrong in crowded fields, downweight higher s/n, add non-linearities, bias solution)
-  add_object_noise(Star, int(Xc), int(Yc), Star->flux/Gain, VarStamp);
+  //add_object_noise(Star, int(Xc), int(Yc), Star->flux/Gain, VarStamp);
   return count;
 }
   
@@ -313,8 +313,8 @@ void StampList::init(ImagePair &ImPair, const StarMatchList &Objects,
   // we could consider the more stringent the soft limit :
   //   const Frame& imageFrame = ImPair.CommonFrame();
   int hWorstSize = hBestSize-GuessedKernel.HSizeX();
-
-  int nPixCut = (2*hWorstSize+1)*(2*hWorstSize+1)/2;
+  // 75% of the stamp should have a non-zero weight
+  int nPixCut = int((2*hWorstSize+1)*(2*hWorstSize+1) * 0.75);
   BaseStarList finalList;
 
   // choose non overlapping stamps
@@ -324,7 +324,7 @@ void StampList::init(ImagePair &ImPair, const StarMatchList &Objects,
     {
       const BaseStar *s = sm->s1;
       const BaseStar *closest = finalList.FindClosest(*s);
-      if ((imageFrame.MinDistToEdges(*s) < hBestSize+1) || 
+      if ((imageFrame.MinDistToEdges(*s) < hBestSize+2) || 
 	  (closest && s->Dist2(*closest) < maxdist2))
 	   continue;
       Stamp stamp(s, bestImage, hBestSize, hWorstSize);
@@ -419,7 +419,7 @@ static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams
   double saturLevWorst = worst->Saturation() * optParams.MaxSatur;
   double bMinBest = best->Seeing() * optParams.MinB;
   double bMinWorst = worst->Seeing()* optParams.MinB;
-  double mindist = worst->Seeing()*3;
+  double mindist = worst->Seeing() * optParams.NSig;
   cout << " MakeObjectList: cuts for best,  satur bmin " << saturLevBest << " " << bMinBest << endl;
   cout << " MakeObjectList: cuts for worst, satur bmin " << saturLevWorst << " " << bMinWorst << endl;
   FastFinder worstFinder(*SE2Base(&worstStarList));
@@ -1779,8 +1779,7 @@ for (int i=0; i< convolvedSize; ++i)
 stamp.chi2 = chi2;
 stamp.chi = chi;
  if (chi2<0) {
-   cerr << " KernelFit::StampChi2 WARNING xc,yc,chi2,chi = " << xc << "," << yc << "," << chi2 << "," << chi << endl;
-   throw(PolokaException("KernelFit: negative chi2"));
+   cerr << " KernelFit: negative chi2 at: (" << xc << "," << yc << ")\n";
  } 
 return chi2;
 }
