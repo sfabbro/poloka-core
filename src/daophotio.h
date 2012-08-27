@@ -256,11 +256,11 @@ void write_dao(const string FileName, const DaoStarList &Stars) {
   double minx=1e30, maxx=-1e30, miny=1e30, maxy=-1e30, mins=1e30;
   for (DaoStarCIterator it = Stars.begin(); it != Stars.end(); ++it) {
     const DaoStar* s;
-    if (s->x < minx) minx = s->x;
-    if (s->y < miny) miny = s->y;
-    if (s->x > maxx) maxx = s->x;
-    if (s->y > maxy) maxy = s->y;
-    if (s->sky < mins) mins = s->sky;
+    if (s->x <= minx) minx = s->x;
+    if (s->y <= miny) miny = s->y;
+    if (s->x >= maxx) maxx = s->x;
+    if (s->y >= maxy) maxy = s->y;
+    if (s->sky <= mins) mins = s->sky;
   }
   ofstream daostream(FileName.c_str());
   write_dao_header  <filetype>(daostream, int(maxx-minx), int(maxy-miny),

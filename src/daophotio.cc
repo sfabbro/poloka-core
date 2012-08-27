@@ -269,12 +269,14 @@ static void read_dao_basestar(istream& daostream, DaoStar& star) {
 
 // partial specialization for daophot find file
 template<> void read_dao_star<FindCoo>(istream &daostream, DaoStar &star) {
+  read_dao_basestar(daostream, star);
   double dy;
   daostream >> star.sharp >> star.round >> dy;
 }
 
 // partial specialization for daophot aperture file
 template<> void read_dao_star<PhotAp>(istream &daostream, DaoStar &star) {
+  read_dao_basestar(daostream, star);
   double skyerror, skyskew, emag;
   daostream >> star.sky >> star.esky >> star.skyskew >> emag;
   star.eflux = 0.921034 * emag * star.flux;
@@ -282,11 +284,13 @@ template<> void read_dao_star<PhotAp>(istream &daostream, DaoStar &star) {
 
 // partial specialization for daophot pick file
 template<> void read_dao_star<PickLst>(istream &daostream, DaoStar &star) {
+  read_dao_basestar(daostream, star);
   daostream >> star.sky;
 }
 
 // partial specialization for daophot neighbor file
 template<> void read_dao_star<PsfNei>(istream &daostream, DaoStar &star) {
+  read_dao_basestar(daostream, star);
   daostream >> star.sky >> star.chi;
   char flag;
   daostream >> flag;
@@ -296,6 +300,7 @@ template<> void read_dao_star<PsfNei>(istream &daostream, DaoStar &star) {
 
 // partial specialization for daophot allstar file
 template<> void read_dao_star<AllstarAls>(istream &daostream, DaoStar &star) {
+  read_dao_basestar(daostream, star);
   double emag;
   daostream >> emag;
   star.eflux = 0.921034 * emag * fabs(star.flux);
@@ -411,11 +416,11 @@ void WriteDaoList(const string& FileName, const DaoStarList& Stars) {
 void WriteDaoList(const ReducedImage& Im, const string& FileName, const DaoStarList& Stars) {
   DaoCatalogEnum filetype = DaoFileType(FileName);
   switch (filetype) {
-  case AllstarAls: return write_dao<AllstarAls>(Im, FileName, Stars);
-  case FindCoo: return write_dao<FindCoo>(Im, FileName, Stars);
-  case PsfNei: return write_dao<PsfNei>(Im, FileName, Stars);
-  case PickLst: return write_dao<PickLst>(Im, FileName, Stars);
-  case PhotAp: return write_dao<PhotAp>(Im, FileName, Stars);
+  case AllstarAls: return write_dao<AllstarAls>(Im, Im.Dir()+"/"+FileName, Stars);
+  case FindCoo: return write_dao<FindCoo>(Im, Im.Dir()+"/"+FileName, Stars);
+  case PsfNei: return write_dao<PsfNei>(Im, Im.Dir()+"/"+FileName, Stars);
+  case PickLst: return write_dao<PickLst>(Im, Im.Dir()+"/"+FileName, Stars);
+  case PhotAp: return write_dao<PhotAp>(Im, Im.Dir()+"/"+FileName, Stars);
   default:
     cerr << " WriteDaoList: no file type found for " << FileName << endl;
   }
