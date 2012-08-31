@@ -19,16 +19,16 @@ static void wcs_shift(const string& fitsname, const double& dx, const double& dy
   FitsHeader head(fitsname, RW);
   double crpix1 = head.KeyVal("CRPIX1");
   double crpix2 = head.KeyVal("CRPIX2");
-  head.AddOrModKey("CRPIX1",crpix1 - dx,"Changed for shift and stack");
-  head.AddOrModKey("CRPIX2",crpix2 - dy,"Changed for shift and stack");
+  head.AddOrModKey("CRPIX1",crpix1 - dx, "Changed for shift & stack");
+  head.AddOrModKey("CRPIX2",crpix2 - dy, "Changed for shift & stack");
 }
 
 static void wcs_unshift(const string& fitsname, const double& dx, const double& dy) {
   FitsHeader head(fitsname, RW);
   double crpix1 = head.KeyVal("CRPIX1");
   double crpix2 = head.KeyVal("CRPIX2");
-  head.AddOrModKey("CRPIX1",crpix1 + dx,"Changed for shift and stack");
-  head.AddOrModKey("CRPIX2",crpix2 + dy,"Changed for shift and stack");
+  head.AddOrModKey("CRPIX1",crpix1 + dx,"Original value before shift and stack");
+  head.AddOrModKey("CRPIX2",crpix2 + dy,"Original value before shift and stack");
 }
 
 int main(int nargs, char **args) {
