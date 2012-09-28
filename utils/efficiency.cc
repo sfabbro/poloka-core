@@ -7,6 +7,7 @@
 #include "reducedimage.h"
 #include "fastfinder.h"
 #include "detection.h"
+#include "sestar.h"
 #include "fileutils.h"
 
 static void usage(const char* prog) {
@@ -15,7 +16,7 @@ static void usage(const char* prog) {
 }
 
 struct genstar {
-  long id;
+  string id;
   double ra,dec,mag;
 };
 
@@ -26,7 +27,7 @@ static void read_generated(const char* filename, list<genstar>& stars) {
     in.unget();
     genstar star;
     in >> star.id >> star.ra >> star.dec >> star.mag;
-    stars.push_back(star);    
+    stars.push_back(star);
   }
 }
 
@@ -37,6 +38,7 @@ struct MatchDetStar {
 
   MatchDetStar(const char* filename) : maxDist(5) {
     read_generated(filename, stars);
+    cout << " read " <<  stars.size() << " stars" << endl;
   }
 
   void operator () (const string& name) {
@@ -49,12 +51,14 @@ struct MatchDetStar {
     
     GtransfoRef wcs = im->RaDecToPixels();
     DetectionList starList(im->Dir()+"/det.list");
+    //SEStarList starList(im->Dir()+"/se.list");
     BaseStar zeroStar;
     FastFinder finder(*Detection2Base(&starList));
+    //FastFinder finder(*SE2Base(&starList));
     ofstream out((im->Dir()+"detplant.list").c_str());
     ofstream outds9((im->Dir()+"detplant.reg").c_str());
     Frame frame = im->UsablePart();
-    for (list<genstar>::iterator it=stars.begin(); it != stars.end(); ++it) {
+    for (list<genstar>::const_iterator it=stars.begin(); it != stars.end(); ++it) {
       double x,y;
       wcs->apply(it->ra, it->dec, x, y);
       if (!frame.InFrame(x,y)) continue;
@@ -62,11 +66,11 @@ struct MatchDetStar {
       if (detStar) {
 	out << it->id << ' ' << it->ra << ' ' << it->dec << ' ' << it->mag
 	    << ' ' << detStar->flux/detStar->eflux << endl;
-	outds9 << "fk5;circle(" << it->ra << "d," << it->dec << "d,10p) # text = {" << it->mag << "}\n";
+	outds9 << "circle(" << x << "," << y << ",10p) # text = {" << it->mag << "}\n";
       } else {
 	out << it->id << ' ' << it->ra << ' ' << it->dec << ' ' << it->mag 
 	    << " 0" << endl;
-	outds9 << "fk5;circle(" << it->ra << "d," << it->dec << "d,10p) # color = blue text = {" << it->mag << "}\n";
+	outds9 << "circle(" << x << "," << y << ",10p) # color = cyan text = {" << it->mag << "}\n";
       }
     }
   }

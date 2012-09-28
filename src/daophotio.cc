@@ -64,7 +64,7 @@ DaoCatalogEnum DaoFileType(const string& FileName) {
 
 ostream& operator << (ostream &stream, const DaoOption& opt) {
   size_t oldp = stream.precision();
-  stream << setiosflags(ios::fixed);  
+  stream << setiosflags(ios::fixed);
   stream << string(27-opt.name.length(),' ')  << opt.name
 	 << " =" << setw(9) << setprecision(2) << opt.value;
   stream << resetiosflags(ios::fixed) << setprecision(oldp);
@@ -314,11 +314,14 @@ template<> void read_dao_star<AllstarAls>(istream &daostream, DaoStar &star) {
 
 static void write_dao_basestar(ostream& daostream, const DaoStar& star) {
   double mag = (star.flux > 0)? -2.5*log10(star.flux) + DAOPHOT_ZP : DAOPHOT_ZP;
-  daostream << setw(6) << star.num
+  size_t oldp = daostream.precision();
+  daostream << setiosflags(ios::fixed)
+	    << setw(6) << star.num
 	    << setprecision(3) 
 	    << setw(9) << star.x - DAOPHOT_TOADS_SHIFT 
 	    << setw(9) << star.y - DAOPHOT_TOADS_SHIFT
-	    << setw(9) << mag;
+	    << setw(9) << mag
+	    << setprecision(oldp);
 }
 // partial specialization for daophot find file
 template<> void write_dao_star<FindCoo>(ostream &daostream, const DaoStar &star) {
@@ -517,51 +520,70 @@ void Sex2Dao(const string& SexName, const string& DaoName) {
 
 void DaoSetup(ReducedImage& Im, const string& Dir) {
   
-  string imname = (Dir.empty()? Im.Dir() + "daoimage" : AddSlash(Dir) + Im.Name());
+  string daoname = Dir.empty() ? "daoimage" : Im.Name();
 
-  SEStarList stars(Im.CatalogName());
-  // daophot does not read compressed files
-  // and has problem decoding some cfht 16 bits image
+  // replace . with _, daophot is not robust with it
+  for(int i = 0; i < daoname.length(); i++)
+    if (daoname[i] == '.') daoname[i] = '_';
+
+  string daodir  = Dir.empty() ? Im.Dir() : Dir;
+  if (!IsDirectory(daodir)) MKDir(daodir.c_str());
+  string fullname = daodir + "/" + daoname;
+  cout << " DaoSetup: set-up " << Im.Name() << " in " << daodir << endl;
+  float sky = 0;
+  bool backsub = Im.BackSub();
+  if (backsub) sky = Im.OriginalSkyLevel();
+
   FitsImage im(Im.FitsName());
-  FitsImage daoim(imname + ".fits", im, im);
-  daoim.SetWriteAsFloat();
 
-  // add sky if subtracted
-  if (Im.BackSub()) {
-    float sky = Im.OriginalSkyLevel();
-    if (Im.HasMiniBack()) {
-      cout << " DaoSetup: re-adding subtracted sky to " << Im.Name() << endl;
-      AddMiniBack(daoim, Im.FitsMiniBackName());
-    } else { // imagesum and others
-      float rms;
-      float gain = Im.Gain();
-      float rdnoise = Im.ReadoutNoise();
-      if (daoim.HasKey("SKYLEV")) {
-	sky = daoim.KeyVal("SKYLEV");
-	rms = daoim.KeyVal("SEXSIGMA");
-      } else {
-	daoim.SkyLevel(&sky, &rms);
+  if (!FileExists(fullname + ".fits")) {
+    // daophot does not read compressed files
+    // and has problem decoding some cfht 16 bits image
+    FitsImage daoim(fullname + ".fits", im, im);
+    daoim.SetWriteAsFloat();
+    // add sky to fits if subtracted
+    if (backsub) {
+      if (Im.HasMiniBack()) {
+	cout << " DaoSetup: re-adding subtracted sky to " << Im.Name() << endl;
+	AddMiniBack(daoim, Im.FitsMiniBackName());
+      } else { // imagesum and others
+	float sky,rms;
+	if (daoim.HasKey("SKYSIGEX"))
+	  rms = daoim.KeyVal("SKYSIGEX");
+	else if  (daoim.HasKey("SEXSIGMA"))
+	  rms = daoim.KeyVal("SEXSIGMA");
+	else
+	  daoim.SkyLevel(&sky, &rms);
+	daoim += rms*rms;
       }
-      if (sky < rms*rms)
-	sky = (rms*rms*gain*gain - rdnoise*rdnoise) / gain;
-      daoim += sky;
+      daoim.AddOrModKey("SATURLEV", Im.Saturation() + sky,
+			"Saturation level corrected from sky subtraction");
+      if (daoim.HasKey("BACK_SUB")) daoim.RmKey("BACK_SUB");
+      if (daoim.HasKey("BACKLEV")) daoim.RmKey("BACKLEV");
+      if (daoim.HasKey("SEXSKY")) daoim.RmKey("SEXSKY");
+      if (daoim.HasKey("SEXSIGMA")) daoim.RmKey("SEXSIGMA");
     }
-    daoim.ModKey("SATURLEV", Im.OriginalSaturation(), "Saturation level corrected from sky subtraction");
-    daoim.RmKey("BACK_SUB");
-    daoim.RmKey("BACKLEV");
-    daoim.RmKey("SEXSKY");
-    daoim.RmKey("SEXSIGMA");
+  }
+  
+  if (!FileExists(fullname + ".ap") && Im.HasCatalog()) {
+    SEStarList stars(Im.CatalogName());
     // add sky to stars as well
-    for (SEStarIterator it = stars.begin(); it != stars.end(); ++it)
-      (*it)->Fond() += sky;
+    if (backsub)
+      for (SEStarIterator it = stars.begin(); it != stars.end(); ++it)
+	(*it)->Fond() += sky;
+    ofstream daostream((fullname + ".ap").c_str());
+    write_dao_header<PhotAp>(daostream, Im);
+    write_dao_starlist<PhotAp>(daostream, stars); 
   }
 
-  cout << " DaoSetup: writing lists and option files in " << (Dir.empty() ? Im.Dir() : Dir) << endl;
-  ofstream daostream((imname + ".als").c_str());
-  write_dao_header<AllstarAls>(daostream, Im);
-  write_dao_starlist<AllstarAls>(daostream, stars); 
-  daostream.close();
-  WriteDaoOptions(Im, Dir);
+  if (!FileExists(daodir + "/daophot.opt"))
+    WriteDaophotOptions(im, daodir+"/daophot.opt");
+
+  if (!FileExists(daodir + "/photo.opt"))
+    WriteDaoAperOptions(im, daodir+"/photo.opt");
+
+  if (!FileExists(daodir + "/allstar.opt"))
+    WriteAllstarOptions(im, daodir+"/allstar.opt");
 }
 
 void TransformDaoList(const ReducedImage&Ref, const ReducedImage& Im) {

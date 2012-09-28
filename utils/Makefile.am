@@ -37,7 +37,7 @@ bin_PROGRAMS = \
         deadprop checkmask sumpixels wcs_for_vignets \
         apercorr simple_zpfitter satellite_trajectory \
         merge_headers image_match image_combine image_subtract image_detect \
-	daosetup daoconvert makesub make_satur addstars magellan_to_poloka \
+	daosetup daoconvert makesub make_satur addstars addstars_dao magellan_to_poloka \
 	fitsfix
 
 LDADD = $(top_builddir)/src/libtoads.la \
@@ -137,4 +137,5 @@ makesub_SOURCES = makesub.cc
 make_satur_SOURCES = make_satur.cc
 addstars_SOURCES = addstars.cc
 addstars_LDADD = $(LDADD) $(top_builddir)/psf/libtoadspsf.la
+addstars_dao_SOURCES = addstars_dao.cc
 fitsfix_SOURCES = fitsfix.cc
