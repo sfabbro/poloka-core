@@ -1,0 +1,80 @@
+\page database_page DataBase
+
+\section intro_database What does the so-called data base in poloka?
+
+The purpose of having some database code is to decouple most of the processing
+code from the actual way data is stored. The data can then be accessed through
+routines which transform abstract names into genuine file names. Implementing this
+way provides the tremendeous advantage that many actual database organizations
+can be accomodated through the same software interface. Most (if not all) code
+does not require any modification in case the actual data base used changes.
+
+\section implem_database Implementation of the DbImage
+
+A DbImage is basically an image and all its associated catalogues,
+weight maps and other files. It is currently implemented very simply
+as a directory and its names. The DbImage "name" will be the directory
+name. Typically a DbImage directory contains:
+
+- <dirname>/.dbstuff : mandatory 0 byte file to indicate it is a DbImage
+- <dirname>/calibrated.fits : the flatfielded image
+- <dirname>/flat.fits : flat image used to flatfield the image
+- <dirname>/dead.fits : dead pixels image (each dead pixel has value 1)
+
+If you need poloka to flatfield your data, you will need other types,
+such as raw, bias, fringe. The strict minimum to start post-processing
+your data is calibrated and the .dbstuff files. Note poloka uses
+cfitsio for FITS I/O, so compressed FITS files (.gz, .fz) are also understood.
+
+Poloka utilities will access each DbImage with the -<type>
+option. Example:
+
+\code
+header -cal <dbimage>
+dbls -raw <dbimage>
+\endcode
+
+
+\section dbconfig The data base configuration file
+
+The actual location where data is to be searched for is
+given through a configuration file. This configuration file is searched
+ -# if the environment variable DBCONFIG is defined, as the file name it provides,
+ -# as .dbconfig in the current directory
+ -# as $HOME/.dbconfig
+
+\section dbconfig_example Example of a DbConfig configuration file
+
+A Db config file consists in mnemonic tags followed by actual file paths.
+Those file paths can use * [] but not {}.
+Here is an example of a Db config file:
+
+\code
+#this is a comment
+ImagePath
+{
+here : .
+cfht99 : /snovad15/cfht99/1999*
+vlt99 : /snovad1/vlt99/1999*
+newstuff : /snovad8/wiyn99
+}
+
+# where to find astrometric catalogs (non-USNO catalogs usually)
+CatalogPath
+{
+  /data/my_catalogs
+  /data/my_od/catalogs
+  /data/catalogs/D*
+}
+
+#what are the image names for the various DbImage derived classes
+# .fits : regular fits image
+# .fz : rice compressed fits image
+# .fits.gz gzip compression
+ImageNames
+{
+  ImageSum {satur.fz}
+  TransformedImage {calibrated.fits satur.fits.gz}
+}
+
+\endcode

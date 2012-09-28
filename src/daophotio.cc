@@ -6,6 +6,7 @@
 #include "sestar.h"
 #include "daophotio.h"
 #include "reducedutils.h"
+#include "photoratio.h"
 #include "gtransfo.h"
 #include "sextractor_box.h"
 
@@ -588,16 +589,10 @@ void DaoSetup(ReducedImage& Im, const string& Dir) {
 void TransformDaoList(const ReducedImage&Ref, const ReducedImage& Im) {
 
   GtransfoRef refToIm = FindTransfo(Ref, Im);
-  double ratio, eratio;
-  if (PhotomRatio(Ref, Im, ratio, eratio, refToIm))
-    cout << " Slow photometric ratio: "
-	 << ratio << " +/- " << eratio << endl;
-  else {
-    cerr << " Could not compute a slow photometric ratio\n";
-    ratio = QuickPhotomRatio(Ref, Im, eratio, refToIm);
-    cout << " Quick photometric ratio: "
-	 << ratio << " +/- " << eratio << endl;
-  }
+  double eratio;
+  double ratio = PhotoRatio(Ref, Im, eratio, refToIm);
+  cout << " Photometric ratio: "
+       << ratio << " +/- " << eratio << endl;
   Frame frame(Im.UsablePart());
   string filename = FindDaoList(Ref.Dir() + "calibrated");
   if (filename.empty()) {

@@ -2,22 +2,30 @@
 
 #include "allreducedimage.h"
 #include "imagesum.h"
-
+#include "polokaexception.h"
 
 static void usage(const char *progName) {
   cerr << "Usage: " << progName << " [OPTION]... DBIMAGE...\n"
        << "Combine pixels of DBIMAGE\n\n"
-       << "    -m METHOD: specify the combining method:\n"
-       << "            1  Weighted average (default)\n"
-       << "            2  Clipped weighted average\n"
-       << "            3  Median\n"
-       << "    -w METHOD: specify the weighting method:\n"
-       << "             1  Point source optimal (seeing weighted)\n"
-       << "             2  Extended source optimal (default)\n"
-       << "             3  No global weighting, but using weight maps\n"
-       << "             4  No weights at all\n"
-       << "    -o DBIMAGE: output name of the combined dbimage (default is 'stack')\n"
-       << "    -r DBIMAGE: photometric reference (default is first DBIMAGE)\n";
+       << "   -o DBIMAGE: output name of the combined dbimage (default is 'stack')\n"
+       << "   -b METHOD : background subtraction method:\n"
+       << "               1  On the fly estimation\n"
+       << "               2  No background subtraction (default)\n"
+       << "   -c METHOD : pixel combining method:\n"
+       << "               1  Weighted average (default)\n"
+       << "               2  Clipped weighted average\n"
+       << "               3  Median\n"
+       << "               4  Adaptive weighted average\n"
+       << "   -w METHOD : weighting method:\n"
+       << "               1  Weight maps + seeing weighted\n"
+       << "               2  Weight maps + average S/N weighted (default)\n"
+       << "               3  Weight maps\n"
+       << "               4  No weighting\n"
+       << "   -p METHOD : photometric scaling method\n"
+       << "               1  Estimate with star flux ratio with reference (default)\n"
+       << "               2  Use zero point in the header (FITS key is ZP)\n"
+       << "               3  No photometric scaling\n"
+       << "   -z DBIMAGE: photometric reference for zero point (default is first DBIMAGE)\n\n";
   exit(EXIT_FAILURE);
 }
 
@@ -25,12 +33,15 @@ int main(int nargs, char **args) {
 
   if (nargs < 2) usage(args[0]);
   if (nargs == 2) { 
-    cerr << args[0] << ": need at least 2 images \n";
+    cerr << args[0] << ": need at least 2 images\n";
     return EXIT_FAILURE;
   }
 
   StackingMethod stackMethod = WeightedAverage;
   WeightingMethod weightMethod = ExtendedSourceOptimal;
+  BackgroundMethod backMethod = OnTheFly;
+  PhotoScalingMethod scaleMethod = PhotoRatio;
+
   string outName("stack"), phoName("");
   ReducedImageList imList;
 
@@ -39,7 +50,7 @@ int main(int nargs, char **args) {
     if (arg[0] != '-') {
       ReducedImageRef im = ReducedImageNew(arg);
       if (!im || !im->IsValid()) { 
-	cerr << " not a valid dbimage: " << arg << endl;
+	cerr << args[0] << ": " << arg << " is not a valid dbimage\n";
 	continue;
       }
       imList.push_back(im);
@@ -47,26 +58,38 @@ int main(int nargs, char **args) {
     }
 
     switch (arg[1]) {
-    case 'm': { stackMethod = (StackingMethod) atoi(args[++i]); continue; }
+      //case 'b': { backMethod = (BackgroundMethod) atoi(args[++i]); continue; }
+    case 'c': { stackMethod = (StackingMethod) atoi(args[++i]); continue; }
+    case 'h':  usage(args[0]);
     case 'w': { weightMethod = (WeightingMethod) atoi(args[++i]); continue; }
+      //case 'p': { scaleMethod = (ScalingMethod) atoi(args[++i]); continue; }
     case 'o': { outName = args[++i]; continue; }
-    case 'r': { phoName = args[++i]; continue; }
+    case 'z': { phoName = args[++i]; continue; }
     default: usage(args[0]);
     }
   }
-  if (imList.empty()) { cerr << " no images to combine\n";  return EXIT_FAILURE; }
+
+  if (imList.empty()) { cerr << args[0] << ": no images to combine\n";  return EXIT_FAILURE; }
   if (phoName.empty()) phoName = imList.front()->Name();
 
   ReducedImage phoRef(phoName);
 
-  cout << " Will combine " << imList.size() << " images:\n"
+  cout << args[0]<< ": " << imList.size() << " images to combine\n"
        << "   - output image    : " << outName << endl
        << "   - photometric ref : " << phoName << endl
+       << "   - scaling method  : " << name_of_scalingMethod(scaleMethod) << endl
+       << "   - back method     : " << name_of_backgroundMethod(backMethod) << endl
        << "   - combine method  : " << name_of_stackingMethod(stackMethod) << endl
        << "   - weight method   : " << name_of_weightingMethod(weightMethod) << endl;
 
-  ImageSum stack(outName, imList, &phoRef, weightMethod, stackMethod);
-  stack.Execute(ToTransform(phoRef));
+  try {
+    ImageSum stack(outName, imList, &phoRef, 
+		   weightMethod, stackMethod, backMethod, scaleMethod);
+    stack.Execute(ToTransform(phoRef));
+  } catch(PolokaException p) {
+    p.PrintMessage(cerr);
+    return EXIT_FAILURE;
+  }
 
   return EXIT_SUCCESS;
 }

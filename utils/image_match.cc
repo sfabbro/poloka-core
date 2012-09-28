@@ -9,8 +9,8 @@
 static void usage(const char *progName) {
   cerr << "Usage: " << progName << " [OPTION]...DBIMAGE...\n"
        << "Match DBIMAGE to a geometric reference image (first DBIMAGE)\n\n" 
-       << "   -n : no resampling, only match catalogues\n"
        << "   -i : integer shifting (no interpolation)\n"
+       << "   -n : no resampling, only match catalogues\n"
        << "   -t x y: translation parameters\n"
        << "   -u : union of all frames instead of intersection\n\n";
   exit(EXIT_FAILURE);
@@ -74,8 +74,9 @@ int main(int nargs, char **args) {
       continue;
     }
     switch (arg[1]) {
-    case 'n': imMatcher.doResample = false; break;
+    case 'h':  usage(args[0]);
     case 'i': imMatcher.doResample = false; imMatcher.doIntShift = true; break;
+    case 'n': imMatcher.doResample = false; break;
     case 't': { 
       double dx = atof(args[++i]);
       double dy = atof(args[++i]);

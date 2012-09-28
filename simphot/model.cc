@@ -132,7 +132,7 @@ class GtransfoServer {
 
 };
 
-#include "reducedutils.h" // for SlowPhotomRatio et al
+#include "photoratio.h" // for TLSPhotomRatio et al
 
 
 struct PhotomRatioServer : public map<string,double>
@@ -153,24 +153,10 @@ struct PhotomRatioServer : public map<string,double>
     StarMatchList *matches = ListMatchCollect((const BaseStarList &)l1,
 					      (const BaseStarList &)l2, 
 					      Transfo2Ref, Cut);
-    FluxPairList fpl;
-    for (StarMatchCIterator i = matches->begin(); i != matches->end(); ++i)
-      {
-	const PSFStar& s1 = (const PSFStar &)*(i->s1);
-	const PSFStar& s2 = (const PSFStar &)*(i->s2);
-	fpl.push_back(FluxPair(s1.flux, s1.EFlux(), s2.flux, s2.EFlux()));
-      }
-    delete matches;
     double sig;
     //TODO : put the sig cut into datacards
-    double nSigChi2Cut = 5;
-    double photomRatio;
-    if (!SlowPhotomRatio(fpl, nSigChi2Cut, photomRatio, sig))
-      {
-	cout << " could not find photom ratio for " << Current->Name() << endl;
-	return false;
-      }
-    // ... and store it
+    double photomRatio = TLSPhotoRatio(*matches, sig, 5.);
+    delete matches;
     (*this)[key] = photomRatio;
     return photomRatio;
   };
@@ -224,6 +210,7 @@ static std::string transfo_file_name(const ReducedImage *Ref, const ReducedImage
   return Cur->Dir()+"/transfoTo"+Ref->Name()+".dat";
 }
 
+#include "reducedutils.h"
 
 bool Model::FindTransfos(const RImageRef Current, 
 			 GtransfoRef &Transfo2Ref,

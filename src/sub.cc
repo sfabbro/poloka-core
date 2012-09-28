@@ -12,6 +12,7 @@
 #include "reducedutils.h"
 #include "swarpstack.h"
 #include "imageutils.h"
+#include "photoratio.h"
 
 /*! \page subfile Syntax of the "subfile"
 a subfile is a very simple text file that describes what should be 
@@ -701,7 +702,7 @@ int Sub::ExpectedMagLim()
     {
       ReducedImage *ri = *i;
       double err;      
-      photomRatio[j] = QuickPhotomRatio(*ri, ref, err);
+      photomRatio[j] = MedianPhotoRatio(*ri, ref, err);
       sigmaSeeing[j] = ri->Seeing();
       sigmaSky[j] = ri->SigmaBack();
       j++;
