@@ -1,3 +1,5 @@
+#ifndef IMAGEBACK__H
+#define IMAGEBACK__H
 
 #include <string>
 #include "image.h"
@@ -48,21 +50,19 @@ class ImageBack {
      //! if you only want a subpart
      Image*  BackgroundImage(const Frame &AFrame) const;
 
-     /* DOCF access the (small) image containing the average background values. */
+     //! access the (small) image containing the average background values.
      const Image& BackValue() const { return backValue;}
 
-     /* DOCF same for the sigma. */
+     //! same for the sigma
      const Image& BackRms() const { return backRms;}
 
 
      /* WARNING : these IO's need some reshuffling, see imageback.cc */
 
-     /* DOCF write the data to fits files. Give a name acceptable
-     as a file name. */
+     //! writes the data to fits files. Give a name acceptable as a file name
      int Write(string FileName);
 
-     /* DOCF reads the data from fits files (this is a constructor). Give the FileName you gave
-     previously to Write */
+     //! reads the data from fits files (this is a constructor). Give the FileName you gave previously to Write
      ImageBack(char *FileName);
       
   private :
@@ -78,4 +78,11 @@ class ImageBack {
      void do_it_slices(FitsSlice & SourceImage, FitsSlice & WeightImage);
 
 };
-     
+
+enum BackgroundMethod { OnTheFly = 1,
+			Differential = 2,
+			BUnSet = 3};
+
+string name_of_backgroundMethod(const BackgroundMethod backgroundMethod);
+
+#endif // IMAGEBACK__H

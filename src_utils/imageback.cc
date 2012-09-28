@@ -1,7 +1,4 @@
-#include <math.h>
-#ifndef M_PI
-#define     M_PI            3.14159265358979323846  /* pi */
-#endif
+#include <cmath>
 
 #include "frame.h"
 #include "imageback.h"
@@ -44,7 +41,6 @@ ImageBack::ImageBack(Image const &SourceImage, int MeshStepX,
 }
 
 
-#include "fitsslice.h"
 ImageBack::ImageBack(const string FileSourceName, int MeshStepX, int MeshStepY,
 	       const string FileWeightName, int filter_hw) :
   filterHalfWidth(filter_hw), 
@@ -67,9 +63,6 @@ ImageBack::ImageBack(const string FileSourceName, int MeshStepX, int MeshStepY,
 
 
 /* most of the algorithm is borrowed from sextractor : http://terapix.iap.fr/sextractor */
-
-#include "frame.h"
-
 
 static void truncated_mean_sig(const Frame &Pad, const Image &im, 
 			       const Image *Weight, 
@@ -492,7 +485,7 @@ return Interpolate(backRms,xBack,yBack,2);
 
 
 #include "fitsimage.h"
-#include <stdio.h>
+#include <cstdio>
 #include "fileutils.h"
 
 ImageBack::ImageBack(char *FileName) : backValue(), backRms()

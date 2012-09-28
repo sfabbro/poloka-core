@@ -263,7 +263,7 @@ Sub::Sub(const string &FileName, const bool Overwrite, const bool OnlyDet) : ove
 		  exit(1);
 		}
 	      SubImage ref(refName, currentName, Frame(imin,jmin,imax,jmax));
-	      ref.Execute(DoFits | DoWeight | DoSatur | DoCatalog | DoAperCatalog);
+	      ref.Execute(DoFits | DoWeight | DoSatur | DoCatalog);
 	      Ref.push_back(refName);
 	      currentName = refName; // for AllInputImages
 	      GeomRefName = currentName;
@@ -562,7 +562,7 @@ int Sub::DoIt()
   //int toDo = DoFits | DoCatalog | DoDead | DoSatur;
  
   // The dead is not used anymore (the dead are clipped)
-  int toDo = DoFits | DoCatalog | DoSatur | DoWeight | DoAperCatalog;
+  int toDo = DoFits | DoCatalog | DoSatur | DoWeight;
   cout << " Processing ref stack " << endl ;
 
   if (!RefStack) // RefStack isn't already provided.
@@ -647,7 +647,7 @@ int Sub::DoIt()
 	  GlobalNew->SetSeeing(Original_New->Seeing(), comment.c_str());	  
 	}
       else
-	 GlobalNew->Execute(DoFits + DoCatalog + DoAperCatalog);
+	 GlobalNew->Execute(DoFits + DoCatalog);
 
       if (Original_Sub == NULL ) // kernel fit wasn't done before
 	{
