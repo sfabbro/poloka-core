@@ -17,9 +17,9 @@ AM_CPPFLAGS = \
 
 bin_PROGRAMS = \
 	header astrom changekey checker dbimstat \
-	dead_correction elixir_to_toads \
+	dead_correction efficiency elixir_to_toads \
         findsatellite shiftswarp image_zp \
-        image_select image_stats image_sum \
+        image_select image_stats \
         lbl2toads maglimeval make_catalog \
         make_cosmic make_dead joinlist make_weight \
         matchusno preptoads removeback selection \
@@ -51,6 +51,7 @@ changekey_SOURCES = changekey.cc
 checker_SOURCES = checker.cc
 dbimstat_SOURCES = dbimstat.cc
 dead_correction_SOURCES = dead_correction.cc
+efficiency_SOURCES = efficiency.cc
 elixir_to_toads_SOURCES = elixir_to_toads.cc
 elixir_to_toads_LDADD = $(LDADD) $(top_builddir)/flat/libtoadsflat.la
 magellan_to_poloka_SOURCES = magellan_to_poloka.cc
@@ -60,7 +61,7 @@ findsatellite_SOURCES = findsatellite.cc
 #image_sub_SOURCES = image_sub.cc
 image_select_SOURCES = image_select.cc
 image_stats_SOURCES = image_stats.cc
-image_sum_SOURCES = image_sum.cc
+#image_sum_SOURCES = image_sum.cc
 lbl2toads_SOURCES = lbl2toads.cc
 maglimeval_SOURCES = maglimeval.cc
 make_catalog_SOURCES = make_catalog.cc
@@ -127,7 +128,6 @@ satellite_trajectory_SOURCES = satellite_trajectory.cc
 merge_headers_SOURCES = merge_headers.cc
 image_combine_SOURCES = image_combine.cc
 image_zp_SOURCES = image_zp.cc
-image_zp_LDADD = $(LDADD) $(top_builddir)/psf/libtoadspsf.la
 image_subtract_SOURCES = image_subtract.cc
 image_detect_SOURCES = image_detect.cc
 image_match_SOURCES = image_match.cc

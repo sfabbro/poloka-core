@@ -38,7 +38,6 @@ struct MatchDetStar {
 
   MatchDetStar(const char* filename) : maxDist(5) {
     read_generated(filename, stars);
-    cout << " read " <<  stars.size() << " stars" << endl;
   }
 
   void operator () (const string& name) {
@@ -51,28 +50,37 @@ struct MatchDetStar {
     
     GtransfoRef wcs = im->RaDecToPixels();
     DetectionList starList(im->Dir()+"/det.list");
-    //SEStarList starList(im->Dir()+"/se.list");
-    BaseStar zeroStar;
     FastFinder finder(*Detection2Base(&starList));
+    //SEStarList starList(im->Dir()+"/se.list");
     //FastFinder finder(*SE2Base(&starList));
+
     ofstream out((im->Dir()+"detplant.list").c_str());
     ofstream outds9((im->Dir()+"detplant.reg").c_str());
+    double zp = im->AnyZeroPoint();
     Frame frame = im->UsablePart();
+    BaseStarList gstarList;
+    int nmatched = 0;
     for (list<genstar>::const_iterator it=stars.begin(); it != stars.end(); ++it) {
       double x,y;
       wcs->apply(it->ra, it->dec, x, y);
       if (!frame.InFrame(x,y)) continue;
+      gstarList.push_back(new BaseStar(x, y, pow(10,0.4*(zp-it->mag))));
       const BaseStar* detStar = finder.FindClosest(Point(x,y), maxDist);
       if (detStar) {
 	out << it->id << ' ' << it->ra << ' ' << it->dec << ' ' << it->mag
 	    << ' ' << detStar->flux/detStar->eflux << endl;
 	outds9 << "circle(" << x << "," << y << ",10p) # text = {" << it->mag << "}\n";
+	nmatched++;
       } else {
 	out << it->id << ' ' << it->ra << ' ' << it->dec << ' ' << it->mag 
 	    << " 0" << endl;
 	outds9 << "circle(" << x << "," << y << ",10p) # color = cyan text = {" << it->mag << "}\n";
       }
     }
+    cout << " efficiency: " << im->Name()
+	 << " matched " << nmatched
+	 << " stars" << endl;
+    gstarList.write(im->Dir()+"gen.list");
   }
 };
 
