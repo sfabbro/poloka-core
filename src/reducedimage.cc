@@ -2034,13 +2034,12 @@ double ReducedImage::GFSeeing() const
   throw PolokaException(" GFSeeing requested but absent both from fit image and apercat :"+Name());
 }
 
-REMOVE_ROUTINE(Seeing, "PKASEEING");
-SET_ROUTINE(Seeing, double, "PKASEEING");
+REMOVE_ROUTINE(Seeing, "SESEEING");
+SET_ROUTINE(Seeing, double, "SESEEING");
 
 double ReducedImage::Seeing() const
 {
   FitsHeader head(FitsName());
-  if (head.HasKey("PKASEEING")) return double(head.KeyVal("PKASEEING"));
   if (head.HasKey("GFSEEING")) return double(head.KeyVal("GFSEEING"));
   GlobalVal glob(AperCatalogName());
   if (glob.HasKey("SEEING")) return glob.getDoubleValue("SEEING");
