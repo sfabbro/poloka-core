@@ -581,14 +581,6 @@ bool FitDifferentialBackground(const Image& DiffIm, Image& DiffWeight, const Fra
   return true;
 }
 
-// subtract an ImageBack
-void ComputeDifferentialBackground(Image& DiffIm, Image& DiffWeight, const Frame& DiffFrame, int BackMesh) {
-  ImageBack back(DiffIm, BackMesh, &DiffWeight);  
-  Image *diffBack = back.BackgroundImage();
-  DiffIm -= *diffBack;
-  delete diffBack;
-}
-
 static void variance_mask_seg(Image& Weight, const Image& Seg) {
 
   // avoid infinities
@@ -668,6 +660,49 @@ bool KernelFit::FitDiffBackground(ImagePair &ImPair, const double& NSig)
 
   // varDiff is now the maked weight of the difference image
   return FitDifferentialBackground(imDiff, varDiff, frameDiff, optParams.SepBackVar, diffbackground, NSig, stepDiff);
+}
+
+
+//! add meshed background to worse image
+void KernelFit::SubtractMeshDiffBackground(ImagePair &ImPair, Image& Im)
+{
+
+  cout << " KernelFit: subtracting a "
+       << optParams.MeshStep
+       << " mesh differential background\n";
+  Frame frameDiff = ImPair.CommonFrame();
+  frameDiff.CutMargin(optParams.HKernelSize);
+
+  Image varDiff(ImPair.BestWeight());
+  Image varWorst(ImPair.WorstWeight());
+
+  Image imDiff(ImPair.WorstImage());
+  double sigDiff = 1;
+  int stepDiff = 1;
+
+  Image convBest(ImPair.BestImage());
+  ImageConvolve(ImPair.BestImage(), convBest);
+  imDiff -= convBest;
+  
+  Image varBest(varDiff);
+  VarianceConvolve(varBest, varDiff);
+
+  sigDiff = sqrt(sqr(ImPair.Best()->SigmaBack() * PhotomRatio()) +
+		 sqr(ImPair.Worst()->SigmaBack()));
+  Pixel backDiff, rms;
+  imDiff.SkyLevel(frameDiff, &backDiff, &rms);
+  variance_mask_cut(varDiff, imDiff, backDiff, sigDiff*3);
+
+  // add variances and go back to weight
+  for (Pixel *p = varDiff.begin(), *pv = varWorst.begin(); p < varDiff.end(); ++p, ++pv) {
+    Pixel weight = 1. / (*p + *pv);
+    weight < BAD_WEIGHT ? *p = 0 : *p = weight;
+  }
+  // varDiff is now the maked weight of the difference image
+  ImageBack back(imDiff, optParams.MeshStep, &varDiff);
+  Image *diffBack = back.BackgroundImage();
+  Im -= *diffBack;
+  delete diffBack;
 }
 
 #define OPTIMIZED /* means pushing pointers by hand ... */
@@ -1449,7 +1484,8 @@ OrthogonalBasis = true;
  WriteStarList = false;
  WriteFitResid = false;
  WriteKernel = false;
- Iterate = 1;
+ Iterate = 2;
+ MeshStep = 128;
  if (FileExists(dataCardsName))
    {
      cout << " OptParams: using datacards file " << dataCardsName << endl;
@@ -1523,6 +1559,8 @@ OrthogonalBasis = true;
        WriteKernel = cards.IParam("KFIT_WRITE_KERNEL");
      if (cards.HasKey("KFIT_ITERATE"))
        Iterate = cards.IParam("KFIT_ITERATE");
+     if (cards.HasKey("KFIT_MESHSTEP"))
+       MeshStep = cards.IParam("KFIT_MESHSTEP");
    } // if (has datacards)
 }
   
@@ -1986,11 +2024,11 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 
  // cook up a plausible kernel to propagate weight map if bestimage
   Kernel guess(optParams.HKernelSize);
-  if (worstSeeing>bestSeeing) {
+  if (worstSeeing > bestSeeing) {
     PolGaussKern(guess, sqrt(sqr(worstSeeing) - sqr(bestSeeing)), 0, 0);
     guess *= 1./guess.sum();
     if (optParams.KernelBasis == 3)
-      if (worstSeeing>1.5*bestSeeing)
+      if (worstSeeing > 1.1*bestSeeing)
 	optParams.KernelBasis = 1;
       else
 	optParams.KernelBasis = 2;
@@ -2040,23 +2078,36 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   for (int iterWeight=1; iterWeight <= optParams.Iterate; iterWeight++) // iteration of weight and diff background update
     {
 
-  if (optParams.SepBackVar.Degree > -1) {
-    if (!FitDiffBackground(ImPair))
-      throw(PolokaException("KernelFit: could not compute separately differential background"));
-  }
-
   // handle worst: it is the actual worst if diff. background is not fitted separately,
   // we have to subtract diff. background if it was fitted:
   const Image *worstImage=NULL;
   auto_ptr<Image> del_worst(NULL); // to ensure deletion of temporary image, if needed.
-  if (optParams.SepBackVar.Nterms() > 0)
-    {
-      Image *tmp = new Image(ImPair.WorstImage());
-      optParams.SepBackVar.ApplyToImage(*tmp, -1, diffbackground);
-      worstImage = tmp;
-      del_worst.reset(tmp);
-    }
-  else
+
+  if (optParams.MeshStep > 0)
+    if (fitDone)
+      {
+	Image *tmp = new Image(ImPair.WorstImage());
+	SubtractMeshDiffBackground(ImPair, *tmp);
+	worstImage = tmp;
+	del_worst.reset(tmp);
+      }
+    else if (optParams.SepBackVar.Degree < 0)
+      optParams.SepBackVar.SetDegree(1);
+
+  if (optParams.SepBackVar.Degree > -1)
+    if (fitDone && optParams.MeshStep > 0)
+      optParams.SepBackVar.SetDegree(-1);
+    else
+      {
+	if (!FitDiffBackground(ImPair))
+	  throw(PolokaException("KernelFit: could not compute separately differential background"));
+	Image *tmp = new Image(ImPair.WorstImage());
+	optParams.SepBackVar.ApplyToImage(*tmp, -1, diffbackground);
+	worstImage = tmp;
+	del_worst.reset(tmp);
+      }  
+
+  if (optParams.MeshStep <=0 && optParams.SepBackVar.Nterms() <= 0)
     {
       worstImage = &ImPair.WorstImage();
     }
@@ -2166,7 +2217,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
       stamp.UpdateWeight(kern);      
     }
 
-  optParams.StampFiltering = false;
+  //optParams.StampFiltering = false;
   
  } // done with iteration on weight/diffback updating
 

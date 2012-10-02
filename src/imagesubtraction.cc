@@ -180,7 +180,19 @@ bool ImageSubtraction::MakeFits()
       pweight = new FitsImage(FitsWeightName());
       cout << " ImageSubtraction: using weights : " << FitsWeightName() << endl;
     }
+  
+  string datacards = DefaultDatacards();
   int backMesh = 64;
+  if (FileExists(datacards))
+    {
+      DataCards cards(datacards);
+      if (cards.HasKey("KFIT_MESHSTEP"))
+	{
+	  backMesh = cards.IParam("KFIT_MESHSTEP");
+	}
+    }
+
+
   ImageBack b(subImage, backMesh, pweight);  
   Image *back = b.BackgroundImage();
   subImage -= *back ;
@@ -201,7 +213,6 @@ bool ImageSubtraction::MakeFits()
   //subFits.SetWriteAsFloat();
   subFits.ModKey("BITPIX",16);
 
-  string datacards = DefaultDatacards();
   if (FileExists(datacards))
     {
       DataCards cards(datacards);

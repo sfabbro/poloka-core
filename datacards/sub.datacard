@@ -196,6 +196,9 @@
 # and a differential background is computed on the subtraction
 #@KFIT_ITERATE 1
 #
+# Set to zero if you dont want any meshed differential subtraction
+#@KFIT_MESHSTEP 128
+#
 # Maximum pixel intensity for star selection in units of the frame saturation
 #@KFIT_STARS_MAXSAT 0.95
 #

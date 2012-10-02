@@ -126,6 +126,7 @@ public :
   bool WriteStarList, WriteFitResid, WriteKernel;
   bool StampFiltering;
   int Iterate;
+  int MeshStep;
 
   OptParams(); /* default values */
   void OptimizeSizes(double BestSeeing, double WorstSeeing);
@@ -265,6 +266,9 @@ private :
 
 /* Fit the differential background separately from the kernel */
   bool FitDiffBackground(ImagePair &ImPair, const double& NSig=3);
+
+  /* remove a differential meshed background to an Image */
+  void SubtractMeshDiffBackground(ImagePair &ImPair, Image& Im);
 
 /* simultaneously fitted differential background value */
   double BackValue(const double&x, const double &y) const; 
