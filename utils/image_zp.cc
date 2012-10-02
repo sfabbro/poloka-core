@@ -1,6 +1,6 @@
 #include <iostream>
 #include "fitsimage.h"
-#include "apersestar.h"
+#include "sestar.h"
 #include "reducedimage.h"
 #include "allreducedimage.h"
 #include "fastfinder.h"
@@ -42,35 +42,36 @@ struct ImageZeroPoint {
     GtransfoRef raDec2Pix = Im->RaDecToPixels();
     GtransfoRef pix2RaDec = Im->PixelsToRaDec();
     BaseStarList calStars;
-    calibStars.ExtractInFrame(calStars, ApplyTransfo(Im->UsablePart(), *pix2RaDec).Rescale(1.1));
-
-    //PSFStarList measStars(Im->Dir()+"/psfstars.list");
-    AperSEStarList measStars(Im->AperCatalogName());
+    calibStars.ExtractInFrame(calStars,
+			      ApplyTransfo(Im->UsablePart(),
+					   *pix2RaDec).Rescale(1.1));
+    
+    SEStarList measStars(Im->CatalogName());
     vector<double> zparray;
     FastFinder finder(*(BaseStarList*)&measStars);
 
-    //int nzp = 0;
     for (BaseStarCIterator it = calStars.begin(); it!= calStars.end(); ++it) {
       const BaseStar *calstar = *it;
       const BaseStar *measstar = finder.FindClosest(raDec2Pix->apply(*calstar), 2);
       if (measstar && measstar->flux > 0 && measstar->eflux > 0) {
 	zparray.push_back(calstar->flux + 2.5*log10(measstar->flux));
-	//++nzp;
       }
     }
     
     double zprms;
-    //double zp = clipmean(zparray, nzp, zprms, 3, 5);
-    //delete [] zparray;
     double zp = median_mad(zparray, zprms);
     double oldzp = Im->AnyZeroPoint();
-    cout << " ImagePSFZeroPoint: " << Im->Name() << " old zp = " << oldzp << endl;
-    cout << " ImagePSFZeroPoint: " << Im->Name() << " new zp = " << zp << " +/- " << zprms
+    cout << " ImageZeroPoint: " << Im->Name()
+	 << " old zp = " << oldzp << endl;
+    cout << " ImageZeroPoint: " << Im->Name()
+	 << " new zp = " << zp << " +/- " << zprms
 	 << " nstars " << zparray.size() << endl;
     FitsHeader head(Im->FitsName(), RW);
-    head.AddOrModKey("ZP_PHOT", zp, "Zero Point from measured stars flux matched to catalog");
+    head.AddOrModKey("ZP_PHOT", zp,
+		     "Zero Point from measured stars flux matched to catalog");
     head.AddOrModKey("EZP_PHOT", zprms, "R.M.S of ZP_PHOT");
-    head.AddOrModKey("NZP_PHOT", int(zparray.size()), "Number of stars used to compute ZP_PHOT");
+    head.AddOrModKey("NZP_PHOT", int(zparray.size()),
+		     "Number of stars used to compute ZP_PHOT");
   }
 };
 
