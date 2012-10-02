@@ -103,7 +103,7 @@ int main(int nargs, char **args)
 
   if (justSum) 
     {
-      ImageSum sum(sumName, toSum, &phoRef, weightMethod, stackMethod);
+      ImageSum sum(sumName, toSum, &phoRef, weightMethod, stackMethod, scaleMethod);
       sum.Execute(DoFits | DoCatalog | DoWeight | DoSatur);
     } 
   else 

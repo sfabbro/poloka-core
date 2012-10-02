@@ -1,3 +1,4 @@
+#include "reducedutils.h"
 #include "photoratio.h"
 #include "fitsimage.h"
 #include "sestar.h"
@@ -5,6 +6,8 @@
 #include "toadscards.h"
 #include "listmatch.h"
 #include "polokaexception.h"
+#include <sstream>
+#include <fstream>
 
 static double sq(const double &x) { return x*x; }
 
@@ -21,24 +24,24 @@ static bool goodForRatio(const SEStar* star) {
 
 static StarMatchList* PhotoRatioList(const ReducedImage& Im, const ReducedImage& Ref, const Gtransfo* Im2Ref) {
 
-  string imListName = Im.CatalogName();
-  string refListName = Ref.CatalogName();
-
+  GtransfoRef im2ref = GtransfoRef();
+  if (!Im2Ref) {
+    im2ref = FindTransfo(Im, Ref);
+    if (!im2ref)
+      throw("bad match between " + Im.Name() + " and " + Ref.Name());
+  } else 
+    im2ref = Im2Ref;
+  
   if (!Im.HasCatalog() || !Ref.HasCatalog())
     throw PolokaException("no similar catalogues available for " + Im.Name() + " or " + Ref.Name());
 
-  SEStarList imList(imListName); BaseStarList *bimList  = SE2Base(&imList);
-  SEStarList refList(refListName); BaseStarList *brefList = SE2Base(&refList); 
-
-  if (!Im2Ref)
-    Im2Ref = ListMatch(*bimList, *brefList, MatchConditions(DefaultDatacards()));
-  if (!Im2Ref)
-    throw("bad match between " + Im.Name() + " and " + Ref.Name());
-
+  SEStarList imList(Im.CatalogName()); BaseStarList *bimList  = SE2Base(&imList);
+  SEStarList refList(Ref.CatalogName()); BaseStarList *brefList = SE2Base(&refList); 
+  
   const size_t nmax = 500;
   const double maxDist = 1.;
 
-  StarMatchList *matchList = ListMatchCollect(*bimList, *brefList, Im2Ref, maxDist);
+  StarMatchList *matchList = ListMatchCollect(*bimList, *brefList, im2ref, maxDist);
   matchList->sort(&SM_DecFluxMax);
   for (StarMatchIterator it = matchList->begin(); it != matchList->end() && matchList->size() < nmax; )  {
     if (goodForRatio(it->s1) && goodForRatio(it->s2))
@@ -247,6 +250,57 @@ double TLSPhotoRatio(const ReducedImage &Im,
 
 
   StarMatchList* matchList = PhotoRatioList(Im, Ref, Im2Ref);
+  if (!matchList)
+    throw PolokaException("could not find a decent match");
+  double ratio = TLSPhotoRatio(*matchList, Error);
+  delete matchList;
+  return ratio;
+}
+
+static const double EMAG_SCALE = 0.92103403719761845;
+
+double TLSPhotoRatio(const ReducedImage &Im,
+		     const string& RefCatalogFile,
+		     double &Error,
+		     const Gtransfo* Im2Cat) {
+
+  if (!Im.HasCatalog())
+    throw PolokaException("no catalog available for " + Im.Name());
+
+  if (!FileExists(RefCatalogFile))
+    throw PolokaException("catalog " + RefCatalogFile + " not valid");
+  GtransfoRef raDec2Pix = Im2Cat;
+  if (!raDec2Pix) {
+    Im.RaDecToPixels();
+    if (!raDec2Pix)
+      throw PolokaException("no good WCS for " + Im.Name());
+  }
+
+  BaseStarList refList;
+  ifstream in(RefCatalogFile.c_str());
+  char c;
+  string line;
+  istringstream iline(line);
+
+  while (in >> c) {
+    in.unget();
+    if (c == '@' || c == '#') continue;
+    if (!getline(in, line)) break;
+    double ra,dec,mag,x,y,emag;
+    iline >> ra >> dec >> mag;
+    raDec2Pix->apply(ra, dec, x, y);
+    double flux = pow(10.,-0.4*mag);
+    double eflux = 0;
+    if (iline >> emag) eflux = EMAG_SCALE * emag * flux;
+    BaseStar *star = new BaseStar(x, y, flux, eflux);
+    refList.push_back(star);
+  }
+
+  SEStarList imList(Im.CatalogName());
+  BaseStarList *bimList = SE2Base(&imList);
+  StarMatchList *matchList = ListMatchCollect(*bimList, refList, 2);
+  if (!matchList || matchList->empty())
+    throw PolokaException("could not find a decent match");
   double ratio = TLSPhotoRatio(*matchList, Error);
   delete matchList;
   return ratio;
@@ -257,10 +311,9 @@ double ZpPhotoRatio(const double& Zp, const double& SigZp,
 		    const double& ZpRef, const double& SigZpRef,
 		    double& Sig) {
 
-  double ratio = 1;
-  ratio = pow(10.,0.4*(ZpRef - Zp));
+  double ratio = pow(10.,0.4*(ZpRef - Zp));
   // var(r)/ r = (log(10)*0.4) ** 2
-  Sig = ratio * 0.92103403719761845 * sqrt(sq(SigZp)+sq(SigZpRef));
+  Sig = ratio * EMAG_SCALE * sqrt(sq(SigZp)+sq(SigZpRef));
   return ratio;
 }
 
@@ -304,7 +357,7 @@ double ZpPhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Err
 }
 
 double PhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Error,
-		  const Gtransfo* Im2Ref, const PhotoRatioMethod Method) {
+		  const Gtransfo* Im2Ref, const PhotoScalingMethod Method) {
 
   if (Im == Ref) {
     Error = 0.;
@@ -318,7 +371,9 @@ double PhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Error
     return TLSPhotoRatio(Im, Ref, Error, Im2Ref);
   case AverageRatio:
     return AveragePhotoRatio(Im, Ref, Error, Im2Ref);
+  case NoScaling:
+    Error = 0.; return 1.;
   }
-
   return MedianPhotoRatio(Im, Ref, Error, Im2Ref);
 }
+

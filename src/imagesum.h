@@ -21,7 +21,7 @@ enum WeightingMethod { PointSourceOptimal = 1,
 
 string name_of_stackingMethod(const StackingMethod stackingMethod);
 string name_of_weightingMethod(const WeightingMethod weightingMethod);
-
+string name_of_scalingMethod(const PhotoScalingMethod scalingMethod);
 
 class FitsHeader;
 
@@ -69,7 +69,7 @@ private:
 
   StackingMethod stackingMethod;
   WeightingMethod weightingMethod;
-  PhotoRatioMethod scalingMethod;
+  PhotoScalingMethod scalingMethod;
   
   double zero_point_ref;
   double totalWeight;
@@ -93,12 +93,13 @@ private:
 public :
 
   ImageSum(const string &Name, ReducedImageList &Images,
-	   const ReducedImage *PhotomReference = NULL,
+	   const string &PhotomReference,
 	   const WeightingMethod AWMethod = WUnSet, 
 	   const StackingMethod ASMethod = SUnSet,
-	   const PhotoRatioMethod AWMethod = PUnSet);
+	   const PhotoScalingMethod APMethod = PUnSet);
 
   ImageSum(const string &Name);
+
   ImageSum() {}
   ~ImageSum() {}
 
@@ -125,10 +126,10 @@ public :
 ImageSum* ImagesAlignAndSum(const ReducedImageList &ToSum, 
 			    const ReducedImage &GeomReference, 
 			    const string &SumName, const int ToDo,
-			    const ReducedImage *PhotomRef = NULL,
+			    const string& PhotomRef,
 			    const WeightingMethod AWMethod = WUnSet, 
 			    const StackingMethod ASMethod = SUnSet,
-			    const PhotoRatioMethod APMethod = PUnSet);
+			    const PhotoScalingMethod APMethod = PUnSet);
 
 //! align and sum images in a single call (wrapper routine)
 bool ImagesAlignAndSum(const vector<string> &ToSum, 

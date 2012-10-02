@@ -533,7 +533,7 @@ ReducedImage* Sub::DoOneStack(const StringList &Components,
     {
       ReducedImageList unalignedImages(Components);
       ImageSum *stack = ImagesAlignAndSum(unalignedImages, *GeometricReference,
-					  StackName, ToDo, RefStack);
+					  StackName, ToDo, RefStack->Name());
       return stack;
     }
   else if (ST == SwarpKind)
@@ -637,7 +637,7 @@ int Sub::DoIt()
       ReducedImageList allAlignedNew(false);
       GetAllComponents(AllNew,allAlignedNew);
       cout << " Processing new from all previously new's" << endl;
-      GlobalNew = new ImageSum(GlobalNewName(),allAlignedNew, RefStack);     
+      GlobalNew = new ImageSum(GlobalNewName(),allAlignedNew, RefStack->Name());
       if (Original_New != NULL )
 	{ 
 	  // on recupere le seeing du stack new d'origine

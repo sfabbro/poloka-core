@@ -7,15 +7,14 @@
 #include "gtransfo.h"
 
 
-enum PhotoRatioMethod { ZeroPointDiff = 1,
-			TotalLeastSquares = 2,
-			MedianRatio = 3,
-			AverageRatio = 4,
-			PUnSet = 3};
+enum PhotoScalingMethod { ZeroPointDiff = 1,
+			  TotalLeastSquares = 2,
+			  MedianRatio = 3,
+			  AverageRatio = 4,
+			  NoScaling = 5,
+			  PUnSet = 2};
 
-string NamePhotoRatioMethod(const PhotoRatioMethod RatioMethod);
-
-// photometric ratio = image / reference
+// photometric ratio = flux(image) / flux(reference)
 
 //! quick and dirty photometric ratio (weighted robust mean of two catalogs)
 double AveragePhotoRatio(const StarMatchList& MatchList, double& Error);
@@ -44,6 +43,11 @@ double TLSPhotoRatio(const ReducedImage &Im,
 		     double &Error,
 		     const Gtransfo* Im2Ref=0);
 
+//! wrapper of the above with one ReducedImage and a reference catalog
+double TLSPhotoRatio(const ReducedImage &Im,
+		     const string& RefCatalogFile,
+		     double &Error,
+		     const Gtransfo* Im2Cat);
 
 //! simple difference of zero points scaled back to flux
 double ZpPhotoRatio(const double& Zp, const double& SigZp, 
@@ -57,6 +61,6 @@ double ZpPhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Err
 double PhotoRatio(const ReducedImage& Im, const ReducedImage& Ref,
 		  double& Error,
 		  const Gtransfo* Im2Ref=0,
-		  const PhotoRatioMethod Method=TotalLeastSquares);
+		  const PhotoScalingMethod Method=TotalLeastSquares);
 
 #endif // PHOTORATIO__H

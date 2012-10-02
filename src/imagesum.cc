@@ -106,7 +106,7 @@ void Component::dump(ostream &s) const
   // have to restore Formats from C
   int oldprec = s.precision();
   s << setprecision(6);
-  s << "Component from " << Ri->Name() << " : " 
+  s << " Component from " << Ri->Name() << " : " 
     << "backVar =" << backVar 
     << " seeing = " << seeing 
     << " photomratio = " << photomRatio 
@@ -126,7 +126,7 @@ struct DatStack {
 
   WeightingMethod weightingMethod;
   StackingMethod stackingMethod;
-  PhotoRatioMethod scalingMethod;
+  PhotoScalingMethod scalingMethod;
 
   DatStack(const string &DatacardsFileName);
   void Print(ostream& s=cout)const;
@@ -160,11 +160,10 @@ DatStack::DatStack(const string &DatacardsFileName)
 	     << STACKING_METHOD;
 
       if (cards.HasKey(PHOTOSCALING_METHOD))
-	scalingMethod = (PhotoRatioMethod) cards.IParam(PHOTOSCALING_METHOD);
+	scalingMethod = (PhotoScalingMethod) cards.IParam(PHOTOSCALING_METHOD);
       else
 	cerr << " DatStack: using old fashioned datacards : missing " 
 	     << PHOTOSCALING_METHOD;
-
     }
   else
     {
@@ -184,10 +183,10 @@ void DatStack::Print(ostream& s) const
 /***************** ImageSum ********************/
 
 ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
-		   const ReducedImage *PhotomReference,
+		   const string& PhotomReference,
 		   const WeightingMethod AWMethod, 
 		   const StackingMethod ASMethod,
-		   const PhotoRatioMethod APMethod)
+		   const PhotoScalingMethod APMethod)
  : ReducedImage(AName)
 {
 
@@ -215,12 +214,25 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
 
   double total_weight = 0;
 
-  const ReducedImage *photomReference = PhotomReference;
-  if (!photomReference) photomReference = Images.front();
-  photomReferenceName = photomReference->Name();
-  zero_point_ref = photomReference->AnyZeroPoint();
-  cout << " ImageSum: " << photomReferenceName << " is photometric reference\n";
+  ReducedImageRef photomRefImage = new ReducedImage(PhotomReference);
+  if (!photomRefImage->IsValid())
+    if (!FileExists(PhotomReference))
+      photomRefImage = Images.front();
+    else
+      photomRefImage = ReducedImageRef();
 
+  photomReferenceName = PhotomReference;
+
+  if (photomRefImage)
+    zero_point_ref = photomRefImage->AnyZeroPoint();
+  else
+    zero_point_ref = 30.;
+
+  double fluxRef = pow(10, 0.4 * zero_point_ref);
+
+  cout << " ImageSum: " << PhotomReference << " is used as photometric reference\n";
+  cout << " ImageSum: final zero point will be: " <<  zero_point_ref << endl;
+  
   for (ReducedImageIterator i = Images.begin(); i!= Images.end(); ++i)
     {
       ReducedImage *ri = *i;
@@ -235,7 +247,10 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
       if (weightingMethod != NoGlobalWeighting && 
 	  weightingMethod != NoWeightsAtAll) {
 	double err;
-	phRatio = PhotoRatio(*ri, *photomReference, err, 0, scalingMethod);
+	if (photomRefImage)
+	  phRatio = fluxRef * PhotoRatio(*ri, *photomRefImage, err, 0, scalingMethod);
+	else
+	  phRatio = fluxRef * TLSPhotoRatio(*ri, PhotomReference, err);
       }
       if (!ok) continue;
       Component current(ri, phRatio, weightingMethod);
@@ -342,6 +357,28 @@ string name_of_weightingMethod(const WeightingMethod weightingMethod)
 
     default :
       cerr << " weighting method " << weightingMethod 
+	   << " is out of bounds " << endl;
+    }
+  return " ";
+}
+
+string name_of_scalingMethod(const PhotoScalingMethod scalingMethod)
+{
+  switch (scalingMethod)
+    {
+    case ZeroPointDiff:
+      return "ZeroPointDiff";
+    case TotalLeastSquares:
+      return "TotalLeastSquares";
+      break;
+    case MedianRatio:
+      return "MedianRatio";
+    case AverageRatio:
+      return "AverageRatio";
+    case NoScaling:
+      return "NoScaling";
+    default :
+      cerr << " scaling method " << scalingMethod 
 	   << " is out of bounds " << endl;
     }
   return " ";
@@ -951,10 +988,10 @@ bool ImageSum::MakeSatur()
 ImageSum* ImagesAlignAndSum(const ReducedImageList &ToSum, 
 			    const ReducedImage &Reference, 
 			    const string &SumName, const int ToDo,
-			    const ReducedImage *PhotomReference,
+			    const string &PhotomReference,
 			    const WeightingMethod AWMethod, 
 			    const StackingMethod ASMethod,
-			    const PhotoRatioMethod APMethod)
+			    const PhotoScalingMethod APMethod)
 
 {
   ReducedImageList transformedImages;
@@ -1000,8 +1037,8 @@ bool ImagesAlignAndSum(const vector<string> &ToSum,
         }
       reducedImages.push_back(current);
     }
-  ReducedImage *result = ImagesAlignAndSum(reducedImages, Reference, 
-					   SumName, ToDo);
+  ReducedImage *result = ImagesAlignAndSum(reducedImages, geomRef,
+					   SumName, ToDo, Reference);
   if (result) delete result;
   else {
     cerr << " ImagesAlignAndSum: failure" << endl;
