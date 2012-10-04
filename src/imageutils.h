@@ -5,7 +5,6 @@
 
 class Image;
 class Gtransfo;
-#include "frame.h" // for whichTransformed
 
 //! No resampling, only shift an image within a larger frame
 Image IntegerShiftImage(const Image& inputimage, const Gtransfo &g,
@@ -15,11 +14,6 @@ Image IntegerShiftImage(const Image& inputimage, const Gtransfo &g,
 Image GtransfoImage(const Image& inputimage, const Gtransfo & g, int nx, int ny, 
 		    float DefaultVal, const int interpLevel=3, 
 		    const bool IsVarianceMap = false);
-
-
-//! assumes that Transfo is a shift or involves a 'simple rotation'
-Frame ApplyTransfo(const Frame& inputframe, const Gtransfo &T, const WhichTransformed W = SmallFrame);
-
 
 //! still used as a check, as saturation value are still sometimes misset.
 double ComputeSaturation(const Image& image); 

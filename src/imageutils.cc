@@ -70,29 +70,6 @@ Image GtransfoImage(const Image& inputimage, const Gtransfo & g, int nx, int ny,
   return result;
 }
 
-
-/* clearly this assumes that the Transfo is essentially a translation or a simple rotation (n*pi/2) could probably be improved */
-Frame ApplyTransfo(const Frame& inputframe,const Gtransfo &T, const WhichTransformed W) 
-{
-  // 2 opposite corners
-  double xtmin1, xtmax1, ytmin1, ytmax1;
-  T.apply(inputframe.xMin,inputframe.yMin,xtmin1,ytmin1);
-  T.apply(inputframe.xMax,inputframe.yMax,xtmax1,ytmax1);
-  Frame fr1(min(xtmin1,xtmax1), min(ytmin1,ytmax1), 
-	    max(xtmin1,xtmax1), max(ytmin1,ytmax1));
-  // 2 other corners
-  double xtmin2, xtmax2, ytmin2, ytmax2;
-  T.apply(inputframe.xMin, inputframe.yMax, xtmin2, ytmax2);
-  T.apply(inputframe.xMax, inputframe.yMin, xtmax2, ytmin2);
-  Frame fr2(min(xtmin2,xtmax2), min(ytmin2,ytmax2), 
-	    max(xtmin2,xtmax2), max(ytmin2,ytmax2));
-
-  if (W == SmallFrame) return fr1*fr2;
-  return fr1+fr2;
-}
-
-
-
 // still used as a check, as saturation value are still sometimes misset.
 #include "histo1d.h"
 

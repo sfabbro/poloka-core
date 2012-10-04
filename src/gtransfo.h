@@ -13,9 +13,10 @@
 
 #include "fatpoint.h"
 #include "countedref.h"
+#include "frame.h" // for whichTransformed
+
 
 class StarMatchList;
-class Frame;
 class GtransfoLin;
 
 //! a virtual (interface) class for geometric transformations. 
@@ -584,7 +585,9 @@ Gtransfo* GtransfoRead(const std::string &FileName);
 Gtransfo* GtransfoRead(istream &s);
 
 
-
+//! assumes that Transfo is a shift or involves a 'simple rotation'
+Frame ApplyTransfo(const Frame& inputframe, const Gtransfo &T,
+		   const WhichTransformed W = SmallFrame);
 
 
 #endif /* GTRANSFO__H */
