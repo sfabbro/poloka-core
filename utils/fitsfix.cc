@@ -1,6 +1,7 @@
 #include "fitsimage.h"
-#include "fitstoad.h" 
+#include "fitstoad.h"
 #include "imageutils.h"
+#include "frame.h"
 
 static bool fitsfix_process(const char* fitsname) {
   

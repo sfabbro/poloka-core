@@ -11,6 +11,8 @@
 
 static double sq(const double &x) { return x*x; }
 
+static const double EMAG_SCALE = 0.92103403719761845;
+
 static bool SM_DecFluxMax(const StarMatch &S1, const StarMatch &S2)
 {
   const SEStar *p1 = (const SEStar *) (const BaseStar *) S1.s1;
@@ -54,6 +56,50 @@ static StarMatchList* PhotoRatioList(const ReducedImage& Im, const ReducedImage&
     throw PolokaException("empty match list between " + Im.Name() + " and " + Ref.Name());
   
   return matchList;
+}
+
+static void LoadPhotoRefCatalog(const string& RefCatalogFile,
+				const ReducedImage& Im,
+				BaseStarList& BList,
+				const Gtransfo* Im2Cat=0) {
+  
+  GtransfoRef raDec2Pix = Im2Cat;
+  if (!raDec2Pix) {
+    raDec2Pix = Im.RaDecToPixels();
+    if (!raDec2Pix)
+      throw PolokaException("no good WCS for " + Im.Name());
+  }
+
+  GtransfoRef pix2RaDec = Im2Cat;
+  if (!pix2RaDec) {
+    pix2RaDec = Im.PixelsToRaDec();
+    if (!pix2RaDec)
+      throw PolokaException("no good invert WCS for " + Im.Name());
+  }
+  
+  Frame pixFrame = Im.UsablePart();
+  Frame raDecFrame = ApplyTransfo(pixFrame, *pix2RaDec);
+
+  ifstream in(RefCatalogFile.c_str());
+  char c;
+  string line;
+
+  while (in >> c) {
+    in.unget();
+    if (c == '@' || c == '#') continue;
+    if (!getline(in, line)) break;
+    double ra,dec,mag,x,y,emag;
+    istringstream iline(line);
+    if (!(iline >> ra >> dec >> mag)) continue;
+    if (!raDecFrame.InFrame(ra,dec)) continue;
+    raDec2Pix->apply(ra, dec, x, y);
+    if (!pixFrame.InFrame(x,y)) continue;
+    double flux = pow(10., 0.4*(ZP_REF-mag));
+    double eflux = 0;
+    if (iline >> emag) eflux = EMAG_SCALE * emag * flux;
+    BaseStar *star = new BaseStar(x, y, flux, eflux);
+    BList.push_back(star);
+  }
 }
 
 /*! Notes about photometric ratios:
@@ -257,8 +303,6 @@ double TLSPhotoRatio(const ReducedImage &Im,
   return ratio;
 }
 
-static const double EMAG_SCALE = 0.92103403719761845;
-
 double TLSPhotoRatio(const ReducedImage &Im,
 		     const string& RefCatalogFile,
 		     double &Error,
@@ -268,34 +312,12 @@ double TLSPhotoRatio(const ReducedImage &Im,
     throw PolokaException("no catalog available for " + Im.Name());
 
   if (!FileExists(RefCatalogFile))
-    throw PolokaException("catalog " + RefCatalogFile + " not valid");
-  GtransfoRef raDec2Pix = Im2Cat;
-  if (!raDec2Pix) {
-    Im.RaDecToPixels();
-    if (!raDec2Pix)
-      throw PolokaException("no good WCS for " + Im.Name());
-  }
+    throw PolokaException("reference catalog " + RefCatalogFile + " not valid");
 
   BaseStarList refList;
-  ifstream in(RefCatalogFile.c_str());
-  char c;
-  string line;
-  istringstream iline(line);
 
-  while (in >> c) {
-    in.unget();
-    if (c == '@' || c == '#') continue;
-    if (!getline(in, line)) break;
-    double ra,dec,mag,x,y,emag;
-    iline >> ra >> dec >> mag;
-    raDec2Pix->apply(ra, dec, x, y);
-    double flux = pow(10.,-0.4*mag);
-    double eflux = 0;
-    if (iline >> emag) eflux = EMAG_SCALE * emag * flux;
-    BaseStar *star = new BaseStar(x, y, flux, eflux);
-    refList.push_back(star);
-  }
-
+  LoadPhotoRefCatalog(RefCatalogFile, Im, refList, Im2Cat);
+  
   SEStarList imList(Im.CatalogName());
   BaseStarList *bimList = SE2Base(&imList);
   StarMatchList *matchList = ListMatchCollect(*bimList, refList, 2);
@@ -306,14 +328,13 @@ double TLSPhotoRatio(const ReducedImage &Im,
   return ratio;
 }
 
-
 double ZpPhotoRatio(const double& Zp, const double& SigZp, 
 		    const double& ZpRef, const double& SigZpRef,
 		    double& Sig) {
 
-  double ratio = pow(10.,0.4*(ZpRef - Zp));
+  double ratio = pow(10., 0.4*(ZpRef - Zp));
   // var(r)/ r = (log(10)*0.4) ** 2
-  Sig = ratio * EMAG_SCALE * sqrt(sq(SigZp)+sq(SigZpRef));
+  Sig = ratio * EMAG_SCALE * sqrt(sq(SigZp) + sq(SigZpRef));
   return ratio;
 }
 
@@ -326,35 +347,75 @@ double ZpPhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Err
   FitsHeader imhead(Im.FitsName());
   FitsHeader refhead(Ref.FitsName());
   
-  Error = 0.05; // default error
+  double errdef = 0.05;
+  Error = errdef;
 
-  if (imhead.HasKey("ZP_PHOT") && imhead.HasKey("ZP_PHOT"))
+  if (imhead.HasKey("ZP_PHOT") && refhead.HasKey("ZP_PHOT"))
     return ZpPhotoRatio(imhead.KeyVal("ZP_PHOT"),
 			imhead.KeyVal("EZP_PHOT"),
 			refhead.KeyVal("ZP_PHOT"),
 			refhead.KeyVal("EZP_PHOT"),
 			Error);
-  else if (imhead.HasKey("ZPTOADS") && imhead.HasKey("ZPTOADS"))
+  else if (imhead.HasKey("ZPTOADS") && refhead.HasKey("ZPTOADS"))
     return ZpPhotoRatio(imhead.KeyVal("ZPTOADS"),
-			0,
+			errdef,
 			refhead.KeyVal("ZPTOADS"),
 			0,
 			Error);  
-  else if (imhead.HasKey("ZP") && imhead.HasKey("ZP"))
+  else if (imhead.HasKey("ZP") && refhead.HasKey("ZP"))
     return ZpPhotoRatio(imhead.KeyVal("ZP"),
-			0,
+			errdef,
 			refhead.KeyVal("ZP"),
-			0,
+			errdef,
 			Error);
-  else if (imhead.HasKey("ZEROUSNO") && imhead.HasKey("ZEROUSNO"))
+  else if (imhead.HasKey("ZEROUSNO") && refhead.HasKey("ZEROUSNO"))
     return ZpPhotoRatio(imhead.KeyVal("ZEROUSNO"),
 			imhead.KeyVal("DZEROUSN"),
 			refhead.KeyVal("ZEROUSNO"),
 			refhead.KeyVal("DZEROUSN"),
 			Error);
   else
-    throw PolokaException("could not find decent zero point for "+Im.Name()+" or "+Ref.Name());
+    throw PolokaException("could not find consistent zero point in headers of " + Im.Name() + " and " + Ref.Name());
 }
+
+double ZpPhotoRatio(const ReducedImage& Im, const double& ZpRef) {
+  
+  // use fitsheader until zero points in reducedimage stabilize...
+  if (!Im.HasImage())
+    throw PolokaException("missing fits file for "+Im.Name());
+
+  FitsHeader imhead(Im.FitsName());
+  
+  double err, errdef=0.05;
+
+  if (imhead.HasKey("ZP_PHOT"))
+    return ZpPhotoRatio(imhead.KeyVal("ZP_PHOT"),
+			imhead.KeyVal("EZP_PHOT"),
+			ZpRef,
+			0.,
+			err);
+  else if (imhead.HasKey("ZPTOADS"))
+    return ZpPhotoRatio(imhead.KeyVal("ZPTOADS"),
+			errdef,
+			ZpRef,
+			0.,
+			err);  
+  else if (imhead.HasKey("ZP"))
+    return ZpPhotoRatio(imhead.KeyVal("ZP"),
+			errdef,
+			ZpRef,
+			0.,
+			err);
+  else if (imhead.HasKey("ZEROUSNO"))
+    return ZpPhotoRatio(imhead.KeyVal("ZEROUSNO"),
+			imhead.KeyVal("DZEROUSN"),
+			ZpRef,
+			0.,
+			err);
+  else
+    throw PolokaException("could not find zero point in header of " + Im.Name());
+}
+
 
 double PhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Error,
 		  const Gtransfo* Im2Ref, const PhotoScalingMethod Method) {

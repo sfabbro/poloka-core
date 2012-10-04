@@ -35,7 +35,7 @@ struct ImageMatcher {
       if (Ref && Ref->XSize()*Ref->YSize() > 3*Im->XSize()*Im->YSize()) {
 	cout << " " << Ref->Name() << " is a big image, will extract a sub image using rough match\n";
 	ref = new SubImage("Sub_" + Ref->Name() + "_" + Im->Name(), Ref->Name(), Im->Name(), 50);
-	ref->Execute(DoFits|DoCatalog);
+	ref->Execute(DoFits|DoWeight|DoCatalog);
       }
 
       if (doResample && ref)

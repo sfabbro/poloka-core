@@ -42,7 +42,7 @@ int main(int nargs, char **args) {
   //BackgroundMethod backMethod = OnTheFly;
   PhotoScalingMethod scaleMethod = TotalLeastSquares;
 
-  string outName("stack"), phoName("");
+  string outName("stack"), phoRef("30");
   ReducedImageList imList;
 
   for (int i=1; i<nargs; ++i) {
@@ -64,7 +64,7 @@ int main(int nargs, char **args) {
     case 'w': { weightMethod = (WeightingMethod) atoi(args[++i]); continue; }
     case 'p': { scaleMethod = (PhotoScalingMethod) atoi(args[++i]); continue; }
     case 'o': { outName = args[++i]; continue; }
-    case 'z': { phoName = args[++i]; continue; }
+    case 'z': { phoRef = args[++i]; continue; }
     default: usage(args[0]);
     }
   }
@@ -73,7 +73,7 @@ int main(int nargs, char **args) {
 
   cout << args[0]<< ": " << imList.size() << " images to combine\n"
        << "   - output image    : " << outName << endl
-       << "   - photometric ref : " << phoName << endl
+       << "   - photometric ref : " << phoRef << endl
        << "   - scaling method  : " << name_of_scalingMethod(scaleMethod) << endl
     //       << "   - back method     : " << name_of_backgroundMethod(backMethod) << endl
        << "   - combine method  : " << name_of_stackingMethod(stackMethod) << endl
@@ -82,7 +82,7 @@ int main(int nargs, char **args) {
   try {
     ImageSum stack(outName,
 		   imList,
-		   phoName,
+		   phoRef,
 		   weightMethod,
 		   stackMethod,
 		   scaleMethod);

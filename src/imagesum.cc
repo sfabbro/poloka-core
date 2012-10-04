@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <string>
 #include <cmath>
@@ -215,22 +216,27 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
   double total_weight = 0;
 
   ReducedImageRef photomRefImage = new ReducedImage(PhotomReference);
-  if (!photomRefImage->IsValid())
-    if (!FileExists(PhotomReference))
-      photomRefImage = Images.front();
-    else
+
+  if (photomRefImage->IsValid()) {
+    zero_point_ref = photomRefImage->AnyZeroPoint();
+  } else {
+    if (!FileExists(PhotomReference)) {
+      istringstream num(PhotomReference);      
+      if (num >> zero_point_ref)
+	photomRefImage = ReducedImageRef();
+      else {
+	photomRefImage = Images.front();
+	zero_point_ref = photomRefImage->AnyZeroPoint();
+      }
+    } else {
       photomRefImage = ReducedImageRef();
+      zero_point_ref = ZP_REF;
+    }
+  }
 
   photomReferenceName = PhotomReference;
 
-  if (photomRefImage)
-    zero_point_ref = photomRefImage->AnyZeroPoint();
-  else
-    zero_point_ref = 30.;
-
-  double fluxRef = pow(10, 0.4 * zero_point_ref);
-
-  cout << " ImageSum: " << PhotomReference << " is used as photometric reference\n";
+  cout << " ImageSum: " << PhotomReference << " is the photometric reference\n";
   cout << " ImageSum: final zero point will be: " <<  zero_point_ref << endl;
   
   for (ReducedImageIterator i = Images.begin(); i!= Images.end(); ++i)
@@ -248,9 +254,11 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
 	  weightingMethod != NoWeightsAtAll) {
 	double err;
 	if (photomRefImage)
-	  phRatio = fluxRef * PhotoRatio(*ri, *photomRefImage, err, 0, scalingMethod);
+	  phRatio = PhotoRatio(*ri, *photomRefImage, err, 0, scalingMethod);
+	else if (scalingMethod == ZeroPointDiff)
+	  phRatio = ZpPhotoRatio(*ri, zero_point_ref);
 	else
-	  phRatio = fluxRef * TLSPhotoRatio(*ri, PhotomReference, err);
+	  phRatio = TLSPhotoRatio(*ri, PhotomReference, err);
       }
       if (!ok) continue;
       Component current(ri, phRatio, weightingMethod);

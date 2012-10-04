@@ -16,6 +16,8 @@ enum PhotoScalingMethod { ZeroPointDiff = 1,
 
 // photometric ratio = flux(image) / flux(reference)
 
+const double ZP_REF = 30.;
+
 //! quick and dirty photometric ratio (weighted robust mean of two catalogs)
 double AveragePhotoRatio(const StarMatchList& MatchList, double& Error);
 
@@ -47,15 +49,20 @@ double TLSPhotoRatio(const ReducedImage &Im,
 double TLSPhotoRatio(const ReducedImage &Im,
 		     const string& RefCatalogFile,
 		     double &Error,
-		     const Gtransfo* Im2Cat);
+		     const Gtransfo* Im2Cat=0);
 
 //! simple difference of zero points scaled back to flux
 double ZpPhotoRatio(const double& Zp, const double& SigZp, 
 		    const double& ZpRef, const double& SigZpRef,
 		    double& Error);
 
-//! wrapper of the above with ReducedImage's and scanning zero points key names in header
-double ZpPhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Error);
+//! wrapper of the above with a reference zero point
+double ZpPhotoRatio(const ReducedImage& Im, const double& ZpRef);
+
+//! simple difference of zero points scaled back to flux
+double ZpPhotoRatio(const double& Zp, const double& SigZp, 
+		    const double& ZpRef, const double& SigZpRef,
+		    double& Error);
 
 
 double PhotoRatio(const ReducedImage& Im, const ReducedImage& Ref,
