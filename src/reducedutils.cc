@@ -399,16 +399,18 @@ string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const 
   }
   GtransfoRef transfo = ImToRef;
   if (!transfo) transfo = FindTransfo(Im, Ref);
-  GtransfoLin lintransfo = transfo->LinearApproximation(Ref.UsablePart().Center());
-  GtransfoLin* imToRef = new GtransfoLin(ceil(lintransfo.Coeff(0,0,0)),
-					 ceil(lintransfo.Coeff(0,0,1)),
-					 sign(lintransfo.Coeff(1,0,0)),
-					 0, 0,
-					sign(lintransfo.Coeff(0,1,1)));
-  GtransfoRef refToIm = new GtransfoLin(imToRef->invert());
+  GtransfoLin approx = transfo->LinearApproximation(Ref.UsablePart().Center());
+  GtransfoLin* shift = new GtransfoLin(ceil(approx.Coeff(0,0,0)),
+				       ceil(approx.Coeff(0,0,1)),
+				       sign(approx.Coeff(1,0,0)),
+				       0, 0,
+				       sign(approx.Coeff(0,1,1)));
+  GtransfoRef refToIm = new GtransfoLin(shift->invert());
   cout << " Transfo from " << Im.Name() << " to " << Ref.Name() << endl;
-  cout << *imToRef;
-
+  cout << *shift;
+  GtransfoRef imToRef = shift->Clone();
+  delete shift;
+  
   ImageGtransfoRef imShift = new ImageGtransfo(refToIm,
 					       imToRef,
 					       Ref.PhysicalSize(),
@@ -417,6 +419,5 @@ string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const 
   if (!imShifted.Execute(ToTransform(Im)))
     throw PolokaException(" Failed to produce " + shiftedName);
 
-  delete imToRef;
   return shiftedName;
 }
