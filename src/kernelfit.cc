@@ -2075,13 +2075,13 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
   double chi2_tot=0;
   Point center = ImPair.Best()->UsablePart().Center(); // for printouts
 
+  const Image *worstImage=NULL;
+  auto_ptr<Image> del_worst(NULL); // to ensure deletion of temporary image, if needed.
   for (int iterWeight=1; iterWeight <= optParams.Iterate; iterWeight++) // iteration of weight and diff background update
     {
 
   // handle worst: it is the actual worst if diff. background is not fitted separately,
   // we have to subtract diff. background if it was fitted:
-  const Image *worstImage=NULL;
-  auto_ptr<Image> del_worst(NULL); // to ensure deletion of temporary image, if needed.
 
   if (optParams.MeshStep > 0)
     if (fitDone)
@@ -2289,17 +2289,11 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
     int hConvolvedSize = convolvedSize/2;
     DImage stackChi(convolvedSize, convolvedSize);
     DImage stackRes(convolvedSize, convolvedSize);
-    const Image& worstImage = ImPair.WorstImage();
     const Image& bestImage = ImPair.BestImage();
-    DImage counter(convolvedSize, convolvedSize);
+    DImage stackResWeight(convolvedSize, convolvedSize);
+    DImage stackChiWeight(convolvedSize, convolvedSize);
     double skyworst = ImPair.Worst()->BackLevel();
-    /*
-    double thresh = 5*ImPair.Worst()->SigmaBack() + skyworst;
-    vector< vector< vector<double> > >
-      cubRes(convolvedSize,
-	     vector< vector<double> >(convolvedSize, 
-				      vector<double>(bestImageStamps.size(),0)));
-    */
+
     size_t k=0;
     for (StampIterator si = bestImageStamps.begin(); si != bestImageStamps.end(); ++si, ++k) {
       int xc = si->xc;
@@ -2313,29 +2307,27 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
       int ys = yc - hConvolvedSize;
       for (int j=0; j<convolvedSize; ++j) {
 	for (int i=0; i<convolvedSize; ++i) {
-	  double wpix = worstImage(i+xs, j+ys);
+	  double wpix = (*worstImage)(i+xs, j+ys);
 	  double weight = si->weight(i,j);
 	  double resid = bestConv(i,j) - wpix + BackValue(i+xs, j+ys);
 	  if (weight > 1e-10) {
-	    //cubRes[i][j][k] = resid / max(1., fabs(wpix-skyworst));
-	    stackRes(i,j) += resid * sqrt(weight);
-	    stackChi(i,j) += fabs(resid) / max(1., fabs(wpix-skyworst));
-	    counter(i,j) += 1;
+	    // stack resid is in sigma units and sigma = 1/sqrt(weight)
+	    stackRes(i,j) += resid * weight;
+	    stackResWeight(i,j) += sqrt(weight);
+	    // stack chi is a relative error
+	    weight = max(1., fabs(wpix-skyworst));
+	    stackChi(i,j) += fabs(resid) / weight;
+	    stackChiWeight(i,j) += weight;
 	  }
 	}
       }
     } 
 
-    /*
-    for (int j=0; j<convolvedSize; ++j)
-      for (int i=0; i<convolvedSize; ++i)
-	stackRes(i,j) = median(cubRes[i][j]);
-    */
-
-    stackRes /= counter;
-    stackChi /= counter;
-    stackRes.writeFits(KernelFitFile(ImPair)+"_resid.fits");
+    stackRes /= stackResWeight;
+    stackRes.writeFits(KernelFitFile(ImPair)+"_res.fits");
+    stackChi /= stackChiWeight;
     stackChi.writeFits(KernelFitFile(ImPair)+"_chi.fits");
+
   }
 
   // make an image of the kernel at different locations of the worst
@@ -2360,7 +2352,7 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 	  }
       }
     }
-    kim.writeFits(KernelFitFile(ImPair)+".fits");
+    kim.writeFits(KernelFitFile(ImPair) + ".fits");
   }
 
   double finalSig2Noise = bestImageStamps.Sig2Noise();
