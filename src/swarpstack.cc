@@ -589,8 +589,8 @@ static int my_system(const string &Command)
   /* on makiki/kiholo, the openfile limit was enlarged only 
      for tcsh*/
   // do not hard code path and tcsh should not be forced here but directly on the shell
-  //return system(("/bin/tcsh -f -c \'"+Command+"\'").c_str());
-  return system(Command.c_str());
+  return system(("/bin/bash -f -c \'"+Command+"\'").c_str());
+  //return system(Command.c_str());
 }
 
 
