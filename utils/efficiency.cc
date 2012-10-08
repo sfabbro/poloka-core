@@ -36,7 +36,7 @@ struct MatchDetStar {
   list<genstar> stars;
   double maxDist;
 
-  MatchDetStar(const char* filename) : maxDist(5) {
+  MatchDetStar(const char* filename) : maxDist(3) {
     read_generated(filename, stars);
   }
 
@@ -69,12 +69,12 @@ struct MatchDetStar {
       if (detStar) {
 	out << it->id << ' ' << it->ra << ' ' << it->dec << ' ' << it->mag
 	    << ' ' << detStar->flux/detStar->eflux << endl;
-	outds9 << "circle(" << x << "," << y << ",10p) # text = {" << it->mag << "}\n";
+	outds9 << "circle(" << x + MEMPIX2DISK << "," << y + MEMPIX2DISK << ",10p) # text = {" << it->mag << "}\n";
 	nmatched++;
       } else {
 	out << it->id << ' ' << it->ra << ' ' << it->dec << ' ' << it->mag 
 	    << " 0" << endl;
-	outds9 << "circle(" << x << "," << y << ",10p) # color = cyan text = {" << it->mag << "}\n";
+	outds9 << "circle(" << x + MEMPIX2DISK<< "," << y + MEMPIX2DISK << ",10p) # color = cyan text = {" << it->mag << "}\n";
       }
     }
     cout << " efficiency: " << im->Name()

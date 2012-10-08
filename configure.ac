@@ -13,12 +13,11 @@ AM_DISABLE_STATIC
 ## Checks for programs to build poloka libraries
 AC_PROG_AWK
 AC_PROG_CXX
-AC_PROG_F77
-# FC needed for cernlib macro
-AC_PROG_FC
-AC_F77_LIBRARY_LDFLAGS
 AC_PROG_LEX
+AC_PROG_F77
 AC_PROG_LIBTOOL
+AC_F77_LIBRARY_LDFLAGS
+
 # AC_PROG_SED is available only in autoconf 2.60 and later.
 # With older autoconf, assume that 'sed' is ok.
 ifdef([AC_PROG_SED], [AC_PROG_SED], [SED=sed AC_SUBST(SED)])
@@ -56,6 +55,8 @@ AC_ARG_ENABLE(cernlib,
    [enable_cernlib=no])
 if test x"$enable_cernlib" = x"yes"; then
     AC_MSG_RESULT([yes])
+    # FC  needed for cernlib macro
+    AC_PROG_FC
     AC_LIB_CERNLIB([packlib], [HROPEN],
     		   [CERNLIB=true],
 		   [AC_MSG_ERROR([packlib was not found.

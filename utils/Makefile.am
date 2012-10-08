@@ -19,7 +19,7 @@ bin_PROGRAMS = \
 	header astrom changekey checker dbimstat \
 	dead_correction efficiency elixir_to_toads \
         findsatellite shiftwcs shiftswarp image_zp \
-        image_select image_stats \
+        image_select image_stats checkshift \
         lbl2toads maglimeval make_catalog \
         make_cosmic make_dead joinlist make_weight \
         matchusno preptoads removeback selection \

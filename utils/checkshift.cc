@@ -21,7 +21,7 @@ static double sq(const double& x) { return x*x; }
 struct MatchStar {
 
   list<genstar> refStars;
-  double dx,dy,mjd;
+  double mjd;
 
   MatchStar(const string& name) {
 
@@ -32,6 +32,10 @@ struct MatchStar {
     }    
 
     ifstream in((ref.Dir()+"/planted.list").c_str());
+    if (!in) {
+      cerr << " error reading " << ref.Dir()+"/planted.list \n";
+      return;
+    }
     char c;
     while (in >> c) {
       in.unget();
@@ -50,61 +54,63 @@ struct MatchStar {
     }
 
     GtransfoRef wcs = im.RaDecToPixels();
-    GtransfoRef wcsinv = im.PixelsToRaDec();
     ifstream in((im.Dir()+"/planted.list").c_str());
-    ofstream out((im.Name()+".shift").c_str());
+    GtransfoRef wcsinv = im.PixelsToRaDec();
+    //ofstream out((im.Name()+".shift").c_str());
+    //double mdist=0, sdist=0, mdx=0, sdx=0, mdy=0, sdy=0;
+    //double ra, dec, mag, x, y, xref, yref, rainv, decinv;
+    double ra, dec, mag, x, y, xref, yref;
+    double mdx=0, mdy=0;
     Frame frame = im.UsablePart();
     char c;
-    double mdist=0, sdist=0, mdx=0, sdx=0, mdy=0, sdy=0;
     double nstars = 0;
     while (in >> c) {
       in.unget();
       string id;
-      double ra, dec, mag, x, y, xref, yref, rainv, decinv;
       in >> id >> ra >> dec >> mag;
       wcs->apply(ra, dec, x, y);
       if (!frame.InFrame(x,y)) continue;
       list<genstar>::iterator rit = find(refStars.begin(), refStars.end(), id);
       if (rit != refStars.end()) {
 	wcs->apply(rit->ra, rit->dec, xref, yref);
-	wcsinv->apply(x+dx, y+dy, rainv, decinv);
-	out << setiosflags(ios::fixed)
-	     << setw(4)
-	     << id << " "
-	     << setprecision(6)
-	     << rit->ra << " "
-	     << rit->dec << " "
-	     << rainv << " " 
-	     << decinv << " "
-	     << setprecision(2)
-	     << mag << " "
-	     << setprecision(3)
-	     << setw(9)
-	     << xref << " "
-	     << setw(9)
-	     << yref << " "
-	     << setw(9)
-	     << x << " "
-	     << setw(9)
-	     << y
-	     << endl;
-	double dist = sqrt( sq((ra-rainv)*cos(M_PI*decinv/180.)) + sq(dec-decinv))*3600;
-	mdist += dist;
-	sdist += sq(dist);
-	mdx += xref-x;
-	mdy += yref-y;
-	sdx += sq(x-xref);
-	sdy += sq(y-yref);
+	//wcsinv->apply(x+dx, y+dy, rainv, decinv);
+	//out << setiosflags(ios::fixed)
+	//    << setw(4)
+	//    << id << " "
+	//    << setprecision(6)
+	//    << rit->ra << " "
+	//    << rit->dec << " "
+	//    << rainv << " " 
+	//    << decinv << " "
+	//    << setprecision(2)
+	//    << mag << " "
+	//    << setprecision(3)
+	//    << setw(9)
+	//    << xref << " "
+	//    << setw(9)
+	//    << yref << " "
+	//    << setw(9)
+	//    << x << " "
+	//    << setw(9)
+	//    << y
+	//    << endl;
+	//double dist = sqrt( sq((ra-rainv)*cos(M_PI*decinv/180.)) + sq(dec-decinv)) * 3600.;
+	//mdist += dist;
+	//sdist += sq(dist);
+	mdx += xref - x;
+	mdy += yref - y;
+	//sdx += sq(x-xref);
+	//sdy += sq(y-yref);
 	nstars++;
       }
     }
 
-    mdist /= nstars;
-    sdist = sdist/nstars - sq(mdist);
+    //mdist /= nstars;
+    //sdist = sdist/nstars - sq(mdist);
     mdx /= nstars;
-    sdx = sdx/nstars - sq(mdx);
+    //sdx = sdx/nstars - sq(mdx);
     mdy /= nstars;
-    sdy = sdy/nstars - sq(mdy);
+    //sdy = sdy/nstars - sq(mdy);
     
     cout << name << " " 
 	 << setiosflags(ios::fixed)
@@ -122,6 +128,26 @@ struct MatchStar {
 	 << mdy << " "
       // << "(" << sdy << ") "
 	 << endl;
+
+    in.close();
+    in.open((im.Dir()+"/planted.list").c_str());
+    double mdist = 0, sdist = 0;
+    while (in >> c) {
+      in.unget();
+      string id;
+      in >> id >> ra >> dec >> mag;
+      wcs->apply(ra, dec, x, y);
+      if (!frame.InFrame(x,y)) continue;
+      list<genstar>::iterator rit = find(refStars.begin(), refStars.end(), id);
+      if (rit != refStars.end()) {
+	wcsinv->apply(x+mdx, y+mdy, ra, dec);
+	double dist = sqrt( sq((ra-rit->ra)*cos(M_PI*dec/180.)) + sq(dec-rit->dec)) * 3600./0.185;
+	mdist += dist;
+	sdist += sq(dist);
+      }
+    }
+    cerr << " mean distance error " << fixed 
+	 << mdist/nstars << " (" << sdist/nstars - sq(mdist/nstars) << ")\n";
   }  
 };
 
@@ -129,12 +155,14 @@ int main(int nargs, char **args){
   if (nargs != 3) usage(args[0]);
 
   MatchStar matchStar(args[1]);
+  if (matchStar.refStars.empty()) return EXIT_FAILURE;
   ifstream in(args[2]);
   char c;
   while (in >> c) {
     in.unget();
     string name;
-    in >> name >> matchStar.mjd >> matchStar.dx >> matchStar.dy;
+    double mjd, dx, dy;
+    in >> name >> matchStar.mjd >> dx >> dy;
     matchStar(name);
   }
   return EXIT_SUCCESS;

@@ -42,23 +42,22 @@ struct ImageAddStar {
   void operator () (const string& name) {
     ReducedImageRef rim = ReducedImageNew(name);
     if (!rim->IsValid()) { 
-      cerr << " not a valid dbimage: " << name << endl;
+      cerr << name << ": invalid dbimage\n";
       return;
     }
 
     GtransfoRef wcs = rim->RaDecToPixels();
     if (!wcs) {
-      cerr << " error in converting ra dec to x y\n";
+      cerr << name << ": invalid wcs\n";
       return;
     }
+
     double zp = rim->AnyZeroPoint();
     Frame frame = rim->UsablePart();
-    cout << " # Planting sources with zeropoint = " << zp << endl;
-    cout << " # x y flux mag\n";
+    cout << " addstars_dao: zeropoint = " << zp << endl;
     DaoStarList daostars;
     int i = 1;
     for (list<genstar>::iterator it=stars.begin(); it != stars.end(); ++it) {
-      double flux = pow(10, 0.4*(zp - it->mag));
       double x,y;
       wcs->apply(it->ra, it->dec, x, y);
       if (!frame.InFrame(x,y)) continue;
@@ -66,10 +65,9 @@ struct ImageAddStar {
       daostar->num = i++;
       daostar->x = x;
       daostar->y = y;
-      daostar->flux = flux;
-      daostar->sky = 0;      
+      daostar->flux = pow(10, 0.4*(zp - it->mag));
+      daostar->sky = 0;
       daostars.push_back(daostar);
-      cout << x << " " << y << " " << flux << " " << it->mag << endl;
     }
     WriteDaoList(*rim, "planted.lst", daostars);
   }
