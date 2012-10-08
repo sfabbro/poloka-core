@@ -18,7 +18,7 @@ AM_CPPFLAGS = \
 bin_PROGRAMS = \
 	header astrom changekey checker dbimstat \
 	dead_correction efficiency elixir_to_toads \
-        findsatellite shiftswarp image_zp \
+        findsatellite shiftwcs shiftswarp image_zp \
         image_select image_stats \
         lbl2toads maglimeval make_catalog \
         make_cosmic make_dead joinlist make_weight \
@@ -38,7 +38,7 @@ bin_PROGRAMS = \
         apercorr simple_zpfitter satellite_trajectory \
         merge_headers image_match image_combine image_subtract image_detect \
 	daosetup daoconvert makesub make_satur addstars addstars_dao magellan_to_poloka \
-	fitsfix
+	fitsfix fitsbits
 
 LDADD = $(top_builddir)/src/libtoads.la \
 	$(top_builddir)/src_base/libtoadsbase.la \
@@ -105,6 +105,7 @@ modelpsf_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/l
 zpfitter_SOURCES = zpfitter.cc
 calibrationhacker_SOURCES = calibrationhacker.cc
 shiftswarp_SOURCES = shiftswarp.cc
+shiftwcs_SOURCES = shiftwcs.cc
 basicaperture_SOURCES = basicaperture.cc
 calibratefixedpos_SOURCES = calibratefixedpos.cc
 calibratefixedpos_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/libtoadspsf.la
@@ -139,3 +140,4 @@ addstars_SOURCES = addstars.cc
 addstars_LDADD = $(LDADD) $(top_builddir)/psf/libtoadspsf.la
 addstars_dao_SOURCES = addstars_dao.cc
 fitsfix_SOURCES = fitsfix.cc
+fitsbits_SOURCES = fitsbits.cc
