@@ -520,13 +520,9 @@ void Sex2Dao(const string& SexName, const string& DaoName) {
 
 void DaoSetup(ReducedImage& Im, const string& Dir) {
   
-  string daoname = Dir.empty() ? "daoimage" : Im.Name();
-
-  // replace . with _, daophot is not robust with it
-  for(int i = 0; i < daoname.length(); i++)
-    if (daoname[i] == '.') daoname[i] = '_';
-
+  string daoname = Dir.empty() ? "daoimage" : "calibrated";
   string daodir  = Dir.empty() ? Im.Dir() : Dir;
+
   if (!IsDirectory(daodir)) MKDir(daodir.c_str());
   string fullname = daodir + "/" + daoname;
   cout << " DaoSetup: set-up " << Im.Name() << " in " << daodir << endl;
