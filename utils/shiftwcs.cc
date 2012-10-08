@@ -15,10 +15,8 @@ static void wcs_shift(const string& fitsname, const double& dx, const double& dy
   FitsHeader head(fitsname, RW);
   GtransfoLinShift tr(dx,dy);
   GtransfoRef wcs = WCSFromHeader(head);
-  cout << *wcs << endl;
   GtransfoRef wcstr = GtransfoCompose(wcs, &tr);
   TanPix2RaDec *wcstan = dynamic_cast<TanPix2RaDec *>((Gtransfo*)wcstr);
-  cout << *wcstan <<endl;
   if (wcstan)
     TanWCS2Header(head, *wcstan);
 }
