@@ -1,6 +1,7 @@
 #include <iostream>
-#include <stdlib.h> // for strtod
-#include <math.h> // for fabs 
+#include <sstream>
+#include <cstdlib> // for strtod
+#include <cmath> // for fabs 
 #include <iomanip> // for setprecision
 
 #include "fitsimage.h"
@@ -17,9 +18,11 @@ void usage()
     << " astrom <image> -p x y [-d][-v] translates coordinates of x,y in ra,dec" << endl
     << " astrom <image> -p @filename [-d] translates coordinates of x,y in ra,dec" << endl
     << "or" << endl 
-    << " astrom <image> -c alpha delta [-d] translates coordinates  alpha delta into pixels" << endl
+    << " astrom <image> -c alpha delta [-s] translates coordinates  alpha delta into pixels" << endl
+    << " astrom <image> -c @filename [-s] translates coordinates  alpha delta into pixels" << endl
     << " option -d implies decimal degrees" << endl
-    << " option -v dumps WCS" << endl;
+    << " option -v dumps WCS" << endl
+    << " option -s skips out of frame coordinates" << endl;
   cout << " note : pixel coordinates definition : leftmost bottom pixel center = (1.,1.) " << endl;
   cout << " Hence coordinates from toads catalogs (se.list) should be shifted by 1"<< endl;
 }
@@ -63,6 +66,7 @@ int main(int argc, char **argv)
   bool pix2angles = false;
   bool angles2pix = false;
   bool decimal = false;
+  bool skip_out_of_bounds = false;
   bool verbose = false;
   vector<Coordinates> to_convert;
   FILE *list = NULL;
@@ -110,17 +114,30 @@ int main(int argc, char **argv)
 	case 'd' : 
 	  decimal = true;
 	  break;
+	case 's' : 
+	  skip_out_of_bounds = true;
+	  break;
 	case 'c' :
 	  {
-	    if (pix2angles)
-	      {
-		cerr << "cannot mix convertions both ways, choose -p or -c " << std::endl;
-		return EXIT_FAILURE;
-	      }
 	    angles2pix = true;
+	    i++; 
+	      if (argv[i][0] =='@')
+		{
+		  const char* fileName = argv[i]+1; 
+		  list = fopen(fileName,"r");
+		  if (!list) 
+		    {cerr << " cannot open " << fileName << endl; exit(-1);}
+		  break;
+		}
+	      else
+		if (pix2angles)
+		  {
+		    cerr << "cannot mix convertions both ways, choose -p or -c " << std::endl;
+		    return EXIT_FAILURE;
+		  }
 	    Coordinates c;
-	    i++; c.ras  = argv[i];
-	    i++; c.decs = argv[i];
+	    c.ras  = argv[i++];
+	    c.decs = argv[i];
 	    to_convert.push_back(c);
 	    break;
 	  }
@@ -192,24 +209,52 @@ int main(int argc, char **argv)
   else  if (angles2pix)
     {
       // 0.01 is the precision ot invertion (in pixels);
-      GtransfoRef RaDec2Pix = Pix2RaDec->InverseTransfo(0.01, Frame(head));
-      for (size_t i=0; i<to_convert.size(); ++i)
+      Frame frame(head);
+      GtransfoRef RaDec2Pix = Pix2RaDec->InverseTransfo(0.01, frame);
+      if (!list) 
 	{
-	  Coordinates &c = to_convert[i];
-	  double ra = RaStringToDeg(c.ras); // in principe decodes both sexagesimal and decimal.
-	  double dec = DecStringToDeg(c.decs); // same comment.
-	  double x,y;
-	  RaDec2Pix->apply(ra,dec,x,y);
-	  cout << x +MEMPIX2DISK << " " << y + MEMPIX2DISK << endl;
-	  // check that the result makes sense:
-	  double raf, decf;
-	  Pix2RaDec->apply(x,y,raf,decf);
-	  double error = fabs(ra-raf)/cos(M_PI*dec/180.)+fabs(dec-decf);
-	  if (error > 0.2/3600.)
+	  for (size_t i=0; i<to_convert.size(); ++i)
 	    {
-	      cerr << " large error when inverting WCS " << endl;
-	      status = EXIT_FAILURE;
+	      Coordinates &c = to_convert[i];
+	      double ra = RaStringToDeg(c.ras); // in principe decodes both sexagesimal and decimal.
+	      double dec = DecStringToDeg(c.decs); // same comment.
+	      double x,y;
+	      RaDec2Pix->apply(ra,dec,x,y);
+	      if (skip_out_of_bounds && !frame.InFrame(x,y)) continue;
+	      cout << x +MEMPIX2DISK << " " << y + MEMPIX2DISK << endl;
+	      // check that the result makes sense:
+	      double raf, decf;
+	      Pix2RaDec->apply(x,y,raf,decf);
+	      double error = fabs(ra-raf)/cos(M_PI*dec/180.)+fabs(dec-decf);
+	      if (error > 0.2/3600.)
+		{
+		  cerr << " large error when inverting WCS " << endl;
+		  status = EXIT_FAILURE;
+		}
 	    }
+	}
+      else
+	{
+	  char line[8192];
+	  string ras,decs;
+	  while(fgets(line,8192,list))
+	    {
+	      if (line[0] == '#' || line[0] == '@') continue;
+	      istringstream iline(line);	      
+	      if (!(iline >> ras >> decs))
+		{
+		  cerr << " ERROR : cannot decode 2 coordinates in :" << line;
+		  status = EXIT_FAILURE;
+		  break;
+		}
+	      double ra = RaStringToDeg(ras); // in principe decodes both sexagesimal and decimal.
+	      double dec = DecStringToDeg(decs); // same comment.
+	      double x,y;
+	      RaDec2Pix->apply(ra, dec, x, y);
+	      if (skip_out_of_bounds && !frame.InFrame(x,y)) continue;
+	      cout << x +MEMPIX2DISK << " " << y + MEMPIX2DISK << endl;
+	    }
+	  fclose(list);
 	}
     }
   return status;
