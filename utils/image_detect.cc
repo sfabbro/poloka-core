@@ -44,22 +44,16 @@ struct RunDetection {
 	detectionProcess.DetectionScoresFromPositions(Positions, detections, fixedPositions);
     }
 
-    //block to save memory
-    {
-      /* 
-	 fill in the Detection's block that concerns the ref:
-	 - flux on the ref at the candidate position (measured in the same conditions
-         as the candidate (this is why we use Im->Seeing() rather the Ref->Seeing())
-	 - nearest object
-      */
-      ReducedImageRef ref;
-      if (Ref)
-	ref = Ref;
-      else
-	ref = Im;
-      DetectionProcess refDet(ref->FitsName(), ref->FitsWeightName(), 
-			      Im->Seeing(), Im->Seeing());
-      refDet.SetScoresFromRef(detections, *ref);
+    /* 
+       fill in the Detection's block that concerns the ref:
+       - flux on the ref at the candidate position (measured in the same conditions
+       as the candidate (this is why we use Im->Seeing() rather the Ref->Seeing())
+       - nearest object
+    */
+    if (Ref) {
+	DetectionProcess refDet(Ref->FitsName(), Ref->FitsWeightName(), 
+				Im->Seeing(), Im->Seeing());
+	refDet.SetScoresFromRef(detections, *Ref);
     }
 
     detections.write(filename);
@@ -117,7 +111,6 @@ int main(int nargs, char **args) {
     } else {
       detsOnRef.read(DetectionsFile(*imList.front()));
     }      
-    BaseStarList *positions = Detection2Base(&detsOnRef);
     MatchedDetectionList matchedDetections(detsOnRef);
     for (ReducedImageIterator it=imList.begin(); it != imList.end(); ++it) {
       DetectionList det(DetectionsFile(**it));
