@@ -2274,8 +2274,8 @@ int KernelFit::DoTheFit(ImagePair &ImPair)
 	(*si).star->writen(l); 
 	l << ' ' << (*si).chi2 << endl;
 	lds9 << "box("
-	     << si->xc
-	     << ',' << si->yc
+	     << si->xc + MEMPIX2DISK
+	     << ',' << si->yc + MEMPIX2DISK
 	     << ',' << si->bestPixels.Nx()
 	     << ',' << si->bestPixels.Ny()
 	     << ") #color = green\n";      

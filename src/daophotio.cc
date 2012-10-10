@@ -253,9 +253,6 @@ void WriteDaoOptions(const ReducedImage& Im, const string& DirName) {
     WriteDaoOptions(head, DirName);
 }
 
-//! the shift in pixels between DAOPHOT coordinate system and TOADS one.
-const double DAOPHOT_TOADS_SHIFT = -1.;
-
 //! the zeropoint used by DAOPHOT when computing instrumental magnitudes
 const double DAOPHOT_ZP = 25.;
 
@@ -263,8 +260,8 @@ static void read_dao_basestar(istream& daostream, DaoStar& star) {
   static double mag;
   daostream >> star.num >> star.x >> star.y >> mag;
   // DAOPHOT to TOADS conversion x,y and flux
-  star.x += DAOPHOT_TOADS_SHIFT; 
-  star.y += DAOPHOT_TOADS_SHIFT;
+  star.x -= MEMPIX2DISK; 
+  star.y -= MEMPIX2DISK;
   star.flux = pow(10., (0.4*(DAOPHOT_ZP - mag)));
 }
 
@@ -318,8 +315,8 @@ static void write_dao_basestar(ostream& daostream, const DaoStar& star) {
   daostream << setiosflags(ios::fixed)
 	    << setw(6) << star.num
 	    << setprecision(3) 
-	    << setw(9) << star.x - DAOPHOT_TOADS_SHIFT 
-	    << setw(9) << star.y - DAOPHOT_TOADS_SHIFT
+	    << setw(9) << star.x + MEMPIX2DISK 
+	    << setw(9) << star.y + MEMPIX2DISK
 	    << setw(9) << mag
 	    << setprecision(oldp);
 }
