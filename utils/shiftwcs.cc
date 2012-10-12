@@ -6,7 +6,7 @@
 
 static void usage(const char* ProgName)
 {
-  cerr << ProgName << " FITS dx dy\n"
+  cerr << ProgName << " DBIMAGE dx dy\n"
        << "Shift wcs of images\n";
   exit(EXIT_FAILURE);
 }
@@ -16,7 +16,7 @@ static void wcs_shift(const string& fitsname, const double& dx, const double& dy
   GtransfoLinShift tr(dx,dy);
   GtransfoRef wcs = WCSFromHeader(head);
   GtransfoRef wcstr = GtransfoCompose(wcs, &tr);
-  TanPix2RaDec *wcstan = dynamic_cast<TanPix2RaDec *>((Gtransfo*)wcstr);
+  TanPix2RaDec *wcstan = dynamic_cast<TanPix2RaDec*>((Gtransfo*)wcstr);
   if (wcstan)
     TanWCS2Header(head, *wcstan);
 }
