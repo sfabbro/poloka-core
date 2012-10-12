@@ -278,6 +278,35 @@ void FilterWithOverlap(const ReducedImageList &Images, const ReducedImage &aRefe
 }
 
 
+Frame UnionFrameWCS(const ReducedImageList& ImList, const ReducedImage* Reference) {
+
+  const ReducedImage* ref = Reference;
+  if (!ref) ref = ImList.front();
+
+  GtransfoRef refRaDecToPixels = ref->RaDecToPixels();
+  Frame frameRef = ref->UsablePart();
+
+  // initialize
+  Frame unionFrame = frameRef;
+
+  for (ReducedImageCIterator it = ImList.begin(); it != ImList.end(); ++it) {
+    const ReducedImage *im = *it;
+    if (*im == *Reference) continue;
+    GtransfoRef imPixelsToRaDec = im->PixelsToRaDec();
+    GtransfoRef imToref = GtransfoCompose(refRaDecToPixels, imPixelsToRaDec);
+    unionFrame += ApplyTransfo(im->UsablePart(), *imToref, LargeFrame);
+  }
+
+  // make an integer frame to avoid resampling1
+  unionFrame.xMin = floor(unionFrame.xMin);
+  unionFrame.yMin = floor(unionFrame.yMin);
+  unionFrame.xMax = ceil(unionFrame.xMax);
+  unionFrame.yMax = ceil(unionFrame.yMax);
+  cout << " UnionFrame: final frame is " << unionFrame << endl;
+
+  return unionFrame;
+}
+
 Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference) {
 
   const ReducedImage* ref = Reference;
@@ -305,8 +334,14 @@ Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference) 
   return unionFrame;
 }
 
-void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName) {
-  Frame unionFrame = UnionFrame(ToAlign, &Reference);
+
+void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName, const bool UseWCS) {
+  Frame unionFrame;
+  if (UseWCS) 
+    unionFrame = UnionFrameWCS(ToAlign, &Reference);
+  else 
+    unionFrame = UnionFrame(ToAlign, &Reference);
+
   double dx = unionFrame.xMin;
   double dy = unionFrame.yMin;
   GtransfoRef transfoFromRef = new GtransfoLinShift( dx,  dy);

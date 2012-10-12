@@ -23,11 +23,14 @@ const ReducedImage* BestResolutionReference(const ReducedImageList &ImList);
 void FilterWithOverlap(const ReducedImageList &Images, const ReducedImage &aReference,
 		       ReducedImageList &overlapImages, const double MinOverlap=1);
 
+//! returns a frame containing all images using WCS information only
+Frame UnionFrameWCS(const ReducedImageList& ImList, const ReducedImage* Reference=0);
+
 //! returns a frame containing all images
 Frame UnionFrame(const ReducedImageList& ImList, const ReducedImage* Reference=0);
 
 //! produce an image with margins large enough to include all images to align
-void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName);
+void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference, const string& unionName, const bool UseWCS=true);
 
 //! loads a decent basestarlist to use with matching routines
 //! preferences: 1. PSFStarList, 2. AperSEStarList, 3. SEStarList
