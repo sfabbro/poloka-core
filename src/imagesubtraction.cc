@@ -107,7 +107,7 @@ bool ImageSubtraction::MakeFits()
   string fileName = FitsName();
   if (FileExists(fileName)) return true;
   cout << " ImageSubtraction: making " << fileName << endl;
-  if (!Ref->MakeFits() ||  !New->MakeFits())
+  if (!Ref->MakeFits() || !New->MakeFits())
     {
       cerr << " ImageSubtraction: " << Name()
 	   << " could not make images of (both) subtraction terms :"
@@ -119,8 +119,9 @@ bool ImageSubtraction::MakeFits()
   if (solution.empty()) DoTheFit();
 
   // build the subtracted image
-  FitsHeader hnew(New->FitsName());
-  FitsImage subFits(fileName, hnew);
+  FitsHeader *hnew = new FitsHeader(New->FitsName());
+  FitsImage subFits(fileName, *hnew);
+  delete hnew;
   Image &subImage = subFits;
 
   // by convention the subtraction photometric scale is the same as the ref
@@ -595,7 +596,8 @@ bool ImageSubtraction::MakeCosmic()
 
 bool ImageSubtraction::MakeCatalog()
 {
-  if (HasCatalog()) return true;  
+  if (HasCatalog()) return true;
+  cout << " ImageSubtraction: detecting point sources on " << Name() << endl;
   DetectionList detections;
   return (ImageDetect(*this, detections, Ref) && 
 	  detections.write(CatalogName()) == 1);
