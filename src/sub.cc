@@ -531,9 +531,11 @@ ReducedImage* Sub::DoOneStack(const StringList &Components,
   // Do the stack
   if (ST == RegularKind)
     {
+      string phoName = GeometricReference->Name();
+      if (RefStack) phoName = RefStack->Name();
       ReducedImageList unalignedImages(Components);
       ImageSum *stack = ImagesAlignAndSum(unalignedImages, *GeometricReference,
-					  StackName, ToDo, RefStack->Name());
+					  StackName, ToDo, phoName);
       return stack;
     }
   else if (ST == SwarpKind)
