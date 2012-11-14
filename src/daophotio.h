@@ -213,7 +213,7 @@ template<DaoCatalogEnum filetype>
 void write_dao_header(ostream &daostream, const ReducedImage &Rim) {
   write_dao_header<filetype>(daostream, Rim.XSize(), Rim.YSize(),
 			     Rim.BackLevel() - 7* Rim.SigmaBack(),
-			     Rim.Saturation(), 4*Rim.SigmaBack(), 
+			     Rim.Saturation()*0.9, 4*Rim.SigmaBack(), 
 			     Rim.Seeing()*2.3548, Rim.Gain(), Rim.ReadoutNoise(), 
 			     Rim.Seeing()*2.3548);
 }

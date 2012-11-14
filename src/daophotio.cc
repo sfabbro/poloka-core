@@ -184,7 +184,7 @@ void WriteDaophotOptions(const FitsHeader& Head, const string& FileName) {
   opt[ReadNoise].SetValue(Head.KeyVal("TOADRDON"));
   opt[Gain].SetValue(Head.KeyVal("TOADGAIN"));
   if (Head.HasKey("SATURLEV"))
-      opt[AduHighDatum].SetValue(Head.KeyVal("SATURLEV"));
+    opt[AduHighDatum].SetValue(double(Head.KeyVal("SATURLEV"))*0.9);
   if (Head.HasKey("SESEEING")) {
     float fwhm = Head.KeyVal("SESEEING");
     fwhm *=  2.3548;
@@ -556,6 +556,7 @@ void DaoSetup(ReducedImage& Im, const string& Dir) {
       if (daoim.HasKey("SEXSKY")) daoim.RmKey("SEXSKY");
       if (daoim.HasKey("SEXSIGMA")) daoim.RmKey("SEXSIGMA");
     }
+    WriteDaophotOptions(daoim, daodir+"/daophot.opt");
   }
   
   if (!FileExists(fullname + ".ap") && Im.HasCatalog()) {
