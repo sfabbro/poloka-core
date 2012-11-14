@@ -39,6 +39,9 @@ void LoadForMatch(const ReducedImage& Im, BaseStarList& BList, const double& Min
 //! convenient wrapper to find a Gtransfo between 2 images only based on WCS information
 GtransfoRef FindTransfoFromWCS(const ReducedImage& Src, const ReducedImage& Dest);
 
+//! convenient wrapper to find a Gtransfo between 2 images only using combinatorial match
+GtransfoRef FindTransfoCombinatorial(const ReducedImage& Src, const ReducedImage& Dest);
+
 //! wrapper for lists to call matching routines
 //! tries: 1. WCS composition 2. Combinatorics then refines
 GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestList,

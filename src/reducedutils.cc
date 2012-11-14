@@ -72,6 +72,43 @@ GtransfoRef FindTransfoFromWCS(const ReducedImage& Src, const ReducedImage& Dest
   return src2dest;
 }
 
+
+GtransfoRef FindTransfoCombinatorial(const ReducedImage& Src, const ReducedImage& Dest) {
+
+  BaseStarList srcList;  LoadForMatch(Src, srcList);
+  BaseStarList destList; LoadForMatch(Dest, destList);
+
+  MatchConditions cond;
+  cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
+  cond.DeltaSizeRatio = 0.1 * cond.SizeRatio;
+
+  // hack for big frames
+  if (Src.XSize() > 10000 && Src.YSize() > 10000) {
+    cond.NStarsL1 = 2000;
+    cond.NStarsL2 = 2000;
+  }
+  // change conditions with file
+  cond.read(DefaultDatacards());
+  cond.MaxDist = 4;
+
+  cout << " FindTransfoCominatorial: trying with a combinatorial match\n";
+  GtransfoRef transfo = ListMatchCombinatorial(srcList, destList, cond);
+  if (transfo) {
+    cond.MaxDist = 2;
+    cout << " FindTransfoCombinatorial: refining transfo\n";
+    transfo = ListMatchRefine(srcList, destList, transfo, cond);
+  } else {
+    cout << " FindTransfoCombinatorial: no transfo found\n";
+    transfo = GtransfoRef();
+  }
+
+  if (dynamic_cast<GtransfoIdentity*>((Gtransfo*)transfo) || dynamic_cast<GtransfoPoly*>((Gtransfo*)transfo))
+    transfo->Write(GtransfoName(Dest, Src));
+
+  return transfo;
+}
+
+
 GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestList,
 			const ReducedImage& Src, const ReducedImage& Dest) {
   
