@@ -13,6 +13,7 @@ static void usage(const char *progName) {
        << "   -n : no resampling, only match catalogues\n"
        << "   -t x y: translation parameters\n"
        << "   -u : union of all frames instead of intersection\n"
+       << "   -p : match using polynomial fit only\n"
        << "   -w : match using WCS information only\n\n";
   exit(EXIT_FAILURE);
 }
@@ -21,12 +22,13 @@ struct ImageMatcher {
 
   ImageMatcher() : doResample(true), doIntShift(false), wcsOnly(false) {}
 
-  bool doResample, doIntShift, wcsOnly;
+  bool doResample, doIntShift, wcsOnly, polyOnly;
   ReducedImageRef Ref;
   GtransfoRef RefToIm, ImToRef;
 
   void operator () (const ReducedImageRef Im) {
     try {
+      cout << " ImageMatcher: Ref is " << Ref->Name() << ", matching" << Im->Name() << endl;
       if (Ref && *Im == *Ref) {
 	cout << " " << Im->Name() << " is same as reference, skipping\n";
 	return;
@@ -44,6 +46,11 @@ struct ImageMatcher {
 	RefToIm = FindTransfoFromWCS(*Ref, *Im);
       }
 
+      if (!ImToRef && !RefToIm && polyOnly) {
+	ImToRef = FindTransfoCombinatorial(*Im, *Ref);
+	RefToIm = FindTransfoCombinatorial(*Ref, *Im);
+      }
+
       if (doResample && ref)
 	ImageResample(*Im, *ref, RefToIm, ImToRef);
       else if (doIntShift && ref)
@@ -51,12 +58,15 @@ struct ImageMatcher {
       else if (doResample)
 	ImageResample(*Im, RefToIm, ImToRef);
       else {
-	if (wcsOnly)
+	if (wcsOnly || polyOnly)
 	  cout << *ImToRef;
 	else
 	  cout << *FindTransfo(*Im, *ref);
       }
 
+      ImToRef = GtransfoRef();
+      RefToIm = GtransfoRef();
+      
     } catch (PolokaException p) {
       p.PrintMessage(cerr);
     }
@@ -96,6 +106,7 @@ int main(int nargs, char **args) {
     }
       break;
     case 'u': doUnion = true; break;
+    case 'p': imMatcher.polyOnly = true; break;
     case 'w': imMatcher.wcsOnly = true; break;
     default : usage(args[0]);
     }
