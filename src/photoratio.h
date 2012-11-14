@@ -12,7 +12,7 @@ enum PhotoScalingMethod { ZeroPointDiff = 1,
 			  MedianRatio = 3,
 			  AverageRatio = 4,
 			  NoScaling = 5,
-			  PUnSet = 2};
+			  PUnSet = 6};
 
 // photometric ratio = flux(image) / flux(reference)
 

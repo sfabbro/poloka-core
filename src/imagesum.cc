@@ -142,7 +142,7 @@ DatStack::DatStack(const string &DatacardsFileName)
 {
   weightingMethod = ExtendedSourceOptimal;
   stackingMethod = WeightedAverage;
-  scalingMethod = TotalLeastSquares;
+  scalingMethod = ZeroPointDiff;
 
   if (FileExists(DatacardsFileName))
     {
@@ -238,7 +238,6 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
 
   cout << " ImageSum: " << PhotomReference << " is the photometric reference\n";
   cout << " ImageSum: final zero point will be: " <<  zero_point_ref << endl;
-  
   for (ReducedImageIterator i = Images.begin(); i!= Images.end(); ++i)
     {
       ReducedImage *ri = *i;
@@ -255,8 +254,8 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
 	double err;
 	if (photomRefImage)
 	  phRatio = PhotoRatio(*ri, *photomRefImage, err, 0, scalingMethod);
-	else if (scalingMethod == ZeroPointDiff)
-	  phRatio = ZpPhotoRatio(*ri, zero_point_ref);
+	else if (scalingMethod == ZeroPointDiff) {
+	  phRatio = ZpPhotoRatio(*ri, zero_point_ref); }
 	else
 	  phRatio = TLSPhotoRatio(*ri, PhotomReference, err);
       }
@@ -766,14 +765,15 @@ void ImageSum::FitsHeaderFill()
   double num_gain = 0;
   double deno_gain = 0;
   // string componentsNames;
-
+  Frame frame;
   for (size_t k=0; k<components.size(); ++k)
     {
       cout << " ImageSum: Component #" << k << endl;
       Component &component = components[k];
       component.dump();
       ReducedImage* redIm = component.Ri;
-
+      frame += redIm->UsablePart();
+      
       //componentsNames += (redIm->Name() + " ");
 
       /* SEEING */
@@ -824,9 +824,8 @@ void ImageSum::FitsHeaderFill()
 	}
     }
 
-  // Upadte the usable part of the image
-  //  SetUsablePart(intersection);
   cout << " ImageSum: setting the header " << endl;
+  SetUsablePart(frame);
   SetSeeing(seeing);
   SetBackLevel(backLevel);
   double sigmaBack = sqrt(backVar);

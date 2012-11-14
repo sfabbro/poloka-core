@@ -37,10 +37,10 @@ int main(int nargs, char **args) {
     return EXIT_FAILURE;
   }
 
-  StackingMethod stackMethod = WeightedAverage;
-  WeightingMethod weightMethod = ExtendedSourceOptimal;
-  //BackgroundMethod backMethod = OnTheFly;
-  PhotoScalingMethod scaleMethod = TotalLeastSquares;
+  StackingMethod stackMethod = SUnSet;
+  WeightingMethod weightMethod = WUnSet;
+  //BackgroundMethod backMethod = BUnSet;
+  PhotoScalingMethod scaleMethod = PUnSet;
 
   string outName("stack"), phoRef("30");
   ReducedImageList imList;
