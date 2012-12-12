@@ -13,14 +13,14 @@ static void usage(const char *progName) {
        << "   -n : no resampling, only match catalogues\n"
        << "   -t x y: translation parameters\n"
        << "   -u : union of all frames instead of intersection\n"
-       << "   -p : match using polynomial fit only\n"
+       << "   -p : match using polynomial transformation only\n"
        << "   -w : match using WCS information only\n\n";
   exit(EXIT_FAILURE);
 }
 
 struct ImageMatcher {
 
-  ImageMatcher() : doResample(true), doIntShift(false), wcsOnly(false) {}
+  ImageMatcher() : doResample(true), doIntShift(false), wcsOnly(false), polyOnly(false) {}
 
   bool doResample, doIntShift, wcsOnly, polyOnly;
   ReducedImageRef Ref;
@@ -28,7 +28,7 @@ struct ImageMatcher {
 
   void operator () (const ReducedImageRef Im) {
     try {
-      cout << " ImageMatcher: Ref is " << Ref->Name() << ", matching" << Im->Name() << endl;
+      cout << " ImageMatcher: Ref is " << Ref->Name() << ", matching " << Im->Name() << endl;
       if (Ref && *Im == *Ref) {
 	cout << " " << Im->Name() << " is same as reference, skipping\n";
 	return;
@@ -58,10 +58,16 @@ struct ImageMatcher {
       else if (doResample)
 	ImageResample(*Im, RefToIm, ImToRef);
       else {
-	if (wcsOnly || polyOnly)
+	if (ImToRef)
 	  cout << *ImToRef;
-	else
-	  cout << *FindTransfo(*Im, *ref);
+	else {
+	  ImToRef = FindTransfo(*Im, *ref);
+	  if (ImToRef)
+	    cout << *ImToRef;
+	  else
+	    cerr << " ImageMatcher: no stars match from "
+		 << Ref->Name() << " to " << Im->Name() << endl;
+	}
       }
 
       ImToRef = GtransfoRef();

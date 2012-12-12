@@ -165,22 +165,31 @@ GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
   }
 
   string transfoFileName = GtransfoName(Dest, Src);
+  string invtransfoFileName = GtransfoName(Src,Dest);
 
   if (FileExists(transfoFileName)) {
     cout << " found an existing transfo\n";
     return GtransfoRead(transfoFileName);
   }
-
+  
+  GtransfoRef transfoInit = GtransfoRef();
   GtransfoRef transfoWcs = FindTransfoFromWCS(Src, Dest);
-  if (FileExists(transfoFileName+".wcsonly")) {
-    cout << " will use match between WCS\n";
-    return transfoWcs;
-  }
 
-  if (transfoWcs)
-    cout << " found a WCS match\n";
-  else
+  if (transfoWcs) {
+    if (FileExists(transfoFileName+".wcsonly") ||
+	FileExists(invtransfoFileName+".wcsonly")) {
+      cout << " will use match between WCS\n";
+      return transfoWcs;
+    } else {
+      transfoInit = transfoWcs;
+      cout << " found a WCS match\n";
+    }
+  } else
     cout << endl;
+
+  if (FileExists(invtransfoFileName)) {
+    transfoInit = GtransfoRead(invtransfoFileName)->InverseTransfo(0.01,Dest.UsablePart());
+  }
 
   MatchConditions cond;
   cond.SizeRatio = Src.PixelSize() / Dest.PixelSize();
@@ -199,9 +208,9 @@ GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
 
   GtransfoRef transfo;
 
-  if (transfoWcs && ListMatchCheck(srcList, destList, transfoWcs, cond.MaxDist, cond.MinMatchRatio)) {
-    cout << " FindTransfo: refining WCS composition\n";
-    transfo = ListMatchRefine(srcList, destList, transfoWcs, cond);
+  if (transfoInit && ListMatchCheck(srcList, destList, transfoInit, cond.MaxDist, cond.MinMatchRatio)) {
+    cout << " FindTransfo: refining initial transformation\n";
+    transfo = ListMatchRefine(srcList, destList, transfoInit, cond);
   } else {
     cout << " FindTransfo: search for combinatorial match\n";
     transfo = ListMatch(srcList, destList, cond);
@@ -211,10 +220,11 @@ GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
   if (dynamic_cast<GtransfoIdentity*>((Gtransfo*)transfo) || dynamic_cast<GtransfoPoly*>((Gtransfo*)transfo))
     transfo->Write(transfoFileName);
 
-  // just touch the file if wcs is the best one
-  if (transfo == transfoWcs)
+  // just touch the files if wcs is the best one
+  if (transfo == transfoWcs) {
     ofstream t((transfoFileName+".wcsonly").c_str());
-
+    ofstream it((invtransfoFileName+".wcsonly").c_str());
+  }
   return transfo;
 }
 
