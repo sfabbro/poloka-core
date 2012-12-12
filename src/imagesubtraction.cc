@@ -335,12 +335,13 @@ bool ImageSubtraction::MakeWeight()
   if (Best()->HasSatur())
     {
       FitsImage bestSaturFits(Best()->FitsSaturName());
+      cout << " ImageSubtraction: masking from " << Best()->Name() << " saturation map\n";
       subWeightImage *= (1 - bestSaturFits);
     }
   else
     {
-      cerr << " ImageSubtraction: when making weight map for "<< Name() 
-	   << ", cannot get satur from " << Best()->Name() << endl;
+      cerr << " ImageSubtraction: no saturation masking from " 
+	   << Best()->Name() << endl;
     }
 
   const Pixel *pend = subWeightImage.end();
@@ -359,8 +360,8 @@ bool ImageSubtraction::MakeWeight()
   
   // add a small constant to weights so that variances of 
   // zero weight pixels remain finite and go to variances
+  Pixel eps = subWeightImage.MaxValue() * 1e-10;
   {
-    Pixel eps = subWeightImage.MaxValue() * 1e-10;
     for (Pixel *pw = subWeightImage.begin(); pw < pend; ++pw)
       *pw = 1. / (*pw + eps);
   }
@@ -396,7 +397,7 @@ bool ImageSubtraction::MakeWeight()
     } 
   else
     {
-      cout << " ImageSubtraction: no Poisson noise from objects\n";
+      cout << " ImageSubtraction: weight is built from sky noise\n";
     }
 
   // convolve with squared image kernel
@@ -413,12 +414,13 @@ bool ImageSubtraction::MakeWeight()
   if (Worst()->MakeSatur())
     {
       FitsImage worstSaturFits(Worst()->FitsSaturName());
+      cout << " ImageSubtraction: masking from " << Worst()->Name() << " saturation map\n";
       worstWeightImage *= (1 - worstSaturFits);
     }
   else
     {
-      cerr << " ImageSubtraction: when making weight map for "<< Name()
-	   << ", cannot get satur from " << Worst()->Name() << endl;
+      cerr << " ImageSubtraction: no saturation masking from " 
+	   << Worst()->Name() << endl;
     }
 
   if (subMaskSatur > 0 && !RefIsBest())
@@ -437,10 +439,11 @@ bool ImageSubtraction::MakeWeight()
   // worse weights zero weight pixels remain finite and
   // now go to variances
   {
-    Pixel eps = worstWeightImage.MaxValue() * 1e-10;
+    eps = worstWeightImage.MaxValue() * 1e-10;
     const Pixel *pwend = worstWeightImage.end();    
     for (Pixel *pw = worstWeightImage.begin(); pw < pwend; ++pw) 
       *pw = 1. / (*pw + eps);
+
   }
 
   // add the poisson noise from objects from worst
@@ -467,19 +470,19 @@ bool ImageSubtraction::MakeWeight()
 	  add_model_noise(*it, gain, worstWeightImage);
     }
 
-  // make a mask and dilate it
+  // add best and worst weights, make a mask and dilate it
   {
-    Pixel threshold = 1e-8;
+    Pixel threshold = eps * 100;
     Image mask(subWeightImage.Nx(), subWeightImage.Ny());
     Pixel *pww = worstWeightImage.begin();
     Pixel *pm = mask.begin();
     for (Pixel *psw=subWeightImage.begin();  psw<pend; ++psw, ++pww, ++pm)
       {
-	*psw = 1. / (*psw + *pww);
+	*psw = *pww / ((*psw * *pww) + 1);
 	if (*psw < threshold) { *psw = 0; *pm = 1; }
 	else *pm = 0;
       }
-    if (subMaskDilate>0)
+    if (subMaskDilate > 0)
       {
 	cout << " ImageSubtraction: dilating bad pixels with " << subMaskDilate << " pixels\n";
 	dilate_binary_image(mask, subMaskDilate);
@@ -495,7 +498,9 @@ bool ImageSubtraction::MakeWeight()
   // convention has changed: units of New, so image unchanged
   if (!RefIsBest())
     {
-      subWeightImage *= sqr(PhotomRatio());
+      double ratio2 = sqr(PhotomRatio());
+      cout << " ImageSubtraction: multiplying weight with with " << ratio2 << endl;
+      subWeightImage *= ratio2;
     }
 
   // set to 0 the "side bands" where the convolution did not go
@@ -507,10 +512,14 @@ bool ImageSubtraction::MakeWeight()
   int bandy = kern.Ny()/2 -1;
   // shrink the frame
   aframe.CutMargin(bandx, bandy); 
-  cout << " ImageSubtraction: masking frame for weights " << aframe << endl;
-  //subWeightImage.Masking(aframe, 0.);
+  cout << " ImageSubtraction: masking frame for weights " << aframe;
+  subWeightImage.Masking(aframe, 0.);
+  float wmin, wmax;
+  subWeightImage.MinMaxValue(&wmin,&wmax);
+  if (fabs(wmin - wmax) < 1e-10) 
+    cerr << " ImageSubtraction: " << Name() << " Warning: weight seems to be zero everywhere\n";
   subWeightFits.PreserveZeros(); // 0 remain 0 on R/W operations
-  //subWeightFits.ModKey("BITPIX",16); // 16 bits are enough
+  subWeightFits.ModKey("BITPIX", 16); // 16 bits are enough
 
   return true;
 }

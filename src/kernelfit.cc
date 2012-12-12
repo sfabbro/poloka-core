@@ -425,6 +425,8 @@ static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams
   FastFinder worstFinder(*SE2Base(&worstStarList));
 
   int n_good_for_fit_best = 0;
+  int n_matches = 0;
+  int n_good_for_fit_worst = 0;
   
   for (SEStarIterator sibest = bestStarList.begin(); sibest != bestStarList.end(); ++sibest) {
     SEStar *sb = *sibest;
@@ -434,15 +436,20 @@ static size_t MakeObjectList(const ImagePair& ImPair, const OptParams& optParams
 	bestFrame.MinDistToEdges(*sb) > mindist) {
       n_good_for_fit_best++;
       sw = (SEStar *) worstFinder.FindClosest(bestToWorst->apply(*sb), optParams.MaxDist);
-      if (sw && GoodForFit(sw, saturLevWorst, bMinWorst, optParams.MinSigToNoise) &&
-	  worstFrame.InFrame(*sw) &&
-	  worstFrame.MinDistToEdges(*sw) > mindist) {
-	objectsUsedToFit.push_back(StarMatch(*sb, *sw, sb, sw));
+      if (sw) {
+	n_matches++;
+	if (GoodForFit(sw, saturLevWorst, bMinWorst, optParams.MinSigToNoise)) {
+	  n_good_for_fit_worst++;
+	  if (worstFrame.InFrame(*sw) && worstFrame.MinDistToEdges(*sw) > mindist)
+	    objectsUsedToFit.push_back(StarMatch(*sb, *sw, sb, sw));
+	}
       }
     }
   }
   
   cout << " MakeObjectList: n_good_for_fit_best " << n_good_for_fit_best << endl;
+  cout << " MakeObjectList: n_matches " << n_matches << endl;
+  cout << " MakeObjectList: n_good_for_fit_worst " << n_good_for_fit_worst << endl;
   cout << " MakeObjectList: final list has "<< objectsUsedToFit.size() << " objects\n";
   return objectsUsedToFit.size();
 }
