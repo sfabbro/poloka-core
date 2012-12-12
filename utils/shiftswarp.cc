@@ -5,30 +5,35 @@
 #include "allreducedimage.h"
 #include "swarpstack.h"
 #include "fitsimage.h"
+#include "astroutils.h"
 
 static void usage(const char* ProgName)
 {
   cerr << ProgName << " [OPTION]...FILE\n"
        << "Shift and stack with SWarp\n"
-       << "     -o DBIMAGE : output stack DBIMAGE (default: shiftswarp)\n"
+       << "     -o DBIMAGE : output swarped DBIMAGE (default: shiftswarp)\n"
        << "     -c FILE    : specify a SWarp configuration file instead of default\n\n";
   exit(EXIT_FAILURE);
 }
 
-static void wcs_shift(const string& fitsname, const double& dx, const double& dy) {
+static void wcs_shift(const string& fitsname, const double& dcrval1, const double& dcrval2) {
   FitsHeader head(fitsname, RW);
-  double crpix1 = head.KeyVal("CRPIX1");
-  double crpix2 = head.KeyVal("CRPIX2");
-  head.AddOrModKey("CRPIX1",crpix1 - dx, "Changed for shift & stack");
-  head.AddOrModKey("CRPIX2",crpix2 - dy, "Changed for shift & stack");
+  double crval1 = head.KeyVal("CRVAL1");
+  double crval2 = head.KeyVal("CRVAL2");
+  head.AddOrModKey("OCRVAL1", crval1, "Original value of CRVAL1");
+  head.AddOrModKey("OCRVAL2", crval2, "Original value of CRVAL2");
+  head.AddOrModKey("CRVAL1", crval1 + dcrval1, "Changed for shift & stack");
+  head.AddOrModKey("CRVAL2", crval2 + dcrval2, "Changed for shift & stack");
 }
 
-static void wcs_unshift(const string& fitsname, const double& dx, const double& dy) {
+static void wcs_unshift(const string& fitsname) {
   FitsHeader head(fitsname, RW);
-  double crpix1 = head.KeyVal("CRPIX1");
-  double crpix2 = head.KeyVal("CRPIX2");
-  head.AddOrModKey("CRPIX1",crpix1 + dx,"Original value before shift and stack");
-  head.AddOrModKey("CRPIX2",crpix2 + dy,"Original value before shift and stack");
+  double crval1 = head.KeyVal("OCRVAL1");
+  double crval2 = head.KeyVal("OCRVAL2");
+  head.AddOrModKey("CRVAL1", crval1, "Original value");
+  head.AddOrModKey("CRVAL2", crval2, "Original value");
+  head.RmKey("OCRVAL1");
+  head.RmKey("OCRVAL2");
 }
 
 int main(int nargs, char **args) {
@@ -57,12 +62,12 @@ int main(int nargs, char **args) {
     char c;
     while (ifs >> c) {
       ifs.unget();
-      string name;  double mjd, dx, dy;
-      ifs >> name >> mjd >> dx >> dy;
+      string name;  double dcrval1, dcrval2;
+      ifs >> name >> dcrval1 >> dcrval2;
       ReducedImageRef ri = ReducedImageNew(name);
       if (ri && ri->IsValid()) {
-	wcs_shift(ri->FitsName(), dx, dy);
-	wcs_shift(ri->FitsWeightName(), dx, dy);
+	wcs_shift(ri->FitsName(), dcrval1, dcrval2);
+	if (ri->HasWeight()) wcs_shift(ri->FitsWeightName(), dcrval1, dcrval2);
 	ril.push_back(ri);
       } else 
 	cerr << " not a valid dbimage: " << name << endl;
@@ -88,21 +93,14 @@ int main(int nargs, char **args) {
   ss.MakeSatur();
   ss.MakeCatalog();
 
-  ifs.open(fileName);
-  if (ifs.is_open()) {
-    char c;
-    while (ifs >> c) {
-      ifs.unget();
-      string name;  double mjd, dx, dy;
-      ifs >> name >> mjd >> dx >> dy;
-      ReducedImage ri(name);
-      if (ri.IsValid()) {
-	wcs_unshift(ri.FitsName(), dx, dy);
-	wcs_unshift(ri.FitsWeightName(), dx, dy);
-      } else 
-	cerr << " not a valid dbimage: " << name << endl;
-    }
-    ifs.close();
+
+  for (ReducedImageIterator it=ril.begin(); it!=ril.end(); ++it) {
+    ReducedImageRef ri = *it;
+    if (ri->IsValid()) {
+      wcs_unshift(ri->FitsName());
+	if (ri->HasWeight()) wcs_unshift(ri->FitsWeightName());
+    } else 
+      cerr << " not a valid dbimage: " << ri->Name() << endl;
   }
 
   return EXIT_SUCCESS;

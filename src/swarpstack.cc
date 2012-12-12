@@ -335,6 +335,13 @@ struct Shoot : public list<Ccd> // use list for sort
     return average/size();
   }
 
+  double AverageSeeing()
+  {
+    double average = 0;
+    for (iterator i= begin(); i != end(); ++i) average += i->seeing;
+    return average/size();
+  }
+
   
   double AverageFluxScale()
   {
@@ -443,6 +450,23 @@ struct Collection : public list<Shoot>
     return count*count/sum_fs_over_g;
   }
   
+  double AverageSeeing()
+  {
+    double num = 0;
+    double deno = 0;
+    int count = 0;
+    for (iterator i = begin(); i!= end(); ++i)
+      {
+	Shoot &s = (*i);
+	double averageWeight = s.AverageWeight();
+	num += averageWeight;
+	double averageSeeing = s.AverageSeeing();
+	deno += averageWeight/ averageSeeing;
+	count ++;
+      }
+    return count*num/deno;
+  }
+
   void CollectAllNames(StringList &List)
   {
     sort(ShootCompareOdo);
@@ -681,9 +705,10 @@ bool SwarpStack::MakeFits()
     {
       ReducedImage &ri = **i;
       // build file names for swarp input files.
-      string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
+      string name = ri.Name();
+      string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", name);
       string weightSwarpName = 
-	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
+	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", name);
       
       string tmpimage;
       remove(imageSwarpName.c_str());
@@ -707,7 +732,7 @@ bool SwarpStack::MakeFits()
 	}
       if (!ri.BackSub())
 	{
-	  cout << " SwarpStack: subtracting background for " << ri.Name() << endl;
+	  cout << " SwarpStack: subtracting background for " << name << endl;
 	  SubtractBack(imageSwarpName, ri);
 	}
 
@@ -718,10 +743,10 @@ bool SwarpStack::MakeFits()
 	  string command = command_rep + " " + ri.Dir() + " " + SwarpTmpDir()  ;
 	  cout << " SwarpStack: Running " << command << endl ;
 	  system(command.c_str());
-	  command = "cp " + SwarpTmpDir() + "/" + ri.Name() + "/weight.fits " + weightSwarpName ;
+	  command = "cp " + SwarpTmpDir() + "/" + name + "/weight.fits " + weightSwarpName ;
 	  cout << " SwarpStack: Running " << command << endl ;
 	  system(command.c_str());
-	  command = "rm -rf " + SwarpTmpDir() + "/" + ri.Name() ;
+	  command = "rm -rf " + SwarpTmpDir() + "/" + name ;
 	  cout << " SwarpStack: Running " << command << endl ;
 	  system(command.c_str());
 	}
@@ -753,19 +778,29 @@ bool SwarpStack::MakeFits()
 	      thisZp  = head.KeyVal("ZP_PHOT");
 	    }
 	  else
-	    cout << " SwarpStack: no ZP_PHOT key in " << ri.Name() << " using ZP key" << endl ;
-	  cout << " SwarpStack: original ZP_used_in_swarp " << ri.Name() << " :  " << head.KeyVal("EXTVER") << " " << thisZp << endl ; 
+	    cout << " SwarpStack: no ZP_PHOT key in " << name << " using ZP key" << endl ;
+	  cout << " SwarpStack: original ZP_used_in_swarp " << name << " :  " << head.KeyVal("EXTVER") << " " << thisZp << endl ; 
 	  fluxScale = pow(10.,0.4*(stackZp - thisZp));
 	}
       else
 	{
-	  cerr << " SwarpStack: image " << ri.Name() 
+	  cerr << " SwarpStack: image " << name 
 		    << " misses a photometric zero point " << endl;
 	}
       // write fluxScale in a ascii header
       string header_name = substitute_extension(imageSwarpName,SWARP_HEADER_EXT);
       AsciiHead ah(header_name);
       ah.AddKey("FLXSCALE", fluxScale);
+
+      // shifts?      
+      if (dcrval.find(name) != dcrval.end()) {
+	FitsHeader head(imageSwarpName);
+	double crval1 = head.KeyVal("CRVAL1");
+	double crval2 = head.KeyVal("CRVAL2");
+	ah.AddKey("CRVAL1", crval1 + dcrval[name].x/cos(crval2*M_PI/180.));
+	ah.AddKey("CRVAL2", crval2 + dcrval[name].y);
+      }
+
       // compute the satur level for this image 
       double this_satur = ri.Saturation();
       saturation = min(saturation,this_satur*fluxScale);
@@ -1001,9 +1036,8 @@ bool SwarpStack::MakeFits_OnlyAdd()
     
     head.AddOrModKey("GAIN", collection.AverageGain()," averaged over the whole are, rather rough");
     head.AddOrModKey("BACK_SUB",true);
-    head.AddOrModKey("ZP",stackZp);
-    
-    
+    head.AddOrModKey("ZP",stackZp);    
+    head.AddOrModKey("SESEEING", collection.AverageSeeing(),"averaged seeing");
   }
 
   // write the component list

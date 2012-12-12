@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "allreducedimage.h"
 #include "swarpstack.h"
@@ -24,6 +25,7 @@ int main(int nargs, char **args)
   ReducedImageList ril;
   string outName, cardsName;
   ReducedImageRef ref;
+  map<string,Point> dcrval;
 
   for (int i=1; i<nargs; ++i)
     {
@@ -51,12 +53,18 @@ int main(int nargs, char **args)
 		  {
 		    while (ifs.good())
 		      {
+			string line;
+			getline(ifs, line);
+			if (line.empty() || line[0] == '#') continue;
 			string name;
-			ifs >> name;
-			if (name.empty() || name[0] == '#') continue;
+			istringstream iline(line);
+			iline >> name;
 			ReducedImageRef ri = ReducedImageNew(name);
 			if (ri->IsValid()) ril.push_back(ri);
 			else cerr << " not a valid dbimage: " << arg << endl;
+			Point pt;
+			if (iline >> pt.x >> pt.y)
+			  dcrval[name] = pt;
 		      }
 		    ifs.close();
 		  }
@@ -93,6 +101,7 @@ int main(int nargs, char **args)
   if (ref) frame = ref->PhysicalSize();
 
   SwarpStack ss(outName, ril, ref, frame);
+  ss.dcrval = dcrval;
   ss.MakeFits();
   ss.MakeSatur();
   ss.MakeCatalog();

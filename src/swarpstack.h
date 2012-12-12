@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include "reducedimage.h"
 #include "stringlist.h"
 
@@ -32,7 +33,6 @@ private:
   ReducedImageList images;
   ReducedImageRef photomAstromReference;
   Frame photomAstromReferenceFrame;
-
   
 
   const std::string SwarpPermDir() const { return Dir()+"swarp_work/";};
@@ -55,6 +55,8 @@ public :
   SwarpStack(const string &Name);
   SwarpStack() {};
 
+  // shifts for moving objects
+  map<string,Point> dcrval;
 
   virtual const string  TypeName() const { return "SwarpStack";}
   //  ReducedImageList Components() const;

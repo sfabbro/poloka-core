@@ -19,7 +19,6 @@ struct genstar {
 struct MatchStar {
 
   list<genstar> refStars;
-  double mjd;
 
   MatchStar(const string& name) {
 
@@ -53,8 +52,8 @@ struct MatchStar {
 
     GtransfoRef wcs = im.RaDecToPixels();
     ifstream in((im.Dir()+"/planted.list").c_str());
-    double ra, dec, mag, x, y, xref, yref;
-    double mdx=0, mdy=0;
+    double ra, dec, mag, x, y;
+    double mdra=0, mddec=0;
     Frame frame = im.UsablePart();
     char c;
     double nstars = 0;
@@ -66,43 +65,37 @@ struct MatchStar {
       if (!frame.InFrame(x,y)) continue;
       list<genstar>::iterator rit = find(refStars.begin(), refStars.end(), id);
       if (rit != refStars.end()) {
-	wcs->apply(rit->ra, rit->dec, xref, yref);
-	mdx += xref - x;
-	mdy += yref - y;
+	mdra  += rit->ra - ra;
+	mddec += rit->dec - dec;
 	nstars++;
       }
     }
-    mdx /= nstars;
-    mdy /= nstars;
+    mdra  /= nstars;
+    mddec /= nstars;
     
     cout << name << " " 
 	 << setiosflags(ios::fixed)
-	 << setprecision(5) 
-	 << setw(15)
-	 << mjd << " "
-	 << setprecision(3)
+	 << setprecision(10)
 	 << setw(9)
 	 << setw(9)
-	 << mdx << " " 
+	 << mdra << " " 
 	 << setw(9)
-	 << mdy << " "
+	 << mddec << " "
 	 << endl;
   }  
 };
 
 int main(int nargs, char **args) {
 
-  if (nargs != 3) usage(args[0]);
+  if (nargs < 2) usage(args[0]);
 
   MatchStar matchStar(args[1]);
-  if (matchStar.refStars.empty()) return EXIT_FAILURE;
-  ifstream in(args[2]);
-  char c;
-  while (in >> c) {
-    in.unget();
-    string name; double dum;
-    in >> name >> matchStar.mjd >> dum >> dum;
-    matchStar(name);
-  }
+
+  if (matchStar.refStars.empty())
+    return EXIT_FAILURE;
+
+  for (int i=2; i<nargs; ++i)
+    matchStar(args[i]);
+
   return EXIT_SUCCESS;
 }
