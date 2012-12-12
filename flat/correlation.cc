@@ -34,12 +34,12 @@ int main(int argc,char **args)
   }
   int correlationlength = atoi(args[1]);
  
-  for (int i=2; i< argc; ++i) {
-    string imagename = args[i];
+  for (int a=2; a< argc; ++a) {
+    string imagename = args[a];
     FitsImage image(imagename);
     
     if (!image.IsValid()) {
-      cerr << " skylev : invalid file : "  << args[i] << endl;
+      cerr << " skylev : invalid file : "  << args[a] << endl;
       continue;
     }
     

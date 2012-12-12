@@ -1,5 +1,6 @@
 #include <list>
 #include <map>
+#include <unistd.h>
 
 #include <vignetserver.h>
 #include <fitsimage.h>
