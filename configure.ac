@@ -1,6 +1,6 @@
 ## Initialization 
 AC_PREREQ(2.59)
-AC_INIT(poloka, 0.8.2, [poloka team])
+AC_INIT(poloka, 0.8.4, [poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src_base/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])

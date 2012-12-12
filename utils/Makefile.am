@@ -15,11 +15,11 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/simphot \
 	@CFITSIO_CFLAGS@
 
-bin_PROGRAMS = \
+bin_PROGRAMS = extract_image makeshift \
 	header astrom changekey checker dbimstat \
 	dead_correction efficiency elixir_to_toads \
         findsatellite shiftwcs shiftswarp image_zp \
-        image_select image_stats makeshift substack \
+        image_select image_stats shiftstack \
         lbl2toads maglimeval make_catalog \
         make_cosmic make_dead joinlist make_weight \
         matchusno preptoads removeback selection \
@@ -45,6 +45,9 @@ LDADD = $(top_builddir)/src/libtoads.la \
 	$(top_builddir)/src_utils/libtoadsutils.la \
 	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@
 
+makeshift_SOURCES = makeshift.cc
+extract_image_SOURCES = extract_image.cc
+#checktransfo_SOURCES = checktransfo.cc
 header_SOURCES = header.cc
 astrom_SOURCES = astrom.cc
 changekey_SOURCES = changekey.cc
@@ -105,6 +108,7 @@ modelpsf_LDADD = $(LDADD) $(top_builddir)/lc/libtoadslc.la $(top_builddir)/psf/l
 zpfitter_SOURCES = zpfitter.cc
 calibrationhacker_SOURCES = calibrationhacker.cc
 shiftswarp_SOURCES = shiftswarp.cc
+shiftstack_SOURCES = shiftstack.cc
 shiftwcs_SOURCES = shiftwcs.cc
 basicaperture_SOURCES = basicaperture.cc
 calibratefixedpos_SOURCES = calibratefixedpos.cc
