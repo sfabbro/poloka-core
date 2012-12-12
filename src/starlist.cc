@@ -264,7 +264,7 @@ template<class Star>void StarList<Star>::CutTail(const int NKeep)
 int count = 0;
 StarIterator si;
 for (si = this->begin(); si != this->end() && count < NKeep; ++count, ++si);
-while ( si != this->end() ) {si = erase(si);}
+while ( si != this->end() ) {si = this->erase(si);}
 }
 
 
@@ -287,7 +287,7 @@ template<class Star>void StarList<Star>::CutEdges(const Frame &aFrame, float min
     {
       if (aFrame.MinDistToEdges(**si) < mindist)
 	{
-	  si = erase(si); 
+	  si = this->erase(si); 
 	}
       else
 	si++;
