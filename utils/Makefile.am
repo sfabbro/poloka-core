@@ -15,12 +15,12 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/simphot \
 	@CFITSIO_CFLAGS@
 
-bin_PROGRAMS = extract_image makeshift \
+bin_PROGRAMS = \
 	header astrom changekey checker dbimstat \
 	dead_correction efficiency elixir_to_toads \
         findsatellite shiftwcs shiftswarp image_zp \
-        image_select image_stats shiftstack \
-        lbl2toads maglimeval make_catalog \
+        image_select image_stats shiftstack makeshift \
+        lbl2toads maglimeval make_catalog image_extract \
         make_cosmic make_dead joinlist make_weight \
         matchusno preptoads removeback selection \
         skylev sum_images valid_fits make_lightcurve \
@@ -46,7 +46,7 @@ LDADD = $(top_builddir)/src/libtoads.la \
 	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@
 
 makeshift_SOURCES = makeshift.cc
-extract_image_SOURCES = extract_image.cc
+image_extract_SOURCES = image_extract.cc
 #checktransfo_SOURCES = checktransfo.cc
 header_SOURCES = header.cc
 astrom_SOURCES = astrom.cc
