@@ -570,9 +570,9 @@ static void adaptive_weighted_average(PixVal *Values, const int Npix,
  
 bool ImageSum::MakeFits()
 {
-
   string fileName = ReducedImage::FitsName();
-  if (FileExists(fileName)) return true;
+  if (FileExists(fileName) && FileExists(ReducedImage::FitsWeightName()))
+    return true;
   if (components.size() == 1)
     {
       string name = components.front().Ri->FitsName();
