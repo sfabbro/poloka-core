@@ -2004,8 +2004,8 @@ double ReducedImage::AnyZeroPoint() const
 { 
   FitsHeader head(FitsName());
   if (head.HasKey("ZP_PHOT")) return double(head.KeyVal("ZP_PHOT"));
-  if (head.HasKey("ZPTOADS")) return double(head.KeyVal("ZPTOADS"));
   if (head.HasKey("ZP")) return double(head.KeyVal("ZP"));
+  if (head.HasKey("ZPTOADS")) return double(head.KeyVal("ZPTOADS"));
   if (head.HasKey("ZP0")) return double(head.KeyVal("ZP0"));
   return double(head.KeyVal("TOADPZPT"));
 }

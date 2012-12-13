@@ -356,18 +356,18 @@ double ZpPhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Err
 			refhead.KeyVal("ZP_PHOT"),
 			refhead.KeyVal("EZP_PHOT"),
 			Error);
-  else if (imhead.HasKey("ZPTOADS") && refhead.HasKey("ZPTOADS"))
-    return ZpPhotoRatio(imhead.KeyVal("ZPTOADS"),
-			errdef,
-			refhead.KeyVal("ZPTOADS"),
-			0,
-			Error);  
   else if (imhead.HasKey("ZP") && refhead.HasKey("ZP"))
     return ZpPhotoRatio(imhead.KeyVal("ZP"),
 			errdef,
 			refhead.KeyVal("ZP"),
 			errdef,
 			Error);
+  else if (imhead.HasKey("ZPTOADS") && refhead.HasKey("ZPTOADS"))
+    return ZpPhotoRatio(imhead.KeyVal("ZPTOADS"),
+			errdef,
+			refhead.KeyVal("ZPTOADS"),
+			0,
+			Error);  
   else if (imhead.HasKey("ZEROUSNO") && refhead.HasKey("ZEROUSNO"))
     return ZpPhotoRatio(imhead.KeyVal("ZEROUSNO"),
 			imhead.KeyVal("DZEROUSN"),
