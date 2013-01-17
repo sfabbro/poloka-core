@@ -539,6 +539,7 @@ SwarpStack::SwarpStack(const string &Name, const ReducedImageList &Images,
   images = Images;
   photomAstromReference = PhotomAstromReference;
   photomAstromReferenceFrame = SubFrame;
+  SetSwarpType(Calibrated);
 }
 
 
@@ -678,6 +679,16 @@ bool SubtractBack(const string & FitsFile, ReducedImage& Im)
   return SubtractMiniBack(image, Im.FitsMiniBackName());
 }
 
+static bool is_backsub(const FitsHeader& head) {
+  return head.HasKey("BACK_SUB")  ?
+    bool(head.KeyVal("BACK_SUB")) :
+    false;
+}
+
+void SwarpStack::SetSwarpType(const DbImageKind& StackType) {
+  imageTypeToStack = StackType;
+}
+
 bool SwarpStack::MakeFits()
 {
   if (HasImage()) return true;
@@ -712,31 +723,33 @@ bool SwarpStack::MakeFits()
       
       string tmpimage;
       remove(imageSwarpName.c_str());
-      string decompImage = DecompressImageIfNeeded(ri.FitsName(), imageSwarpName, tmpimage);
+      string imageOrigName = ri.FitsImageName(imageTypeToStack);
+      string decompImage = DecompressImageIfNeeded(imageOrigName, imageSwarpName, tmpimage);
       if (decompImage.empty())
 	{
 	  cerr << " SwarpStack: could not prepare " << imageSwarpName 
 		    << " for swarp " << endl;
 	  return false;
 	}
-      if (decompImage == ri.FitsName() && ri.BackSub() && 
-	  !MakeRelativeLink(ri.FitsName(), imageSwarpName))
+      if (decompImage == imageOrigName && is_backsub(imageOrigName) && 
+	  !MakeRelativeLink(imageOrigName, imageSwarpName))
 	{
 	  cerr << " SwarpStack: could not prepare " << imageSwarpName 
 		    << " for swarp " << endl;
 	  return false;
 	}
-      else if (decompImage == ri.FitsName())
+      else if (decompImage == imageOrigName)
 	{
-	  ImageCopy(ri.FitsName(), imageSwarpName, true);
+	  ImageCopy(imageOrigName, imageSwarpName, true);
 	}
-      if (!ri.BackSub())
+      if (!is_backsub(imageOrigName))
 	{
 	  cout << " SwarpStack: subtracting background for " << name << endl;
 	  SubtractBack(imageSwarpName, ri);
 	}
 
       // HACK for weight contaminated with satur mask
+      string weightOrigName = ri.FitsWeightImageName(imageTypeToStack);
       if (getenv("REPROCESS_WEIGHT_ONLINE"))
 	{
 	  string command_rep  = REPROCESS_WEIGHT_ONLINE_SCRIPT ;
@@ -751,7 +764,7 @@ bool SwarpStack::MakeFits()
 	  system(command.c_str());
 	}
       else
-	if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
+	if (!DecompressOrLinkImage(weightOrigName, weightSwarpName))
 	  {
 	    cerr << " SwarpStack: could not prepare " << weightSwarpName 
 		      << " for swarp " << endl;
@@ -767,7 +780,7 @@ bool SwarpStack::MakeFits()
       toRemove += " "+weightSwarpName;
 
       // compute flux scale factor from ZP
-      FitsHeader head(ri.FitsName());
+      FitsHeader head(imageOrigName);
       double fluxScale = 1;
       if (head.HasKey("ZP"))
 	{
@@ -951,7 +964,8 @@ bool SwarpStack::MakeFits_OnlyAdd()
       
       // build file names for swarp input files.
       string imageSwarpName =  build_file_name(SwarpTmpDir()+"%s.image.fits", ri.Name());
-      if (!DecompressOrLinkImage(ri.FitsName(), imageSwarpName))
+      string imageOrigName = ri.FitsImageName(imageTypeToStack);
+      if (!DecompressOrLinkImage(imageOrigName, imageSwarpName))
 	{
 	  cerr << " SwarpStack: could not prepare " << imageSwarpName 
 		    << " for swarp " << endl;
@@ -963,7 +977,8 @@ bool SwarpStack::MakeFits_OnlyAdd()
 
       string weightSwarpName = 
 	build_file_name(SwarpTmpDir()+"%s.image.weight.fits", ri.Name());
-      if (!DecompressOrLinkImage(ri.FitsWeightName(), weightSwarpName))
+      string weightOrigName = ri.FitsWeightImageName(imageTypeToStack);
+      if (!DecompressOrLinkImage(weightOrigName, weightSwarpName))
 	{
 	  cerr << " SwarpStack: could not prepare " << weightSwarpName 
 		    << " for swarp " << endl;
@@ -1114,7 +1129,7 @@ bool SwarpStack::MakeSatur(bool only_add)
       inputFiles += " "+BaseName(swarpInput);
       // extract header of calibrated image
       toRemove += " "+swarpInput;
-      extract_ascii_wcs(ri.FitsName(), swarpHead);
+      extract_ascii_wcs(ri.FitsImageName(imageTypeToStack), swarpHead);
     }
 
   string swarpOutName =  SwarpTmpDir()+"satur32.fits";

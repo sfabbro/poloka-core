@@ -85,8 +85,8 @@ which is C code generated from dbfile.y */
 using namespace std;
 
 
-enum DbImageKind { Raw = 1, Calibrated, Elixir};
-enum DbImageCatalogKind { SExtractor = 1, Fitted_for_seeing , DaophotAls, DaophotAp, DaophotNei, DaophotLst, DaophotPk, DaophotNst};
+enum DbImageKind { Raw = 1, Calibrated, Elixir, Subtracted};
+enum DbImageCatalogKind { SExtractor = 1, Fitted_for_seeing , DaophotAls, DaophotAp, DaophotNei, DaophotLst, DaophotPk, DaophotNst, Subtraction};
 enum DbImagePsfKind { DaophotPsf = 1};
 
 class Path;
@@ -148,6 +148,7 @@ public :
     ensures that the file exists. One may use the FileExists routine 
     to check. */
   string FitsImageName(const DbImageKind Kind) const ;
+  string FitsWeightImageName(const DbImageKind Kind) const ;
 
   //! out of elixir name
   string ElixirName() const;
@@ -162,8 +163,14 @@ public :
   //! same for dark.
   string FitsDarkName() const;
 
-  //! name of the weight imag
+  //! name of the weight image
   string FitsWeightName() const;
+
+  //! name of the weight image
+  string FitsSubName() const;
+
+  //! name of the weight image
+  string FitsSubWeightName() const;
 
   //! same for dead pixel map. 
   string FitsDeadName() const;

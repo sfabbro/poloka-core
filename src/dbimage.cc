@@ -577,6 +577,8 @@ void DbConfigFile::init_image_names()
   AddNewImageName("","raw","raw.fz");
   AddNewImageName("","calibrated","calibrated.fz");
   AddNewImageName("","weight","weight.fz");
+  AddNewImageName("","sub","sub.fz");
+  AddNewImageName("","subweight","sub.weight.fz");
   AddNewImageName("","elixir","elixir.fits");
   AddNewImageName("","back","back.fits");
   AddNewImageName("","miniback","miniback.fits");
@@ -660,6 +662,15 @@ string DbImage::FitsImageName(const DbImageKind Kind) const
 if (Kind == Raw)        return image_name(TypeName(), directory, "raw");
 if (Kind == Elixir)     return image_name(TypeName(), directory, "elixir");
 if (Kind == Calibrated) return image_name(TypeName(), directory, "calibrated");
+if (Kind == Subtracted) return image_name(TypeName(), directory, "sub");
+return "";
+}
+
+
+string DbImage::FitsWeightImageName(const DbImageKind Kind) const 
+{
+if (Kind == Calibrated) return image_name(TypeName(), directory, "weight");
+if (Kind == Subtracted) return image_name(TypeName(), directory, "sub.weight");
 return "";
 }
 
@@ -672,6 +683,7 @@ string DbImage::ImageCatalogName(const DbImageCatalogKind Kind) const
 {
 if (!IsValid()) return string("");
 if (Kind == SExtractor)         return directory + "se.list";
+if (Kind == Subtraction)         return directory + "det.list";
 if (Kind == Fitted_for_seeing) return directory + "se.fit_seeing.list";
 if (Kind == DaophotAls) return directory + "calibrated.als";
 if (Kind == DaophotNst) return directory + "calibrated.nst";
@@ -809,7 +821,9 @@ string DbImage::GetFileName(const char* WhichFile) const
   // directory names in standard unix tools assume no trailing slashes
   if (strcmp(WhichFile,"dir")==0) return directory.substr(0, directory.size()-1);
   if (strcmp(WhichFile,"usno")==0) return ImageMatchUsnoName();
-  if (strcmp(WhichFile,"weight")==0) return FitsWeightName();
+  if (strcmp(WhichFile,"weight")==0) return FitsWeightImageName(Calibrated);
+  if (strcmp(WhichFile,"sub")==0)    return FitsImageName(Subtracted);
+  if (strcmp(WhichFile,"subweight")==0) return FitsWeightImageName(Subtracted);
   return "";
 }
 

@@ -10,6 +10,7 @@ static void usage(const char* ProgName)
 {
   cerr << ProgName << " [OPTION]... -o DBIMAGE DBIMAGE...\n" 
        << "Wrapper around SWarp\n"
+       << "     -s         : stack subtraction instead of calibrated images\n"
        << "     -o DBIMAGE : output stack DBIMAGE\n"
        << "     -r DBIMAGE : specify a astrometric/photometric reference\n"
        << "     -c FILE    : specify a SWarp configuration file instead of default\n"
@@ -26,6 +27,7 @@ int main(int nargs, char **args)
   string outName, cardsName;
   ReducedImageRef ref;
   map<string,Point> dcrval;
+  DbImageKind imageType = Calibrated;
 
   for (int i=1; i<nargs; ++i)
     {
@@ -44,6 +46,7 @@ int main(int nargs, char **args)
 		  }
 	      }
 	      break;
+	    case 's': imageType = Subtracted; break;
 	    case 'o': outName = args[++i]; break;
 	    case 'c': cardsName = args[++i]; break;
 	    case 'i': 
@@ -101,6 +104,7 @@ int main(int nargs, char **args)
   if (ref) frame = ref->PhysicalSize();
 
   SwarpStack ss(outName, ril, ref, frame);
+  ss.SetSwarpType(imageType);
   ss.dcrval = dcrval;
   ss.MakeFits();
   ss.MakeSatur();

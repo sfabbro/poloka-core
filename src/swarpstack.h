@@ -38,6 +38,9 @@ private:
   const std::string SwarpPermDir() const { return Dir()+"swarp_work/";};
 
   const std::string SwarpTmpDir();
+
+  DbImageKind imageTypeToStack;
+
   bool MakeFits_OnlyAdd() ;
 
   std::string tmpDir;
@@ -61,6 +64,7 @@ public :
   virtual const string  TypeName() const { return "SwarpStack";}
   //  ReducedImageList Components() const;
   void Success();
+  void SetSwarpType(const DbImageKind& Type);
   bool MakeFits(bool only_add) ;
   bool MakeFits() ;
   bool MakeDead();
