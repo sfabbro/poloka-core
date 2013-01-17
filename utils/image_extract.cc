@@ -3,15 +3,25 @@
 #include <reducedutils.h>
 #include <wcsutils.h>
 
+static void usage(const char *progName) {
+  cerr << "Usage: " << progName << " REFIMAGE [OPTION] DBIMAGE...\n"
+       << "Extract the minimal sub image from REFIMAGE that matches all DBIMAGE\n"
+       << "   -o DBIMAGE: output name of the extracted dbimage (default is 'Ext_REFIMAGE')\n";
+  exit(EXIT_FAILURE);
+}
+
+
 int main(int nargs, char** args) {
 
+  if (nargs < 2) usage(args[0]);
   ReducedImage toExtract(args[1]);
+  string extname = "Ext_" + toExtract.Name();
 
   FitsHeader largeHead(toExtract.FitsName());
   Frame largeFrame(largeHead, WholeSizeFrame);
   GtransfoRef largePix2RaDec = WCSFromHeader(largeHead);
   if (!largePix2RaDec)  {
-    cerr << "extract_image: cannot handle a large reference without a WCS\n";
+    cerr << args[0] << ": cannot handle a large reference without a WCS\n";
     return EXIT_FAILURE;
   }
 
@@ -20,12 +30,20 @@ int main(int nargs, char** args) {
   Frame frame;
 
   for (int i=2; i<nargs; ++i) {
+    char *arg = args[i];
+    if (arg[0] == '-') {
+      switch (arg[1]) {
+      case 'o': { extname = args[++i]; continue; }
+      default: usage(args[0]);
+      }
+    }
+
     // first compute the union of Frame(largeImage)*Frame(anyOtherImage)
-    ReducedImage current(args[i]);
+    ReducedImage current(arg);
     if (current == toExtract) continue;
     FitsHeader currentHead(current.FitsName());
     GtransfoRef current2Large = FindTransfoFromWCS(current, toExtract);
-    cout << " extract_image: transfo between " << toExtract.Name() << ' ' << " and " 
+    cout << args[0] << ": transfo between " << toExtract.Name() << ' ' << " and " 
 	 << current.Name() << endl
 	 << *current2Large;
 
@@ -38,14 +56,21 @@ int main(int nargs, char** args) {
       frame = (largeFrame*currentFrame);
     else
       frame += (largeFrame*currentFrame);
-    cout << " extract_image: after adding " << current.Name() 
+    cout << args[0] << ": after adding " << current.Name() 
 	 << ", extract frame = " << frame << endl;
   }
+  // stupid hack to enlarge images to account for distorsions
+  frame.CutMargin(-100, -100);
+
+  SubImage subImage(extname, toExtract.Name(), frame);
+  if (toExtract.HasImage()) subImage.MakeFits();
+  if (toExtract.HasWeight()) subImage.MakeWeight();
+  if (toExtract.HasSatur()) subImage.MakeSatur();
+  if (toExtract.HasCosmic()) subImage.MakeCosmic();
+  if (toExtract.HasSatellite()) subImage.MakeSatellite();
+  if (toExtract.HasDead()) subImage.MakeDead();
   
-  SubImage *subImage = new SubImage("Ext_" + toExtract.Name(), toExtract.Name(), frame);
-  subImage->MakeFits();
-  subImage->MakeWeight();
-  subImage->MakeCatalog();
+  subImage.MakeCatalog();
 
   return EXIT_SUCCESS;
 }
