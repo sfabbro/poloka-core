@@ -172,7 +172,8 @@ int main(int nargs, char **args) {
 		   PointSourceOptimal,
 		   combMethod,
 		   ZeroPointDiff);
-    stack.Execute(DoFits | DoWeight);
+    stack.MakeFits();
+    stack.MakeWeight();
     
   } catch(PolokaException p) {
     p.PrintMessage(cerr);
