@@ -31,16 +31,12 @@ poloka.pc
 /doc/Doxyfile
 
 # parser generated
-/src_base/alltelinst.*
+/src/alltelinst.*
 /src/dbfileLex.c
 /src/dbfileParse.c
 /src/dbfileParse.h
 
 # execs
-/flat/*
-!/flat/*.cc
-/simphot/mklc
-/utils/*
-!/utils/*.cc
+/tools/*
+!/tools/*.cc
 !Makefile.am
-!wscript

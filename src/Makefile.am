@@ -8,13 +8,15 @@ MAINTAINERCLEANFILES = \
 
 AM_YFLAGS = -l -d
 
-lib_LTLIBRARIES = libtoads.la
+lib_LTLIBRARIES = libpoloka-core.la
 
 noinst_HEADERS =  docmain.h
 src_includedir = $(includedir)/poloka
 src_include_HEADERS = \
 	allreducedimage.h \
 	apersestar.h \
+	array2d.h \
+	astroutils.h \
 	basestar.h \
 	ccd.h \
 	cluster2.h \
@@ -22,8 +24,6 @@ src_include_HEADERS = \
 	convolution.h \
 	convtemplate.h \
 	countedref.h \
-	daophotio.h \
-	daostar.h \
 	datacards.h \
 	dbconfigexception.h \
 	dbimage.h \
@@ -31,33 +31,46 @@ src_include_HEADERS = \
 	dicstar.h \
 	dictfile.h \
 	dimage.h \
-	ellipticaper.h \
 	exceptions.h \
 	fastfinder.h \
 	fastifstream.h \
 	fatpoint.h \
+	fileutils.h \
+	fitsimage.h \
+	fitsslice.h \
 	gaussianfit.h \
 	globalval.h \
 	gtransfo.h \
+	histo1d.h \
+	histo2d.h \
+	histo4d.h \
 	histopeakfinder.h \
 	hprofile1d.h \
+	imageback.h \
 	imagebinning.h \
+	image.h \
+	imageinterpolation.h \
 	imagelist.h \
 	imagematch.h \
 	imagepair.h \
 	imagesubtraction.h \
 	imagesum.h \
 	imageutils.h \
+	intframe.h \
+	intpoint.h \
 	iohelpers.h \
 	kernelfit.h \
 	kernelfitter.h \
-	lambert_dust.h \
-	lambert_tag.h \
 	listmatch.h \
 	matchexception.h \
-	multimagstar.h \
+	matvect.h \
 	nstarmatch.h \
 	photoratio.h \
+	pixelblock.h \
+	point.h \
+	polokaexception.h \
+	poly1.h \
+	poly2.h \
 	quali_box.h \
 	reducedimage.h \
 	reducedutils.h \
@@ -70,15 +83,20 @@ src_include_HEADERS = \
 	starlist.cc \
 	starlist.h \
 	starmatch.h \
+	stringlist.h \
 	sub.h \
 	subimage.h \
 	swarpstack.h \
 	toadscards.h \
 	transformedimage.h \
 	usnoutils.h \
+	virtualinstrument.h \
+	vutils.h \
+	wcscon.h \
+	wcs_defines.h \
 	wcsutils.h
 
-libtoads_la_SOURCES = \
+libpoloka-core_la_SOURCES = \
 	$(src_include_HEADERS) \
 	dbfileParse.y \
 	dbfileLex.l \
@@ -87,8 +105,6 @@ libtoads_la_SOURCES = \
 	basestar.cc \
 	cluster.cc \
 	convolution.cc \
-	daophotio.cc \
-	daostar.cc \
 	datacards.cc \
 	dbimage.cc \
 	detection.cc \
@@ -110,7 +126,6 @@ libtoads_la_SOURCES = \
 	imageutils.cc \
 	kernelfit.cc \
 	kernelfitter.cc \
-	lambert_dust.cc \
 	listmatch.cc \
 	multimagstar.cc \
 	nstarmatch.cc \
@@ -131,14 +146,8 @@ libtoads_la_SOURCES = \
 	usnoutils.cc \
 	wcsutils.cc
 
-# the $(top_builddir)/src_base is to include the makefile generated alltelinst.h
-libtoads_la_CPPFLAGS = \
-	-I$(top_srcdir)/src_base \
-	-I$(top_srcdir)/src_utils \
-	-I$(top_builddir)/src_base \
-	@CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@
+libpoloka-core_la_CPPFLAGS = \
+	@CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@ @Z_CFLAGS@
 
-libtoads_la_LIBADD = \
-	$(top_builddir)/src_base/libtoadsbase.la \
-	$(top_builddir)/src_utils/libtoadsutils.la \
-	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@
+libpoloka-core_la_LIBADD = \
+	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@ @Z_LIBS@

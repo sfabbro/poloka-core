@@ -9,31 +9,16 @@ MAINTAINERCLEANFILES = \
 	stamp-* \
 	m4/libtool.m4 \
 	m4/lt*.m4 \
-	poloka.pc
+	poloka-core.pc
 
-EXTRA_DIST = autogen.sh README README.autotools NEWS INSTALL COPYING
+EXTRA_DIST = autogen.sh README NEWS INSTALL COPYING
 
 ACLOCAL_AMFLAGS = -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = poloka.pc
+pkgconfig_DATA = poloka-core.pc
 
-SUBDIRS = datacards doc \
-	cern_stuff telinst \
-	src_base src_utils src \
-	flat psf lc simphot utils
-
-if CERNLIB
-SUBDIRS += cern_utils
-endif
-
-if MC
-SUBDIRS += mc
-endif
-
-if IMAGEMAGICK
-SUBDIRS += imagemagick_utils
-endif
+SUBDIRS = datacards doc telinst src tools
 
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \

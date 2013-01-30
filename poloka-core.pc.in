@@ -1,12 +1,13 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-includedir=@includedir@/@PACKAGE_NAME@
+includedir=@includedir@/poloka
 
 Name: @PACKAGE_NAME@
 Description: Library for astronomical image processing
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ltoadsbase -ltoadsutils -ltoads -ltoadspsf -ltoadslc -ltoadssimphot
+Libs: -L${libdir} -lpoloka-core
 Libs.private: @LIBS@
 Cflags: -I${includedir}
-Requires: sextractor cfitsio
+Requires: cfitsio
+Requires.private: @BLAS_PC@ @LAPACK_PC@ @Z_PC@ sextractor
