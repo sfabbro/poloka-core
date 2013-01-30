@@ -23,8 +23,8 @@ Quick setup instructions
 
  2. Install cfitsio
 
-   $ wget http://astrowww.phys.uvic.ca/~seb/cfitsio-3.280.tar.gz
-   $ tar xf cfitsio-3.280.tar.gz && cd cfitsio-3.280
+   $ wget http://dev.gentoo.org/~bicatali/distfiles/cfitsio-3.310.tar.gz
+   $ tar xf cfitsio-3.310.tar.gz && cd cfitsio-3.310
    $ ./configure --prefix=${DIR} --disable-static
    $ make -j <ncpu> ; make install
 
@@ -50,12 +50,9 @@ Some developer information for using autotools
   following standard GNU rules for those files, sometimes taking
   macros from the autoconf-archive on savannah.gnu.org
 
-* SExtractor library (now in http://gitorious.org/poloka/libsex),
-  cfitsio (repacked version: http://gitorious.org/poloka/cfitsio),
-  snfit and ImageMagick install a pkgconfig file to
-  track their dependencies, however snfit on Julien Guy site is not properly
-  configured for pkg-config. Ask me (SF) for a proper autotools
-  version. Do a man pkg-config if you don't know anything about pkg-config.
+* SExtractor library (now in http://github.com/sfabbro/libsextractor),
+  cfitsio (repacked version: http://github.com/sfabbro/cfitsio),
+  Do a man pkg-config if you don't know anything about pkg-config.
 
 * To build the autotools from scratch (Makefile, configure), use
 
@@ -83,7 +80,7 @@ Some developer information for using autotools
 
       $ make CPPFLAGS="-DDEBUG" CXXFLAGS="-O0 -ggdb"
 
-* One way to build your stuff in multiple architectures:
+* One way to build your stuff for multiple architectures:
 
       $ tar xf poloka-0.7.0.tar.gz
       $ mkdir poloka-build-x86

@@ -1,6 +1,6 @@
 ## Initialization 
 AC_PREREQ(2.59)
-AC_INIT(poloka-core, 0.8.4, [poloka team])
+AC_INIT(poloka, 0.8.7, [poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -49,11 +49,53 @@ AX_CHECK_PKG_LIB(
 	[AC_MSG_ERROR([Could not find SExtractor library])])
 
 ## Check for mandatory zlib (for gztream)
+<<<<<<< HEAD
 AX_CHECK_PKG_LIB(
 	[z],
 	[zlib.h],
 	[inflateEnd],,
 	[AC_MSG_ERROR([Could not find zlib library])])
+=======
+AC_CHECK_LIB([z], [inflateEnd])
+AC_CHECK_HEADER([zlib.h])
+
+## Check for optional cernlib to build
+CERNLIB=false
+AC_MSG_CHECKING([whether to build cernlib tools])
+AC_ARG_ENABLE(cernlib,
+    AC_HELP_STRING([--enable-cernlib], [cernlib support (default=no)]),
+   [enable_cernlib=$enableval],
+   [enable_cernlib=no])
+if test x"$enable_cernlib" = x"yes"; then
+    AC_MSG_RESULT([yes])
+    # FC  needed for cernlib macro
+    AC_PROG_FC
+    AC_LIB_CERNLIB([packlib], [HROPEN],
+    		   [CERNLIB=true],
+		   [AC_MSG_ERROR([packlib was not found.
+		   *** Please install cernlib (packlib) in order to build the cernlib tools.])])
+    CERNLIB_PACKLIBS="$CERNLIB_LIBS"
+    AC_SUBST(CERNLIB_PACKLIBS)
+else
+    AC_MSG_RESULT([no])
+fi
+AM_CONDITIONAL(CERNLIB, test x$CERNLIB = xtrue)
+
+## Check for optional imagemagick to output some vignettes
+IMAGEMAGICK=false
+AC_MSG_CHECKING([whether to build the imagemagick utilities])
+AC_ARG_ENABLE([imagemagick],
+      [AS_HELP_STRING([--enable-imagemagick], [build imagemagick tools (default=no)])],
+      [enable_imagemagick=$enableval], 		   	   
+      [enable_imagemagick=no])
+if test x"$enable_imagemagick" = x"yes"; then
+    AC_MSG_RESULT([yes])
+    AX_IMAGEMAGICK([IMAGEMAGICK=true], 
+		   [AC_MSG_ERROR([ImageMagick++ library was not found. *** Please install ImageMagick.])])
+else
+    AC_MSG_RESULT([no])
+fi
+AM_CONDITIONAL([IMAGEMAGICK], [test x$IMAGEMAGICK = xtrue])
 
 AC_CONFIG_FILES([Makefile
 		 poloka-core.pc
