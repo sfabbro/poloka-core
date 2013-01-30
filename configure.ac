@@ -1,6 +1,6 @@
 ## Initialization 
 AC_PREREQ(2.59)
-AC_INIT(poloka, 0.8.4, [poloka team])
+AC_INIT(poloka, 0.8.7, [poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src_base/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -68,24 +68,6 @@ else
 fi
 AM_CONDITIONAL(CERNLIB, test x$CERNLIB = xtrue)
 
-## Check for optional snfit to build mc module
-MC=false
-AC_MSG_CHECKING([whether to build the Monte Carlo module])
-AC_ARG_ENABLE([mc],
-   AS_HELP_STRING([--enable-mc], [build montecarlo module (default=no)]),
-   [enable_mc=$enableval],
-   [enable_mc=no])
-if test x"$enable_mc" = "xyes"; then
-    AC_MSG_RESULT([yes])
-    AX_SNFIT([MC=true], [AC_MSG_ERROR([snfit library was not found. 
-   *** Please install snfit or use the options:
-   *** --with-snfit-includedir and --with-snfit-libdir.])
-   ])
-else
-    AC_MSG_RESULT([no])
-fi
-AM_CONDITIONAL(MC, test x$MC = xtrue)
-
 ## Check for optional imagemagick to output some vignettes
 IMAGEMAGICK=false
 AC_MSG_CHECKING([whether to build the imagemagick utilities])
@@ -112,7 +94,6 @@ AC_CONFIG_FILES([Makefile
 		 flat/Makefile
 		 imagemagick_utils/Makefile
   		 lc/Makefile
-  		 mc/Makefile
                  psf/Makefile
                  simphot/Makefile
                  src/Makefile

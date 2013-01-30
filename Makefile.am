@@ -27,10 +27,6 @@ if CERNLIB
 SUBDIRS += cern_utils
 endif
 
-if MC
-SUBDIRS += mc
-endif
-
 if IMAGEMAGICK
 SUBDIRS += imagemagick_utils
 endif

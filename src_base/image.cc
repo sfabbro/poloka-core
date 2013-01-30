@@ -429,7 +429,7 @@ void Image::Masking(const int x_Beg, const int y_Beg,
 {
 
   int ny = Ny(), nx = Nx();
-  cerr << " Masking : xbg, ybeg, xend, yend " << x_Beg << " " <<  y_Beg 
+  cout << " Masking : xbeg, ybeg, xend, yend " << x_Beg << " " <<  y_Beg 
        << " " << x_End << " " << y_End << endl ;
   for (int j=0; j<ny; ++j) for (int i=0; i<nx; ++i)
     {
