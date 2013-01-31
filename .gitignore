@@ -40,3 +40,4 @@ poloka.pc
 /tools/*
 !/tools/*.cc
 !Makefile.am
+*pc
