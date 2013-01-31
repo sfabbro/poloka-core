@@ -1,6 +1,6 @@
 ## Initialization 
 AC_PREREQ(2.59)
-AC_INIT(poloka, 0.8.7, [poloka team])
+AC_INIT([poloka-core], 0.2, [poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -47,14 +47,6 @@ AX_CHECK_PKG_LIB(
 	[define.h],
 	[sextractor],[makeit],,
 	[AC_MSG_ERROR([Could not find SExtractor library])])
-
-## Check for mandatory zlib (for gztream)
-AX_CHECK_PKG_LIB(
-	[zlib],
-	[zlib.h],
-	[z],[inflateEnd],,
-	[AC_MSG_ERROR([Could not find zlib library])])
-
 
 AC_CONFIG_FILES([Makefile
 		 poloka-core.pc

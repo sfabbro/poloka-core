@@ -114,7 +114,6 @@ libpoloka_core_la_SOURCES = \
 	gaussianfit.cc \
 	globalval.cc \
 	gtransfo.cc \
-	gzstream.cc \
 	histo1d.cc \
 	histo2d.cc \
 	histo4d.cc \
@@ -149,10 +148,10 @@ libpoloka_core_la_SOURCES = \
 	wcsutils.cc
 
 libpoloka_core_la_CPPFLAGS = \
-	@CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@ @ZLIB_CFLAGS@
+	@CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@
 
 libpoloka_core_la_LIBADD = \
-	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@ @ZLIB_LIBS@
+	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@
 
 telinst_sources = $(top_srcdir)/telinst/*.cc
 classname = \(.*class *\)\([^ :]*\)\(.*\)

@@ -25,11 +25,11 @@ CatalogPath
 
 ImageNames
 {
-#default if not overwritten:
-  { calibrated.fz satur.fits.gz weight.fits }
-#  ImageSum { calibrated.fz satur.fits.gz  weight.fits }
-#  TransformedImage { calibrated.fz satur.fits.gz weight.fits }
-#  SwarpStack { calibrated.fz satur.fits.gz weight.fits }
-#  SubImage { calibrated.fz satur.fits.gz weight.fits }
-#  ImageSubtraction { calibrated.fz satur.fits.gz weight.fits }
+# default if not overwritten:
+  { calibrated.fits.fz satur.fits.gz weight.fits.fz }
+#  ImageSum { calibrated.fits.fz satur.fits.gz  weight.fits }
+#  TransformedImage { calibrated.fits.fz satur.fits.gz weight.fits }
+#  SwarpStack { calibrated.fits.fz satur.fits.gz weight.fits }
+#  SubImage { calibrated.fits.fz satur.fits.gz weight.fits }
+#  ImageSubtraction { calibrated.fits.fz satur.fits.gz weight.fits }
 }

@@ -357,7 +357,7 @@ void DbConfigExample()
 << endl
 << "#what are the image names for the various DbImage derived classes" << endl
 << "# .fits : regular fits image" << endl
-<< "# .fz : rice compressed fits image" << endl
+<< "# .fits.fz : rice compressed fits image" << endl
 << "# .fits.gz gzip compression" << endl
 << "# mind the spaces around '{' and '}'" << endl
 << "ImageNames" << endl
@@ -575,11 +575,11 @@ void DbConfigFile::AddNewImageName(const string &TypeName,
 
 void DbConfigFile::init_image_names()
 {
-  AddNewImageName("","raw","raw.fz");
-  AddNewImageName("","calibrated","calibrated.fz");
-  AddNewImageName("","weight","weight.fz");
-  AddNewImageName("","sub","sub.fz");
-  AddNewImageName("","subweight","sub.weight.fz");
+  AddNewImageName("","raw","raw.fits.fz");
+  AddNewImageName("","calibrated","calibrated.fits.fz");
+  AddNewImageName("","weight","weight.fits.fz");
+  AddNewImageName("","sub","sub.fits.fz");
+  AddNewImageName("","subweight","sub.weight.fits.fz");
   AddNewImageName("","elixir","elixir.fits");
   AddNewImageName("","back","back.fits");
   AddNewImageName("","miniback","miniback.fits");
@@ -642,7 +642,7 @@ static string image_name(const string &TypeName, const string &Dir,
   if (FileExists(fileName))  return fileName;
   fileName = withoutExtension+".fits.gz";
   if (FileExists(fileName))  return fileName;
-  fileName = withoutExtension+".fz";
+  fileName = withoutExtension+".fits.fz";
   if (FileExists(fileName))  return fileName;
   fileName = withoutExtension+".head";
   if(FileExists(fileName)) return fileName;
