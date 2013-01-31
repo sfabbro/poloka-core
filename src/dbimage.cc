@@ -557,6 +557,7 @@ string DbImage::StoredTypeName() const
     }
   fscanf(file,"%s",name);
   fclose(file);
+
   return string(name);
 }
 
@@ -684,13 +685,6 @@ string DbImage::ImageCatalogName(const DbImageCatalogKind Kind) const
 if (!IsValid()) return string("");
 if (Kind == SExtractor)         return directory + "se.list";
 if (Kind == Subtraction)         return directory + "det.list";
-if (Kind == Fitted_for_seeing) return directory + "se.fit_seeing.list";
-if (Kind == DaophotAls) return directory + "calibrated.als";
-if (Kind == DaophotNst) return directory + "calibrated.nst";
-if (Kind == DaophotPk) return directory + "calibrated.pk";
-if (Kind == DaophotLst) return directory + "calibrated.lst";
-if (Kind == DaophotNei) return directory + "calibrated.nei";
-if (Kind == DaophotAp) return directory + "calibrated.ap";
 return "";
 }
 
@@ -698,6 +692,12 @@ string DbImage::AperCatalogName() const
 {
   return directory+"aperse.list";
 }
+
+string DbImage::FixedAperCatalogName() const
+{
+  return directory+"fixed_aperse.list";
+}
+
 
 string DbImage::StarCatalogName() const
 {
@@ -814,9 +814,8 @@ string DbImage::GetFileName(const char* WhichFile) const
   if (strcmp(WhichFile,"miniback")==0)   return FitsMiniBackName();
   if (strcmp(WhichFile,"bias")==0)   return FitsBiasName();
   if (strcmp(WhichFile,"cat")==0)    return ImageCatalogName(SExtractor);
-  if (strcmp(WhichFile,"fitcat")==0) return ImageCatalogName(Fitted_for_seeing);
   if (strcmp(WhichFile,"fringe")==0) return FitsFringeName();
-  if (strcmp(WhichFile,"psf")==0) return ImagePsfName(DaophotPsf);
+  if (strcmp(WhichFile,"psf")==0) return ImagePsfName(PolokaPsf);
   if (strcmp(WhichFile,"dark")==0)    return FitsDarkName();
   // directory names in standard unix tools assume no trailing slashes
   if (strcmp(WhichFile,"dir")==0) return directory.substr(0, directory.size()-1);

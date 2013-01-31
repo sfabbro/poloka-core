@@ -113,7 +113,7 @@ FitsOutSlice::FitsOutSlice(const string FileName, const FitsHeader &ModelHead,
   ySliceStart = 0;
   if (sliceSize >= nyTotal)
     {
-      sliceSize = nyTotal;
+      ny = sliceSize = nyTotal;
       lastSlice = true;
     }
 }
@@ -140,6 +140,11 @@ int FitsOutSlice::WriteCurrentSlice()
 
   // where we stand now (what the pixel buffer now holds):
   ySliceStart += sliceSize - overlap;
+  if (ySliceStart + sliceSize > nyTotal) // the image is actually "shorter"
+    ny = nyTotal- ySliceStart;
+#ifdef DEBUG_SLICES 
+  cout << " we just entered in the last (out) slice and set ny to " << ny << endl;
+#endif
 
 #ifdef DEBUG_SLICES
   cout << " actually written " <<  nRowWrite << " rows " << endl;

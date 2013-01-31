@@ -755,13 +755,16 @@ bool SwarpStack::MakeFits()
 	  string command_rep  = REPROCESS_WEIGHT_ONLINE_SCRIPT ;
 	  string command = command_rep + " " + ri.Dir() + " " + SwarpTmpDir()  ;
 	  cout << " SwarpStack: Running " << command << endl ;
-	  system(command.c_str());
+	  if (!system(command.c_str()))
+	      return false;
 	  command = "cp " + SwarpTmpDir() + "/" + name + "/weight.fits " + weightSwarpName ;
 	  cout << " SwarpStack: Running " << command << endl ;
-	  system(command.c_str());
+	  if (!system(command.c_str()))
+	    return false;
 	  command = "rm -rf " + SwarpTmpDir() + "/" + name ;
 	  cout << " SwarpStack: Running " << command << endl ;
-	  system(command.c_str());
+	  if (!system(command.c_str()))
+	    return false;
 	}
       else
 	if (!DecompressOrLinkImage(weightOrigName, weightSwarpName))

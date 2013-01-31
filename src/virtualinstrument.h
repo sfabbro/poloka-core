@@ -34,6 +34,9 @@ public :
   virtual string InstName() const = 0;
 
   
+  //! default returns nothing 
+  virtual Frame PrescanRegion(const FitsHeader &Head, const int Iamp) const;
+
   //! default uses BIASSEC
   virtual Frame OverscanRegion(const FitsHeader &Head, const int Iamp) const;
 

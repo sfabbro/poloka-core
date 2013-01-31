@@ -91,7 +91,7 @@ int main(int nargs, char **args) {
   for (int i=1; i<nargs; ++i) {
     char *arg = args[i];
     if (arg[0] != '-') {
-      ReducedImageRef im = ReducedImageNew(arg);
+      ReducedImage* im = new ReducedImage(arg);
       if (!im || !im->IsValid()) { 
 	cerr << " not a valid dbimage: " << arg << endl;
 	continue;
@@ -130,14 +130,14 @@ int main(int nargs, char **args) {
 
   if (doUnion) {
     string unionRefName = "U_" + imList.front()->Name();
-    ReducedImageRef unionRef = ReducedImageNew(unionRefName);
+    ReducedImage *unionRef = new ReducedImage(unionRefName);
     if (unionRef && unionRef->Execute(ToTransform(*imList.front()))) {
       cout << " Union frame " << unionRefName << " already produced\n";
       imMatcher.Ref = unionRef;
     } else {
       cout << " Creating a union frame reference " << unionRefName << endl;
       MakeUnionRef(imList, *imList.front(), unionRefName, imMatcher.wcsOnly);
-      imMatcher.Ref = ReducedImageNew(unionRefName);
+      imMatcher.Ref = new ReducedImage(unionRefName);
     }
     imList.pop_front();
   } else if (!imMatcher.ImToRef && !imMatcher.RefToIm) {

@@ -19,7 +19,7 @@ int main(int nargs, char ** args) {
   for (int i=1; i<nargs; ++i)  {
     char *arg = args[i];
     if ((arg[0] != '-')) {
-      ReducedImageRef im = ReducedImageNew(arg);
+      ReducedImage* im = new ReducedImage(arg);
       if (!im || !im->IsValid()) { 
 	cerr << arg << ": not a valid dbimage\n";
 	continue;

@@ -181,7 +181,7 @@ Aperture AperSEStar::InterpolateFlux(const double &Radius) const
   // radius is between rk-1 and rk
   if (k == 0) return apers[0];
   if (k == naper) return apers[k-1];
-  //k--; why ? DH
+  
   double x = (Radius-apers[k-1].radius)/(apers[k].radius-apers[k-1].radius);
   assert(x>=0 && x<=1);
   Aperture aper;
@@ -189,7 +189,7 @@ Aperture AperSEStar::InterpolateFlux(const double &Radius) const
   aper.flux = (1-x)*apers[k-1].flux+x*apers[k].flux;
   aper.fother = (1-x)*apers[k-1].fother+x*apers[k].fother;
   // interpolate errors linearly because for low fluxes, it scales with radius
-  aper.eflux = (1-x)*apers[k-1].eflux+x*apers[k-1].eflux;
+  aper.eflux = (1-x)*apers[k-1].eflux+x*apers[k].eflux;
   aper.nbad = apers[k].nbad;
   return aper;
 }
@@ -530,7 +530,7 @@ std::string AperSEStar::WriteHeader_(ostream & pr,
   for (size_t k=0; k < apers.size(); ++k)
     {
       char kk[8];
-      sprintf(kk,"%-d",k);
+      sprintf(kk,"%-zu",k);
       pr << "#rad"  << kk << i << " : aperture radius"<< endl;
       pr << "#apfl" << kk << i << " : aperture flux"<< endl;
       pr << "#eapfl"<< kk << i << " : error on aperture flux"<< endl;
@@ -711,9 +711,9 @@ bool FindStarShapes(const AperSEStarList &List, const double MinSN,
 
   if (verbose > 0 )
     {
-      cout << "FindStarShapes : min signal to noise : " << MinSN<< endl ;
-      cout << "FindStarShapes : fraction eliminating low surf. brightness objects :  " << frac_elim << endl ;
-      cout << "FindStarShapes : minimum x and y size in pixels : " << my_histo_val_min << endl ;
+      cout << " FindStarShapes : min signal to noise : " << MinSN<< endl ;
+      cout << " FindStarShapes : fraction eliminating low surf. brightness objects :  " << frac_elim << endl ;
+      cout << " FindStarShapes : minimum x and y size in pixels : " << my_histo_val_min << endl ;
     }
 
   Histo2d histo(30,my_histo_val_min,10.,30,my_histo_val_min,10.);

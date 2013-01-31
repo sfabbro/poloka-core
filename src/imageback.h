@@ -79,10 +79,4 @@ class ImageBack {
 
 };
 
-enum BackgroundMethod { OnTheFly = 1,
-			Differential = 2,
-			BUnSet = 3};
-
-string name_of_backgroundMethod(const BackgroundMethod backgroundMethod);
-
 #endif // IMAGEBACK__H

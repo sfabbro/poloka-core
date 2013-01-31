@@ -146,6 +146,11 @@ Frame VirtualInstrument::TotalIlluRegion(const FitsHeader &Head) const
   return result;
 }
 
+Frame VirtualInstrument::PrescanRegion(const FitsHeader &Head, const int Iamp) const
+{
+  return Frame();
+}
+
 Frame VirtualInstrument::OverscanRegion(const FitsHeader &Head, const int Iamp) const
 {
   if (Head.HasKey("BIASSEC"))

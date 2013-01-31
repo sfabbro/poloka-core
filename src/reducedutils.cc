@@ -406,8 +406,8 @@ void MakeUnionRef(const ReducedImageList& ToAlign, const ReducedImage& Reference
 string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef, const GtransfoRef RefToIm) {
   string resampledName = TransformedName(Im.Name(), Ref.Name());
   { 
-    ReducedImageRef resampledIm = ReducedImageNew(resampledName);
-    if (resampledIm && resampledIm->IsValid() && resampledIm->Execute(ToTransform(Im))) {
+    ReducedImage resampledIm(resampledName);
+    if (resampledIm.IsValid() && resampledIm.Execute(ToTransform(Im))) {
       cout << " ImageResample: " << resampledName << " is done\n";
       return resampledName;
     }
@@ -432,8 +432,8 @@ string ImageResample(const ReducedImage& Im, const ReducedImage& Ref, const Gtra
 string ImageResample(const ReducedImage& Im, const GtransfoRef ImToResampled, const GtransfoRef ResampledToIm) {
   string resampledName = "T_" + Im.Name();
   {
-    ReducedImageRef resampledIm = ReducedImageNew(resampledName);
-    if (resampledIm && resampledIm->IsValid() && resampledIm->Execute(ToTransform(Im))) {
+    ReducedImage resampledIm(resampledName);
+    if (resampledIm.IsValid() && resampledIm.Execute(ToTransform(Im))) {
       cout << " ImageResample: " << resampledName << " is done\n";
       return resampledName;
     }
@@ -473,8 +473,8 @@ static double sign(const double& x) {
 string ImageIntegerShift(const ReducedImage& Im, const ReducedImage& Ref, const GtransfoRef ImToRef) {
   string shiftedName = ShiftedName(Im.Name(), Ref.Name());
   {
-    ReducedImageRef shiftedIm = ReducedImageNew(shiftedName);
-    if (shiftedIm && shiftedIm->IsValid() && shiftedIm->Execute(ToTransform(Im))) {
+    ReducedImage shiftedIm(shiftedName);
+    if (shiftedIm.IsValid() && shiftedIm.Execute(ToTransform(Im))) {
       cout << " ImageIntegerShift: " << shiftedName << " already produced\n";
       return shiftedName;
     }

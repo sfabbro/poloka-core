@@ -188,7 +188,8 @@ int main(int nargs, char **args) {
     if (sscanf(datestr.c_str(),"[%d-%d-%d,%d-%d-%d]", &y1,&m1,&d1,&y2,&m2,&d2) == 6) {
       imSelect.mjdMin = JulianDay(d1,m1,y1) - 2400000.5;
       imSelect.mjdMax = JulianDay(d2,m2,y2) - 2400000.5;
-    } else if (sscanf(datestr.c_str(),"[%f,%f]", &imSelect.mjdMin, &imSelect.mjdMax) != 2) {
+    } else if (sscanf(datestr.c_str(),"[%lf,%lf]", 
+		      &imSelect.mjdMin, &imSelect.mjdMax) != 2) {
       cerr << datestr << ": wrong date format\n";
       return(EXIT_FAILURE);
     }
@@ -210,7 +211,7 @@ int main(int nargs, char **args) {
   // decode ra, dec, radius
   if (!rastr.empty() && !decstr.empty()) {
     double ra;
-    if (sscanf(rastr.c_str(),"%f", &ra) != 1) {
+    if (sscanf(rastr.c_str(),"%lf", &ra) != 1) {
       ra = RaStringToDeg(rastr);
       if (ra >= 99) {
 	cerr << rastr << ": wrong RA format\n";
@@ -218,7 +219,7 @@ int main(int nargs, char **args) {
       }
     }
     double dec;
-    if (sscanf(decstr.c_str(),"%f", &dec) != 1) {
+    if (sscanf(decstr.c_str(),"%lf", &dec) != 1) {
       dec = DecStringToDeg(rastr);
       if (dec >= 199) {
 	cerr << decstr << ": wrong DEC format\n";

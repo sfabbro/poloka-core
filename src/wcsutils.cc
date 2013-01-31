@@ -249,7 +249,7 @@ bool TanLinWCSFromHeader(const FitsHeader &Head, TanPix2RaDec &TanWcs,
 {
   string ctype1 = Head.KeyVal("CTYPE1");
   string ctype2 = Head.KeyVal("CTYPE2");
-  if ((ctype1 != "RA---TAN" || ctype2 != "DEC--TAN") && (ctype1 != "RA---TNX" || ctype2 != "DEC--TNX"))
+  if ((ctype1 != "RA---TAN" || ctype2 != "DEC--TAN") && (ctype1 != "RA---TNX" || ctype2 != "DEC--TNX") && (ctype1 != "RA---TPV" || ctype2 != "DEC--TPV"))
     {
       if (Warn) cerr << " No TAN WCS in " << Head.FileName () << endl;
       return false;

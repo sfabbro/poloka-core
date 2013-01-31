@@ -1,14 +1,12 @@
-datacardsdir = $(datadir)/@PACKAGE_NAME@/datacards
+datacardsdir = $(datadir)/poloka/datacards
 datacards_DATA = \
 	default.conv \
 	default.nnw \
 	default.param \
 	default.sex \
-	match.datacard \
-	seeing.datacard \
-	sub.datacard
+	core.datacard
 
-dbconfigdir = $(datadir)/@PACKAGE_NAME@
+dbconfigdir = $(datadir)/poloka
 dbconfig_DATA = dbconfig
 
 EXTRA_DIST = $(datacards_DATA) $(dbconfig_DATA)

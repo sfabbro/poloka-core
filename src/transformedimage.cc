@@ -400,14 +400,15 @@ TransformedImage::TransformedImage(const TransformedImage &Original)
 
 TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 {
-  ReducedImageRef ref;
+  ReducedImage *ref = 0;
+  ReducedImage *source = 0;
   if (HasImage())
     {
       FitsHeader head(FitsName());
       string refName = head.KeyVal("GEOREF");
-      ref = ReducedImageNew(refName);
+      ref = new ReducedImage(refName);
       string sourceName = head.KeyVal("DBSOURCE");
-      source = ReducedImageNew(sourceName);
+      source = new ReducedImage(sourceName);
      }
   if (!ref || !source)
     {
@@ -415,13 +416,13 @@ TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
       DecomposeString(dbNames, Name,"_");
        if (dbNames.size() == 3)
 	{
-	  ref = ReducedImageNew(dbNames[1]);
-	  source = ReducedImageNew(dbNames[2]);
+	  ref = new ReducedImage(dbNames[1]);
+	  source = new ReducedImage(dbNames[2]);
 	}
       else if (dbNames.size() == 2 && ref)
 	{
 	  RemovePattern(dbNames[1],ref->Name());
-	  source = ReducedImageNew(dbNames[1]);
+	  source = new ReducedImage(dbNames[1]);
 	}
       else
 	{
@@ -429,8 +430,10 @@ TransformedImage::TransformedImage(const string &Name) : ReducedImage(Name)
 	}
     }
   // wont work with other ImageTransfo than ImageGtransfo (there's none yet anyway)
-  if (ref && source)
+  if (ref && source) 
     transfo = new ImageGtransfo(*ref,*source);
+  if (ref) delete ref;
+  if (source) delete source;
 }
 
 

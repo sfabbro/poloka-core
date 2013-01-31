@@ -368,6 +368,10 @@ template<class Inst> bool IsOfKind(const string &FitsFileName)
   return (dynamic_cast<Inst *>(Head.TelInst()) != NULL);
 }
 
+Frame PrescanRegion(const FitsHeader &Head, const int iAmp)
+{
+  return Head.TelInst()->PrescanRegion(Head, iAmp);
+}
 
 Frame OverscanRegion(const FitsHeader &Head, const int iAmp)
 {
@@ -454,7 +458,7 @@ VirtualInstrument  *SniffTelInst(const FitsHeader &Head)
 
 			     
 
-typedef struct ToadsKeyRec {
+struct ToadsKeyRec {
   string Name;
   string Comment;
   string DefaultKey;

@@ -86,8 +86,8 @@ using namespace std;
 
 
 enum DbImageKind { Raw = 1, Calibrated, Elixir, Subtracted};
-enum DbImageCatalogKind { SExtractor = 1, Fitted_for_seeing , DaophotAls, DaophotAp, DaophotNei, DaophotLst, DaophotPk, DaophotNst, Subtraction};
-enum DbImagePsfKind { DaophotPsf = 1};
+enum DbImageCatalogKind { SExtractor = 1, Subtraction};
+enum DbImagePsfKind { DaophotPsf = 1, PolokaPsf};
 
 class Path;
 
@@ -211,12 +211,15 @@ public :
   //! the aperture catalog.
   string AperCatalogName() const;
 
+  //! the fixed aperture catalog.
+  string FixedAperCatalogName() const;
+
   //! the star catalog.
   string StarCatalogName() const;
 
 
   //! returns the name where the psf parameters and look-up table for residuals is stored
-  string ImagePsfName(const DbImagePsfKind Kind=DaophotPsf) const; 
+  string ImagePsfName(const DbImagePsfKind Kind=PolokaPsf) const; 
 
 
   //!To create the directories where the fits images, catalogues

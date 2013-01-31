@@ -46,7 +46,7 @@ class FitsHeader;
     */
 
 
-typedef enum UsnoColor { RColor , BColor};
+enum UsnoColor { RColor , BColor};
 
 
 

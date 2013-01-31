@@ -363,7 +363,7 @@ Image Image::Subimage(const int x, const int y, const int width, const int heigh
 ImageWindow w(*this,x,y,width,height);
 int sizex = w.width();
 int sizey = w.height();
-cout << " sizex " << sizex << " sizey " << sizey << endl;
+//cout << " sizex " << sizex << " sizey " << sizey << endl;
 Image vignette(sizex, sizey);
 
 PixelIterator p(w);
