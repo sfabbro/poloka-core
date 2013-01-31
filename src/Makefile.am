@@ -10,6 +10,9 @@ AM_YFLAGS = -l -d
 
 lib_LTLIBRARIES = libpoloka-core.la
 
+EXTRA_DIST = virtualinstrument.cc virtualinstrument.h slasub.c
+BUILT_SOURCES = alltelinst.cc alltelinst.h
+
 noinst_HEADERS =  docmain.h
 src_includedir = $(includedir)/poloka
 src_include_HEADERS = \
@@ -36,8 +39,11 @@ src_include_HEADERS = \
 	fastifstream.h \
 	fatpoint.h \
 	fileutils.h \
+	fitsexception.h \
 	fitsimage.h \
 	fitsslice.h \
+	fitstoad.h \
+	frame.h \
 	gaussianfit.h \
 	globalval.h \
 	gtransfo.h \
@@ -90,18 +96,18 @@ src_include_HEADERS = \
 	toadscards.h \
 	transformedimage.h \
 	usnoutils.h \
-	virtualinstrument.h \
 	vutils.h \
 	wcscon.h \
 	wcs_defines.h \
 	wcsutils.h
 
-libpoloka-core_la_SOURCES = \
+libpoloka_core_la_SOURCES = \
 	$(src_include_HEADERS) \
 	dbfileParse.y \
 	dbfileLex.l \
 	allreducedimage.cc \
 	apersestar.cc \
+	astroutils.cc \
 	basestar.cc \
 	cluster.cc \
 	convolution.cc \
@@ -114,11 +120,23 @@ libpoloka-core_la_SOURCES = \
 	ellipticaper.cc \
 	fastfinder.cc \
 	fastifstream.cc \
+	fileutils.cc \
+	fitsimage.cc \
+	fitsslice.cc \
+	fitstoad.cc \
+	frame.cc \
 	gaussianfit.cc \
 	globalval.cc \
 	gtransfo.cc \
+	gzstream.cc \
+	histo1d.cc \
+	histo2d.cc \
+	histo4d.cc \
 	histopeakfinder.cc \
 	hprofile1d.cc \
+	image.cc \
+	imageback.cc \
+	imageinterpolation.cc \
 	imagematch.cc \
 	imagepair.cc \
 	imagesubtraction.cc \
@@ -127,8 +145,11 @@ libpoloka-core_la_SOURCES = \
 	kernelfit.cc \
 	kernelfitter.cc \
 	listmatch.cc \
+	matvect.cc \
 	multimagstar.cc \
 	nstarmatch.cc \
+	poly1.cc \
+	poly2.cc \
 	quali_box.cc \
 	photoratio.cc \
 	reducedimage.cc \
@@ -137,17 +158,48 @@ libpoloka-core_la_SOURCES = \
 	seeing_box.cc \
 	sestar.cc \
 	sextractor_box.cc \
+	signalhandlers.cc \
 	starmatch.cc \
+	stringlist.cc \
 	sub.cc \
 	subimage.cc \
 	swarpstack.cc \
 	toadscards.cc \
 	transformedimage.cc \
 	usnoutils.cc \
+	vutils.cc \
+	wcscon.c \
 	wcsutils.cc
 
-libpoloka-core_la_CPPFLAGS = \
-	@CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@ @Z_CFLAGS@
+libpoloka_core_la_CPPFLAGS = \
+	@CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@ @ZLIB_CFLAGS@
 
-libpoloka-core_la_LIBADD = \
-	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@ @Z_LIBS@
+libpoloka_core_la_LIBADD = \
+	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@ @ZLIB_LIBS@
+
+telinst_sources = $(top_srcdir)/telinst/*.cc
+classname = \(.*class *\)\([^ :]*\)\(.*\)
+
+alltelinst.cc: Makefile $(telinst_sources)
+	@echo "// This file has been automatically generated; do not edit" > $@.new
+	@echo "/* Source files were:" $(telinst_sources) "*/" >> $@.new
+	@for telinst in $(telinst_sources); do echo "#include \"$$telinst\""; done >> $@.new
+	@echo "#ifndef USE_WCS" >> $@.new
+	@echo "static AcceptorType AcceptorsArray [] = {" >> $@.new
+	@$(GREP) TYPE_SELECTOR $(telinst_sources) | $(SED) -e 's/$(classname)/  \&\2::Acceptor,/' >> $@.new
+	@echo "  &Unknown::Acceptor};" >> $@.new
+	@echo "// IsOfKind template instantiation" >> $@.new
+	@$(GREP) TYPE_TESTER $(telinst_sources) | $(SED) \
+		-e 's/$(classname)/template bool IsOfKind< \2 >(const FitsHeader \&);/' \
+		-e 's/$(classname)/template bool IsOfKind< \2 >(const string \&);/' >> $@.new
+	@echo "#endif // USE_WCS" >> $@.new
+	@diff $@.new $@ &> /dev/null || mv -f $@.new $@
+
+alltelinst.h: alltelinst.cc
+	@echo "// This file has been automatically generated; do not edit" > $@.new
+	@echo "/* Source files were:" $(telinst_sources) "*/" >> $@.new
+	@echo "#ifndef ALLTELINST__H" >> $@.new
+	@echo "#define ALLTELINST__H" >> $@.new
+	@$(GREP) TYPE_TESTER $(telinst_sources) | $(SED) -e 's/$(classname)/class \2;/' >> $@.new
+	@echo "#endif" >> $@.new
+	@diff $@.new $@ &> /dev/null || mv -f $@.new $@

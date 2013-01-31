@@ -10,4 +10,4 @@ Libs: -L${libdir} -lpoloka-core
 Libs.private: @LIBS@
 Cflags: -I${includedir}
 Requires: cfitsio
-Requires.private: @BLAS_PC@ @LAPACK_PC@ @Z_PC@ sextractor
+Requires.private: @BLAS_PC@ @LAPACK_PC@ @ZLIB_PC@ sextractor

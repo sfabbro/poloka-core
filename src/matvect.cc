@@ -12,16 +12,16 @@ using namespace std;
 #define dfact dfact_
 #define dfinv dfinv_
 #define dfeqn dfeqn_
-#define eisrs1d eisrs1d_
+// #define eisrs1d eisrs1d_
 
-// using cernstuff (from cernlib)
-extern "C" 
-{
-  void dfact(int *N, double *A, int *idim, double *r, int *ifail, double *Det, int *jfail);
-  void dfinv(int *n, double *A, int *idim, double *r);
-  void dfeqn(int *n, double *a, int *idim, double *r, int *k, double *b);
-  void eisrs1d(int *NM,int *N,double *AR,double *WR,double *ZR,int *IERR,double *WORK);
-}
+// // using cernstuff (from cernlib)
+// extern "C" 
+// {
+//   void dfact(int *N, double *A, int *idim, double *r, int *ifail, double *Det, int *jfail);
+//   void dfinv(int *n, double *A, int *idim, double *r);
+//   void dfeqn(int *n, double *a, int *idim, double *r, int *k, double *b);
+//   void eisrs1d(int *NM,int *N,double *AR,double *WR,double *ZR,int *IERR,double *WORK);
+// }
 
 // using lapack 
 extern "C" {
@@ -58,27 +58,27 @@ extern "C" {
 
 };
 
-//==========================================================================
-int DiagonalizeRealSymmetricMatrix(const Mat &matrix, Mat &eigenvectors , Vect &eigenvalues) {
-  if ( matrix.SizeX() != matrix.SizeY() ) {
-    cerr << "in  DiagonalizeRealSymmetricMatrix, matrix is not square !!" << endl;
-    return 12;
-  }
-  int n = matrix.SizeX();
-  if ( int(eigenvectors.SizeX()) != n || int(eigenvectors.SizeY()) )
-    eigenvectors.allocate(n,n);
-  if ( int(eigenvalues.Size()) != n )
-    eigenvalues.allocate(n);
+// //==========================================================================
+// int DiagonalizeRealSymmetricMatrix(const Mat &matrix, Mat &eigenvectors , Vect &eigenvalues) {
+//   if ( matrix.SizeX() != matrix.SizeY() ) {
+//     cerr << "in  DiagonalizeRealSymmetricMatrix, matrix is not square !!" << endl;
+//     return 12;
+//   }
+//   int n = matrix.SizeX();
+//   if ( int(eigenvectors.SizeX()) != n || int(eigenvectors.SizeY()) )
+//     eigenvectors.allocate(n,n);
+//   if ( int(eigenvalues.Size()) != n )
+//     eigenvalues.allocate(n);
   
-  double * work = new double[n];
-  int ierr = 0;
+//   double * work = new double[n];
+//   int ierr = 0;
   
-  Mat matrix_copy = matrix;
-  eisrs1d(&n,&n,matrix_copy.NonConstData(),eigenvalues.NonConstData(),eigenvectors.NonConstData(),&ierr,work);
+//   Mat matrix_copy = matrix;
+//   eisrs1d(&n,&n,matrix_copy.NonConstData(),eigenvalues.NonConstData(),eigenvectors.NonConstData(),&ierr,work);
   
-  delete [] work;
-  return ierr;
-}
+//   delete [] work;
+//   return ierr;
+// }
 
 
 //==========================================================================
