@@ -1,3 +1,3 @@
 #!/bin/sh -e
 
-autoreconf --install --symlink
+autoreconf --install --symlink --verbose
