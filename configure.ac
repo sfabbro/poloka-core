@@ -1,8 +1,8 @@
-## Initialization 
+## Initialization
 AC_PREREQ(2.59)
 AC_INIT([poloka-core], 0.2.0, [poloka team])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([src/fitsimage.cc])
+AC_CONFIG_SRCDIR([poloka/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(autoconf)
 AM_INIT_AUTOMAKE([foreign])
@@ -15,6 +15,8 @@ AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LEX
+
+# F77 needed to link with blas/lapack
 AC_PROG_F77
 AC_PROG_LIBTOOL
 
@@ -23,7 +25,6 @@ AC_PROG_LIBTOOL
 ifdef([AC_PROG_SED], [AC_PROG_SED], [SED=sed AC_SUBST(SED)])
 ifdef([AC_PROG_GREP], [AC_PROG_GREP], [GREP=grep AC_SUBST(GREP)])
 AC_PROG_YACC
-
 
 ## Checks for header files.
 AC_FUNC_ALLOCA
@@ -78,7 +79,8 @@ AC_CONFIG_FILES([Makefile
                  datacards/Makefile
                  doc/Doxyfile
                  doc/Makefile
-                 src/Makefile
+		 poloka/Makefile
                  telinst/Makefile
-                 tools/Makefile])
+		 tools/Makefile
+                 ])
 AC_OUTPUT

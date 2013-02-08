@@ -3,20 +3,18 @@ AINTAINERCLEANFILES = \
         Makefile.in \
         stamp-*
 
-AM_CPPFLAGS = \
-        -I$(top_srcdir)/src \
-        @CFITSIO_CFLAGS@
+AM_CPPFLAGS = @CFITSIO_CFLAGS@
 
 AM_DEFAULT_SOURCE_EXT = .cc
-bin_PROGRAMS = \
-	dbls dbimstat \
-	astrom matchusno \
-	changekey header skylev saturlev \
-	image_combine image_match image_select image_stats \
-	image_extract image_zp image_compute \
-	joinlist merge_headers mergelists \
-	make_catalog make_cosmic \
-	make_dead make_satur make_weight \
-	findsatellite mkcat2
 
-LDADD = $(top_builddir)/src/libpoloka-core.la
+bin_PROGRAMS = \
+	pka-fitskey pka-fitshead pka-fitsmerge \
+	pka-fitsselect pka-fitsstats \
+	pka-imarith pka-imls pka-imstats \
+	pka-imcosmic pka-imdeadpix pka-imtracks pka-imsatur \
+	pka-imweight pka-imcatalog pka-imaper \
+	pka-imcombine pka-imregister pka-imextract \
+	pka-listjoin pka-listmerge \
+	pka-wcsconvert pka-wcsfit
+
+LDADD = $(top_builddir)/poloka/libpoloka-core.la

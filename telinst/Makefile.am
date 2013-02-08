@@ -4,11 +4,13 @@ MAINTAINERCLEANFILES = \
 
 EXTRA_DIST = \
 	andor.cc \
-	cfh12k.cc \
+	cfht12k.cc \
+	cfhtmegacam.cc \
 	cfhtmos.cc \
 	ctio1p5.cc \
 	ctiobtc.cc \
 	ctiomos2.cc \
+	decam.cc \
 	esodanish.cc \
 	hawk.cc \
 	hstacs.cc \
@@ -21,7 +23,6 @@ EXTRA_DIST = \
 	lick1m.cc \
 	macho.cc \
 	magellanmegacam.cc \
-	megacam.cc \
 	niri.cc \
 	notalfosc.cc \
 	notmosca.cc \

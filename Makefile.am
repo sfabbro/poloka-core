@@ -9,16 +9,16 @@ MAINTAINERCLEANFILES = \
 	stamp-* \
 	m4/libtool.m4 \
 	m4/lt*.m4 \
-	poloka-core.pc
+	$(PACKAGE_NAME).pc
 
 EXTRA_DIST = autogen.sh README NEWS INSTALL COPYING
 
 ACLOCAL_AMFLAGS = -I m4
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = poloka-core.pc
+pkgconfig_DATA = $(PACKAGE_NAME).pc
 
-SUBDIRS = datacards doc telinst src tools
+SUBDIRS = datacards doc poloka telinst tools
 
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \
