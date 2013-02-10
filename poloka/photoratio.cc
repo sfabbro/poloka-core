@@ -6,7 +6,6 @@
 #include <poloka/fitsimage.h>
 #include <poloka/sestar.h>
 #include <poloka/vutils.h>
-#include <poloka/toadscards.h>
 #include <poloka/listmatch.h>
 #include <poloka/polokaexception.h>
 

@@ -508,7 +508,7 @@ const string SwarpStack::SwarpTmpDir()
 {
   if (tmpDir == "")
     {
-      char *dir = getenv("IMAGE_TMP_DIR");
+      char *dir = getenv("POLOKA_IMAGE_TMP_DIR");
       if (dir) tmpDir = AddSlash(string(dir));
       else tmpDir = FullFileName(StandardPath(SwarpPermDir()));
       cout << " SwarpStack: SwarpPermDir " << SwarpPermDir() << endl;
@@ -747,7 +747,7 @@ bool SwarpStack::MakeFits()
 
       // HACK for weight contaminated with satur mask
       string weightOrigName = ri.FitsWeightImageName(imageTypeToStack);
-      if (getenv("REPROCESS_WEIGHT_ONLINE"))
+      if (getenv("POLOKA_REPROCESS_WEIGHT_ONLINE"))
 	{
 	  string command_rep  = REPROCESS_WEIGHT_ONLINE_SCRIPT ;
 	  string command = command_rep + " " + ri.Dir() + " " + SwarpTmpDir()  ;
@@ -857,7 +857,7 @@ bool SwarpStack::MakeFits()
   //cards.AddKey("COMBINE_TYPE","MEDIAN");
   //  cards.AddKey("COMBINE_TYPE","WEIGHTED");
   bool weighted_sum = false ;
-  if (getenv("WEIGHTED_AVERAGE"))
+  if (getenv("POLOKA_WEIGHTED_AVERAGE"))
     {
       cards.AddKey("COMBINE_TYPE","WEIGHTED");
       weighted_sum = true ;

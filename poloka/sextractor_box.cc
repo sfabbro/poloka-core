@@ -439,12 +439,12 @@ bool
 AllForSExtractor::FillFromEnvironnement()
 {
   string sextractor_dir = ".";
-  if (getenv("TOADSCARDS")) {
-    sextractor_dir = getenv("TOADSCARDS");
+  if (getenv("POLOKA_CONF_DIR")) {
+    sextractor_dir = getenv("POLOKA_CONF_DIR");
     cout << " using SExtractor datacards from "  << sextractor_dir << endl;
   }
   else
-    cout << " TOADSCARDS not defined, use local directory  " << endl;
+    cout << " POLOKA_CONF_DIR not defined, use local directory  " << endl;
   SexConfigFileName = sextractor_dir+"/default.sex";
   SexParamName = sextractor_dir+"/default.param" ;
   SexNNWName   = sextractor_dir+"/default.nnw";

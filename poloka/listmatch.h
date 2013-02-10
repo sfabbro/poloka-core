@@ -4,9 +4,9 @@
 #include <string>
 
 #include <poloka/basestar.h>
-class Gtransfo; class GtransfoLin;
+#include <poloka/gtransfo.h>
 #include <poloka/starmatch.h>
-
+#include <poloka/polokaconf.h>
 
 struct MatchConditions 
 {
@@ -21,8 +21,8 @@ struct MatchConditions
   int Algorithm;
   int MaxOrder;
   
-  MatchConditions(const std::string &DatacardsName = "");
-  void read(const std::string &DatacardsName = "");
+  MatchConditions(const std::string &DatacardsName = DefaultDatacards("match.conf"));
+  void read(const std::string &DatacardsName = DefaultDatacards("match.conf"));
   void init();
 
   double MinSizeRatio() const { return SizeRatio - DeltaSizeRatio;}  

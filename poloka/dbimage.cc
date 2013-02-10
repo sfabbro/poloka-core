@@ -156,19 +156,19 @@ va_end(args);
 static char* locate_config_file()
 {char *fileName;
 // first environment variable
-if ((fileName = getenv("DBCONFIG")))  return fileName;
+if ((fileName = getenv("POLOKA_DB_CONFIG")))  return fileName;
 
 // second .dbconfig in PWD : built the complete filename for printout purposes
 StringList expansion;
 static char filename[256];
 
-if (ExpandPath("$PWD/.dbconfig", expansion))
+if (ExpandPath("$PWD/.poloka/dbconfig", expansion))
   {
   strcpy(filename,(*expansion.begin()).c_str());
   if (FileExists(filename)) return filename;
   }
 // third .dbconfig in home directory : 
-if (ExpandPath("$HOME/.dbconfig", expansion))
+if (ExpandPath("$HOME/.poloka/dbconfig", expansion))
   {
   strcpy(filename,(*expansion.begin()).c_str());
   if (FileExists(filename)) return filename;

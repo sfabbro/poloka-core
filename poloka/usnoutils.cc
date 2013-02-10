@@ -51,7 +51,7 @@ int GetUsnoZeroPoint(const StarMatchList *MatchingList, UsnoColor Color, double 
   double *zp = new double[MatchingList->size()];
   // loop over the list 
   // sacre bricolage :
-  bool use_sat = (getenv("NOSAT") == 0);
+  bool use_sat = (getenv("POLOKA_NOSAT") == 0);
   for(StarMatchCIterator smi = MatchingList->begin(); smi != MatchingList->end() ; smi++)
     {
       const SEStar *catstar = smi->s1;
@@ -393,7 +393,7 @@ int UsnoRead(double minra, double maxra,
     ascii_source = MatchPrefs.astromCatalogName.c_str();
   else
     {
-      char *env_var = getenv("USNOFILE");
+      char *env_var = getenv("POLOKA_USNO_FILE");
       if (env_var) ascii_source = env_var;
     }
   if (ascii_source)
@@ -401,7 +401,7 @@ int UsnoRead(double minra, double maxra,
 			   ApmList);
   else
     {
-      char *usno_dir = getenv("USNODIR");
+      char *usno_dir = getenv("POLOKA_USNO_DIR");
       if (usno_dir)
 	{
 	  actual_usno_read(usno_dir, 
@@ -663,22 +663,22 @@ bool MatchCards::ReadCards(const string &FileName)
       return false;
     }
   if (cards_read) return false;
-  if (getenv("USNOFILE")) astromCatalogName = getenv("USNOFILE");
+  if (getenv("POLOKA_USNO_FILE")) astromCatalogName = getenv("POLOKA_USNO_FILE");
   DataCards cards(FileName);
 #define READ_IF_EXISTS(VAR,TAG,TYPE) \
 if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
-  READ_IF_EXISTS(linMatchCut,"LIN_MATCH_CUT",DParam);
-  READ_IF_EXISTS(linMatchMinCount,"LIN_MATCH_MIN_COUNT",IParam);
-  READ_IF_EXISTS(distortionDegree,"DISTORTION_DEGREE",IParam);
-  READ_IF_EXISTS(secondMatchCut,"SECOND_MATCH_CUT",DParam);
-  READ_IF_EXISTS(writeWCS,"WRITE_WCS",IParam);
-  READ_IF_EXISTS(asciiWCS,"ASCII_WCS",IParam);
-  READ_IF_EXISTS(wcsFileName,"WCS_FILE_NAME",SParam);
-  READ_IF_EXISTS(astromCatalogName,"ASTROM_CATALOG_NAME",SParam);
+  READ_IF_EXISTS(linMatchCut,"MATCH_LIN_CUT",DParam);
+  READ_IF_EXISTS(linMatchMinCount,"MATCH_LIN_MIN_COUNT",IParam);
+  READ_IF_EXISTS(distortionDegree,"MATCH_DISTORTION_DEGREE",IParam);
+  READ_IF_EXISTS(secondMatchCut,"MATCH_SECOND_CUT",DParam);
+  READ_IF_EXISTS(writeWCS,"MATCH_WRITE_WCS",IParam);
+  READ_IF_EXISTS(asciiWCS,"MATCH_ASCII_WCS",IParam);
+  READ_IF_EXISTS(wcsFileName,"MATCH_WCS_FILE_NAME",SParam);
+  READ_IF_EXISTS(astromCatalogName,"MATCH_ASTROM_CATALOG_NAME",SParam);
   READ_IF_EXISTS(dumpMatches,"DUMP_MATCHES",IParam);
-  READ_IF_EXISTS(ignoreBad,"IGNORE_BAD",IParam);
-  READ_IF_EXISTS(ignoreSatur,"IGNORE_SATUR",IParam);
-  READ_IF_EXISTS(minSigToNoise, "MIN_SIG_TO_NOISE", DParam);
+  READ_IF_EXISTS(ignoreBad,"MATCH_IGNORE_BAD",IParam);
+  READ_IF_EXISTS(ignoreSatur,"MATCH_IGNORE_SATUR",IParam);
+  READ_IF_EXISTS(minSigToNoise, "MATCH_MIN_SIG_TO_NOISE", DParam);
 
   astromCatalogName = DbConfigFindCatalog(astromCatalogName);
 
@@ -869,7 +869,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
       // Part 2.1 : guess
 
-      bool can_try_shift = (getenv("NO_SHIFT") == NULL);
+      bool can_try_shift = (getenv("POLOKA_NO_SHIFT") == NULL);
       if (method == 1 && can_try_shift)   // try a shift
 	{
 	  unsigned minShiftMatches = min(min(ngoodImageObjects*2/3, unsigned(25)),
@@ -1043,7 +1043,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 
   // OK, Bizarre to see that here.... never mind
   char *matchFileName;
-  if ((matchFileName = getenv("DUMP_MATCH")))
+  if ((matchFileName = getenv("POLOKA_DUMP_MATCH")))
     {
       accurateMatch->write(matchFileName, &pix2TP);
       BaseStarList imageReducedList;
@@ -1145,7 +1145,7 @@ bool UsnoProcess(const string &fitsFileName, const string &catalogName,
 	astromRef = MatchPrefs.astromCatalogName;
       else 
 	{
-	  char *usno_dir = getenv("USNODIR");
+	  char *usno_dir = getenv("POLOKA_USNO_DIR");
 	  if (usno_dir) astromRef = BaseName(usno_dir); // strip path
 	  else 
 	    {

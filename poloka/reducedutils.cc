@@ -9,8 +9,8 @@
 #include <poloka/transformedimage.h>
 #include <poloka/fitsimage.h>
 #include <poloka/wcsutils.h>
-#include <poloka/toadscards.h>
 #include <poloka/polokaexception.h>
+#include <poloka/polokaconf.h>
 
 void LoadForMatch(const ReducedImage& Im, BaseStarList& BList, const double& MinSN) {
   
@@ -87,7 +87,7 @@ GtransfoRef FindTransfoCombinatorial(const ReducedImage& Src, const ReducedImage
     cond.NStarsL2 = 2000;
   }
   // change conditions with file
-  cond.read(DefaultDatacards());
+  cond.read(DefaultDatacards("match.conf"));
   cond.MaxDist = 4;
 
   cout << " FindTransfoCominatorial: trying with a combinatorial match\n";
@@ -125,7 +125,7 @@ GtransfoRef FindTransfo(const BaseStarList& SrcList, const BaseStarList& DestLis
     cond.NStarsL2 = 2000;
   }
   // change conditions with file
-  cond.read(DefaultDatacards());
+  cond.read(DefaultDatacards("match.conf"));
   
   GtransfoRef transfo;
   
@@ -200,7 +200,7 @@ GtransfoRef FindTransfo(const ReducedImage& Src, const ReducedImage& Dest) {
     cond.NStarsL2 = 2000;
   }
   // change match conditions with user values last
-  cond.read(DefaultDatacards());
+  cond.read(DefaultDatacards("match.conf"));
 
   BaseStarList srcList;  LoadForMatch(Src, srcList);
   BaseStarList destList; LoadForMatch(Dest, destList);

@@ -62,23 +62,23 @@ void MatchConditions::read(const std::string& DatacardsName)
 	  return;
 	}
       DataCards cards(DatacardsName);
-      read_card(cards,"DATMATCH_NL1", NStarsL1);
-      read_card(cards,"DATMATCH_NL2", NStarsL2);
-      read_card(cards,"DATMATCH_MAXL1", MaxStarsL1);
-      read_card(cards,"DATMATCH_MAXL2", MaxStarsL2);
-      read_card(cards,"DATMATCH_MAXTRIAL", MaxTrialCount);
-      read_card(cards,"DATMATCH_NSIG_CUT", NSigmas);
-      read_card(cards,"DATMATCH_MAXSHIFTX", MaxShiftX);
-      read_card(cards,"DATMATCH_MAXSHIFTY", MaxShiftY);
-      read_card(cards,"DATMATCH_SIZERATIO", SizeRatio);
-      read_card(cards,"DATMATCH_DELTA_SIZERATIO", DeltaSizeRatio);
+      read_card(cards, "MATCH_INIT_NSTAR1", NStarsL1);
+      read_card(cards, "MATCH_INIT_NSTAR2", NStarsL2);
+      read_card(cards, "MATCH_MAX_NSTAR1", MaxStarsL1);
+      read_card(cards, "MATCH_MAX_NSTAR2", MaxStarsL2);
+      read_card(cards, "MATCH_MAX_TRIAL", MaxTrialCount);
+      read_card(cards, "MATCH_NSIG_CUT", NSigmas);
+      read_card(cards, "MATCH_MAX_SHIFTX", MaxShiftX);
+      read_card(cards, "MATCH_MAX_SHIFTY", MaxShiftY);
+      read_card(cards, "MATCH_INIT_SCALE_RATIO", SizeRatio);
+      read_card(cards, "MATCH_MIN_SCALE_RATIO", DeltaSizeRatio);
       DeltaSizeRatio *= SizeRatio;
-      read_card(cards,"DATMATCH_MINMATCHRATIO", MinMatchRatio);
-      read_card(cards,"DATMATCH_DIST", Dist);
-      read_card(cards,"DATMATCH_MAXDIST", MaxDist);
-      read_card(cards,"DATMATCH_PRINTLEVEL", PrintLevel);
-      read_card(cards,"DATMATCH_ALGO", Algorithm);
-      read_card(cards,"DATMATCH_MAXORDER", MaxOrder);
+      read_card(cards, "MATCH_MIN_NSTAR_RATIO", MinMatchRatio);
+      read_card(cards, "MATCH_MAX_DIST_SAME_STAR", Dist);
+      read_card(cards, "MATCH_MAX_DIST", MaxDist);
+      read_card(cards, "MATCH_PRINT_LEVEL", PrintLevel);
+      read_card(cards, "MATCH_ALGO", Algorithm);
+      read_card(cards, "MATCH_MAX_ORDER", MaxOrder);
     }
 }
 

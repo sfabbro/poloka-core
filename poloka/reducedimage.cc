@@ -18,8 +18,7 @@
 #include <poloka/seeing_box.h>
 #include <poloka/sestar.h>
 #include <poloka/sextractor_box.h>
-#include <poloka/toadscards.h>
-#include <poloka/toadscards.h>
+#include <poloka/polokaconf.h>
 #include <poloka/wcsutils.h>
 
 #define SATUR_COEFF 0.98
@@ -78,13 +77,13 @@ void ReducedImage::FillSExtractorData(ForSExtractor & data,
 				      bool use_sigma_header)
 {
   // what concerns on-the-flight decompression
-  const char *tmpdir = getenv("IMAGE_TMP_DIR");
+  const char *tmpdir = getenv("POLOKA_IMAGE_TMP_DIR");
   if (tmpdir) data.TempDir = string(tmpdir); else data.TempDir = Dir();
   data.UniqueName = Name();
     
   // real stuff now.
   double satFactor = SATUR_COEFF;
-  DataCards cards(DefaultDatacards());
+  DataCards cards(DefaultDatacards("cat.conf"));
   if (cards.HasKey("SATUR_FACTOR"))
     satFactor = cards.DParam("SATUR_FACTOR");
 
@@ -167,7 +166,7 @@ void ReducedImage::FillSExtractorData_2(ReducedImage & rim_det,
 					bool SE_take_back_as_0)
 {
   // what concerns on-the-flight decompression
-  const char *tmpdir = getenv("IMAGE_TMP_DIR");
+  const char *tmpdir = getenv("POLOKA_IMAGE_TMP_DIR");
   if (tmpdir) 
     {// risque mais si c'est ce qu'on veut
       data.TempDir_0 = string(tmpdir); 
@@ -182,7 +181,7 @@ void ReducedImage::FillSExtractorData_2(ReducedImage & rim_det,
     
   // saturation from measurement image
   double satFactor = SATUR_COEFF;
-  DataCards cards(DefaultDatacards());
+  DataCards cards(DefaultDatacards("cat.conf"));
   if (cards.HasKey("SATUR_FACTOR"))
     satFactor = cards.DParam("SATUR_FACTOR");
 
@@ -326,10 +325,10 @@ bool ReducedImage::MakeBack() {
 
   // use SExtractor routines to produce a miniback
   int border = 5;
-  DataCards cards(DefaultDatacards());
+  DataCards cards(DefaultDatacards("cat.conf"));
   FitsImage *weight =0;
   if (FileExists(FitsSegmentationName())) {
-    READ_IF_EXISTS(border,"POLOKA_BACK_OBJECT_MASK_BORDER",IParam);    
+    READ_IF_EXISTS(border,"BACK_OBJECT_MASK_BORDER",IParam);    
     cout << " convolving object mask with bordersize = " << border << endl;
     FitsImage seg(FitsSegmentationName());
     //ConvolveSegMask(seg, seg, border);
@@ -343,13 +342,13 @@ bool ReducedImage::MakeBack() {
   }
   // read mesh size from datacards
   int meshx = 256, meshy = 256;
-  if (cards.HasKey("POLOKA_BACK_MESH_SIZE"))
-    meshx = meshy = cards.IParam("POLOKA_BACK_MESH_SIZE");
+  if (cards.HasKey("BACK_MESH_SIZE"))
+    meshx = meshy = cards.IParam("BACK_MESH_SIZE");
   else
     {
-      READ_IF_EXISTS(meshx,"POLOKA_BACK_MESH_SIZEX", IParam);
+      READ_IF_EXISTS(meshx,"BACK_MESH_SIZEX", IParam);
       meshy = meshx;
-      READ_IF_EXISTS(meshy,"POLOKA_BACK_MESH_SIZEY", IParam);
+      READ_IF_EXISTS(meshy,"BACK_MESH_SIZEY", IParam);
     }
   // simple  isn't it?
   cout << " MakeBack: computing background with mesh = " 
@@ -449,9 +448,9 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 
 
 
-  DataCards cards(DefaultDatacards());
+  DataCards cards(DefaultDatacards("cat.conf"));
   int use_poloka_back = 1;
-  READ_IF_EXISTS(use_poloka_back, "USE_POLOKA_BACK", IParam);
+  READ_IF_EXISTS(use_poloka_back, "BACK_USE_POLOKA", IParam);
 
   
    // the background is subtracted if we do want to subtract it AND  if it wasn't subtracted before. 
@@ -589,15 +588,15 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 	      // read mesh size from datacards
 	      int poloka_back_mesh_sizex = 256;
 	      int poloka_back_mesh_sizey = poloka_back_mesh_sizex;
-	      if (cards.HasKey("POLOKA_BACK_MESH_SIZE"))
+	      if (cards.HasKey("BACK_MESH_SIZE"))
 		{
-		  poloka_back_mesh_sizex = poloka_back_mesh_sizey = cards.IParam("POLOKA_BACK_MESH_SIZE");
+		  poloka_back_mesh_sizex = poloka_back_mesh_sizey = cards.IParam("BACK_MESH_SIZE");
 		}
 	      else
 		{
-		  READ_IF_EXISTS(poloka_back_mesh_sizex,"POLOKA_BACK_MESH_SIZEX", IParam);
+		  READ_IF_EXISTS(poloka_back_mesh_sizex,"BACK_MESH_SIZEX", IParam);
 		  poloka_back_mesh_sizey = poloka_back_mesh_sizex;
-		  READ_IF_EXISTS(poloka_back_mesh_sizey,"POLOKA_BACK_MESH_SIZEY", IParam);
+		  READ_IF_EXISTS(poloka_back_mesh_sizey,"BACK_MESH_SIZEY", IParam);
 		}
 	      // simple  isn't it?
 	      cout << "TOADS: Computing Image Background with mesh = " 
@@ -935,34 +934,35 @@ bool ReducedImage::MakeAperCat()
   // get aperture radius, either from datacards or provide defaults
   bool fixed_aper_rads = false;
   vector<double> rads;
-  DataCards cards(DefaultDatacards());
+  string conf_file = DefaultDatacards("cat.conf");
+  DataCards cards(conf_file);
   
   // FIXED APERTURE RADIUS, in PIXELS or ARCSECONDS ... 
   // may be used for the calibration.
   
   bool rads_ok = false ;
-  if (cards.HasKey("FIXED_APER_RADS_PIXELS")) 
+  if (cards.HasKey("APER_FIXED_RADS_PIXELS")) 
     {
       cout << " using FIXED APER RAD values (pixels): ";
       fixed_aper_rads = true;
-      int n = cards.NbParam("FIXED_APER_RADS_PIXELS");
+      int n = cards.NbParam("APER_FIXED_RADS_PIXELS");
       for(int i=0;i<n;i++) 
 	{
-	  double r = cards.DParam("FIXED_APER_RADS_PIXELS",i);
+	  double r = cards.DParam("APER_FIXED_RADS_PIXELS",i);
 	  cout << " " << r;
 	  rads.push_back(r);
 	}
       cout << "\n";
       rads_ok = true ;
     }
-  if (cards.HasKey("FIXED_APER_RADS")) 
+  if (cards.HasKey("APER_FIXED_RADS")) 
     {
       cout << " using FIXED APER RAD values (arcsec): ";
       fixed_aper_rads = true;
-      int n = cards.NbParam("FIXED_APER_RADS");
+      int n = cards.NbParam("APER_FIXED_RADS");
       for(int i=0;i<n;i++) 
 	{
-	  double r = cards.DParam("FIXED_APER_RADS",i);
+	  double r = cards.DParam("APER_FIXED_RADS",i);
 	  r /= toadpixs;
 	  cout << " " << r;
 	  rads.push_back(r);
@@ -974,7 +974,7 @@ bool ReducedImage::MakeAperCat()
   if (cards.HasKey("APER_RADS")) 
     {
       int n = cards.NbParam("APER_RADS");
-      cout << " reading APER RAD values in " << DefaultDatacards() << " : "  ;
+      cout << " reading APER RAD values in " << conf_file << " : "  ;
       for (int i=0; i < n ; ++i) 
 	{
 	  double r = cards.DParam("APER_RADS",i) ;
@@ -987,7 +987,7 @@ bool ReducedImage::MakeAperCat()
     }
   if ( ! rads_ok )
     {
-      cout << " no APER_RADS card in " << DefaultDatacards()  << endl
+      cout << " no APER_RADS card in " << conf_file  << endl
 	   << " resorting to internal defaults " << endl;
       double def[] = {2.,2.5,3.,3.5,4.,5.,7.5,10.,15.,20.};
       // canadian rads
@@ -1173,9 +1173,9 @@ bool ReducedImage::MakeStarCat(bool overwrite, double SigToN_Min)
       cout << "MakeStarCat : patch for big reference " << endl ; 
       double SsurNmin = 300 ;
       if (SigToN_Min > 0) SsurNmin = SigToN_Min ;
-      DataCards cards(DefaultDatacards());
+      DataCards cards(DefaultDatacards("cat.conf"));
       int use_poloka_back = 1;
-      READ_IF_EXISTS(SsurNmin, "STAR_CAT_SIG_TO_NOISE_MIN", DParam);
+      READ_IF_EXISTS(SsurNmin, "APER_STAR_CAT_MIN_SIG_TO_NOISE", DParam);
       cout << "MakeStarCat : minimal signa to noise : " << SsurNmin << endl ;
       if (minsn > SsurNmin ) minsn = SsurNmin ;
       frac_elim = 0.25 ;// to cut low surface brightness objects
@@ -1191,10 +1191,10 @@ bool ReducedImage::MakeStarCat(bool overwrite, double SigToN_Min)
       return false;
     }
 
-  DataCards cards(DefaultDatacards());
+  DataCards cards(DefaultDatacards("cat.conf"));
   double sigCut = 5;
-  if (cards.HasKey("STARLIST_SIG_CUT")) sigCut = 
-    cards.DParam("STARLIST_SIG_CUT");
+  if (cards.HasKey("APER_STARLIST_SIG_CUT")) sigCut = 
+    cards.DParam("APER_STARLIST_SIG_CUT");
 
   // recycling apercat magically copies the global keys to output.
   apercat.clear();
@@ -1568,7 +1568,7 @@ bool ReducedImage::MakeSatur()
   if (HasSatur()) return true;
   FitsImage image(FitsName(), RW);
   FitsHeader &header = image;
-  DataCards cards(DefaultDatacards());
+  DataCards cards(DefaultDatacards("cat.conf"));
   double satFactor = SATUR_COEFF;
   if (cards.HasKey("SATUR_FACTOR"))
     satFactor = cards.DParam("SATUR_FACTOR");
@@ -2880,7 +2880,7 @@ bool ReducedImage::SubPolokaBack_Slices(int poloka_back_mesh_sizex,
 	return(true);
       }
   }
-  DataCards cards(DefaultDatacards());
+  DataCards cards(DefaultDatacards("cat.conf"));
 
   string segName = FitsSegmentationName();
   string weightName = FitsWeightName() ; 
@@ -2973,15 +2973,15 @@ bool ReducedImage::SubPolokaBack_Slices(int poloka_back_mesh_sizex,
     {
       poloka_back_mesh_sizex = 256 ;
       poloka_back_mesh_sizey = 256 ;
-      if (cards.HasKey("POLOKA_BACK_MESH_SIZE"))
+      if (cards.HasKey("BACK_MESH_SIZE"))
 	{
-	  poloka_back_mesh_sizex = poloka_back_mesh_sizey = cards.IParam("POLOKA_BACK_MESH_SIZE");
+	  poloka_back_mesh_sizex = poloka_back_mesh_sizey = cards.IParam("BACK_MESH_SIZE");
 	}
       else
 	{
-	  READ_IF_EXISTS(poloka_back_mesh_sizex,"POLOKA_BACK_MESH_SIZEX", IParam);
+	  READ_IF_EXISTS(poloka_back_mesh_sizex,"BACK_MESH_SIZEX", IParam);
 	  poloka_back_mesh_sizey = poloka_back_mesh_sizex;
-	  READ_IF_EXISTS(poloka_back_mesh_sizey,"POLOKA_BACK_MESH_SIZEY", IParam);
+	  READ_IF_EXISTS(poloka_back_mesh_sizey,"BACK_MESH_SIZEY", IParam);
 	}
     }
     // simple  isn't it?

@@ -62,6 +62,7 @@ src_include_HEADERS = \
 	pixelblock.h \
 	point.h \
 	polokaexception.h \
+	polokaconf.h \
 	poly1.h \
 	poly2.h \
 	reducedimage.h \
@@ -76,7 +77,6 @@ src_include_HEADERS = \
 	stringlist.h \
 	subimage.h \
 	swarpstack.h \
-	toadscards.h \
 	transformedimage.h \
 	usnoutils.h \
 	vutils.h \
@@ -119,6 +119,7 @@ libpoloka_core_la_SOURCES = \
 	listmatch.cc \
 	matvect.cc \
 	nstarmatch.cc \
+	polokaconf.cc \
 	poly1.cc \
 	poly2.cc \
 	photoratio.cc \
@@ -132,7 +133,6 @@ libpoloka_core_la_SOURCES = \
 	stringlist.cc \
 	subimage.cc \
 	swarpstack.cc \
-	toadscards.cc \
 	transformedimage.cc \
 	usnoutils.cc \
 	vutils.cc \

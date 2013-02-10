@@ -6,7 +6,7 @@
 #include <ctime>
 
 #include <poloka/datacards.h>
-#include <poloka/toadscards.h>
+#include <poloka/polokaconf.h>
 #include <poloka/fitsslice.h>
 #include <poloka/fitsimage.h>
 #include <poloka/reducedimage.h>
@@ -133,10 +133,9 @@ struct DatStack {
   void Print(ostream& s=cout)const;
 };
 
-const string WEIGHTING_METHOD = "WEIGHTING_METHOD";
-const string STACKING_METHOD = "STACKING_METHOD";
-const string PHOTOSCALING_METHOD = "PHOTOSCALING_METHOD";
-const string BACKGROUND_METHOD = "BACKGROUND_METHOD";
+const string WEIGHTING_METHOD = "COMBINE_WEIGHTING_METHOD";
+const string STACKING_METHOD = "COMBINE_STACKING_METHOD";
+const string PHOTOSCALING_METHOD = "COMBINE_PHOTOSCALING_METHOD";
 
 DatStack::DatStack(const string &DatacardsFileName)
 {
@@ -191,7 +190,7 @@ ImageSum::ImageSum(const string &AName, ReducedImageList &Images,
  : ReducedImage(AName)
 {
 
-  DatStack datstack(DefaultDatacards());
+  DatStack datstack(DefaultDatacards("cat.conf"));
 
   if (AWMethod == WUnSet)
     weightingMethod = datstack.weightingMethod;

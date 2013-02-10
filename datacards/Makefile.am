@@ -4,7 +4,8 @@ datacards_DATA = \
 	default.nnw \
 	default.param \
 	default.sex \
-	core.datacard
+	cat.conf \
+	match.conf
 
 dbconfigdir = $(datadir)/poloka
 dbconfig_DATA = dbconfig

@@ -62,7 +62,7 @@ void
 DatSeeing::LitDataCard(DataCards & data)
 {
   prlevel = data.IParam("SEEING_PRLEVEL");
-  saturation  =  data.DParam("SEEING_SATURATION"); 
+  saturation  =  data.DParam("SATUR_DEFAULT");
   prctage =  data.DParam("SEEING_PRCTAGE") ;
   Nmax =  data.IParam("SEEING_NMAX") ;
 }
@@ -113,11 +113,11 @@ CalculeSeeingSE(const DatSeeing & dat, SortieSeeing & sortie,
   cerr << "Keep  " << stlg.size() <<" bright stars to compute the seeing."<< endl;
   if ( dat.prlevel > 3)
     {
-      const char *dir = getenv("TOADS_WORK");
+      const char *dir = getenv("POLOKA_WORK");
       if (dir == NULL )
 	{
 	  dir = "." ;
-	  cerr << "TOADS_WORKS  not defined, use local directory  " << endl;
+	  cerr << "POLOKA_WORK  not defined, use local directory  " << endl;
 	}
       string sdir = dir ;
       string nnn = sdir+"/se.seeing.cat" ;
