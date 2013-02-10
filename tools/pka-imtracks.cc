@@ -6,7 +6,7 @@
 static void usage(char * progname) {
   cerr << "Usage: " << progname << " DBIMAGE...\n"
        << "Produce a binary map of the satellites\n\n"
-       << "   -o: overwrite\n";
+       << "   -o: overwrite\n\n";
   exit(EXIT_FAILURE);
 }
 

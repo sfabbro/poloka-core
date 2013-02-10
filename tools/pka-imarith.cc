@@ -11,7 +11,7 @@ static void usage(const char* progname) {
        << "Usage: " << progname << " [OPTION]... FITS OP FLOAT OP FITS OP FLOAT\n"
        << "Perform simple arithmetics (OP is +|/|-|*) on FITS images\n\n"
        << "    -f     : save as float (default: 16 bits integer)\n"
-       << "    -o FITS: specify output fits file (default: out.fits)\n";
+       << "    -o FITS: specify output fits file (default: out.fits)\n\n";
   exit(EXIT_FAILURE);
 } 
 
@@ -37,7 +37,7 @@ template<typename Tleft, typename Tright> int image_operation(const char c, Tlef
 
 int main(int argc, char** argv) {
 
-  if (argc < 4 && argc > 6)  usage(argv[0]);
+  if (argc < 4 || argc > 6)  usage(argv[0]);
 
   bool floatOutput = false;
 

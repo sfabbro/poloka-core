@@ -18,7 +18,7 @@ static void usage(const char * prog) {
   cerr << "Usage: " << prog << " [OPTION]... FITS FITS...\n"
        << "Merge FITS files\n\n"
        << "    -c          : use rice compression\n"
-       << "    -d DIRECTORY: merge files into DIRECTORY\n";
+       << "    -d DIRECTORY: merge files into DIRECTORY\n\n";
   exit(EXIT_FAILURE);
 }
 

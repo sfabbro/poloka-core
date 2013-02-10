@@ -18,7 +18,7 @@ static void usage(const char* progname)
        << "    -k FITSKEY: print FITSKEY\n"
        << "    -m STRING : print STRING when the key is missing (default: absent)\n"
        << "    -n        : do no print the filename\n"
-       << "    -what     : for DBIMAGE uses (raw,cal,dead,weight,...)\n";
+       << "    -what     : for DBIMAGE uses (raw,cal,dead,weight,...)\n\n";
   exit(EXIT_FAILURE);
 }
 

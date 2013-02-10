@@ -22,7 +22,7 @@ static void usage(const char* progname)
        << "  -p @FILE: convert x-y to alpha delta from FILE (one x y per line)\n"
        << "  -d      : use decimal degrees\n"
        << "  -s      : skips out of frame coordinates (use with @FILENAME)\n"
-       << "  -v      : dump WCS information\n";
+       << "  -v      : dump WCS information\n\n";
   exit(EXIT_FAILURE);
 }
 

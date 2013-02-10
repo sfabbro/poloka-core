@@ -1,18 +1,22 @@
 poloka-core
 ===========
 
-Poloka is a software package to process astronomical images. It can do
-several processing steps such as flat-fielding, detection/object
-cataloguing, aperture and PSF photometry, geometric
-transformation/resampling and image stacking. But what it does best is
-image subtraction (PSF match) and light curve reconstruction for
-transient objects such as supernova.
+poloka is a software package to process astronomical
+images. poloka-core is the core package of the poloka suite,
+needed for all other poloka packages. It contains: 
 
-This is the core library and tools of the poloka suite, needed for all
-other poloka packages.
+* arrays, histograms and linear algebra handling
+* FITS handling routines with instrument
+* multiple instruments dictionnary
+* geometrical transformations and astrometry routines
+* image processing, object detection and catalalog.
+
+Each poloka package is usually split into a C++ library and its
+executables (tools).
 
 To install poloka-core, see the INSTALL file.
 
-To develop with poloka, read the code :( and see README.dev. 
-For all other documentation, we have yet to write something decent. To
-contact authors, see AUTHORS.
+poloka means frog in hawaiian. The poloka package is a follow-up of
+the TOADS package (Tools Of Analysis And Detection of Supernovae),
+used in various supernovae surveys notably the imaging part of the
+SuperNova Legacy Survey at the Canada France Hawaii Telescope.

@@ -20,7 +20,7 @@ static void usage(const char *progName)
        << "  -o : overwrite\n"
        << "  -S : write saturated pixel map\n"
        << "  -N : do not subtract background whether it is used or not\n"
-       << "  -d : use the sigma background in header for detection\n";
+       << "  -d : use the sigma background in header for detection\n\n";
   exit(EXIT_FAILURE);
 }
 

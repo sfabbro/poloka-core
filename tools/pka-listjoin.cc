@@ -18,7 +18,7 @@ static void usage(const char *progname)
        << "    -n INT   : min number of matches (default is number of lists)\n"
        << "    -a INT   : ambiguities_handling can be 0,1,2 or 3 (default is 3)\n"
        << "    -f       : will also find transformation between lists\n"
-       << "    -o FILE  : output list to FILE (default is joined.list)\n" ;
+       << "    -o FILE  : output list to FILE (default is joined.list)\n\n";
   exit(EXIT_FAILURE);
 }
 

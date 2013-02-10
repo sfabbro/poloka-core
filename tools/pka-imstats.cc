@@ -8,7 +8,7 @@
 
 static void usage(const char* progname) {
   cerr << "Usage: " << progname << " DBIMAGE...\n"
-       << "Print sky, rms for image and weight*image\n";
+       << "Print sky, rms for image and weight*image\n\n";
   exit(EXIT_FAILURE);
 }
 

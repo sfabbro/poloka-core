@@ -9,7 +9,7 @@ static void usage(const char* progname)
 {
   cerr << "Usage: " << progname << " [OPTION]... DBIMAGE...\n"
        << "Produce a cosmic mask for DBIMAGE\n\n"
-       << "   -o: overwrite\n";
+       << "   -o: overwrite\n\n";
   exit(EXIT_FAILURE);
 }
 

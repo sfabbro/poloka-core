@@ -10,12 +10,13 @@ static void usage(const char *progname)
 {
   cerr << "Usage: " << progname << "[-o] DBIMAGE...\n"
        << "Performs aperture photometry for DBIMAGE\n\n"
-       << "    -o : overwrite\n";
+       << "    -o : overwrite\n\n";
   exit(EXIT_FAILURE);
 }
 
 int main(int nargs, char **args)
 {
+  if (nargs<2) usage(args[0]);
   list<string> imList;
   bool overwrite = false;
 

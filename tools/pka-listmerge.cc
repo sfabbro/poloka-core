@@ -15,7 +15,7 @@ static void usage(const char *progname)
   cerr << "Usage: " << progname << "[OPTION]... LIST... [-o outfilename] [-t (x->xccd, ra->x)] "
        << "Merge lists\n\n"
        << "    -o FILE : specify output file name (default: out.list)\n"
-       << "    -t      : transform coordinates (x->xccd, ra->x...)\n";
+       << "    -t      : transform coordinates (x->xccd, ra->x...)\n\n";
   exit(EXIT_FAILURE);
 }
 

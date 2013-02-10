@@ -16,7 +16,7 @@ static void usage(const char *progname)
        << "    -i FITS   : use a FITS image instead of a DBIMAGE (with -l option)\n"
        << "    -l LIST   : use a catalog LIST instead of default from DBIMAGE (with -i option)\n"
        << "    -n        : just print the transfo information, won't alter WCS header\n"
-       << "    -o        : overwrite previous WCS\n";
+       << "    -o        : overwrite previous WCS\n\n";
   exit(EXIT_FAILURE);
 }
 

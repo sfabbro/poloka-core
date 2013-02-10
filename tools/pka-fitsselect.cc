@@ -27,7 +27,7 @@ static void usage(const char *progname) {
        << "   -s 'KEY OP VAL': select from a general expression:\n"
        << "            KEY -> FITS key to use\n"
        << "            OP  -> operator (==,<,>,<=,>=,~=) ~= is search string\n"
-       << "            VAL -> FITS value to match\n";
+       << "            VAL -> FITS value to match\n\n";
   exit(EXIT_FAILURE);
 }
 

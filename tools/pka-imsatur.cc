@@ -6,7 +6,7 @@ static void usage(const char* progname) {
        << "Compute saturation level and create a saturation map\n\n"
        << "    -s : compute a saturation on each amplifier\n"
        << "    -n : print saturation, do not update anything\n"
-       << "    -o : overwrite\n";
+       << "    -o : overwrite\n\n";
   exit(EXIT_FAILURE);
 }
 

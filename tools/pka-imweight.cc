@@ -12,13 +12,15 @@ static void usage(const char* progname)
 {
   cerr << "Usage: " << progname << " [OPTION]... DBIMAGE...\n"
        << "Produce a weight image for DBIMAGE\n\n"
-       << "   -o: overwrite\n";
+       << "   -o: overwrite\n\n";
   exit(EXIT_FAILURE);
 }
 
 int main(int argc, char **argv)
 { 
   
+  if (argc<2) usage(argv[0]);
+
   ReducedImageList imList;
   bool overwrite = false;
   bool ok = true;

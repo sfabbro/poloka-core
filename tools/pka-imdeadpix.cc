@@ -25,7 +25,7 @@ static void usage(const char *progname)
   cerr << "Usage: " << progname << "[OPTIONS]... FITS...\n"
        << "Create a dead pixel map from a FITS flat file\n\n"
        << "    -l FLOAT : lowest value accepted by normalized flat (default: 0.6)\n"
-       << "    -h FLOAT : highest value accepted by normalized flat (default: 1.4)\n";
+       << "    -h FLOAT : highest value accepted by normalized flat (default: 1.4)\n\n";
   exit(EXIT_FAILURE);
 }
 
