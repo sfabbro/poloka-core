@@ -30,10 +30,10 @@ libtool
 /doc/Doxyfile
 
 # parser generated
-/src/alltelinst.*
-/src/dbfileLex.c
-/src/dbfileParse.c
-/src/dbfileParse.h
+/poloka/alltelinst.*
+/poloka/dbfileLex.c
+/poloka/dbfileParse.c
+/poloka/dbfileParse.h
 
 # execs
 /tools/*
