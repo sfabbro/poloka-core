@@ -1,5 +1,5 @@
 # Default configuration file for DbImage's
-# Copy this file and set it to the DBCONFIG environment variable
+# Copy this file and set it to the POLOKA_DB_CONFIG environment variable
 
 # mind the space around the :
 ImagePath

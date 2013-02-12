@@ -27,7 +27,7 @@ not contents.
 
 The actual location where data is to be searched for is
 given through a configuration file. This configuration file is searched
- -# if the environment variable DBCONFIG is defined, as the file name it provides,
+ -# if the environment variable POLOKA_DB_CONFIG is defined, as the file name it provides,
  -# as .dbconfig in the current directory
  -# as $HOME/.dbconfig
 
@@ -56,11 +56,11 @@ CatalogPath
 
 #what are the image names for the various DbImage derived classes
 # .fits : regular fits image
-# .fz : rice compressed fits image
+# .fits.fz : rice compressed fits image
 # .fits.gz gzip compression
 ImageNames
 {
-  ImageSum {satur.fz}
+  ImageSum {satur.fits.gz}
   TransformedImage {calibrated.fits satur.fits.gz}
 }
 

@@ -14,7 +14,7 @@ class DbConfigException : public PolokaException
 {
  public:
 
-  DbConfigException(const string &Mess) : PolokaException("(DBCONFIG) : "+Mess) {}
+  DbConfigException(const string &Mess) : PolokaException("POLOKA_DB_CONFIG: "+Mess) {}
 
 };
 

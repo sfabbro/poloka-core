@@ -209,7 +209,7 @@ a mail if you get lost.
   Various parts of the code rely (or may depend) on envirnment variables.
   Here is a tentative list of those:
   <ul>
-  <li> DBCONFIG : where the "dbconfig" (see \ref dbconfig) file stands. Default
+  <li> POLOKA_DB_CONFIG : where the "dbconfig" (see \ref dbconfig) file stands. Default
          location is \verb "~/.dbconfig". Providing such a file is mandatory
        to use any code that relies on more than a single fits file. see \ref dbconfig_example for and example.
        <li>  TOADSCARDS : the directory where the datacards are 
