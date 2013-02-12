@@ -27,7 +27,6 @@ public:
   
   static VirtualInstrument *Acceptor(const FitsHeader &Head)
   {
-    cout << "SKYMAPPER ACCEPTOR ! " << endl;
     // should also check NAXIS1
     if (Head.HasKey("CONHWV") && (int)Head.KeyVal("NAXIS1")<2048)
       return new SkyMapper();
