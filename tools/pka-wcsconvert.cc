@@ -14,7 +14,7 @@
 
 static void usage(const char* progname)
 {
-  cerr << "Usage: " << progname << " [OPTIONS] [-c|-p ARGS] FITS...\n"
+  cerr << "Usage: " << progname << " [OPTION]... [-c|-p ARGS] FITS...\n"
        << "Convert x-y to sky coordinates and vice-versa using WCS information\n\n"
        << "  -c A D  : convert alpha delta to x-y\n"
        << "  -c @FILE: convert alpha delta to x y from FILE (one alpha delta per line)\n"

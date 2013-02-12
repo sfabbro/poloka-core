@@ -45,11 +45,10 @@ int main(int nargs, char **args) {
     char *arg = args[i];
     if (arg[0] != '-') {
       ReducedImage *im = new ReducedImage(arg);
-      if (im && im->IsValid()) { 
+      if (im && im->IsValid())
+	imList.push_back(im);
+      else
 	cerr << args[0] << ": " << arg << " is not a valid dbimage\n";
-	continue;
-      }
-      imList.push_back(im);
       continue;
     }
 

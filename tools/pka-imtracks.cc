@@ -4,7 +4,7 @@
 #include <poloka/polokaexception.h>
 
 static void usage(char * progname) {
-  cerr << "Usage: " << progname << " DBIMAGE...\n"
+  cerr << "Usage: " << progname << "[OPTION] DBIMAGE...\n"
        << "Produce a binary map of the satellites\n\n"
        << "   -o: overwrite\n\n";
   exit(EXIT_FAILURE);

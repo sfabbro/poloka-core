@@ -5,7 +5,7 @@
 
 static void usage(const char* progname)
 {
-  cerr << "Usage: " << progname << "  FITS KEY VALUE [COMMENT]\n"
+  cerr << "Usage: " << progname << " FITS KEY VALUE [COMMENT]\n"
        << "Add or update a FITS key with a new value\n\n";
   exit(EXIT_FAILURE);
 }

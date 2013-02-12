@@ -11,7 +11,7 @@
 
 static void usage(const char *progname)
 {
-  cerr << "Usage :" << progname << "[OPTION]... LIST...\n"
+  cerr << "Usage: " << progname << " [OPTION]... LIST...\n"
        << "Join catalogues into one, optionnally filtering entries\n\n"
        << "    -c FLOAT : cut is to be given in units of list coordinate's units\n"
        << "    -t STRING: tags characters are used to tag output in the order of input lists\n"

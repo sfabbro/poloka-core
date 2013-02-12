@@ -9,7 +9,7 @@
 
 static void usage(const char *progname)
 {
-  cerr << "Usage: " << progname << "[OPTIONS]... DBIMAGE...\n"
+  cerr << "Usage: " << progname << " [OPTION]... DBIMAGE...\n"
        << "Compute a WCS header for a image\n\n"
        << "    -a CATALOG: use CATALOG as reference to match stars (ra dec mag), superseeds config value\n"
        << "    -c CONFIG : use CONFIG file for options\n"

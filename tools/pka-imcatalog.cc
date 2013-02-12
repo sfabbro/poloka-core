@@ -14,7 +14,7 @@
 
 static void usage(const char *progName)
 {
-  cerr << "Usage: " << progName << " [OPTION]...[DBIMAGE]...\n"
+  cerr << "Usage: " << progName << " [OPTION]... [DBIMAGE]...\n"
        << "Perform SExtractor cataloguing and seeing computation\n\n"
        << "  -O : redo from beginning, re-adding background\n"
        << "  -o : overwrite\n"

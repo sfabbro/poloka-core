@@ -8,7 +8,7 @@
 
 static void usage(const char *progname)
 {
-  cerr << "Usage: " << progname << "[-o] DBIMAGE...\n"
+  cerr << "Usage: " << progname << " [OPTION] DBIMAGE...\n"
        << "Performs aperture photometry for DBIMAGE\n\n"
        << "    -o : overwrite\n\n";
   exit(EXIT_FAILURE);

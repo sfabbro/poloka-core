@@ -1,10 +1,14 @@
 #include <cstdio>
+
+#include <poloka/fitsimage.h>
+#include <poloka/fitstoad.h>
+#include <poloka/imageutils.h>
 #include <poloka/reducedimage.h>
 
 static void usage(const char* progname) {
-  cerr << "Usage: " << progname << " [OPTION]...DBIMAGE...\n"
+  cerr << "Usage: " << progname << " [OPTION]... DBIMAGE...\n"
        << "Compute saturation level and create a saturation map\n\n"
-       << "    -s : compute a saturation on each amplifier\n"
+       << "    -s : print a saturation on each amplifier (with -n only)\n"
        << "    -n : print saturation, do not update anything\n"
        << "    -o : overwrite\n\n";
   exit(EXIT_FAILURE);
@@ -48,9 +52,20 @@ int main(int nargs, char ** args) {
 	ok = remove((current->FitsSaturName()).c_str());
       ok = current->MakeSatur();
     } else {
-      
-    }    
+      cout << current->Name();
+      FitsImage image(current->FitsName());
+      if (sepamps) {
+	int namp = image.KeyVal("TOADNAMP");
+	for (int i=1; i<=namp; ++i) {
+	  Frame frame = IlluRegion(image,i);
+	  frame.xMax -= 1;
+	  frame.yMax -= 1;
+	  cout << i << ' ' << ComputeSaturation(image.Subimage(frame)) << ' ';
+	}
+      } else
+	cout << ComputeSaturation(image);
+      cout << endl;
+    }
   }
-
   return ok? EXIT_SUCCESS : EXIT_FAILURE;
 }

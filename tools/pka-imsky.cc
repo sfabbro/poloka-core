@@ -10,7 +10,7 @@
 
 static void usage(const char *progname)
 {
-  cerr << "Usage: " << prog << "[OPTIONS]... FITS...\n"
+  cerr << "Usage: " << progname << "[OPTION]... FITS...\n"
        << "Compute sky level and r.m.s of a FITS image\n\n"
        << "    -s : separate levels for diff. amplifiers\n\n";
   exit(EXIT_FAILURE);

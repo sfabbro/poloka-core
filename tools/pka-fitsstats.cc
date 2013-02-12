@@ -6,7 +6,7 @@
 
 static void usage(const char* progname) {
   cerr << "Usage: " << progname << " FITS...\n"
-	 << "Compute sky, r.m.s., expected r.m.s., min and max values of FITS image\n";
+       << "Compute sky, r.m.s., expected r.m.s., min and max values of FITS image\n\n";
   exit(EXIT_FAILURE);
 }
 

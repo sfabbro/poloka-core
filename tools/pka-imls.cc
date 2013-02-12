@@ -10,7 +10,7 @@ static void usage(const char* progname)
        << "Print the path a DBIMAGE file or all paths refered by a DBTAG\n\n"
        << "    -a    : also outputs non existent dbimages (as well as dangling links)\n"
        << "    -what : full path of what=raw|cal|flat|dead|sat|satgz|cat|cos|weight\n"
-       << "    -dump : dumps the current $DBCONFIG file content\n"
+       << "    -dump : dumps the current $POLOKA_DB_CONFIG file content\n"
        << "    -example : provides a dbconfig file example\n";
   exit(EXIT_FAILURE);
 }
