@@ -16,6 +16,7 @@ BUILT_SOURCES = alltelinst.cc alltelinst.h
 noinst_HEADERS =  docmain.h
 src_includedir = $(includedir)/poloka
 src_include_HEADERS = \
+	alltelinst.h \
 	apersestar.h \
 	array2d.h \
 	astroutils.h \
