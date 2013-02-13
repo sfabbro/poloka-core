@@ -71,6 +71,7 @@ src_include_HEADERS = \
 	seeing_box.h \
 	sestar.h \
 	sextractor_box.h \
+	sparsevect.h \
 	starlistexception.h \
 	starlist.cc \
 	starlist.h \
