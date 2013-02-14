@@ -118,9 +118,11 @@ libpoloka_core_la_SOURCES = \
 	imageinterpolation.cc \
 	imagesum.cc \
 	imageutils.cc \
+	intframe.cc \
 	listmatch.cc \
 	matvect.cc \
 	nstarmatch.cc \
+	pixelblock.cc \
 	polokaconf.cc \
 	poly1.cc \
 	poly2.cc \
