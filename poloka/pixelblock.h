@@ -1,6 +1,7 @@
 #ifndef PIXELBLOCK__H
 #define PIXELBLOCK__H
 
+#include <cstring>
 #include <string>
 #include <poloka/array2d.h>
 
