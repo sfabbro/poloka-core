@@ -13,7 +13,7 @@ bin_PROGRAMS = \
 	pka-imarith pka-imls pka-imstats pka-imsky \
 	pka-imcosmic pka-imdeadpix pka-imtracks pka-imsatur \
 	pka-imweight pka-imcatalog pka-imaper \
-	pka-imcombine pka-imregister pka-imextract \
+	pka-imcombine pka-imregister pka-imextract pka-imwarp \
 	pka-listjoin pka-listmerge \
 	pka-wcsconvert pka-wcsfit
 
