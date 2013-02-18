@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include <poloka/allreducedimage.h>
 #include <poloka/imagesum.h>
 #include <poloka/polokaexception.h>
 

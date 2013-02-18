@@ -1,4 +1,4 @@
-CLEANFILES = *~
+CLEANFILES = *~ alltelinst.* *.new
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	stamp-* \
@@ -13,7 +13,7 @@ lib_LTLIBRARIES = libpoloka-core.la
 EXTRA_DIST = virtualinstrument.cc virtualinstrument.h slasub.c
 BUILT_SOURCES = alltelinst.cc alltelinst.h
 
-noinst_HEADERS =  docmain.h
+noinst_HEADERS = docmain.h
 src_includedir = $(includedir)/poloka
 src_include_HEADERS = \
 	alltelinst.h \
@@ -144,7 +144,7 @@ libpoloka_core_la_SOURCES = \
 	wcsutils.cc
 
 libpoloka_core_la_CPPFLAGS = \
-	@CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@
+	-I$(top_srcdir) -I$(top_builddir) @CFITSIO_CFLAGS@ @SEXTRACTOR_CFLAGS@
 
 libpoloka_core_la_LIBADD = \
 	@CFITSIO_LIBS@ @LAPACK_LIBS@ @SEXTRACTOR_LIBS@

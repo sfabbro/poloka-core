@@ -3,7 +3,7 @@ AINTAINERCLEANFILES = \
         Makefile.in \
         stamp-*
 
-AM_CPPFLAGS = @CFITSIO_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) @CFITSIO_CFLAGS@
 
 AM_DEFAULT_SOURCE_EXT = .cc
 
