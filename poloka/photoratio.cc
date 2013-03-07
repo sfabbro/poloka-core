@@ -132,7 +132,7 @@ static void LoadPhotoRefCatalog(const string& RefCatalogFile,
     where a and xp_i are parameters. When you solve the normal
     equations, you find that it is equivalent to minimize:
 
-       chi2 = sum (y_i - a x_i)^2/(sy_i^2+(a x_i)^2).
+       chi2 = sum (y_i - a x_i)^2/(sy_i^2+(a sx_i)^2).
 
     The minimization is tedious (non linearities are important), but
     doable. This is done in TLSPhotoRatio

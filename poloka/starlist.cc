@@ -112,7 +112,7 @@ template<class Star> int StarList<Star>::write(ostream & pr) const
 
   const Star *theFirst = this->front();
   // if (!theFirst) return 0;
-  if (this->size() == 0) // it seems that we can have this->size() == 0 with this->front() != NULL !
+  if (this->empty()) // it seems that we can have this->size() == 0 with this->front() != NULL !
     {
       Star dummy;
       dummy.WriteHeader(pr);
