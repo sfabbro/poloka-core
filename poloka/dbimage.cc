@@ -720,6 +720,11 @@ void DbImage::dump(ostream &stream)  const
   stream << imageName << endl;
 }
 
+string DbImage::FitsSubName() const
+{
+  return image_name(TypeName(), directory, "sub");
+}
+
 string DbImage::FitsFlatName() const
 {
   return image_name(TypeName(), directory, "flat");
@@ -750,6 +755,11 @@ string DbImage::FitsBadName() const
 string DbImage::FitsWeightName() const
 {
   return image_name(TypeName(),directory,"weight");
+}
+
+string DbImage::FitsSubWeightName() const
+{
+  return image_name(TypeName(),directory,"sub.weight");
 }
 
 string DbImage::FitsCosmicName() const
