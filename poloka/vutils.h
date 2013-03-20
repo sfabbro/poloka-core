@@ -40,7 +40,7 @@ double gaussianfit(const double *values , int nval, double &mean, double &sigma,
 double median_mad(std::vector<double>& x, double& disp);
 
 //! compute median of a vector
-double median_mad(std::vector<double>& x);
+double median(std::vector<double>& x);
 
 //template<class T>  T ScalProd(const T A[], const T B[], int N);
 #endif /* VUTILS__H */
