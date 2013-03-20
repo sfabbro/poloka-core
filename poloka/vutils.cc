@@ -129,6 +129,21 @@ double clipmean(double *values, int &nval, double &sigma, const double &k, const
   return mean;
 }
 
+double median(vector<double>& x) {
+  size_t n = x.size();
+  sort(x.begin(), x.end());
+  return (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+}
 
-
-
+double median_mad(vector<double>& x, double& disp) {
+  size_t n = x.size();
+  sort(x.begin(), x.end());
+  double med = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  for (vector<double>::iterator it = x.begin(); it != x.end(); ++it) {
+    *it = fabs(*it - med);
+  }
+  sort(x.begin(), x.end());
+  double mad = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
+  disp = 1.4826 * mad; // robust estimator of standard deviation
+  return med;
+}

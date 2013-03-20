@@ -8,13 +8,14 @@
 #include <poloka/basestar.h>
 #include <poloka/starlist.h>
 #include <poloka/histo2d.h>
+#include <poloka/histo4d.h>
 #include <poloka/gtransfo.h>
 #include <poloka/starmatch.h>
 #include <poloka/listmatch.h>
 #include <poloka/fastfinder.h>
 #include <poloka/datacards.h>
 #include <poloka/fileutils.h>
-#include <poloka/histo4d.h>
+#include <poloka/vutils.h>
 
 // cuts.. limits, etc for combinatorial match
 
@@ -803,20 +804,6 @@ StarMatchList *ListMatchCollectWU(const BaseStarList &L1, const BaseStarList &L2
 
 #endif
 
-
-// compute median and M.A.D. = median(|x - median(x)|)
-static double median_mad(vector<double>& x, double& disp) {
-  size_t n = x.size();
-  sort(x.begin(), x.end());
-  double med = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
-  for (vector<double>::iterator it = x.begin(); it != x.end(); ++it) {
-    *it = fabs(*it - med);
-  }
-  sort(x.begin(), x.end());
-  double mad = (n & 1) ? x[n/2] : (x[n/2-1] + x[n/2])*0.5;  
-  disp = 1.4826 * mad; // robust estimator of standard deviation
-  return med;
-}
 
 size_t StarMatchCheck(const StarMatchList* match) {
     

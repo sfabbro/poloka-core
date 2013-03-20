@@ -1,6 +1,8 @@
 #ifndef VUTILS__H
 #define VUTILS__H
 
+#include <vector>
+
 /*! \file 
    \brief utilities around vector and matrix algebra
    */
@@ -33,6 +35,12 @@ double clipmean(double *values, int &nval, double &sigma, const double &k=3.5, c
  */
 double gaussianfit(const double *values , int nval, double &mean, double &sigma, const double &k=3.5, bool first_evalutation=true);
 
+//! compute median and M.A.D. = median(|x - median(x)|)
+//! robust estimator of standard deviation
+double median_mad(std::vector<double>& x, double& disp);
+
+//! compute median of a vector
+double median_mad(std::vector<double>& x);
 
 //template<class T>  T ScalProd(const T A[], const T B[], int N);
 #endif /* VUTILS__H */
