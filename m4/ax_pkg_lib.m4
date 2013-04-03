@@ -1,7 +1,7 @@
 #
 # SYNOPSIS
 #
-#   AX_CHECK_PKG_LIB(PKG, [HEADER], [LIBRARY], [SYMBOL-IN-LIBRARY],
+#   AX_PKG_LIB(PKG, [HEADER], [LIBRARY LIST], [FUNCTION],
 #                    [ACTION-IF-FOUND], [ACTION-IF-NOT_FOUND])
 #
 # DESCRIPTION
@@ -26,8 +26,8 @@
 #      	  
 #   Example:
 #
-#     AX_CHECK_PKG_LIB([cfitsio], [fitsio.h], [cfitsio], [ffopen], [],
-#                      [AC_MSG_ERROR([Cound not find a cfitsio library])])
+#     AX_PKG_LIB([cfitsio], [fitsio.h], [cfitsio], [ffopen], [],
+#                [AC_MSG_ERROR([Cound not find a cfitsio library])])
 #
 # LICENSE
 #
@@ -59,7 +59,7 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-AC_DEFUN([AX_CHECK_PKG_LIB],[
+AC_DEFUN([AX_PKG_LIB],[
 
 AC_ARG_VAR(m4_toupper($1)[_CFLAGS],
 	   [Preprocessing flags for ]$1[ headers])
@@ -78,6 +78,14 @@ AC_ARG_WITH(m4_tolower($1)[-libs],
 			   [Linking flags for $1 libraries]),
 	    m4_toupper($1)[_LIBS="$withval"])
 
+# Make sure the pkg-config macros are defined
+m4_ifndef([PKG_PROG_PKG_CONFIG],
+    [m4_warn([Could not locate the pkg-config autoconf macros.
+  These are usually located in /usr/share/aclocal/pkg.m4. If your macros
+  are in a different location, try setting the environment variable
+  ACLOCAL="aclocal -I/other/macro/dir" before running autoreconf.])])
+PKG_PROG_PKG_CONFIG
+
 # check with pkg-config
 AS_IF([ test x"$]m4_toupper($1)[_LIBS" = x ],
       [PKG_CHECK_MODULES(m4_toupper($1), 
@@ -88,10 +96,10 @@ AS_IF([ test x"$]m4_toupper($1)[_LIBS" = x ],
 AS_IF([ test x"$]m4_toupper($1)[_LIBS" = x ],
       m4_toupper($1)[_LIBS="-l]m4_tolower($1)["])
 
-# now check header and symbol validity
+# now check header and function validity
 AS_IF([ test x"]$3[" = x && test x"]$4[" = x],
-      [ax_cv_symbol=main],
-      [ax_cv_lib=]$3[ ax_cv_symbol=]$4)
+      [ax_cv_function=main],
+      [ax_cv_libs=]$3[ ax_cv_function=]$4)
 
 AC_CACHE_VAL(AS_TR_SH([ax_cv_has_]m4_tolower($1)),
 	     [save_CPPFLAGS="$CPPFLAGS"
@@ -99,10 +107,10 @@ AC_CACHE_VAL(AS_TR_SH([ax_cv_has_]m4_tolower($1)),
 	      AS_IF([ test x"$]m4_toupper($1)[_CFLAGS" != x ],
 	            [CPPFLAGS="$CPPFLAGS $]m4_toupper($1)[_CFLAGS"])
 	      AS_IF([ test "x$]m4_toupper($1)[_LIBS" != x ],
-	      	    [LDFLAGS="$LDFLAGS $]m4_toupper($1)[_LIBS"])
+	      	    [LDFLAGS=" $LDFLAGS $]m4_toupper($1)[_LIBS"])
 	      AC_CHECK_HEADER($2,
-		[AC_CHECK_LIB([$ax_cv_lib],
-			      [$ax_cv_symbol],
+		[AC_SEARCH_LIBS([$ax_cv_function],
+			      [$ax_cv_libs],
 			      [AS_TR_SH([ax_cv_has_]m4_tolower($1))=yes],
 			      [AS_TR_SH([ax_cv_has_]m4_tolower($1))=no],
 			       $LDFLAGS)],
@@ -118,5 +126,4 @@ AS_IF([ test x"$]AS_TR_SH([ax_cv_has_]m4_tolower($1))[" = xyes ],
       AC_DEFINE([HAVE_]m4_toupper($1), [1], [Define to 1 if ]$1[ is found])
     [$5],
     [$6])
-
 ])

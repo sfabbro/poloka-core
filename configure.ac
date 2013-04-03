@@ -47,32 +47,33 @@ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_FUNC_STRTOD
-AC_CHECK_LIB([m],[cos])
-
+AC_SEARCH_LIBS([cos], [m], [],
+	       [AC_MSG_ERROR([Cannot find the cos() function])])
 
 ## Check for mandatory lapack
 PKG_CHECK_MODULES([LAPACK],
    		  [lapack],
 		  [LAPACK_PC=lapack],
 		  [AX_LAPACK([PC_LIBS="$PC_LIBS $LAPACK_LIBS"],
-		  AC_MSG_ERROR([Cannot find lapack libraries]))])   
+		  AC_MSG_ERROR([Cannot find lapack libraries]))])
+
 AC_SUBST([BLAS_PC])
 AC_SUBST([LAPACK_PC])
 AC_SUBST([PC_LIBS])
 
 ## Check for mandatory cfitsio
-AX_CHECK_PKG_LIB(
+AX_PKG_LIB(
 	[cfitsio],
 	[fitsio.h],
-	[cfitsio],[ffopen],,
-	[AC_MSG_ERROR([Could not find cfitsio library])])
+	[cfitsio], [ffopen], [],
+	[AC_MSG_ERROR([Cannot find cfitsio library])])
 
 ## Check for mandatory SExtractor repacked library
-AX_CHECK_PKG_LIB(
+AX_PKG_LIB(
 	[sextractor],
 	[define.h],
-	[sextractor],[makeit],,
-	[AC_MSG_ERROR([Could not find SExtractor library])])
+	[sextractor], [makeit], [],
+	[AC_MSG_ERROR([Cannot find SExtractor library])])
 
 AC_CONFIG_FILES([Makefile
 		 poloka-core.pc
