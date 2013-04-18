@@ -563,7 +563,7 @@ FitsKey ToadsKeyVal(const FitsHeader &Head, const string &KeyName, const bool Wa
   int r = key_rank(KeyName);
   if (r==ToadsKeyCount) // undefined ToadKey
     {
-      cerr << " NO ToadsKey called " << KeyName << " for file " << Head.FileName() << endl;
+      //cerr << " NO ToadsKey called " << KeyName << " for file " << Head.FileName() << endl;
       return FitsKey("KeyName",NOVAL);
     }
   return (p->*ToadsKeys[r].key_translator)(Head,Warn);
