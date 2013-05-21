@@ -1,72 +1,95 @@
 #include <iostream>
+#include <iomanip>
 #include <string>
+#include <list>
 
-#include <poloka/dbimage.h>
 #include <poloka/fitsimage.h>
-#include <poloka/frame.h>
 #include <poloka/fileutils.h>
+#include <poloka/dbimage.h>
 
 static void usage(const char* progname) {
-  cerr << "Usage: " << progname << " DBIMAGE...\n"
-       << "Print sky, rms for image and weight*image\n\n";
+  cerr << "Usage: " << progname << " [OPTION] FITS...\n"
+       << "Compute sky, r.m.s., min and max values of FITS image\n\n"
+       << "    -what       : for DBIMAGE uses, where what is raw|cal|dead|weight|...\n\n";
   exit(EXIT_FAILURE);
 }
 
-int main(int argc,char **args)
-{
-  if (argc <=1) usage(args[0]);
+int main(int argc, char **argv) {
+
+  if (argc < 2) usage(argv[0]);
+  list<string> imList;
+  string which_info = "cal";
+  string type = "IMAGE";
+
+  size_t nchar = 10;
+
+  for (int i=1; i<argc; i++) {
+    char *arg = argv[i];
+    if (arg[0] != '-') 	{
+      if (strlen(arg) > nchar) nchar = strlen(arg);
+      imList.push_back(arg);
+    } else if (strlen(arg)>2) {  /* search for possible : -raw, -dead, -flat, -cal */
+      which_info = arg+1;
+      type += "(" + which_info + ")";
+    } else {
+      cerr << argv[0] << ": " << arg << " unknown option\n";
+      usage(argv[0]);
+    }
+  }
+
+  cout << endl << setiosflags(ios::left)
+       << setw(nchar) << type 
+       << setiosflags(ios::right)
+       << setw(9) << "SKY"
+       << setw(7) << "SIG"
+       << setw(9) << "MIN"
+       << setw(9) << "MAX"
+       << setw(10) << "DBSTAT"
+       << resetiosflags(ios::right)
+       << endl << endl;
 
   bool ok = true;
-  for (int i=1; i< argc; ++i)
-    {
-      DbImage dbimage(args[i]);
-      if (!dbimage.IsValid())
-	{
-	  cerr << args[0] << ": invalid file : "  << args[i] << endl;
-	  ok = false;
-	  continue;
-	}
-      Pixel mean_im = 0, sigma_im = -1;
-      FitsImage *im = NULL;
-      if (FileExists(dbimage.FitsImageName(Calibrated)))
-	{
-	  im = new FitsImage(dbimage.FitsImageName(Calibrated));
-	  FitsHeader &head = *im;
-	  im->SkyLevel(Frame(head),& mean_im, &sigma_im);
-	}
+  for (list<string>::const_iterator it=imList.begin(); it != imList.end(); ++it) {
 
-      Pixel mean_w = 0, sigma_w = -1;
-      FitsImage *w = NULL;
-      if (FileExists(dbimage.FitsWeightName()))
-	{
-	  w = new FitsImage(dbimage.FitsWeightName());
-	  FitsHeader &head = *im;
-	  w->SkyLevel(Frame(head),& mean_w, &sigma_w);
-	}
+    string filename = *it;
+    DbImage dbimage(filename);
+    if (dbimage.IsValid())
+      filename = dbimage.GetFileName(which_info.c_str());
 
-      double im_w_stat = -1;
-      if (im && w)
-	{
-	  if (FileExists(dbimage.FitsSaturName()))
-	    {
-	      FitsImage s(dbimage.FitsSaturName());
-	      *w *= 1-s;
-	    }
-	  im_w_stat = ImageAndWeightError(*im, *w);
-	  cout << args[i] << ' ' 
-	       << " im: ( " << mean_im << ","<< sigma_im << ")"
-	       << " w: ("   << mean_w << "," << sigma_w << ")"
-	       << " sig(im*sqrt(w)): " << im_w_stat 
-	       << endl;
-	}
-      else
-	{
-	  cerr << args[0] << ": " << args[i] << " is missing either image or weight\n";
-	  ok = false;
-	}
-      if (im) delete im;
-      if (w)  delete w;
+    FitsImage image(filename);
+  
+    if (!image.IsValid()) {
+      cerr << argv[0] << ": " << filename << ": invalid file\n";
+      ok = false;
+      continue;
     }
 
+    Pixel mean,sigma,minv,maxv;
+    image.SkyLevel(&mean, &sigma);
+    image.MinMaxValue(&minv, &maxv);
+    
+    cout << setiosflags(ios::left)
+	 << setw(nchar) << *it
+	 << setiosflags(ios::right) << setiosflags(ios::fixed)
+	 << setw(9) << setprecision(2) << mean << ' '
+	 << setw(7) << setprecision(2) << sigma << ' '
+	 << setw(9) << setprecision(1) << minv << ' '
+	 << setw(9) << setprecision(1) << maxv << ' ';
+
+    if (dbimage.IsValid() && FileExists(dbimage.FitsWeightName())) {
+      FitsImage weight(dbimage.FitsWeightName());
+      if (FileExists(dbimage.FitsSaturName())) {
+	FitsImage satur(dbimage.FitsSaturName());
+	weight *= 1 - satur;
+      }
+      cout << setw(6) << ImageAndWeightError(image, weight);
+    } else {
+      cout << setw(6) << "none";
+    }
+
+    cout << resetiosflags(ios::right)
+	 << endl;
+  }
+  
   return ok? EXIT_SUCCESS : EXIT_FAILURE;
 }

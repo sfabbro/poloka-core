@@ -30,6 +30,7 @@ typedef list<Path>::const_iterator PathCIterator;
 class DbConfigFile {
 public :
   DbConfigFile(const char* FileName);
+  DbConfigFile();
   void AddImagePath(const char *a_path, const char *a_path_name);
   void AddCatalogPath(const char * a_path);
   /* given an image name, returns its location 
@@ -173,10 +174,6 @@ if (ExpandPath("$HOME/.poloka/dbconfig", expansion))
   strcpy(filename,(*expansion.begin()).c_str());
   if (FileExists(filename)) return filename;
   }
-FatalError(" DbInit :: No config file found \n");
-
-
-
 return NULL;
 }
 
@@ -196,6 +193,11 @@ DbConfigFile::DbConfigFile(const char *FileName)
   init_image_names(); 
 }
 
+DbConfigFile::DbConfigFile()
+{
+  init_image_names();  
+}
+
 
 static DbConfigFile* DbConfig()
 {
@@ -203,13 +205,19 @@ static DbConfigFile *the_config = NULL;
 if (!the_config) 
   {
   char *db_config_file = locate_config_file();
-
-  the_config =  new DbConfigFile(locate_config_file());
-  /* there is a trick here : DbConfigFileParse will call DbConfig()
-     to get the pointer on the unique instance of DbConfig, and 
-     the returned value will be correct since the_config is assigned */
-  if (!DbConfigFileParse(db_config_file)) 
-    FatalError(" cannot parse the config file %s\n", db_config_file);
+  if (!db_config_file) {
+    the_config = new DbConfigFile();
+    the_config->AddImagePath(".","here");
+    the_config->AddCatalogPath(".");
+  }
+  else {
+    the_config =  new DbConfigFile(locate_config_file());
+    /* there is a trick here : DbConfigFileParse will call DbConfig()
+       to get the pointer on the unique instance of DbConfig, and 
+       the returned value will be correct since the_config is assigned */
+    if (!DbConfigFileParse(db_config_file)) 
+      FatalError(" cannot parse the config file %s\n", db_config_file);
+  }
   }
 return the_config;
 }
@@ -310,7 +318,11 @@ return 0;
 
 void DbConfigFile::dump(ostream& stream) const
 {
-  stream << "Db configuration read from :" << fileName << endl;
+  if (fileName.empty())
+    stream << "Db configuration is the internal default\n";
+  else
+    stream << "Db configuration read from :" << fileName << endl;
+  
   // dbimages
   stream << "#### Image Pathes : " << endl;
   for (unsigned int i = 0; i < image_pathes.size(); i++)
@@ -339,17 +351,17 @@ void DbConfigExample()
 << "{" << endl
 << "# 'here' is where non existing images are created. You'd better define it" << endl
 << "here : ." << endl
-<< "cfht99 : /snovad15/cfht99/1999* ,   /somewhere_else/cfht99/" << endl
-<< "vlt99 : /snovad1/vlt99/1999*" << endl
-<< "newstuff : /snovad8/wiyn99" << endl
+<< "#cfht99 : /snovad15/cfht99/1999* ,   /somewhere_else/cfht99/" << endl
+<< "#vlt99 : /snovad1/vlt99/1999*" << endl
+<< "#newstuff : /snovad8/wiyn99" << endl
 << "}" << endl
 << "" << endl
 << "# where to find astrometric catalogs (non-USNO catalogs usually)" << endl
 << "CatalogPath" << endl
 << "{" << endl
 << "  ." << endl
-<< "  /data/my_catalogs" << endl
-<< "  /data/catalogs/D*" << endl
+<< "  #/data/my_catalogs" << endl
+<< "  #/data/catalogs/D*" << endl
 << "}" << endl
 << endl
 << "#what are the image names for the various DbImage derived classes" << endl

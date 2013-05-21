@@ -1,6 +1,6 @@
 ## Initialization
-AC_PREREQ(2.59)
-AC_INIT([poloka-core], 0.2.0, [poloka team])
+AC_PREREQ([2.69])
+AC_INIT([poloka-core],[0.2.0],[poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([poloka/fitsimage.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -8,7 +8,7 @@ AC_CONFIG_AUX_DIR(autoconf)
 AM_INIT_AUTOMAKE([foreign])
 
 ## Keep this one before libtool check
-AM_DISABLE_STATIC
+AC_DISABLE_STATIC([])
 
 ## Checks for programs to build poloka-core library
 AC_PROG_AWK
@@ -18,7 +18,7 @@ AC_PROG_LEX
 
 # F77 needed to link with blas/lapack
 AC_PROG_F77
-AC_PROG_LIBTOOL
+LT_INIT
 
 # AC_PROG_SED is available only in autoconf 2.60 and later.
 # With older autoconf, assume that 'sed' is ok.
@@ -49,6 +49,14 @@ AC_FUNC_REALLOC
 AC_FUNC_STRTOD
 AC_SEARCH_LIBS([cos], [m], [],
 	       [AC_MSG_ERROR([Cannot find the cos() function])])
+
+
+## Check for mandatory blas
+PKG_CHECK_MODULES([BLAS],
+   		  [blas],
+		  [BLAS_PC=blas],
+		  [AX_BLAS([PC_LIBS="$PC_LIBS $BLAS_LIBS"],
+		  AC_MSG_ERROR([Cannot find blas libraries]))])
 
 ## Check for mandatory lapack
 PKG_CHECK_MODULES([LAPACK],

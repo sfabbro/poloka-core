@@ -12,22 +12,23 @@
 
 static void usage(const char* progname)
 {
-  cerr << "Usage: " << progname << " [OPTION]... FITS...\n"
-       << "Usage: " << progname << " -what [OPTION]... DBIMAGE...\n"
-       << "Display FITS header or FITS keys of a file\n\n"
-       << "    -k FITSKEY: print FITSKEY\n"
-       << "    -m STRING : print STRING when the key is missing (default: absent)\n"
-       << "    -n        : do no print the filename\n"
-       << "    -what     : for DBIMAGE uses (raw,cal,dead,weight,...)\n\n";
+  cerr << "Usage: " << progname << " [OPTION]... FITS...\n" 
+       << "       " << progname << " -what [OPTION]... DBIMAGE...\n"
+       << "Display FITS header, or print/manipulate keys of FITS files\n\n"
+       << "    -c KEY VALUE: add/update the FITS header KEY with a new VALUE\n"
+       << "    -k KEY      : print KEY value of the FITS header\n"
+       << "    -m STRING   : print STRING when the key is missing instead of 'absent'\n"
+       << "    -n          : do no print the filename\n"
+       << "    -what       : for DBIMAGE uses, where what is raw|cal|dead|weight|...\n\n";
   exit(EXIT_FAILURE);
 }
 
 
 
-static void fits_header_process(const string &FileName, 
-				vector<char *> requested_keys, 
-				const string &line_start,
-				const string &missing_key_placeholder)
+static void fits_key_print(const string &FileName, 
+			   vector<char*> requested_keys,
+			   const string &line_start,
+			   const string &missing_key_placeholder)
 {
   /* checking here that the file exists forbids to use "file[1]",
      which is a pity. If there is a problem FitsHeader::IsValid
@@ -37,24 +38,56 @@ static void fits_header_process(const string &FileName,
   FitsHeader header(FileName);
   if (!header.IsValid()) return;
   size_t nkeys = requested_keys.size();
-  if (nkeys ==0)
+  cout << line_start;
+  for (size_t j=0; j<nkeys; j++)
     {
-      cout << header;
+      if (header.HasKey(requested_keys[j])) 
+	cout << ' ' << header.KeyVal(requested_keys[j]);
+      else
+	if (missing_key_placeholder.empty())
+	  cout << ' ' << requested_keys[j] << ": absent" ;
+	else
+	  cout << ' ' << missing_key_placeholder << ' ';
     }
-  else 
+  cout << endl;
+}
+
+static void fits_header_print(const string& FileName)
+{
+  FitsHeader header(FileName);
+  if (!header.IsValid()) return;
+  cout << header;
+}
+
+static void fits_key_change(const string &FileName, 
+			    vector<char*> change_keys, 
+			    vector<char*> change_values)
+{
+  FitsHeader header(FileName, RW);
+  if (!header.IsValid()) return;
+  size_t nkeys = change_keys.size();
+  for (size_t i=0; i<nkeys; i++)
     {
-      cout << line_start;
-      for (size_t j=0; j<nkeys; j++)
+      char* key = change_keys[i];
+      char* val = change_values[i];
+      char *endptr;
+      double dval = strtod(val, &endptr);
+      if (endptr != val) // means successful conversion to double
 	{
-	  if (header.HasKey(requested_keys[j])) 
-	    cout << ' ' << header.KeyVal(requested_keys[j]);
-	  else
-	    if (missing_key_placeholder.empty())
-	      cout << ' ' << requested_keys[j] << ": absent" ;
-	    else
-	      cout << ' ' << missing_key_placeholder << ' ';
+	  header.AddOrModKey(key, dval);
 	}
-      cout << endl;
+      else if (strcmp(val,"T") == 0 || strcmp(val,"TRUE") == 0)
+	{
+	  header.AddOrModKey(key, true);
+	}
+      else if (strcmp(val,"F") == 0 || strcmp(val,"FALSE") == 0)
+	{
+	  header.AddOrModKey(key, false);
+	}
+      else 
+	{
+	  header.AddOrModKey(key, string(val));
+	}
     }
 }
 
@@ -62,7 +95,9 @@ int main(int argc, char**argv)
 {
   if (argc <=1) usage(argv[0]);
   
-  vector<char*> requested_keys;
+  vector<char*> print_keys;
+  vector<char*> change_keys;
+  vector<char*> change_values;
   vector<string> fits_files; 
   vector<string> names;
   vector<char*> which_info;
@@ -86,26 +121,40 @@ int main(int argc, char**argv)
 	    {
 	      switch (arg[1])
 		{
-		case 'k' : i++ ; requested_keys.push_back(argv[i]); break;
+		case 'k' : i++ ; print_keys.push_back(argv[i]); break;
+		case 'c' : 
+		  change_keys.push_back(argv[++i]);
+		  change_values.push_back(argv[++i]); break;
 		case 'n' : no_file_names = true; break;
 		case 'm' : missing_key_placeholder = argv[++i]; break;
-		default : cerr << argv[0] << ": do not understand " << arg << endl; usage(argv[0]);
+		default : cerr << argv[0] << ": do not understand " 
+			       << arg << endl; usage(argv[0]);
 		}
 	    }
 	}
     }
   
   size_t ninfo = which_info.size();
+
   bool ok = true;
-  for (size_t in = 0 ; in < names.size(); in++)
+  bool doprintkeys = !print_keys.empty();
+  bool dochangekeys = !change_keys.empty();
+  bool doprintheader = print_keys.empty() && change_keys.empty();
+
+  for (size_t in=0; in < names.size(); in++)
     {
       try {
 
 	if (ninfo == 0)
 	  {
-	    fits_header_process(names[in], requested_keys, 
-				no_file_names ? " " : names[in],
-				missing_key_placeholder);
+	    if (dochangekeys)
+	      fits_key_change(names[in], change_keys, change_values);
+	    if (doprintkeys)
+	      fits_key_print(names[in], print_keys,
+			     no_file_names ? " " : names[in],
+			     missing_key_placeholder);
+	    if (doprintheader)
+	      fits_header_print(names[in]);
 	    continue;
 	  }
 	DbImage a_dbimage(names[in]);
@@ -128,13 +177,18 @@ int main(int argc, char**argv)
 		    string tag = dbi->Name();
 		    if (ninfo != 1) tag = tag + "(" + string(which_info[ii]) + ")";
 		    if (no_file_names) tag = "";
-		    fits_header_process(filename, requested_keys, tag, 
-					missing_key_placeholder);
+		    if (dochangekeys)
+		      fits_key_change(filename, change_keys, change_values);
+		    if (doprintkeys)
+		      fits_key_print(filename, print_keys, tag, 
+				     missing_key_placeholder);
+		    if (doprintheader)
+		      fits_header_print(filename);
 		  }
 	      }
 	  }
 	
-      } catch (PolokaException p){
+      } catch (PolokaException p) {
 	p.PrintMessage(cerr);
 	ok = false;
       }
@@ -142,7 +196,3 @@ int main(int argc, char**argv)
   
   return ok? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
-
-
-

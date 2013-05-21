@@ -8,12 +8,12 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir) @CFITSIO_CFLAGS@
 AM_DEFAULT_SOURCE_EXT = .cc
 
 bin_PROGRAMS = \
-	pka-fitskey pka-fitshead pka-fitsmerge \
-	pka-fitsselect pka-fitsstats \
-	pka-imarith pka-imls pka-imstats pka-imsky \
+	pka-fitshead pka-fitsmerge \
+	pka-imselect pka-imls \
+	pka-imarith pka-imstats pka-imsky \
 	pka-imcosmic pka-imdeadpix pka-imtracks pka-imsatur \
 	pka-imweight pka-imcatalog pka-imaper \
-	pka-imcombine pka-imregister pka-imextract pka-imwarp \
+	pka-imcombine pka-imregister pka-imextract pka-imswarp \
 	pka-listjoin pka-listmerge \
 	pka-wcsconvert pka-wcsfit
 

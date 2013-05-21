@@ -5,15 +5,15 @@
 
 static void usage(const char *progname) {
   cerr << "Usage: " << progname << " REFIMAGE [OPTION] DBIMAGE...\n"
-       << "Extract the minimal sub image from REFIMAGE that matches all DBIMAGE\n"
-       << "   -o DBIMAGE: output name of the extracted dbimage (default is 'Ext_REFIMAGE')\n";
+       << "Extract the minimal sub image from REFIMAGE that matches all DBIMAGE\n\n"
+       << "   -o DBIMAGE: output name of the extracted dbimage (default: 'Ext_REFIMAGE')\n\n";
   exit(EXIT_FAILURE);
 }
 
 
 int main(int nargs, char** args) {
 
-  if (nargs < 2) usage(args[0]);
+  if (nargs < 3) usage(args[0]);
   ReducedImage toExtract(args[1]);
   string extname = "Ext_" + toExtract.Name();
 

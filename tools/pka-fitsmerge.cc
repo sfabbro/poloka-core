@@ -16,7 +16,7 @@ static bool has_key(fitsfile *fptr, char *key) {
 
 static void usage(const char * prog) {
   cerr << "Usage: " << prog << " [OPTION]... FITS FITS...\n"
-       << "Merge FITS files\n\n"
+       << "Merge 2 FITS files, or n>=2 FITS files to a directory\n\n"
        << "    -c          : use rice compression\n"
        << "    -d DIRECTORY: merge files into DIRECTORY\n\n";
   exit(EXIT_FAILURE);
@@ -222,7 +222,7 @@ int main(int nargs, char **args) {
   if (outDir.empty()) {
     if (fileNames.size() != 2) usage(args[0]);
     if (riceCompression)
-      return convert_fits_file(fileNames[0], fileNames[1]+"[COMPRESS]");
+      return convert_fits_file(fileNames[0], fileNames[1] + "[COMPRESS]");
     else 
       return convert_fits_file(fileNames[0], fileNames[1]);
   }
@@ -230,12 +230,12 @@ int main(int nargs, char **args) {
   MKDir(outDir.c_str());
 
   int status = 0;
-  for (size_t k=0; k< fileNames.size(); ++k) {
+  for (size_t k=0; k < fileNames.size(); ++k) {
     string outputName;
     if (riceCompression)
-      outputName= outDir+CutExtension(BaseName(fileNames[k]))+".fz[COMPRESS]";
+      outputName= outDir + BaseName(fileNames[k]) + ".fz[COMPRESS]";
     else
-      outputName= outDir+BaseName(fileNames[k]);	  
+      outputName= outDir + BaseName(fileNames[k]);	  
     status += convert_fits_file(fileNames[k], outputName);
   }
 
