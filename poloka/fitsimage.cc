@@ -1632,7 +1632,7 @@ bool FitsImage::Trim(const Frame &Region)
   
  Frame wholeFrame(*this,WholeSizeFrame);
  // to be able to extract a subimage, Region should be inside the Image:
- if (Nx() == Nx_Image && Ny() == Ny_Image || (Region*wholeFrame != Region))
+ if ((Nx() == Nx_Image && Ny() == Ny_Image) || Region*wholeFrame != Region)
    {
      cout << "Image " << FileName () << " already trimed : nothing done." << endl ;
      return false;

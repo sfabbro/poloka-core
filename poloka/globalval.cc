@@ -245,7 +245,7 @@ GlobalVal::GlobalVal(const std::string &FileName)
   while( r >> c ) // to test eof
     {
       r.unget() ;
-      if ( (c == '@') ) 
+      if (c == '@')
 	{
 	  r.getline(buff,4096); 
 	  ProcessLine(buff);

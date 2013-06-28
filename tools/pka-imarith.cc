@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
   if (im1 && im2)
     ok = image_operation(op, *im1, *im2);
   else if (im1 && f) {
-    if (!imagefirst)
+    if (!imagefirst) {
       if (op == '-') {
 	*im1 *= -1.;
 	op = '+';
@@ -137,6 +137,7 @@ int main(int argc, char** argv) {
 	*im1 = 1./(*im1);
 	op = '*';
       }
+    }
     ok = image_operation(op, *im1, *f);
   } else {
     cerr << argv[0] << ": wrong arguments\n";

@@ -27,13 +27,13 @@ template<class Star> int StarList<Star>::read(fastifstream & r)
   while( r >> c ) // to test eof
     {
       r.unget() ;
-      if ( (c == '@') ) 
+      if (c == '@') 
 	{
 	  r.getline(buff,4096); 
 	  glob.ProcessLine(buff);
 	  continue;
 	}
-      if ( (c == '#') ) // we jump over the line  (not always ...)
+      if (c == '#') // we jump over the line  (not always ...)
         {
 	  r.getline(buff,4096);
 	  /* hack something reading " format <StarType> <integer>" to drive the decoding (in Star::read) */

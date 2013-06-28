@@ -420,6 +420,8 @@ double PhotoRatio(const ReducedImage& Im, const ReducedImage& Ref, double& Error
     return AveragePhotoRatio(Im, Ref, Error, Im2Ref);
   case NoScaling:
     Error = 0.; return 1.;
+  default:
+    return MedianPhotoRatio(Im, Ref, Error, Im2Ref);      
   }
   return MedianPhotoRatio(Im, Ref, Error, Im2Ref);
 }

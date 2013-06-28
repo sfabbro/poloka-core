@@ -40,12 +40,14 @@ public:
     if (ccdsum == "1 1") return FitsKey("TOADPIXS", 0.4);
     if (ccdsum == "2 2") return FitsKey("TOADPIXS", 0.8);
     cout << "SkyMapper::TOADPIXS : bizarre CCDSUM=" << ccdsum << " dont know what to do " << endl;
+    return FitsKey("TOADPIXS", 0.6);
   }
     
   FitsKey TOADRDON(const FitsHeader &Head, const bool Warn) const
   {
     double rdnoise = Head.KeyVal("RDNOISE");
     if(rdnoise<=0) return FitsKey("TOADRDON", 5);// To Be checked
+    return FitsKey("TOADRDON",rdnoise);
   }
   
   // for the filter, we have a problem: key not always present 

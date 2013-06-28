@@ -317,10 +317,10 @@ if (cards.HasKey(TAG)) VAR=cards.TYPE(TAG)
 // produce a miniback
 bool ReducedImage::MakeBack() {
   if (FileExists(FitsMiniBackName()) || FileExists(FitsBackName()) 
-      || (BackSub()) && !FileExists(FitsMiniBackName()) && !FileExists(FitsBackName()))
+      || (BackSub() && !FileExists(FitsMiniBackName()) && !FileExists(FitsBackName())))
     return true;
 
-  // SubÅpolokaBack_slices is not reliable, produces many big useless files and is slow 
+  // SubpolokaBack_slices is not reliable, produces many big useless files and is slow 
   // return SubPolokaBack_Slices(-1, -1, 1, false, false, false);
 
   // use SExtractor routines to produce a miniback
@@ -464,7 +464,8 @@ ReducedImage::MakeCatalog(bool redo_from_beg,
 
     // DEBUG
     // fix wrong saturation levels (occurs for short exposure times)
-    if (IsOfKind<CfhtMegacam>(FitsHeader(FitsName())) && Saturation()< 50000 && HasFlat())
+    FitsHeader header(FitsName());
+    if (IsOfKind<CfhtMegacam>(header) && Saturation()< 50000 && HasFlat())
       {
 	FitsHeader flat(FitsFlatName());
 	double fla = flat.KeyVal("FLATSCLA"); // A amplifier
