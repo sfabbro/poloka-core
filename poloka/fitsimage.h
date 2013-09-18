@@ -131,6 +131,9 @@ class FitsHeader {
   //! opens a new file and copies a old header into it. 
   FitsHeader(const FitsHeader &a_header, const string & NewFileName);
  
+  //! constructor for a new FitsHeader and will write it to a new name when destroying it
+  FitsHeader(const string &OldName, const string &NewName);
+
   //! returns if the file could be opened. 
   bool IsValid() const { return (fptr!=0);};
 
@@ -354,8 +357,11 @@ class FitsImage : public FitsHeader, public Image {
   public :
 
   //!  opens in (ReadOnly mode by default, use RW to modifiy or create) and loads the pixel data.
-FitsImage(const string &FileName, const FitsFileMode Mode = RO);
+  FitsImage(const string &FileName, const FitsFileMode Mode = RO);
 
+
+  //! constructor for a new FitsImage and will write it to a new name when destroying it
+  FitsImage(const string &OldName, const string &NewName);
 
   //! constructor for a new FitsImage.
   /*! To be used to assemble a FitsImage from a header and an image

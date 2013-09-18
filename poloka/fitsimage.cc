@@ -358,6 +358,114 @@ FitsHeader::FitsHeader(const string &FileName, const FitsFileMode Mode)
 }
 
 
+
+FitsHeader::FitsHeader(const string &OldName, const string &NewName) {
+
+  int status = 0;
+  fileName = NewName;
+  fileModeAtOpen = RW;
+  compressedImg = false; 
+  fptr = 0;
+  
+  telInst = NULL;
+  writeEnabled = true;
+ 
+  /* handle here ascii header files (which differ from FITS by the
+     fact that they are split in lines and lines are not padded with
+     blanks. The strategy is to transform them into genuine fits
+     files, but in memory (since cfitsio enables that).
+
+     So the strategy is simple: detect wether the file is an ascii file,
+     and if so copy it into a memory fits file. Then, everything works as usual,
+     except that:
+     - it is a readonly mechanism
+     - it does not handle compressed (gzipped) files
+     - do not expect pixels in these files....
+  */
+
+  bool is_ascii=false;
+  if (!strstr(OldName.c_str(),".gz")) { // is NOT a compressed file 
+    FILE * f = fopen(OldName.c_str(), "r");
+    if (f) {
+      char line[96];
+      // try to read (at most) 82 chars, to see if the header is ascii or fits
+      is_ascii = ((fgets(line,82,f)) && strlen(line)<=80);
+      fclose(f);
+    }
+  }
+  
+
+  if (is_ascii) {
+    FILE * f = fopen(OldName.c_str(), "r");
+    string memName="mem://" + BaseName(NewName); // hopefully unique name
+    fits_create_file(&fptr, memName.c_str(), &status);
+    CHECK_STATUS_AND_THROW_EXCEPTION(status, *this, "fits_create_file(mem)");
+    char line[96];
+    while (fgets(line,82,f)) {
+      char *last_char = line + strlen(line)-1;
+      if (last_char<line) /* empty_line */ continue;
+      if (strcmp(line,"END")==0) break;
+      if (*last_char=='\n') *last_char='\0'; // remove '\n' (mandatory)
+      fits_write_record(fptr,line,&status); // copy
+      CHECK_STATUS(status,line,);
+    }
+    fclose(f);
+    return; // if it is an ascii input file, we are done.
+  }
+
+  // genuine fits file.
+  else fits_open_file(&fptr, OldName.c_str(), int(RO), &status);
+  /* there seems to be a bug in cfitsio, when one requests some
+     preprocessing before actually accessing the data, e.g. adressing
+     subimages through actual_filename[imin:imax,jmin:jmax]. Then the
+     returned pointer has RW mode although RO was requested. this is
+     handled using fileModeAtOpen, rather than trying to hack cfitsio
+     internals */
+  
+
+  if (status == 0) {
+    int hdutype;
+    fits_get_hdu_type(fptr, &hdutype, &status);
+    if ( (hdutype == IMAGE_HDU) && (int(KeyVal("NAXIS")) == 0 )) {
+      // this is a NULL IMAGE_EXTENSION, we move forward, because we expect
+      // to get an actual image.
+      fits_movrel_hdu(fptr, 1, NULL, &status);
+    }
+    // compressed images have a ZIMAGE key, so:
+    compressedImg = (HasKey("ZIMAGE") && bool(KeyVal("ZIMAGE")));
+  }
+
+  /* when reopening RW a file image which was just opened RW
+     cfitsio tries to uncompress the image, and fails. this is 
+     the error 414, which we just ignore */
+  if (status == 414) status = 0;
+
+  if (status == 0) {
+    existingFile = true;
+    return; // the file exists and was opened
+  }
+  existingFile = false;
+  CHECK_STATUS_AND_THROW_EXCEPTION(status, *this, "FitsHeader in mode RO");
+ 
+  // from here on, we are in RW mode and could not open an existing file
+  
+  int first_status = status; // for eventual error reporting
+  int second_status = create_file();
+
+  if (second_status) {
+     cerr << " when opening file : " << fileName;
+     cerr << " we got these successive errors:" << endl;
+     fits_report_error(stderr, first_status);
+     // now throw instaed of going on.
+     throw(FitsException(one_line_error_message(second_status, *this)));
+     // the alternative : report error (and possibly abort).
+     // fits_report_error(stderr, second_status);
+     // abort();
+   }
+}
+
+
+
 int FitsHeader::create_file()
 {
 #ifdef DEBUG
@@ -1420,6 +1528,17 @@ if ( !HasKey("WRITEDAT") && (IsOfKind<IntWfcNewDaq>(*this) || IsOfKind<Cfht12K>(
 
   }
 #endif
+}
+
+
+FitsImage::FitsImage(const string &OldName, const string &NewName) : FitsHeader(OldName, RW) {
+
+  written = 0;
+  if (!IsValid()) return;
+  nx = KeyVal("NAXIS1");
+  ny = KeyVal("NAXIS2");
+  Image::allocate(nx, ny);
+  if (nx*ny) read_image(0, 0, nx, ny, data);
 }
 
 
