@@ -1,5 +1,5 @@
 ## Initialization
-AC_PREREQ([2.69])
+AC_PREREQ([2.68])
 AC_INIT([poloka-core],[0.2.0],[poloka team])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([poloka/fitsimage.cc])
@@ -7,31 +7,28 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(autoconf)
 AM_INIT_AUTOMAKE([foreign])
 
-## Keep this one before libtool check
-AC_DISABLE_STATIC([])
-
 ## Checks for programs to build poloka-core library
 AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LEX
-
-# F77 needed to link with blas/lapack
-AC_PROG_F77
-LT_INIT
+AC_PROG_YACC
 
 # AC_PROG_SED is available only in autoconf 2.60 and later.
 # With older autoconf, assume that 'sed' is ok.
 ifdef([AC_PROG_SED], [AC_PROG_SED], [SED=sed AC_SUBST(SED)])
 ifdef([AC_PROG_GREP], [AC_PROG_GREP], [GREP=grep AC_SUBST(GREP)])
-AC_PROG_YACC
+
+# F77 needed to link with blas/lapack
+AC_PROG_F77
+LT_INIT([disable-static])
 
 ## Checks for header files.
 AC_FUNC_ALLOCA
 AC_CHECK_HEADERS([inttypes.h libintl.h limits.h malloc.h stddef.h stdlib.h string.h unistd.h])
 
 ## Checks for typedefs, structures, and compiler characteristics.
-AC_CHECK_HEADER_STDBOOL
+AC_HEADER_STDBOOL
 AC_C_INLINE
 AC_TYPE_INT16_T
 AC_TYPE_INT32_T
