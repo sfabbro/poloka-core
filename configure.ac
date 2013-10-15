@@ -76,7 +76,7 @@ AX_PKG_LIB(
 ## Check for mandatory SExtractor repacked library
 AX_PKG_LIB(
 	[sextractor],
-	[define.h],
+	[sextractor/define.h],
 	[sextractor], [makeit], [],
 	[AC_MSG_ERROR([Cannot find SExtractor library])])
 
